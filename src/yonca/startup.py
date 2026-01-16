@@ -14,7 +14,7 @@ from rich.table import Table
 console = Console()
 
 OLLAMA_API_URL = "http://localhost:11434"
-REQUIRED_MODEL = "qwen2.5:7b"
+REQUIRED_MODEL = "qwen3:8b"  # Default model - Qwen3 is great for Azerbaijani
 
 
 def print_banner():
@@ -131,27 +131,33 @@ def run_startup_checks(model: str = None) -> dict:
         console=console,
     ) as progress:
         
-        # Check 1: Ollama installed
-        task = progress.add_task("Checking Ollama installation...", total=None)
-        status["ollama_installed"] = check_ollama_installed()
-        progress.remove_task(task)
-        
-        if not status["ollama_installed"]:
-            console.print("[red]❌ Ollama not installed![/red]")
-            console.print("\n[yellow]Install Ollama:[/yellow]")
-            console.print("  Windows: [cyan]winget install Ollama.Ollama[/cyan]")
-            console.print("  macOS:   [cyan]brew install ollama[/cyan]")
-            console.print("  Linux:   [cyan]curl -fsSL https://ollama.com/install.sh | sh[/cyan]")
-            return status
-        
-        console.print("[green]✅ Ollama installed[/green]")
-        
-        # Check 2: Ollama running
+        # Check 1: First check if Ollama server is already running (most common case on Windows)
         task = progress.add_task("Checking Ollama server...", total=None)
         status["ollama_running"] = check_ollama_running()
         progress.remove_task(task)
         
-        if not status["ollama_running"]:
+        if status["ollama_running"]:
+            # Server is running, so Ollama is installed
+            status["ollama_installed"] = True
+            console.print("[green]✅ Ollama server running[/green]")
+        else:
+            # Server not running, check if ollama command exists
+            task = progress.add_task("Checking Ollama installation...", total=None)
+            status["ollama_installed"] = check_ollama_installed()
+            progress.remove_task(task)
+            
+            if not status["ollama_installed"]:
+                console.print("[red]❌ Ollama not installed or not running![/red]")
+                console.print("\n[yellow]Option 1: Start Ollama app from Start Menu[/yellow]")
+                console.print("\n[yellow]Option 2: Install Ollama:[/yellow]")
+                console.print("  Windows: [cyan]winget install Ollama.Ollama[/cyan]")
+                console.print("  macOS:   [cyan]brew install ollama[/cyan]")
+                console.print("  Linux:   [cyan]curl -fsSL https://ollama.com/install.sh | sh[/cyan]")
+                return status
+            
+            console.print("[green]✅ Ollama installed[/green]")
+            
+            # Try to start the server
             console.print("[yellow]⏳ Ollama not running, starting...[/yellow]")
             task = progress.add_task("Starting Ollama server...", total=None)
             status["ollama_running"] = start_ollama_server()
@@ -162,10 +168,10 @@ def run_startup_checks(model: str = None) -> dict:
                 console.print("\n[yellow]Try manually:[/yellow]")
                 console.print("  [cyan]ollama serve[/cyan]")
                 return status
+            
+            console.print("[green]✅ Ollama server running[/green]")
         
-        console.print("[green]✅ Ollama server running[/green]")
-        
-        # Check 3: Model available
+        # Check 2: Model available
         task = progress.add_task(f"Checking model {model}...", total=None)
         status["model_available"] = check_model_available(model)
         progress.remove_task(task)

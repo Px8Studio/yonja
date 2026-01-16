@@ -150,7 +150,7 @@ class YoncaAgent:
         elif provider == "ollama":
             from langchain_ollama import ChatOllama
             return ChatOllama(
-                model=model_name or "qwen2.5:7b",  # Best for Azerbaijani
+                model=model_name or "qwen3:8b",  # Best for Azerbaijani/Turkic
                 temperature=0.7,
             )
         
@@ -214,14 +214,14 @@ def create_gemini_agent(api_key: str = None, model: str = "gemini-2.0-flash") ->
     return YoncaAgent(llm_provider="gemini", api_key=api_key, model_name=model)
 
 
-def create_ollama_agent(model: str = "qwen2.5:7b") -> YoncaAgent:
+def create_ollama_agent(model: str = "qwen3:8b") -> YoncaAgent:
     """
     Create a Yonca agent using local Ollama.
     
     Recommended models for Azerbaijani:
-    - qwen2.5:7b  - Best balance of speed and quality
+    - qwen3:8b    - Best for Azerbaijani/Turkic languages
+    - qwen2.5:7b  - Good balance of speed and quality
     - qwen2.5:14b - Higher quality, slower
-    - qwen2.5:3b  - Faster, lighter
     - aya:8b      - Cohere's multilingual model
     """
     return YoncaAgent(llm_provider="ollama", model_name=model)

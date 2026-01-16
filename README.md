@@ -1,6 +1,7 @@
 # 🌿 Yonca AI - Smart Farm Planning Assistant
 
-An AI-driven daily farm planning assistant prototype for the Yonca agricultural platform.
+> AI-driven daily farm planning assistant for the Yonca agricultural platform.
+> Uses **LangGraph** for AI orchestration and **Qwen2.5** for Azerbaijani language support.
 
 ## 🎯 Overview
 
@@ -23,13 +24,15 @@ yonca-ai/
 ├── src/
 │   └── yonca/
 │       ├── api/              # REST & GraphQL endpoints
+│       ├── agent/            # LangGraph AI agent
 │       ├── core/             # Business logic
 │       │   ├── engine/       # Recommendation engine
 │       │   ├── rules/        # Rule definitions
 │       │   └── scheduler/    # Task scheduling
 │       ├── chatbot/          # Azerbaijani chatbot
 │       ├── data/             # Synthetic data & generators
-│       └── models/           # Data models
+│       ├── models/           # Data models
+│       └── startup.py        # Startup manager with Ollama checks
 ├── tests/                    # Test suite
 └── docs/                     # Documentation
 ```
@@ -59,15 +62,9 @@ brew install ollama
 curl -fsSL https://ollama.com/install.sh | sh
 ```
 
-**Download the Qwen2.5 model** (best for Azerbaijani/Turkic languages):
+> ⚠️ **After installing Ollama, restart your terminal** for the PATH to update.
 
-```bash
-# Restart terminal after Ollama install, then:
-ollama pull qwen2.5:7b    # 4.7GB - Best balance of speed & quality
-# OR
-ollama pull qwen2.5:3b    # 2.0GB - Faster, lighter
-ollama pull qwen2.5:14b   # 9.0GB - Highest quality
-```
+The Yonca startup manager will **automatically download the model** if it's not present!
 
 #### Option B: Google Gemini (Cloud)
 
@@ -86,10 +83,10 @@ YONCA_LLM_MODEL=gemini-2.0-flash
 git clone https://github.com/Px8Studio/yonja.git
 cd yonja
 
-# Create virtual environment (Python 3.12 recommended)
-python -m venv .venv
-.venv\Scripts\activate  # Windows
-source .venv/bin/activate  # Linux/Mac
+# Create virtual environment (Python 3.12)
+python -m venv .venv312
+.venv312\Scripts\activate  # Windows
+source .venv312/bin/activate  # Linux/Mac
 
 # Install with your preferred LLM provider
 pip install -e ".[ollama]"    # For local Qwen2.5
@@ -98,41 +95,57 @@ pip install -e ".[all-llms]"  # Both options
 pip install -e ".[dev]"       # Development tools
 ```
 
-### Configure Environment
+### 🎮 Start Yonca AI
+
+**Option 1: VS Code (Recommended)**
+
+Press `Ctrl+Shift+B` or run the task:
+- **🌿 Start Yonca AI** - Full startup with Ollama health checks
+
+**Option 2: Command Line**
 
 ```bash
-cp .env.example .env
-# Edit .env with your preferred LLM settings
+# Automatic startup with health checks
+python -m yonca.startup
+
+# Or use the CLI command (after pip install -e .)
+yonca
 ```
 
-### Run the API Server
+**Option 3: Check Status Only**
 
 ```bash
-uvicorn src.yonca.main:app --reload
+python -m yonca.startup --check-only
+```
+
+### What the Startup Manager Does
+
+```
+🌿 YONCA AI - Smart Farm Planning Assistant
+═══════════════════════════════════════════
+
+✅ Ollama installed
+✅ Ollama server running
+✅ Model qwen2.5:7b ready
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     🌿 Yonca AI Status             ┃
+┣━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Component  ┃ Status                ┃
+┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━┩
+│ Ollama     │ ✅ Running            │
+│ LLM Model  │ ✅ qwen2.5:7b         │
+│ API        │ 🚀 Starting...        │
+└────────────┴───────────────────────┘
+
+Starting Yonca AI API server...
+INFO:     Uvicorn running on http://127.0.0.1:8000
 ```
 
 ### Access the API
 
-- REST API: http://localhost:8000/docs
-- GraphQL: http://localhost:8000/graphql
-
-## 📊 Farm Scenarios
-
-| Profile | Description | Key Recommendations |
-|---------|-------------|---------------------|
-| 🌾 Wheat | Grain production | Irrigation, fertilization, harvest timing |
-| 🐄 Livestock | Animal husbandry | Feeding schedules, health monitoring |
-| 🍎 Orchard | Fruit trees | Pruning, pest control, harvest planning |
-| 🥬 Vegetable | Intensive crops | Rotation, irrigation, pest management |
-| 🌿 Mixed | Combined farming | Integrated planning across domains |
-
-## 🤖 Chatbot Intents (Azerbaijani)
-
-- `suvarma_sorğusu` - Irrigation advice
-- `gübrələmə_sorğusu` - Fertilization recommendations
-- `xəstəlik_xəbərdarlığı` - Disease/pest alerts
-- `məhsul_yığımı` - Harvest planning
-- `subsidiya_tarixi` - Subsidy deadlines
+- **REST API Docs**: http://localhost:8000/docs
+- **GraphQL Playground**: http://localhost:8000/graphql
 
 ## 🤖 LLM Configuration
 

@@ -1,63 +1,66 @@
-[project]
+[tool.poetry]
 name = "yonca-ai"
 version = "0.2.0"
 description = "AI-driven daily farm planning assistant for Yonca platform"
 readme = "README.md"
-requires-python = ">=3.10,<3.13"
-license = { text = "MIT" }
-authors = [
-    { name = "Digital Umbrella", email = "dev@digitalumbrella.az" }
-]
+license = "MIT"
+authors = ["Digital Umbrella <dev@digitalumbrella.az>"]
 keywords = ["agriculture", "ai", "farming", "recommendation-engine", "azerbaijan", "langgraph"]
+packages = [{include = "yonca", from = "src"}]
 
-dependencies = [
-    # Web Framework
-    "fastapi>=0.104.0",
-    "uvicorn[standard]>=0.24.0",
-    "pydantic>=2.5.0",
-    "pydantic-settings>=2.1.0",
-    "strawberry-graphql[fastapi]>=0.215.0",
-    "httpx>=0.25.0",
-    # Database
-    "sqlalchemy>=2.0.23",
-    "aiosqlite>=0.19.0",
-    # LangGraph & LangChain Core
-    "langgraph>=0.2.0",
-    "langchain-core>=0.3.0",
-    # Utilities
-    "python-dateutil>=2.8.2",
-    "python-dotenv>=1.0.0",
-]
+[tool.poetry.dependencies]
+python = ">=3.10,<3.13"
+# Web Framework
+fastapi = ">=0.104.0"
+uvicorn = {extras = ["standard"], version = ">=0.24.0"}
+pydantic = ">=2.5.0"
+pydantic-settings = ">=2.1.0"
+strawberry-graphql = {extras = ["fastapi"], version = ">=0.215.0"}
+httpx = ">=0.25.0"
+# Database
+sqlalchemy = ">=2.0.23"
+aiosqlite = ">=0.19.0"
+# LangGraph & LangChain Core
+langgraph = ">=0.2.0"
+langchain-core = ">=0.3.0"
+# Utilities
+python-dateutil = ">=2.8.2"
+python-dotenv = ">=1.0.0"
+# CLI & Display
+rich = ">=13.7.0"
+# LLM Providers (optional)
+langchain-google-genai = {version = ">=2.0.0", optional = true}
+langchain-ollama = {version = ">=0.2.0", optional = true}
 
-[project.optional-dependencies]
-# LLM Provider extras
-gemini = ["langchain-google-genai>=2.0.0"]
-ollama = ["langchain-ollama>=0.2.0"]
-all-llms = [
-    "langchain-google-genai>=2.0.0",
-    "langchain-ollama>=0.2.0",
-]
-dev = [
-    "pytest>=7.4.0",
-    "pytest-asyncio>=0.21.0",
-    "pytest-cov>=4.1.0",
-    "black>=23.11.0",
-    "ruff>=0.1.6",
-    "mypy>=1.7.0",
-]
+[tool.poetry.extras]
+gemini = ["langchain-google-genai"]
+ollama = ["langchain-ollama"]
+all-llms = ["langchain-google-genai", "langchain-ollama"]
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=7.4.0"
+pytest-asyncio = ">=0.21.0"
+pytest-cov = ">=4.1.0"
+black = ">=23.11.0"
+ruff = ">=0.1.6"
+mypy = ">=1.7.0"
+
+[tool.poetry.scripts]
+yonca = "yonca.startup:main"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["poetry-core>=2.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
 
 [tool.black]
-line-length = 88
-target-version = ["py310"]
+line-length = 100
+target-version = ["py312"]
 
 [tool.ruff]
-line-length = 88
+line-length = 100
+target-version = "py312"
 select = ["E", "F", "I", "N", "W"]
-
-[tool.mypy]
-python_version = "3.10"
-strict = true

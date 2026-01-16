@@ -632,6 +632,309 @@ SIDECAR_GGUF_MODEL=qwen2.5-7b-q4
 
 ---
 
+## Strategic Enhancements
+
+### Overview
+
+The Sidecar Intelligence Architecture includes five strategic enhancement modules that address critical "blind spots" in traditional AgTech AI systems:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    STRATEGIC ENHANCEMENT MODULES                            │
+│                                                                             │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐            │
+│  │  Agronomist     │  │    Dialect      │  │   Temporal      │            │
+│  │  in-the-Loop    │  │    Handler      │  │   State Mgmt    │            │
+│  │   Validation    │  │  (Multilingual) │  │  (Farm Memory)  │            │
+│  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘            │
+│           │                    │                     │                     │
+│           └────────────────────┼─────────────────────┘                     │
+│                                │                                           │
+│                    ┌───────────┴───────────┐                              │
+│                    │    Core Sidecar       │                              │
+│                    │     RAG Engine        │                              │
+│                    └───────────┬───────────┘                              │
+│                                │                                           │
+│           ┌────────────────────┼────────────────────┐                     │
+│           │                    │                    │                     │
+│  ┌────────┴────────┐  ┌────────┴────────┐  ┌──────┴──────────┐          │
+│  │  Trust Score    │  │  Digital Twin   │  │  Enhanced       │          │
+│  │  & Citations    │  │   Simulator     │  │  API Response   │          │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 1. Agronomist-in-the-Loop Validation
+
+**Location:** `src/yonca/sidecar/validation.py`
+
+**Purpose:** Human expert validation system ensuring AI recommendations are verified before reaching farmers.
+
+```
+┌───────────────────────────────────────────────────────────────────────────┐
+│                    THREE-TIER VALIDATION SYSTEM                           │
+│                                                                           │
+│  TIER 1: AUTOMATIC          TIER 2: ASYNC REVIEW     TIER 3: SYNC REVIEW │
+│  ══════════════════         ═══════════════════       ═════════════════  │
+│                                                                           │
+│  ┌───────────────┐         ┌───────────────┐         ┌───────────────┐  │
+│  │ Pre-Approved  │         │ Expert Queue  │         │  Real-Time    │  │
+│  │ Rules Match   │         │ <24h Review   │         │  Approval     │  │
+│  │ >90% Conf.    │         │ High Priority │         │  Required     │  │
+│  └───────────────┘         └───────────────┘         └───────────────┘  │
+│         │                         │                         │           │
+│         ▼                         ▼                         ▼           │
+│  ✅ Auto-Approved          ⏳ Pending Review         🔒 Blocked         │
+│  Badge: "✓ Expert          Badge: "⏳ Pending        Until Expert       │
+│         Verified"                  Review"           Approves           │
+└───────────────────────────────────────────────────────────────────────────┘
+```
+
+**Demo Agronomist Profiles:**
+| Expert | Specialization | Region | Degree |
+|--------|----------------|--------|--------|
+| Dr. Elçin Məmmədov | Irrigation, Soil | Aran | Ph.D |
+| Prof. Aynur Həsənova | Crops, Pest Control | Şəki | Professor |
+| Fərid Əliyev | Livestock, Organic | All | M.Sc |
+
+### 2. Dialect & Regional Term Handler
+
+**Location:** `src/yonca/sidecar/dialect.py`
+
+**Purpose:** Linguistic normalization for Azerbaijani agricultural terminology across regional dialects.
+
+**Supported Dialects:**
+- **Standard (Bakı)** - Official/technical vocabulary
+- **Aran** - Lowland agricultural region
+- **Şəki-Zaqatala** - Mountain region
+- **Lənkəran** - Southern region
+- **Naxçıvan** - Autonomous region
+- **Quba-Xaçmaz** - Northern region
+- **Gəncə-Qazax** - Western region
+
+**Example Term Mappings:**
+
+| Standard (Technical) | English | Aran | Şəki-Zaqatala | Lənkəran |
+|---------------------|---------|------|---------------|----------|
+| suvarma | irrigation | su vermə | su çəkmə | sulamaq |
+| gübrə | fertilizer | gübrə | kübrə | güvrə |
+| zərərverici | pest | həşərat | ziyanlı | zərər verən |
+| məhsul | harvest | biçin | hösul | yığma |
+| torpaq | soil | yer | torpağ | torpaq |
+
+**Workflow:**
+```
+Farmer Input (Regional) → normalize() → Standard Azerbaijani → AI Processing
+                                                                    │
+AI Response (Standard) → localize() → Farmer's Dialect ◄───────────┘
+```
+
+### 3. Temporal State Management
+
+**Location:** `src/yonca/sidecar/temporal.py`
+
+**Purpose:** Farm timeline memory for contextual recommendations.
+
+> *"Agriculture is not a static chat; it is a timeline."*
+
+**Features:**
+- Track past actions (irrigation, fertilization, spraying)
+- Season-aware context (Azerbaijan agricultural calendar)
+- Intelligent timing warnings
+- Pending action reminders
+
+**Action Tracking:**
+```python
+# The AI remembers farm history
+recent_context = manager.get_relevant_context(
+    action_type=ActionType.FERTILIZATION,
+    crop="buğda",
+    days_lookback=30
+)
+# Returns: "15 days ago: fertilization for wheat"
+```
+
+**Timing Intelligence:**
+```
+⚠️ Diqqət: buğda üçün son suvarma 3 gün əvvəl edilib.
+   Növbəti suvarma üçün daha 4 gün gözləmək tövsiyə olunur.
+```
+
+**Seasonal Awareness:**
+| Season Phase | Months | Key Activities |
+|--------------|--------|----------------|
+| Early Spring | Feb-Mar | Spring planting prep |
+| Late Spring | Apr-May | Pest monitoring |
+| Early Summer | Jun-Jul | Peak irrigation |
+| Late Summer | Aug-Sep | Harvest begins |
+| Early Autumn | Oct-Nov | Winter crop planting |
+| Winter | Dec-Feb | Pruning, planning |
+
+### 4. Trust Score & Citation System
+
+**Location:** `src/yonca/sidecar/trust.py`
+
+**Purpose:** Full transparency with confidence scores and source citations.
+
+**Confidence Breakdown:**
+```
+🎯 Etibarlılıq: 87% - 🟢 Yüksək Etibarlılıq
+
+📊 Təhlil:
+  • Qayda uyğunluğu: 95%
+  • Mənbə keyfiyyəti: 90%
+  • Ekspert təsdiqi: 70%
+  • Mövsüm uyğunluğu: 85%
+  • Bölgə uyğunluğu: 80%
+
+📚 Mənbələr:
+  1. 📘 Yonca Suvarma Təlimatı, v2.1
+  2. 🏛️ Azərbaycan Kənd Təsərrüfatı Standartları
+  3. 🌤️ Milli Hidrometeorologiya Xidməti
+```
+
+**Citation Library:**
+| Source ID | Type | Title |
+|-----------|------|-------|
+| AZ-IRR-001 | Rulebook | Yonca Suvarma Təlimatı |
+| AZ-FERT-001 | Rulebook | Yonca Gübrələmə Standartları |
+| GOV-AG-2024 | Government | Azərbaycan Kənd Təsərrüfatı Standartları |
+| WHEAT-GUIDE-V2 | Guideline | Yonca Buğda Bələdçisi |
+| AZ-METEO | Weather | Milli Hidrometeorologiya Xidməti |
+
+### 5. Digital Twin Simulation Engine
+
+**Location:** `src/yonca/sidecar/digital_twin.py`
+
+**Purpose:** Strategic rebranding of "Dummy Data" to "Digital Twin Scenarios" with simulation capabilities.
+
+> *A Digital Twin is a virtual replica of a farm that can simulate conditions without affecting real operations.*
+
+**Simulation Modes:**
+| Mode | Use Case | Yield Impact | Risk Level |
+|------|----------|--------------|------------|
+| BASELINE | Normal conditions | 100% | Low |
+| OPTIMAL | Best-case scenario | 125% | Very Low |
+| DROUGHT_STRESS | Water scarcity | 65% | High |
+| PEST_OUTBREAK | Infestation scenario | 70% | High |
+| CLIMATE_EXTREME | Weather events | 55% | Critical |
+| WORST_CASE | Risk assessment | 40% | Critical |
+
+**Simulation Output Example:**
+```
+🌱 Rəqəmsal Əkiz Simulyasiya Nəticələri
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📍 Bölgə: Aran
+🌾 Bitki: buğda
+📐 Sahə: 10 hektar
+📅 Müddət: 180 gün
+
+📊 Məhsul Proqnozu:
+  • Gözlənilən məhsul: 3,500 kq/ha
+  • Etibarlılıq aralığı: 2,975-4,025 kq/ha
+  • Bölgə ortalaması ilə: +16.7%
+
+💰 Maliyyə Proqnozu:
+  • Gözlənilən gəlir: 15,750 AZN
+  • Xərclər: 7,500 AZN
+  • Mənfəət: 8,250 AZN
+  • ROI: 110.0%
+
+⚠️ Risk Qiymətləndirməsi: 🟢 Aşağı (25%)
+```
+
+**Scenario Comparison:**
+```
+📊 Ssenari Müqayisəsi
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Ssenari         Məhsul       Mənfəət      Risk
+────────────────────────────────────────────────────────────
+baseline        3,500 kq/ha  8,250 AZN    25%   ◄
+optimal         4,375 kq/ha  12,188 AZN   15%
+drought         2,275 kq/ha  2,738 AZN    70%
+worst_case      1,400 kq/ha  -2,100 AZN   95%
+```
+
+---
+
+## Enhancement API Endpoints
+
+### New Endpoints for Strategic Features
+
+```
+BASE URL: /api/v1/sidecar
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ ENHANCEMENT ENDPOINTS                                                      │
+├────────────────────────────────────────────────────────────────────────────┤
+│ /validation/queue          │ GET    │ View pending expert reviews         │
+│ /validation/{id}/approve   │ POST   │ Expert approval endpoint            │
+│ /validation/{id}/reject    │ POST   │ Expert rejection endpoint           │
+│ /dialect/normalize         │ POST   │ Normalize regional terms            │
+│ /dialect/localize          │ POST   │ Convert to regional dialect         │
+│ /temporal/{session}/context│ GET    │ Get farm timeline context           │
+│ /temporal/{session}/action │ POST   │ Record a farm action                │
+│ /trust/{rec_id}/report     │ GET    │ Full transparency report            │
+│ /simulation/run            │ POST   │ Run Digital Twin simulation         │
+│ /simulation/compare        │ POST   │ Compare multiple scenarios          │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Enhanced Recommendation Response
+
+```json
+{
+  "request_id": "string",
+  "recommendations": [...],
+  
+  // NEW: Strategic Enhancement Fields
+  "trust_score": {
+    "overall_confidence": 0.87,
+    "confidence_level": "high",
+    "breakdown": {
+      "rule_match_score": 0.95,
+      "source_quality_score": 0.90,
+      "expert_validation_score": 0.70,
+      "temporal_relevance_score": 0.85,
+      "regional_relevance_score": 0.80
+    },
+    "citations": [
+      {
+        "source_id": "AZ-IRR-001",
+        "title": "Yonca Suvarma Təlimatı",
+        "version": "2.1"
+      }
+    ],
+    "primary_source": "AZ-IRR-001"
+  },
+  
+  "validation_status": {
+    "tier": "automatic",
+    "status": "verified",
+    "badge": "✓ Expert Verified",
+    "expert": null
+  },
+  
+  "temporal_context": {
+    "last_irrigation_days_ago": 5,
+    "last_fertilization_days_ago": 12,
+    "current_season": "late_spring",
+    "reminders": [
+      "💧 buğda suvarma vaxtı yaxınlaşır"
+    ]
+  },
+  
+  "dialect_info": {
+    "detected_dialect": "aran",
+    "normalized_query": "...",
+    "localized_response": true
+  }
+}
+```
+
+---
+
 ## Contact & Support
 
 - **Repository:** https://github.com/Px8Studio/yonja

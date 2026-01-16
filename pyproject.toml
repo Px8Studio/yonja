@@ -28,6 +28,8 @@ python-dateutil = ">=2.8.2"
 python-dotenv = ">=1.0.0"
 # CLI & Display
 rich = ">=13.7.0"
+# Streamlit for Digital Umbrella prototype
+streamlit = {version = ">=1.30.0", optional = true}
 # LLM Providers (optional)
 langchain-google-genai = {version = ">=2.0.0", optional = true}
 langchain-ollama = {version = ">=0.2.0", optional = true}
@@ -36,6 +38,7 @@ langchain-ollama = {version = ">=0.2.0", optional = true}
 gemini = ["langchain-google-genai"]
 ollama = ["langchain-ollama"]
 all-llms = ["langchain-google-genai", "langchain-ollama"]
+umbrella = ["streamlit"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=7.4.0"

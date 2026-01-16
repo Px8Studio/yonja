@@ -24,6 +24,8 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
+from yonca.sidecar.rules_registry import get_pre_approved_rule_ids
+
 
 class ValidationTier(str, Enum):
     """Validation tier levels for recommendations."""
@@ -230,32 +232,13 @@ class AgronomistInTheLoopValidator:
         self._pre_approved_rules: set[str] = self._load_pre_approved_rules()
     
     def _load_pre_approved_rules(self) -> set[str]:
-        """Load rule IDs that are pre-approved by agronomists."""
-        # These rules have been reviewed and approved by agricultural experts
-        # for automatic validation without further review
-        return {
-            # Irrigation rules - well-established thresholds
-            "AZ-IRR-001",  # Critical low moisture
-            "AZ-IRR-002",  # Heat wave irrigation
-            "AZ-IRR-003",  # Skip before rain
-            
-            # Fertilization rules - standard NPK guidelines
-            "AZ-FERT-001",  # Low nitrogen
-            "AZ-FERT-002",  # Phosphorus for flowering
-            "AZ-FERT-003",  # Potassium for quality
-            
-            # Harvest rules - timing based
-            "AZ-HARV-001",  # Dry weather window
-            "AZ-HARV-002",  # Morning dew delay
-            
-            # Livestock rules - standard care
-            "AZ-LIVE-001",  # Heat stress prevention
-            "AZ-LIVE-002",  # Winter shelter prep
-            
-            # Soil management - pH correction
-            "AZ-SOIL-001",  # Acidic correction
-            "AZ-SOIL-002",  # Alkaline correction
-        }
+        """
+        Load rule IDs that are pre-approved by agronomists.
+        
+        Now uses the centralized RulesRegistry which marks rules with
+        `is_pre_approved=True` based on expert review.
+        """
+        return get_pre_approved_rule_ids()
     
     def determine_validation_tier(
         self,

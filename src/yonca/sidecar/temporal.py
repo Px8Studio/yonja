@@ -18,6 +18,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional
 
+from yonca.sidecar.rules_registry import SeasonPhase
+
 
 class ActionType(str, Enum):
     """Types of farming actions tracked."""
@@ -34,15 +36,9 @@ class ActionType(str, Enum):
     VETERINARY = "veterinary"
 
 
-class SeasonPhase(str, Enum):
-    """Agricultural season phases in Azerbaijan."""
-    EARLY_SPRING = "early_spring"      # February-March
-    LATE_SPRING = "late_spring"        # April-May
-    EARLY_SUMMER = "early_summer"      # June-July
-    LATE_SUMMER = "late_summer"        # August-September
-    EARLY_AUTUMN = "early_autumn"      # October-November
-    LATE_AUTUMN = "late_autumn"        # November-December
-    WINTER = "winter"                  # December-February
+# Re-export SeasonPhase for backwards compatibility
+# The canonical definition is now in rules_registry.py
+__all__ = ["ActionType", "SeasonPhase", "FarmAction", "TemporalContext", "TemporalStateManager"]
 
 
 @dataclass
@@ -235,22 +231,7 @@ class TemporalStateManager:
     
     def _get_current_season(self) -> SeasonPhase:
         """Determine current agricultural season in Azerbaijan."""
-        month = datetime.now().month
-        
-        if month in (2, 3):
-            return SeasonPhase.EARLY_SPRING
-        elif month in (4, 5):
-            return SeasonPhase.LATE_SPRING
-        elif month in (6, 7):
-            return SeasonPhase.EARLY_SUMMER
-        elif month in (8, 9):
-            return SeasonPhase.LATE_SUMMER
-        elif month == 10 or (month == 11 and datetime.now().day <= 15):
-            return SeasonPhase.EARLY_AUTUMN
-        elif month == 11 or (month == 12 and datetime.now().day <= 15):
-            return SeasonPhase.LATE_AUTUMN
-        else:
-            return SeasonPhase.WINTER
+        return SeasonPhase.from_month(datetime.now().month)
     
     def get_or_create_context(
         self,

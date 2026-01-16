@@ -9,32 +9,31 @@ Retrieval-Augmented Generation engine that combines:
 
 Architecture:
 - Intent Detection → Knowledge Retrieval → LLM Generation → Rule Validation → Response
+
+NOTE: Rules are now centralized in rules_registry.py
+      Intent detection is now centralized in intent_matcher.py
 """
 
 import re
-from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Optional
+from typing import Optional
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
 from yonca.sidecar.pii_gateway import SanitizedRequest, SanitizedResponse
+from yonca.sidecar.rules_registry import (
+    AgronomyRule,
+    RuleCategory,
+    AGRONOMY_RULES,
+)
+from yonca.sidecar.intent_matcher import IntentMatcher, get_intent_matcher
 
 
-class AgronomyCategory(str, Enum):
-    """Categories of agronomy knowledge."""
-    IRRIGATION = "irrigation"
-    FERTILIZATION = "fertilization"
-    PEST_CONTROL = "pest_control"
-    DISEASE_MANAGEMENT = "disease_management"
-    HARVEST = "harvest"
-    LIVESTOCK = "livestock"
-    SOIL_MANAGEMENT = "soil_management"
-    WEATHER_RESPONSE = "weather_response"
-    CROP_ROTATION = "crop_rotation"
-    GENERAL = "general"
+# Re-export for backwards compatibility
+# The canonical enum is now RuleCategory in rules_registry.py
+AgronomyCategory = RuleCategory
 
 
 class ConfidenceLevel(str, Enum):
@@ -44,313 +43,11 @@ class ConfidenceLevel(str, Enum):
     LOW = "low"        # <0.70 - LLM-only, needs human review
 
 
-@dataclass
-class AgronomyRule:
-    """
-    A deterministic agronomy rule from the Azerbaijani agricultural rulebook.
-    
-    These rules are "Rules of Thumb" validated by agricultural experts.
-    They serve as ground truth for LLM output validation.
-    """
-    rule_id: str
-    name: str
-    name_az: str
-    category: AgronomyCategory
-    
-    # Conditions (deterministic checks)
-    applicable_crops: list[str] = field(default_factory=list)  # Empty = all crops
-    applicable_farm_types: list[str] = field(default_factory=list)
-    
-    # Environmental thresholds
-    min_soil_moisture: Optional[float] = None
-    max_soil_moisture: Optional[float] = None
-    min_temperature: Optional[float] = None
-    max_temperature: Optional[float] = None
-    seasons: list[str] = field(default_factory=list)  # Empty = all seasons
-    
-    # The rule logic
-    condition_description: str = ""
-    condition_description_az: str = ""
-    
-    # The recommendation if rule triggers
-    recommendation: str = ""
-    recommendation_az: str = ""
-    
-    # Confidence weight (how reliable is this rule)
-    confidence_weight: float = 0.9
-    
-    # Validation function (for programmatic checks)
-    validator: Optional[Callable[[dict], bool]] = None
-    
-    def check_applicable(self, context: dict) -> bool:
-        """Check if this rule is applicable to the given context."""
-        # Check crop applicability
-        if self.applicable_crops:
-            request_crops = context.get("crops", [])
-            if not any(crop in self.applicable_crops for crop in request_crops):
-                return False
-        
-        # Check farm type
-        if self.applicable_farm_types:
-            if context.get("farm_type") not in self.applicable_farm_types:
-                return False
-        
-        # Check season
-        if self.seasons:
-            if context.get("season") not in self.seasons:
-                return False
-        
-        return True
-    
-    def evaluate(self, context: dict) -> tuple[bool, float]:
-        """
-        Evaluate if this rule's condition is met.
-        
-        Returns:
-            Tuple of (is_triggered, confidence_score)
-        """
-        if not self.check_applicable(context):
-            return False, 0.0
-        
-        # Use custom validator if provided
-        if self.validator:
-            try:
-                triggered = self.validator(context)
-                return triggered, self.confidence_weight if triggered else 0.0
-            except Exception:
-                return False, 0.0
-        
-        # Otherwise, check threshold-based conditions
-        triggered = True
-        
-        moisture = context.get("soil_moisture_percent")
-        if moisture is not None:
-            if self.min_soil_moisture is not None and moisture < self.min_soil_moisture:
-                # Below minimum - could trigger irrigation rule
-                pass
-            elif self.max_soil_moisture is not None and moisture > self.max_soil_moisture:
-                triggered = False
-        
-        temp_range = context.get("temperature_range", (None, None))
-        if temp_range[1] is not None:
-            if self.max_temperature is not None and temp_range[1] > self.max_temperature:
-                # Above max temp - could trigger heat protection
-                pass
-            elif self.min_temperature is not None and temp_range[0] is not None:
-                if temp_range[0] < self.min_temperature:
-                    # Below min temp - could trigger frost protection
-                    pass
-        
-        return triggered, self.confidence_weight if triggered else 0.0
-
-
-# ============= Azerbaijani Agronomy Rulebook =============
-
-AGRONOMY_RULEBOOK: list[AgronomyRule] = [
-    # --- Irrigation Rules ---
-    AgronomyRule(
-        rule_id="AZ-IRR-001",
-        name="Critical Low Moisture Irrigation",
-        name_az="Kritik aşağı nəmlik suvarması",
-        category=AgronomyCategory.IRRIGATION,
-        applicable_farm_types=["wheat", "vegetable", "orchard", "mixed"],
-        min_soil_moisture=0,
-        max_soil_moisture=30,
-        condition_description="Soil moisture below 30% requires immediate irrigation",
-        condition_description_az="Torpaq nəmliyi 30%-dən aşağı olduqda təcili suvarma tələb olunur",
-        recommendation="Irrigate immediately. Best time: early morning (06:00-08:00) or evening (18:00-20:00)",
-        recommendation_az="Dərhal suvarın. Ən yaxşı vaxt: səhər tezdən (06:00-08:00) və ya axşam (18:00-20:00)",
-        confidence_weight=0.95,
-        validator=lambda ctx: ctx.get("soil_moisture_percent", 100) < 30
-    ),
-    AgronomyRule(
-        rule_id="AZ-IRR-002",
-        name="Heat Wave Emergency Irrigation",
-        name_az="İsti dalğası təcili suvarması",
-        category=AgronomyCategory.IRRIGATION,
-        applicable_farm_types=["wheat", "vegetable", "orchard", "mixed"],
-        max_temperature=35,
-        seasons=["summer"],
-        condition_description="Temperature above 35°C with moisture below 50% requires emergency irrigation",
-        condition_description_az="35°C-dən yuxarı temperatur və 50%-dən aşağı nəmlikdə təcili suvarma lazımdır",
-        recommendation="Emergency irrigation needed. Increase frequency, avoid midday watering",
-        recommendation_az="Təcili suvarma lazımdır. Tezliyi artırın, günorta suvarmasından çəkinin",
-        confidence_weight=0.95,
-        validator=lambda ctx: (
-            ctx.get("temperature_range", (0, 0))[1] > 35 and
-            ctx.get("soil_moisture_percent", 100) < 50
-        )
-    ),
-    AgronomyRule(
-        rule_id="AZ-IRR-003",
-        name="Skip Irrigation Before Rain",
-        name_az="Yağışdan əvvəl suvarmanı keçin",
-        category=AgronomyCategory.IRRIGATION,
-        condition_description="Skip irrigation if rain is expected within 24-48 hours",
-        condition_description_az="24-48 saat ərzində yağış gözlənilirsə suvarmanı keçin",
-        recommendation="Postpone irrigation. Natural rainfall expected. Check forecast again tomorrow",
-        recommendation_az="Suvarmanı təxirə salın. Təbii yağış gözlənilir. Sabah proqnoza yenidən baxın",
-        confidence_weight=0.88,
-        validator=lambda ctx: ctx.get("precipitation_expected", False)
-    ),
-    
-    # --- Fertilization Rules ---
-    AgronomyRule(
-        rule_id="AZ-FERT-001",
-        name="Low Nitrogen Application",
-        name_az="Aşağı azot tətbiqi",
-        category=AgronomyCategory.FERTILIZATION,
-        applicable_farm_types=["wheat", "vegetable", "orchard", "mixed"],
-        condition_description="Apply nitrogen fertilizer when N level below 30 kg/ha",
-        condition_description_az="Azot səviyyəsi 30 kq/ha-dan aşağı olduqda azot gübrəsi tətbiq edin",
-        recommendation="Apply 30-50 kg/ha nitrogen fertilizer (urea or ammonium nitrate)",
-        recommendation_az="30-50 kq/ha azot gübrəsi tətbiq edin (karbamid və ya ammonium nitrat)",
-        confidence_weight=0.92,
-        validator=lambda ctx: ctx.get("soil_nutrients", {}).get("nitrogen", 100) < 30
-    ),
-    AgronomyRule(
-        rule_id="AZ-FERT-002",
-        name="Phosphorus for Flowering",
-        name_az="Çiçəkləmə üçün fosfor",
-        category=AgronomyCategory.FERTILIZATION,
-        applicable_farm_types=["vegetable", "orchard"],
-        seasons=["spring", "summer"],
-        condition_description="Apply phosphorus during flowering when P level below 25 kg/ha",
-        condition_description_az="Fosfor səviyyəsi 25 kq/ha-dan aşağı olduqda çiçəkləmə dövründə fosfor tətbiq edin",
-        recommendation="Apply 20-30 kg/ha phosphorus fertilizer (superphosphate)",
-        recommendation_az="20-30 kq/ha fosfor gübrəsi tətbiq edin (superfosfat)",
-        confidence_weight=0.88,
-        validator=lambda ctx: ctx.get("soil_nutrients", {}).get("phosphorus", 100) < 25
-    ),
-    AgronomyRule(
-        rule_id="AZ-FERT-003",
-        name="Potassium for Fruit Quality",
-        name_az="Meyvə keyfiyyəti üçün kalium",
-        category=AgronomyCategory.FERTILIZATION,
-        applicable_farm_types=["orchard", "vegetable"],
-        applicable_crops=["pomidor", "alma", "armud", "nar", "üzüm"],
-        condition_description="Apply potassium before harvest when K level below 100 kg/ha",
-        condition_description_az="Kalium səviyyəsi 100 kq/ha-dan aşağı olduqda məhsul yığımından əvvəl kalium tətbiq edin",
-        recommendation="Apply 40-60 kg/ha potassium fertilizer (potassium chloride)",
-        recommendation_az="40-60 kq/ha kalium gübrəsi tətbiq edin (kalium xlorid)",
-        confidence_weight=0.85,
-        validator=lambda ctx: ctx.get("soil_nutrients", {}).get("potassium", 200) < 100
-    ),
-    
-    # --- Pest Control Rules ---
-    AgronomyRule(
-        rule_id="AZ-PEST-001",
-        name="Humid Weather Pest Alert",
-        name_az="Rütubətli havada zərərverici xəbərdarlığı",
-        category=AgronomyCategory.PEST_CONTROL,
-        condition_description="High humidity (>70%) and warm temps (20-30°C) increase pest activity",
-        condition_description_az="Yüksək rütubət (>70%) və isti hava (20-30°C) zərərverici aktivliyini artırır",
-        recommendation="Scout fields for aphids and mites. Consider preventive spraying",
-        recommendation_az="Mənənə və gənələr üçün sahələri yoxlayın. Profilaktik çiləmə düşünün",
-        confidence_weight=0.82,
-        validator=lambda ctx: (
-            20 <= ctx.get("temperature_range", (0, 0))[1] <= 30 and
-            ctx.get("humidity_percent", 0) > 70
-        )
-    ),
-    AgronomyRule(
-        rule_id="AZ-PEST-002",
-        name="Post-Rain Fungal Disease Watch",
-        name_az="Yağışdan sonra göbələk xəstəliyi nəzarəti",
-        category=AgronomyCategory.DISEASE_MANAGEMENT,
-        condition_description="Wet conditions after rain increase fungal disease risk",
-        condition_description_az="Yağışdan sonra nəm şərait göbələk xəstəliyi riskini artırır",
-        recommendation="Apply preventive fungicide within 24-48 hours after rain",
-        recommendation_az="Yağışdan sonra 24-48 saat ərzində profilaktik fungisid tətbiq edin",
-        confidence_weight=0.85,
-        validator=lambda ctx: ctx.get("precipitation_expected", False) or ctx.get("recent_rain", False)
-    ),
-    
-    # --- Harvest Rules ---
-    AgronomyRule(
-        rule_id="AZ-HARV-001",
-        name="Dry Weather Harvest Window",
-        name_az="Quru havada məhsul yığımı pəncərəsi",
-        category=AgronomyCategory.HARVEST,
-        applicable_farm_types=["wheat", "vegetable", "orchard"],
-        seasons=["summer", "autumn"],
-        condition_description="Harvest during dry weather with no rain forecast for 3+ days",
-        condition_description_az="3+ gün yağış proqnozu olmadıqda quru havada məhsul yığın",
-        recommendation="Optimal harvest window. Complete harvest before weather changes",
-        recommendation_az="Optimal məhsul yığımı pəncərəsi. Hava dəyişməzdən əvvəl yığımı tamamlayın",
-        confidence_weight=0.90,
-        validator=lambda ctx: not ctx.get("precipitation_expected", False)
-    ),
-    AgronomyRule(
-        rule_id="AZ-HARV-002",
-        name="Morning Dew Harvest Delay",
-        name_az="Səhər şehi məhsul yığımı gecikməsi",
-        category=AgronomyCategory.HARVEST,
-        applicable_crops=["buğda", "arpa"],
-        condition_description="Wait for dew to dry before grain harvest",
-        condition_description_az="Taxıl yığımından əvvəl şehin qurumasını gözləyin",
-        recommendation="Start harvest after 10:00 AM when morning dew has evaporated",
-        recommendation_az="Səhər şehi buxarlandıqdan sonra saat 10:00-dan sonra yığıma başlayın",
-        confidence_weight=0.88
-    ),
-    
-    # --- Livestock Rules ---
-    AgronomyRule(
-        rule_id="AZ-LIVE-001",
-        name="Heat Stress Prevention",
-        name_az="İsti stresinin qarşısının alınması",
-        category=AgronomyCategory.LIVESTOCK,
-        applicable_farm_types=["livestock", "mixed"],
-        max_temperature=30,
-        seasons=["summer"],
-        condition_description="Provide shade and extra water when temperature exceeds 30°C",
-        condition_description_az="Temperatur 30°C-dən yuxarı olduqda kölgə və əlavə su təmin edin",
-        recommendation="Move livestock to shade. Provide 20% more water. Avoid moving animals during peak heat",
-        recommendation_az="Heyvanları kölgəyə köçürün. 20% daha çox su verin. Pik istidə heyvanları hərəkət etdirməyin",
-        confidence_weight=0.93,
-        validator=lambda ctx: ctx.get("temperature_range", (0, 0))[1] > 30
-    ),
-    AgronomyRule(
-        rule_id="AZ-LIVE-002",
-        name="Winter Shelter Preparation",
-        name_az="Qış sığınacağının hazırlanması",
-        category=AgronomyCategory.LIVESTOCK,
-        applicable_farm_types=["livestock", "mixed"],
-        seasons=["autumn"],
-        condition_description="Prepare winter shelters before temperature drops below 10°C",
-        condition_description_az="Temperatur 10°C-dən aşağı düşməzdən əvvəl qış sığınacaqlarını hazırlayın",
-        recommendation="Check shelter insulation, repair drafts, stock bedding materials",
-        recommendation_az="Sığınacaq izolyasiyasını yoxlayın, hava axınlarını təmir edin, döşəmə materiallarını təmin edin",
-        confidence_weight=0.87,
-        validator=lambda ctx: ctx.get("current_season") == "autumn"
-    ),
-    
-    # --- Soil Management Rules ---
-    AgronomyRule(
-        rule_id="AZ-SOIL-001",
-        name="Acidic Soil Correction",
-        name_az="Turş torpağın düzəldilməsi",
-        category=AgronomyCategory.SOIL_MANAGEMENT,
-        condition_description="Apply lime when soil pH drops below 5.5",
-        condition_description_az="Torpaq pH-ı 5.5-dən aşağı düşdükdə əhəng tətbiq edin",
-        recommendation="Apply 1-2 tonnes/ha agricultural lime. Test pH again after 3 months",
-        recommendation_az="1-2 ton/ha kənd təsərrüfatı əhəngi tətbiq edin. 3 aydan sonra pH-ı yenidən test edin",
-        confidence_weight=0.90,
-        validator=lambda ctx: ctx.get("soil_ph", 7.0) < 5.5
-    ),
-    AgronomyRule(
-        rule_id="AZ-SOIL-002",
-        name="Alkaline Soil Correction",
-        name_az="Qələvi torpağın düzəldilməsi",
-        category=AgronomyCategory.SOIL_MANAGEMENT,
-        condition_description="Apply sulfur when soil pH exceeds 7.5",
-        condition_description_az="Torpaq pH-ı 7.5-dən yuxarı olduqda kükürd tətbiq edin",
-        recommendation="Apply 100-200 kg/ha elemental sulfur or gypsum",
-        recommendation_az="100-200 kq/ha elementar kükürd və ya gips tətbiq edin",
-        confidence_weight=0.88,
-        validator=lambda ctx: ctx.get("soil_ph", 7.0) > 7.5
-    ),
-]
+# =============================================================================
+# RULEBOOK - Imported from unified rules_registry.py
+# =============================================================================
+# The AGRONOMY_RULEBOOK alias is kept for backward compatibility
+AGRONOMY_RULEBOOK = AGRONOMY_RULES
 
 
 class RulebookValidator:
@@ -492,54 +189,19 @@ class AgronomyRAGEngine:
     Retrieval-Augmented Generation Engine for Agricultural Recommendations.
     
     Flow:
-    1. Intent Detection: Parse user query (Azerbaijani → intent)
+    1. Intent Detection: Parse user query (Azerbaijani → intent) via IntentMatcher
     2. Knowledge Retrieval: Find relevant knowledge chunks
-    3. Rule Evaluation: Check deterministic rules
+    3. Rule Evaluation: Check deterministic rules from RulesRegistry
     4. LLM Generation: Generate natural language recommendation
     5. Validation: Cross-reference against rulebook (>90% accuracy)
     """
-    
-    # Azerbaijani intent patterns
-    INTENT_PATTERNS = {
-        "irrigation": [
-            r"suvar", r"su ver", r"nəmlik", r"quru", r"su lazım",
-            r"water", r"irrigat", r"moisture", r"dry"
-        ],
-        "fertilization": [
-            r"gübrə", r"azot", r"fosfor", r"kalium", r"qidalandır",
-            r"fertiliz", r"nitrogen", r"nutrient"
-        ],
-        "pest_control": [
-            r"zərərverici", r"həşərat", r"böcək", r"mənənə", r"gənə",
-            r"pest", r"insect", r"bug", r"aphid"
-        ],
-        "disease": [
-            r"xəstəlik", r"göbələk", r"virus", r"pas", r"ləkə",
-            r"disease", r"fung", r"blight", r"rot"
-        ],
-        "harvest": [
-            r"yığ", r"məhsul", r"biç", r"topla",
-            r"harvest", r"collect", r"reap"
-        ],
-        "weather": [
-            r"hava", r"temperatur", r"yağış", r"isti", r"soyuq",
-            r"weather", r"rain", r"temperature", r"hot", r"cold"
-        ],
-        "livestock": [
-            r"heyvan", r"mal-qara", r"qoyun", r"inək", r"toyuq",
-            r"livestock", r"cattle", r"sheep", r"animal"
-        ],
-        "soil": [
-            r"torpaq", r"pH", r"analiz", r"mineral",
-            r"soil", r"earth", r"ground"
-        ],
-    }
     
     def __init__(
         self,
         llm=None,
         model_name: str = "qwen2.5:7b",
-        validator: Optional[RulebookValidator] = None
+        validator: Optional[RulebookValidator] = None,
+        intent_matcher: Optional[IntentMatcher] = None
     ):
         """
         Initialize the RAG Engine.
@@ -548,10 +210,12 @@ class AgronomyRAGEngine:
             llm: Optional pre-configured LLM (langchain compatible)
             model_name: Model name for local inference
             validator: Rulebook validator instance
+            intent_matcher: Intent matcher instance (uses centralized matcher by default)
         """
         self.llm = llm
         self.model_name = model_name
         self.validator = validator or RulebookValidator()
+        self.intent_matcher = intent_matcher or get_intent_matcher()
         self._knowledge_base = self._build_knowledge_base()
     
     def _build_knowledge_base(self) -> list[KnowledgeChunk]:
@@ -582,25 +246,13 @@ class AgronomyRAGEngine:
         """
         Detect user intent from Azerbaijani/English query.
         
+        Delegates to the centralized IntentMatcher for consistent intent
+        detection across all modules.
+        
         Returns:
             Tuple of (intent_category, confidence_score)
         """
-        query_lower = query.lower()
-        
-        intent_scores = {}
-        for intent, patterns in self.INTENT_PATTERNS.items():
-            score = 0
-            for pattern in patterns:
-                if re.search(pattern, query_lower):
-                    score += 1
-            if score > 0:
-                intent_scores[intent] = score / len(patterns)
-        
-        if not intent_scores:
-            return "general", 0.3
-        
-        best_intent = max(intent_scores.keys(), key=lambda k: intent_scores[k])
-        return best_intent, min(1.0, intent_scores[best_intent] * 2)
+        return self.intent_matcher.detect_intent(query)
     
     def retrieve_knowledge(
         self,

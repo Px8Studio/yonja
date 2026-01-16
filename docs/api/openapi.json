@@ -1,0 +1,443 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Yonca AI API",
+        "description": "AI-driven daily farm planning assistant for Yonca platform",
+        "version": "0.1.0",
+        "contact": {
+            "name": "Digital Umbrella",
+            "email": "dev@digitalumbrella.az"
+        }
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8000",
+            "description": "Development server"
+        }
+    ],
+    "paths": {
+        "/api/v1/farms": {
+            "get": {
+                "summary": "List all farms",
+                "operationId": "listFarms",
+                "tags": ["Farms"],
+                "responses": {
+                    "200": {
+                        "description": "List of farm profiles",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/FarmProfile"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/farms/{farmId}": {
+            "get": {
+                "summary": "Get farm by ID",
+                "operationId": "getFarm",
+                "tags": ["Farms"],
+                "parameters": [
+                    {
+                        "name": "farmId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Farm profile",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FarmProfile"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Farm not found"
+                    }
+                }
+            }
+        },
+        "/api/v1/recommendations": {
+            "post": {
+                "summary": "Get AI recommendations",
+                "operationId": "getRecommendations",
+                "tags": ["Recommendations"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RecommendationRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "AI recommendations",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RecommendationResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/farms/{farmId}/schedule": {
+            "get": {
+                "summary": "Get daily schedule",
+                "operationId": "getDailySchedule",
+                "tags": ["Schedule"],
+                "parameters": [
+                    {
+                        "name": "farmId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Daily schedule",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DailySchedule"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/chatbot/message": {
+            "post": {
+                "summary": "Send chat message",
+                "operationId": "sendChatMessage",
+                "tags": ["Chatbot"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChatMessage"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Chat response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ChatResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/alerts/today": {
+            "get": {
+                "summary": "Get today's alerts",
+                "operationId": "getTodayAlerts",
+                "tags": ["Alerts"],
+                "parameters": [
+                    {
+                        "name": "farmId",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of alerts",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Alert"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/weather/{region}": {
+            "get": {
+                "summary": "Get weather forecast",
+                "operationId": "getWeatherForecast",
+                "tags": ["Weather"],
+                "parameters": [
+                    {
+                        "name": "region",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "days",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 7,
+                            "minimum": 1,
+                            "maximum": 14
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Weather forecast",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/WeatherData"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "FarmType": {
+                "type": "string",
+                "enum": ["wheat", "livestock", "orchard", "vegetable", "mixed"]
+            },
+            "TaskPriority": {
+                "type": "string",
+                "enum": ["critical", "high", "medium", "low"]
+            },
+            "AlertSeverity": {
+                "type": "string",
+                "enum": ["critical", "warning", "info"]
+            },
+            "Location": {
+                "type": "object",
+                "properties": {
+                    "region": {"type": "string"},
+                    "latitude": {"type": "number"},
+                    "longitude": {"type": "number"},
+                    "altitude_meters": {"type": "integer"}
+                }
+            },
+            "WeatherData": {
+                "type": "object",
+                "properties": {
+                    "date": {"type": "string", "format": "date"},
+                    "condition": {"type": "string"},
+                    "temperature_min": {"type": "number"},
+                    "temperature_max": {"type": "number"},
+                    "humidity_percent": {"type": "integer"},
+                    "precipitation_mm": {"type": "number"},
+                    "wind_speed_kmh": {"type": "number"},
+                    "uv_index": {"type": "integer"}
+                }
+            },
+            "SoilData": {
+                "type": "object",
+                "properties": {
+                    "soil_type": {"type": "string"},
+                    "ph_level": {"type": "number"},
+                    "moisture_percent": {"type": "integer"},
+                    "nitrogen_level": {"type": "number"},
+                    "phosphorus_level": {"type": "number"},
+                    "potassium_level": {"type": "number"}
+                }
+            },
+            "CropInfo": {
+                "type": "object",
+                "properties": {
+                    "crop_type": {"type": "string"},
+                    "variety": {"type": "string"},
+                    "planting_date": {"type": "string", "format": "date"},
+                    "expected_harvest_date": {"type": "string", "format": "date"},
+                    "current_stage": {"type": "string"},
+                    "area_hectares": {"type": "number"}
+                }
+            },
+            "LivestockInfo": {
+                "type": "object",
+                "properties": {
+                    "livestock_type": {"type": "string"},
+                    "count": {"type": "integer"},
+                    "average_age_months": {"type": "integer"},
+                    "health_status": {"type": "string"},
+                    "last_vaccination_date": {"type": "string", "format": "date"}
+                }
+            },
+            "FarmProfile": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "name": {"type": "string"},
+                    "farm_type": {"$ref": "#/components/schemas/FarmType"},
+                    "location": {"$ref": "#/components/schemas/Location"},
+                    "total_area_hectares": {"type": "number"},
+                    "crops": {
+                        "type": "array",
+                        "items": {"$ref": "#/components/schemas/CropInfo"}
+                    },
+                    "livestock": {
+                        "type": "array",
+                        "items": {"$ref": "#/components/schemas/LivestockInfo"}
+                    },
+                    "soil_data": {"$ref": "#/components/schemas/SoilData"},
+                    "irrigation_system": {"type": "string"}
+                }
+            },
+            "Task": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "title": {"type": "string"},
+                    "title_az": {"type": "string"},
+                    "description": {"type": "string"},
+                    "description_az": {"type": "string"},
+                    "priority": {"$ref": "#/components/schemas/TaskPriority"},
+                    "status": {"type": "string"},
+                    "due_date": {"type": "string", "format": "date"},
+                    "estimated_duration_minutes": {"type": "integer"},
+                    "category": {"type": "string"}
+                }
+            },
+            "Alert": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "type": {"type": "string"},
+                    "severity": {"$ref": "#/components/schemas/AlertSeverity"},
+                    "title": {"type": "string"},
+                    "title_az": {"type": "string"},
+                    "message": {"type": "string"},
+                    "message_az": {"type": "string"},
+                    "action_required": {"type": "boolean"}
+                }
+            },
+            "Recommendation": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "farm_id": {"type": "string"},
+                    "type": {"type": "string"},
+                    "confidence": {"type": "number"},
+                    "title": {"type": "string"},
+                    "title_az": {"type": "string"},
+                    "description": {"type": "string"},
+                    "description_az": {"type": "string"},
+                    "rationale": {"type": "string"},
+                    "rationale_az": {"type": "string"},
+                    "priority": {"$ref": "#/components/schemas/TaskPriority"},
+                    "suggested_date": {"type": "string", "format": "date"}
+                }
+            },
+            "DailySchedule": {
+                "type": "object",
+                "properties": {
+                    "farm_id": {"type": "string"},
+                    "date": {"type": "string", "format": "date"},
+                    "tasks": {
+                        "type": "array",
+                        "items": {"$ref": "#/components/schemas/Task"}
+                    },
+                    "alerts": {
+                        "type": "array",
+                        "items": {"$ref": "#/components/schemas/Alert"}
+                    },
+                    "weather_forecast": {"$ref": "#/components/schemas/WeatherData"}
+                }
+            },
+            "RecommendationRequest": {
+                "type": "object",
+                "required": ["farm_id"],
+                "properties": {
+                    "farm_id": {"type": "string"},
+                    "date": {"type": "string", "format": "date"},
+                    "categories": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "max_results": {"type": "integer", "default": 10}
+                }
+            },
+            "RecommendationResponse": {
+                "type": "object",
+                "properties": {
+                    "farm_id": {"type": "string"},
+                    "recommendations": {
+                        "type": "array",
+                        "items": {"$ref": "#/components/schemas/Recommendation"}
+                    },
+                    "daily_schedule": {"$ref": "#/components/schemas/DailySchedule"},
+                    "generated_at": {"type": "string", "format": "date-time"}
+                }
+            },
+            "ChatMessage": {
+                "type": "object",
+                "required": ["message"],
+                "properties": {
+                    "message": {"type": "string"},
+                    "farm_id": {"type": "string"},
+                    "language": {"type": "string", "default": "az"}
+                }
+            },
+            "ChatResponse": {
+                "type": "object",
+                "properties": {
+                    "message": {"type": "string"},
+                    "intent": {"type": "string"},
+                    "confidence": {"type": "number"},
+                    "suggestions": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "related_tasks": {
+                        "type": "array",
+                        "items": {"$ref": "#/components/schemas/Task"}
+                    }
+                }
+            }
+        }
+    }
+}

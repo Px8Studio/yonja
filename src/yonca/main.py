@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from yonca.config import settings
 from yonca.api.routes import router as api_router
 from yonca.api.graphql import graphql_app
+from yonca.sidecar.api_routes import router as sidecar_router
 
 
 @asynccontextmanager
@@ -15,6 +16,7 @@ async def lifespan(app: FastAPI):
     """Application lifespan handler."""
     # Startup
     print(f"🌿 Starting {settings.app_name} v{settings.app_version}")
+    print(f"🔐 Sidecar Intelligence module loaded (PII Gateway active)")
     yield
     # Shutdown
     print(f"🌿 Shutting down {settings.app_name}")
@@ -40,6 +42,9 @@ app.add_middleware(
 
 # Include REST API routes
 app.include_router(api_router, prefix=settings.api_prefix)
+
+# Include Sidecar Intelligence routes
+app.include_router(sidecar_router, prefix=settings.api_prefix)
 
 # Include GraphQL endpoint
 app.include_router(graphql_app, prefix="/graphql")

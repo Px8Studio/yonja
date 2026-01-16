@@ -1,0 +1,777 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Yonca AI - Sidecar Intelligence API",
+    "description": "High-Security AgTech API for Sovereign AI-driven farm recommendations.\n\n## Architecture\n\nThe Sidecar Intelligence module provides:\n- **PII Gateway**: Zero-trust data sanitization\n- **RAG Engine**: Retrieval-Augmented Generation with Qwen2.5-7B\n- **Rulebook Validation**: Deterministic accuracy assurance (>90%)\n- **Lite-Inference**: Edge-optimized GGUF quantization\n\n## Security\n\n- All farmer PII is stripped before AI processing\n- SHA-256 hashing for audit compliance (no original storage)\n- 100% synthetic data pipeline (ready for real data hot-swap)\n\n## Inference Modes\n\n| Mode | Description | Requirements |\n|------|-------------|-------------|\n| `standard` | Full Qwen2.5-7B via Ollama | Network + Ollama |\n| `lite` | Quantized GGUF (Q4_K_M) | GGUF file (~4.5GB) |\n| `offline` | Pure rule-based | None |",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Digital Umbrella",
+      "email": "dev@digitalumbrella.az"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "/api/v1",
+      "description": "Yonca API v1"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Sidecar Intelligence",
+      "description": "AI-powered recommendation endpoints with PII protection"
+    },
+    {
+      "name": "Rulebook",
+      "description": "Azerbaijani Agronomy Rulebook access"
+    },
+    {
+      "name": "Monitoring",
+      "description": "Service health and audit endpoints"
+    }
+  ],
+  "paths": {
+    "/sidecar/recommendations": {
+      "post": {
+        "tags": ["Sidecar Intelligence"],
+        "summary": "Get AI-powered farm recommendations",
+        "description": "Process a recommendation request through the Sidecar Intelligence pipeline:\n1. PII Gateway sanitization\n2. RAG Engine processing\n3. Rulebook validation (>90% accuracy target)\n4. Response personalization",
+        "operationId": "getRecommendations",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecommendationRequest"
+              },
+              "examples": {
+                "irrigation_query": {
+                  "summary": "Irrigation advice request",
+                  "value": {
+                    "farm_id": "farm-12345",
+                    "region": "Aran",
+                    "farm_type": "wheat",
+                    "crops": ["buğda", "arpa"],
+                    "area_hectares": 50,
+                    "soil_moisture_percent": 25,
+                    "temperature_max": 35,
+                    "precipitation_expected": false,
+                    "query": "Nə vaxt suvarmaq lazımdır?",
+                    "language": "az"
+                  }
+                },
+                "fertilization_query": {
+                  "summary": "Fertilization advice request",
+                  "value": {
+                    "farm_id": "farm-67890",
+                    "region": "Şəki-Zaqatala",
+                    "farm_type": "orchard",
+                    "crops": ["alma", "armud"],
+                    "area_hectares": 15,
+                    "nitrogen_level": 20,
+                    "phosphorus_level": 15,
+                    "query": "Hansı gübrə lazımdır?",
+                    "language": "az"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful recommendation response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecommendationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sidecar/status": {
+      "get": {
+        "tags": ["Monitoring"],
+        "summary": "Get service status",
+        "description": "Returns current status of the Sidecar Intelligence service including inference mode, PII gateway statistics, and rulebook coverage.",
+        "operationId": "getStatus",
+        "responses": {
+          "200": {
+            "description": "Service status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sidecar/capabilities": {
+      "get": {
+        "tags": ["Monitoring"],
+        "summary": "Get inference capabilities",
+        "description": "Returns current inference capabilities including mode, LLM availability, and estimated latency.",
+        "operationId": "getCapabilities",
+        "responses": {
+          "200": {
+            "description": "Inference capabilities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InferenceCapability"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sidecar/models": {
+      "get": {
+        "tags": ["Monitoring"],
+        "summary": "Get model information",
+        "description": "Returns information about available models including GGUF configurations.",
+        "operationId": "getModels",
+        "responses": {
+          "200": {
+            "description": "Model information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sidecar/mode/{mode}": {
+      "post": {
+        "tags": ["Sidecar Intelligence"],
+        "summary": "Switch inference mode",
+        "description": "Switch between inference modes: standard (full LLM), lite (GGUF), offline (rules only), or auto (automatic selection).",
+        "operationId": "setInferenceMode",
+        "parameters": [
+          {
+            "name": "mode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["standard", "lite", "offline", "auto"]
+            },
+            "description": "Target inference mode"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mode switched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "capability": {
+                      "$ref": "#/components/schemas/InferenceCapability"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid mode",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sidecar/rulebook": {
+      "get": {
+        "tags": ["Rulebook"],
+        "summary": "Get agronomy rulebook",
+        "description": "Returns the Azerbaijani Agronomy Rulebook used for LLM output validation.",
+        "operationId": "getRulebook",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["irrigation", "fertilization", "pest_control", "disease_management", "harvest", "livestock", "soil_management"]
+            },
+            "description": "Filter by category"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rulebook rules",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RulebookResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sidecar/rulebook/categories": {
+      "get": {
+        "tags": ["Rulebook"],
+        "summary": "Get rulebook categories",
+        "description": "Returns available rulebook categories with rule counts.",
+        "operationId": "getRulebookCategories",
+        "responses": {
+          "200": {
+            "description": "Category list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sidecar/audit": {
+      "get": {
+        "tags": ["Monitoring"],
+        "summary": "Get PII audit summary",
+        "description": "Returns PII Gateway audit summary. Note: Original PII is never stored - only SHA-256 hashes for compliance.",
+        "operationId": "getAuditSummary",
+        "responses": {
+          "200": {
+            "description": "Audit summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sidecar/health": {
+      "get": {
+        "tags": ["Monitoring"],
+        "summary": "Health check",
+        "description": "Simple health check endpoint.",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "Service healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "healthy"
+                    },
+                    "service": {
+                      "type": "string",
+                      "example": "yonca-sidecar-intelligence"
+                    },
+                    "version": {
+                      "type": "string",
+                      "example": "1.0.0"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RecommendationRequest": {
+        "type": "object",
+        "required": ["farm_id", "region", "farm_type", "area_hectares"],
+        "properties": {
+          "farm_id": {
+            "type": "string",
+            "description": "Farm identifier (will be anonymized by PII Gateway)"
+          },
+          "farmer_id": {
+            "type": "string",
+            "nullable": true,
+            "description": "Farmer identifier (optional, will be anonymized)"
+          },
+          "farmer_name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Farmer name for response personalization"
+          },
+          "region": {
+            "type": "string",
+            "description": "Farm region in Azerbaijan",
+            "enum": ["Aran", "Şəki-Zaqatala", "Lənkəran", "Abşeron", "Gəncə-Qazax", "Mil-Muğan", "Şirvan", "Quba-Xaçmaz"]
+          },
+          "farm_type": {
+            "type": "string",
+            "description": "Type of farm",
+            "enum": ["wheat", "vegetable", "orchard", "livestock", "mixed"]
+          },
+          "crops": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of crops grown"
+          },
+          "livestock_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Types of livestock"
+          },
+          "area_hectares": {
+            "type": "number",
+            "minimum": 0.1,
+            "description": "Farm area in hectares"
+          },
+          "soil_type": {
+            "type": "string",
+            "nullable": true,
+            "enum": ["clay", "sandy", "loamy", "silty", "peaty", "chalky"]
+          },
+          "soil_moisture_percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "nullable": true
+          },
+          "soil_ph": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 14,
+            "nullable": true
+          },
+          "nitrogen_level": {
+            "type": "number",
+            "minimum": 0,
+            "nullable": true,
+            "description": "Nitrogen level in kg/ha"
+          },
+          "phosphorus_level": {
+            "type": "number",
+            "minimum": 0,
+            "nullable": true,
+            "description": "Phosphorus level in kg/ha"
+          },
+          "potassium_level": {
+            "type": "number",
+            "minimum": 0,
+            "nullable": true,
+            "description": "Potassium level in kg/ha"
+          },
+          "temperature_min": {
+            "type": "number",
+            "nullable": true,
+            "description": "Minimum temperature in °C"
+          },
+          "temperature_max": {
+            "type": "number",
+            "nullable": true,
+            "description": "Maximum temperature in °C"
+          },
+          "precipitation_expected": {
+            "type": "boolean",
+            "default": false
+          },
+          "humidity_percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "nullable": true
+          },
+          "query": {
+            "type": "string",
+            "description": "User question in Azerbaijani or English"
+          },
+          "language": {
+            "type": "string",
+            "default": "az",
+            "enum": ["az", "en", "ru"]
+          },
+          "max_recommendations": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "default": 5
+          },
+          "include_rulebook_refs": {
+            "type": "boolean",
+            "default": true
+          },
+          "inference_mode": {
+            "type": "string",
+            "nullable": true,
+            "enum": ["standard", "lite", "offline"]
+          }
+        }
+      },
+      "RecommendationResponse": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string"
+          },
+          "farm_id": {
+            "type": "string"
+          },
+          "recommendations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecommendationItem"
+            }
+          },
+          "overall_confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "accuracy_score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Rulebook validation score (target >0.9)"
+          },
+          "validation_notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "inference_mode": {
+            "type": "string",
+            "enum": ["standard", "lite", "offline", "rules_only"]
+          },
+          "model_version": {
+            "type": "string"
+          },
+          "processing_time_ms": {
+            "type": "integer"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "valid_until": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "RecommendationItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["irrigation", "fertilization", "pest_control", "disease_management", "harvest", "livestock", "soil_management", "general"]
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low"]
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "title_az": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "description_az": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": ["llm", "rulebook", "hybrid"]
+          },
+          "rule_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "suggested_time": {
+            "type": "string",
+            "nullable": true
+          },
+          "estimated_duration_minutes": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "ServiceStatus": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["operational", "degraded", "offline"]
+          },
+          "inference": {
+            "type": "object",
+            "properties": {
+              "current_mode": {
+                "type": "string"
+              },
+              "has_llm": {
+                "type": "boolean"
+              },
+              "has_network": {
+                "type": "boolean"
+              },
+              "estimated_latency_ms": {
+                "type": "integer"
+              }
+            }
+          },
+          "security": {
+            "type": "object",
+            "properties": {
+              "pii_gateway": {
+                "type": "string"
+              },
+              "total_requests_processed": {
+                "type": "integer"
+              },
+              "pii_fields_stripped": {
+                "type": "integer"
+              }
+            }
+          },
+          "accuracy": {
+            "type": "object",
+            "properties": {
+              "rulebook_rules": {
+                "type": "integer"
+              },
+              "target_accuracy": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "InferenceCapability": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": ["standard", "lite", "offline", "auto"]
+          },
+          "has_llm": {
+            "type": "boolean"
+          },
+          "has_network": {
+            "type": "boolean"
+          },
+          "memory_mb": {
+            "type": "integer"
+          },
+          "supports_multilingual": {
+            "type": "boolean"
+          },
+          "supports_rag": {
+            "type": "boolean"
+          },
+          "estimated_latency_ms": {
+            "type": "integer"
+          }
+        }
+      },
+      "ModelInfo": {
+        "type": "object",
+        "properties": {
+          "current_mode": {
+            "type": "string"
+          },
+          "gguf_config": {
+            "type": "object",
+            "properties": {
+              "model_name": {
+                "type": "string"
+              },
+              "quantization": {
+                "type": "string"
+              },
+              "context_length": {
+                "type": "integer"
+              },
+              "memory_mb": {
+                "type": "integer"
+              },
+              "is_available": {
+                "type": "boolean"
+              }
+            }
+          },
+          "ollama_url": {
+            "type": "string"
+          },
+          "capability": {
+            "$ref": "#/components/schemas/InferenceCapability"
+          }
+        }
+      },
+      "RulebookResponse": {
+        "type": "object",
+        "properties": {
+          "total_rules": {
+            "type": "integer"
+          },
+          "category_filter": {
+            "type": "string",
+            "nullable": true
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgronomyRule"
+            }
+          }
+        }
+      },
+      "AgronomyRule": {
+        "type": "object",
+        "properties": {
+          "rule_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "name_az": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "description_az": {
+            "type": "string"
+          },
+          "recommendation": {
+            "type": "string"
+          },
+          "recommendation_az": {
+            "type": "string"
+          },
+          "confidence_weight": {
+            "type": "number"
+          }
+        }
+      },
+      "AuditSummary": {
+        "type": "object",
+        "properties": {
+          "total_requests": {
+            "type": "integer"
+          },
+          "total_pii_fields_stripped": {
+            "type": "integer"
+          },
+          "pii_types_detected": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          },
+          "last_processed": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

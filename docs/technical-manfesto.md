@@ -1,8 +1,21 @@
-ok i love what i see #codebase 
+# Yonca AI - Technical Manifesto
 
-but i wonder have we overcreated files the same functionality elsehwere... looking at the whole codebase what is your analysis and critical review of stale code, duplciation of effort and confusion, what do weo do, do we consolidate any relevant rich code with the existing streamlit app?
+> **The North Star:** Build a **Headless AI Sidecar** that delivers personalized, rule-validated farm recommendations to Azerbaijani farmers—without ever touching real data.
 
-but remember 
+---
+
+## 🎯 Ultimate Goal
+
+**Create a production-ready AI farm planning assistant** that:
+1. **Runs 100% offline** on edge devices (farmer's phone or local server)
+2. **Speaks native Azerbaijani** with dialect support  
+3. **Uses deterministic agronomy rules** to override LLM hallucinations (≥90% logical accuracy)
+4. **Protects farmer data** via PII gateway (zero real data in AI pipeline)
+5. **Plugs into Yonca platform** without touching existing EKTIS/subsidy systems
+
+**Success = Farmers get trustworthy daily task lists based on weather, soil, and crop data.**
+
+---
 
 This document serves as the formal **Technical Manifesto** and **Architectural Blueprint** for the Yonca AI Prototype. It outlines our strategic choices, design standards, and the "Logic-First" methodology required to deliver a high-accuracy, integratable AI engine for Digital Umbrella.
 
@@ -46,32 +59,30 @@ The UI is designed to be **Invisible yet Informative**. We follow the "Contextua
 
 ---
 
-## 4. Master Prompt: Claude 4.5 Implementation Directive
+## 4. Codebase Architecture (Current State)
 
-*The following block is the "Source Truth" to be used in your LLM dev environment (Claude/Copilot) to generate the actual codebase.*
+The codebase follows a **clean sidecar architecture**:
 
-> **[PROMPT START]**
-> **CONTEXT:** Developing an AI Prototype for "Yonca," a digital agri-platform.
-> **TASK:** Implement a Streamlit-based "Personalized Farm Assistant" utilizing 100% synthetic data.
-> **CORE MODULES REQUIRED:**
-> 1. **`ScenarioEngine`**: A Python class containing 5 JSON-based synthetic profiles (Wheat, Livestock, Orchard, Mixed, Poultry).
-> 2. **`AgronomyGuard`**: A rule-based logic validator. If AI suggests irrigation during a rain event (synthetic data), the Guard overrides it.
-> 3. **`InferenceSim`**: A mock function simulating Qwen2.5-7B responses in Azerbaijani.
-> 4. **`MobileUI`**: A Streamlit frontend with:
-> * Custom CSS for a centered 400px mobile shell.
-> * Green/White Yonca-branded "Advisory Cards."
-> * Azerbaijani intent-based chat input.
-> 
-> 
-> 
-> 
-> **DESIGN SPEC:** > - No Streamlit sidebars.
-> * Use "WhatsApp-style" chat bubbles for interaction.
-> * Display "Logical Accuracy" scores for every recommendation.
-> 
-> 
-> **LANGUAGE:** All user-facing text must be in **natural Azerbaijani**. Code comments in English.
-> **[PROMPT END]**
+```
+src/yonca/
+├── sidecar/              # 🎯 CORE: Headless Intelligence Engine
+│   ├── rules_registry    # Single source of truth: agronomy rules (AZ- prefixes)
+│   ├── intent_matcher    # Azerbaijani intent detection (unified patterns)
+│   ├── recommendation_service  # Main orchestrator
+│   ├── schedule_service  # Daily task generation
+│   ├── pii_gateway       # Zero-trust data sanitization
+│   ├── rag_engine        # Rule validation + LLM
+│   ├── lite_inference    # Edge/offline inference modes
+│   ├── trust             # Confidence scoring with citations
+│   └── digital_twin      # Simulation engine
+├── api/                  # REST + GraphQL endpoints
+├── agent/                # LangGraph tools (optional advanced mode)
+├── data/                 # Synthetic scenarios + generators
+├── models/               # Canonical Pydantic models
+└── umbrella/             # Streamlit demo UI
+```
+
+**Key Principle:** Everything flows through `sidecar/` — the UI and API are thin consumers.
 
 ---
 

@@ -1,103 +1,53 @@
 # 🧹 Yonca AI - Codebase Cleanup Guide
 
-> **ZekaLab** - Headless Intelligence as a Service
-> 
-> This document identifies stale, duplicate, and consolidation-ready files in the codebase.
+> **Status:** ✅ CLEANUP COMPLETE  
+> The codebase is now consolidated around the **Sidecar Intelligence Architecture**.
 
 ---
 
 ## 📋 Summary
 
-The codebase has evolved with two parallel implementations:
-1. **Original "core" implementation** - older, partially deprecated
-2. **Sidecar architecture** - canonical, headless API design
-
-This guide helps you safely remove redundant code and consolidate to the Sidecar model.
-
----
-
-## 🗑️ FILES TO DELETE
-
-### Immediate Deletion (Safe)
-
-| File | Status | Reason |
-|------|--------|--------|
-| `src/yonca/core/rules.py` | ✅ **DELETED** | Consolidated into `sidecar/rules_registry.py`. |
-| `src/yonca/core/engine.py` | ✅ **DELETED** | Migrated to `sidecar/schedule_service.py`. |
-| `src/yonca/core/__init__.py` | ✅ **DELETED** | Entire `core/` folder removed. |
-
-### Delete After Migration
-
-| File | Status | Migration Target | Notes |
-|------|--------|------------------|-------|
-| `src/yonca/umbrella/mock_backend.py` | 🟡 **DUPLICATE** | `sidecar/recommendation_service.py` | Has 781 lines of mock backend that duplicates sidecar logic. Refactor `umbrella/app.py` to consume sidecar APIs instead. |
-| `src/yonca/umbrella/scenario_manager.py` | 🟡 **DUPLICATE** | `data/scenarios.py` | Duplicates farm scenario data with different dataclass. |
-| `src/yonca/umbrella/agronomy_rules.py` | 🟡 **DUPLICATE** | `sidecar/rules_registry.py` | Separate rules definitions with different rule IDs. |
+The codebase has been streamlined:
+- ✅ **Removed:** Old `core/` folder (rules.py, engine.py)
+- ✅ **Consolidated:** All logic lives in `sidecar/`
+- ✅ **Unified:** Single `rules_registry.py` (source of truth for agronomy rules)
+- ✅ **Unified:** Single `intent_matcher.py` (source of truth for Azerbaijani NLU)
 
 ---
 
-## ⚠️ FILES NEEDING REVIEW
+## ✅ Current Architecture (Clean)
 
-### Uncertain Status
-
-| File | Issue | Action Required |
-|------|-------|-----------------|
-| `src/yonca/api/graphql.py` | May be unused | Verify if GraphQL is actively consumed by any frontend |
-| `src/yonca/agent/tools.py` | LangGraph integration | Verify integration plan with sidecar architecture |
-
----
-
-## ✅ FILES TO KEEP (Canonical)
-
-### Sidecar Intelligence Engine (Core)
-- ✅ `src/yonca/sidecar/pii_gateway.py` - Zero-trust data sanitization
-- ✅ `src/yonca/sidecar/rag_engine.py` - RAG with agronomy rulebook
-- ✅ `src/yonca/sidecar/rules_registry.py` - Unified agronomy rules (AZ- prefixes)
-- ✅ `src/yonca/sidecar/intent_matcher.py` - Consolidated intent detection
-- ✅ `src/yonca/sidecar/lite_inference.py` - Edge-optimized inference
-- ✅ `src/yonca/sidecar/trust.py` - Confidence scoring
-- ✅ `src/yonca/sidecar/digital_twin.py` - Simulation engine
-- ✅ `src/yonca/sidecar/dialect.py` - Regional Azerbaijani normalization
-- ✅ `src/yonca/sidecar/temporal.py` - Farm timeline memory
-- ✅ `src/yonca/sidecar/validation.py` - Input validation
-- ✅ `src/yonca/sidecar/data_adapter.py` - Data transformation
-- ✅ `src/yonca/sidecar/recommendation_service.py` - Recommendation generation
-- ✅ `src/yonca/sidecar/schedule_service.py` - **NEW** Daily schedule & alerts (migrated from core/engine.py)
-- ✅ `src/yonca/sidecar/api_routes.py` - Sidecar REST API
-
-### Data Layer
-- ✅ `src/yonca/data/scenarios.py` - Canonical farm scenarios
-- ✅ `src/yonca/data/generators.py` - Synthetic data generators
-- ✅ `src/yonca/models/__init__.py` - Canonical Pydantic models
-
-### API Layer
-- ✅ `src/yonca/api/routes.py` - REST API endpoints
-- ✅ `src/yonca/main.py` - FastAPI entry point
-
-### UI Layer (Keep but Refactor)
-- ✅ `src/yonca/umbrella/app.py` - Streamlit UI (refactor to consume sidecar)
-- ✅ `src/yonca/umbrella/styles.py` - Pure CSS styling (no duplication)
-
----
-
-## 🔄 CONSOLIDATION ROADMAP
-
-### Phase 1: Immediate Cleanup
-```bash
-# Safe to delete now
-rm src/yonca/core/rules.py
+```
+src/yonca/
+├── sidecar/              # 🎯 CORE: All intelligence logic here
+│   ├── rules_registry.py     # 20+ agronomy rules (AZ- prefixes)
+│   ├── intent_matcher.py     # Azerbaijani intent detection
+│   ├── schedule_service.py   # Daily task generation
+│   ├── recommendation_service.py  # Main orchestrator
+│   ├── lite_inference.py     # standard/lite/offline modes
+│   ├── pii_gateway.py        # Data sanitization
+│   ├── rag_engine.py         # Rule validation + LLM
+│   ├── trust.py              # Confidence scoring
+│   ├── digital_twin.py       # Simulation (optional)
+│   ├── dialect.py            # Regional Azerbaijani
+│   ├── temporal.py           # Farm timeline
+│   └── validation.py         # Expert validation hooks
+├── api/                  # REST + GraphQL (thin layer)
+├── agent/                # LangGraph tools (optional advanced)
+├── data/                 # Synthetic scenarios + generators
+├── models/               # Pydantic models
+└── umbrella/             # Streamlit demo UI
 ```
 
-### Phase 3: Evaluate Core Module ✅ COMPLETED
-1. ✅ Audited `core/engine.py` for unique logic not in sidecar
-2. ✅ Migrated valuable logic to `sidecar/schedule_service.py`:
-   - `ScheduleService` class (daily schedule generation)
-   - `generate_daily_schedule()` convenience function
-   - `_generate_alerts()` (weather-based alert generation)
-   - `TASK_DURATION_ESTIMATES` (task duration mapping)
-3. ✅ Added deprecation warnings to `core/` folder
-   - `core/__init__.py` emits DeprecationWarning on import
-   - `RecommendationEngine` emits DeprecationWarning on instantiation
+---
+
+## 🗑️ What Was Removed
+
+| File | Why Removed |
+|------|-------------|
+| `src/yonca/core/rules.py` | Merged into `sidecar/rules_registry.py` |
+| `src/yonca/core/engine.py` | Merged into `sidecar/schedule_service.py` |
+| `src/yonca/core/__init__.py` | Folder deprecated |
 4. ⏳ Delete `core/` folder after downstream consumers migrate
 
 ### Phase 4: Model Unification

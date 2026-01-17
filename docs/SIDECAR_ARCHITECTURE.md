@@ -1,13 +1,23 @@
-# Yonca AI - Sidecar Intelligence Architecture
+# Yonca AI - Sidecar Architecture (Detailed)
 
-## High-Security AgTech Module for Sovereign AI
+> **Goal:** AI farm assistant that never touches real data, runs offline, and validates every output against agronomy rules.
+
+---
+
+## 🎯 Why "Sidecar"?
+
+Digital Umbrella's Yonca platform handles **legal government data** (subsidy applications, EKTIS integration). We can't access that, so we run as a **sidecar**—a separate AI module that:
+
+1. **Never touches the database** → Uses synthetic farm scenarios only
+2. **Strips all PII** → Farmer names/IDs are hashed before AI processing
+3. **Validates with rules** → Every LLM output checked against agronomy rulebook
+4. **Ready to plug in** → Same API contract, just flip the data source later
 
 ```
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                    SIDECAR INTELLIGENCE ARCHITECTURE                         ║
-║                         Yonca Platform v2.0                                  ║
+║  YONCA PLATFORM (Legal/Financial)     ←── We don't touch this                ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
-║  "100% Synthetic Data Pipeline with Ready-to-Plug National Integration"     ║
+║  🌿 YONCA AI SIDECAR (This Repo)      ←── We provide recommendations only    ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 ```
 

@@ -22,7 +22,23 @@
             "detail": "Start Yonca AI with Ollama health checks"
         },
         {
-            "label": "🔍 Check Yonca AI Status",
+            "label": "🌿Start Yonca Demo UI",
+            "type": "shell",
+            "command": "${workspaceFolder}/.venv/Scripts/streamlit.exe",
+            "args": ["run", "src/yonca/umbrella/app.py", "--server.port", "8501"],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Start Streamlit demo UI (mobile-first farm assistant)"
+        },
+        {
+            "label": "🌿 Check Yonca AI Status",
             "type": "shell",
             "command": "${workspaceFolder}/.venv/Scripts/python.exe",
             "args": ["-m", "yonca.startup", "--check-only"],

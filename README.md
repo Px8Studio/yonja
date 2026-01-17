@@ -1,53 +1,50 @@
-# 🌿 Yonca AI - Headless Intelligence as a Service
+# 🌿 Yonca AI - Farm Planning Assistant
 
-> **Sidecar Intelligence Engine** for the Yonca agricultural platform.
-> High-security, edge-ready AI backend with REST/GraphQL APIs, PII protection, and Azerbaijani language support.
+> **AI-powered daily farm recommendations for Azerbaijani farmers.**  
+> 100% offline-capable. 100% synthetic data. 100% rule-validated.
 
-## 🎯 Overview
+## 🎯 What This Is
 
-Yonca AI is a **Headless Intelligence as a Service** backend—a detached, high-performance AI module that integrates seamlessly with existing platforms via API. Built with a "Logic-First" methodology, it delivers deterministic, rule-validated farm recommendations using 100% synthetic data.
+**Yonca AI** is a **Headless AI Sidecar** that generates personalized farming task lists by combining:
+- **Local LLM** (Qwen2.5-7B via Ollama) for natural language in Azerbaijani
+- **Deterministic Agronomy Rules** to ensure ≥90% logical accuracy
+- **Synthetic Farm Scenarios** so no real farmer data is ever needed
 
-**Key Architecture Principles:**
-- **Sidecar Model**: Standalone AI engine that never touches core platform systems
-- **Data Sovereignty**: 100% synthetic datasets—zero legal/operational friction
-- **Edge-Ready**: Lightweight inference with Qwen2.5-7B for low-connectivity zones
-- **Logic-First**: Deterministic agronomy rulebook overrides LLM hallucinations
+It plugs into Digital Umbrella's Yonca platform without touching their existing EKTIS/subsidy systems.
 
-## ✨ Features
+## ✨ Core Features
 
-- **PII Gateway** - Zero-trust data sanitization layer
-- **RAG Engine** - Retrieval-Augmented Generation with agronomy rulebook
-- **Lite Inference** - Edge-optimized GGUF quantization support
-- **Rules Registry** - Deterministic agronomy rules with AZ- prefixes
-- **Multi-LLM Support** - Google Gemini (cloud) or Qwen2.5 via Ollama (local)
-- **Azerbaijani Language** - Native language support with Turkic dialect normalization
-- **Trust Scores** - Confidence scoring with source citations
-- **Digital Twin** - Simulation engine for scenario planning
-- **REST & GraphQL APIs** - Flexible headless integration options
-- **100% Synthetic Data** - Complete data safety, no real farmer data
+| Feature | Purpose |
+|---------|---------|
+| **Rules Registry** | 20+ agronomy rules with AZ- prefixes (irrigation, fertilization, pest control) |
+| **Intent Matcher** | Understands Azerbaijani farming questions |
+| **Schedule Service** | Generates daily task lists with priorities |
+| **Lite Inference** | 3 modes: `standard` (Ollama), `lite` (GGUF), `offline` (rules-only) |
+| **PII Gateway** | Strips personal data before AI processing |
+| **Trust Scores** | Every recommendation cites its source rule |
 
 ## 🏗️ Architecture
 
 ```
 yonca-ai/
-├── src/
-│   └── yonca/
-│       ├── sidecar/          # 🎯 CORE: Sidecar Intelligence Engine
-│       │   ├── pii_gateway   # Zero-trust data sanitization
-│       │   ├── rag_engine    # Retrieval-augmented generation
-│       │   ├── rules_registry# Deterministic agronomy rules
-│       │   ├── intent_matcher# Azerbaijani intent detection
-│       │   ├── lite_inference# Edge-ready LLM inference
-│       │   ├── trust         # Confidence scoring
-│       │   └── digital_twin  # Farm simulation
-│       ├── api/              # REST & GraphQL endpoints
-│       ├── agent/            # LangGraph AI orchestration
-│       ├── data/             # Synthetic scenarios & generators
-│       ├── models/           # Pydantic data models
-│       └── startup.py        # Startup with Ollama health checks
-├── tests/                    # Test suite
-└── docs/                     # Documentation & API specs
+├── src/yonca/
+│   ├── sidecar/          # 🎯 CORE: Headless Intelligence Engine
+│   │   ├── rules_registry    # Single truth: agronomy rules
+│   │   ├── intent_matcher    # Azerbaijani NLU
+│   │   ├── schedule_service  # Daily task generation
+│   │   ├── recommendation_service  # Main orchestrator
+│   │   ├── lite_inference    # Edge/offline modes
+│   │   ├── pii_gateway       # Data sanitization
+│   │   └── trust             # Confidence scoring
+│   ├── api/              # REST & GraphQL endpoints
+│   ├── data/             # Synthetic scenarios (7 farm types)
+│   ├── models/           # Pydantic data models
+│   └── umbrella/         # Streamlit demo UI
+├── tests/                # Test suite
+└── docs/                 # Documentation
 ```
+
+**Key Principle:** The `sidecar/` is the intelligence engine. Everything else (API, UI) consumes it.
 
 ## 🚀 Quick Start
 
@@ -185,34 +182,44 @@ response = agent.chat("Torpağın pH səviyyəsi nə olmalıdır?")
 
 ## 📡 API Endpoints
 
-### REST API
+### REST API (`/api/v1/`)
 ```
-POST /api/v1/recommendations     # Get AI recommendations
-GET  /api/v1/farm/{id}/schedule  # Get daily schedule
-POST /api/v1/chatbot/message     # Chat with assistant
-GET  /api/v1/alerts/today        # Get today's alerts
+GET  /farms                 → List 7 synthetic farm scenarios
+GET  /farms/{id}            → Get specific farm profile
+POST /recommendations       → Get AI recommendations
+GET  /farms/{id}/schedule   → Get daily task schedule
+POST /chatbot/message       → Chat in Azerbaijani
+GET  /alerts/today          → Get weather/disease alerts
 ```
 
-### GraphQL
-```graphql
-query {
-  farmRecommendations(farmId: "farm-001") {
-    tasks { title priority dueDate }
-    alerts { type severity message }
-  }
-}
+### Sidecar API (`/api/v1/sidecar/`)
 ```
+POST /recommendations       → Full pipeline with PII gateway
+GET  /status                → Service health + inference mode
+POST /mode/{mode}           → Switch: standard/lite/offline
+GET  /rulebook              → View agronomy rules (AZ- prefixes)
+```
+
+---
+
+## 📊 Success Metrics
+
+| Metric | Target | How We Achieve It |
+|--------|--------|-------------------|
+| **Logical Accuracy** | ≥90% | Rules Registry validates every LLM output |
+| **Data Safety** | 100% | PII Gateway + Synthetic data only |
+| **Offline Capability** | Yes | `offline` mode uses rules-only, no network |
+| **Azerbaijani Support** | Native | Intent Matcher with Turkic dialect handling |
+| **Integration Ready** | Yes | Same API contract as Yonca platform |
+
+---
 
 ## 🧪 Testing
 
 ```bash
-pytest tests/ -v --cov=src/yonca
+pytest tests/ -v --tb=short
 ```
 
 ## 📄 License
 
 MIT License - ZekaLab © 2026
-
-## 🤝 Contributing
-
-This is a prototype demonstration. For integration with the Yonca platform, contact ZekaLab.

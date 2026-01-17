@@ -17,7 +17,11 @@ async def lifespan(app: FastAPI):
     # Startup
     print(f"🌿 Yonca AI starting in {settings.deployment_mode.value} mode")
     print(f"🤖 LLM Provider: {settings.llm_provider.value}")
-    print(f"📍 Running on http://{settings.api_host}:{settings.api_port}")
+    
+    # Show localhost for browsing, even if binding to 0.0.0.0
+    display_host = "localhost" if settings.api_host == "0.0.0.0" else settings.api_host
+    print(f"📍 API: http://{display_host}:{settings.api_port}")
+    print(f"📚 Docs: http://{display_host}:{settings.api_port}/docs")
     yield
     # Shutdown
     print("🌿 Yonca AI shutting down")

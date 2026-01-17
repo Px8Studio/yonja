@@ -216,33 +216,58 @@ def get_mobile_container_css() -> str:
 
 
 def get_header_css() -> str:
-    """CSS for app header with Yonca branding."""
+    """CSS for app header with Yonca branding - compact design."""
     return """
     <style>
         .app-header {
             background: linear-gradient(135deg, var(--yonca-primary) 0%, var(--yonca-primary-dark) 100%);
             color: var(--yonca-text-white);
-            padding: 16px;
-            border-radius: 0 0 20px 20px;
-            margin: -1rem -1rem 1rem -1rem;
-            text-align: center;
+            padding: 10px 16px;
+            border-radius: 0 0 16px 16px;
+            margin: 0 -1rem 0.75rem -1rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .header-icon {
+            font-size: 1.75rem;
+            background: rgba(255,255,255,0.15);
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .header-content {
+            flex: 1;
+            min-width: 0;
         }
         
         .app-header h1 {
             margin: 0;
-            font-size: 1.5rem;
+            font-size: 1.1rem;
             font-weight: 600;
+            line-height: 1.2;
         }
         
         .app-header .subtitle {
-            font-size: 0.85rem;
-            opacity: 0.9;
-            margin-top: 4px;
+            font-size: 0.75rem;
+            opacity: 0.85;
+            margin-top: 2px;
         }
         
-        .header-icon {
-            font-size: 2rem;
-            margin-bottom: 8px;
+        .header-greeting {
+            font-size: 0.8rem;
+            opacity: 0.95;
+            font-weight: 500;
+        }
+        
+        .header-greeting .farmer-name {
+            font-weight: 600;
         }
     </style>
     """
@@ -818,13 +843,25 @@ def get_all_styles() -> str:
 
 # ============= HTML COMPONENT BUILDERS =============
 
-def render_header(title: str, subtitle: str, icon: str = "🌿") -> str:
-    """Render the app header HTML."""
+def render_header(
+    title: str,
+    subtitle: str,
+    icon: str = "🌿",
+    farmer_name: str = ""
+) -> str:
+    """Render the compact app header HTML with optional farmer greeting."""
+    greeting_html = ""
+    if farmer_name:
+        greeting_html = f'<div class="header-greeting">Salam, <span class="farmer-name">{farmer_name}</span>! 👋</div>'
+    
     return f"""
     <div class="app-header">
         <div class="header-icon">{icon}</div>
-        <h1>{title}</h1>
-        <div class="subtitle">{subtitle}</div>
+        <div class="header-content">
+            {greeting_html}
+            <h1>{title}</h1>
+            <div class="subtitle">{subtitle}</div>
+        </div>
     </div>
     """
 

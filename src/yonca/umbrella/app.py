@@ -67,30 +67,35 @@ SCENARIO_LABELS = {
         "description": "Buğda və arpa istehsalı",
         "icon": "🌾",
         "region": "Aran",
+        "farmer_name": "Əli",
     },
     ScenarioProfile.LIVESTOCK: {
         "name": "Heyvandarlıq Ferması",
         "description": "Mal-qara və qoyunçuluq",
         "icon": "🐄",
         "region": "Gəncə-Qazax",
+        "farmer_name": "Məmməd",
     },
     ScenarioProfile.ORCHARD: {
         "name": "Meyvə Bağı",
         "description": "Alma və armud bağları",
         "icon": "🍎",
         "region": "Quba-Xaçmaz",
+        "farmer_name": "Fərid",
     },
     ScenarioProfile.MIXED: {
         "name": "Qarışıq Təsərrüfat",
         "description": "Tərəvəz və kiçik ferma",
         "icon": "🌻",
         "region": "Şəki-Zaqatala",
+        "farmer_name": "Rəşad",
     },
     ScenarioProfile.POULTRY: {
         "name": "Quşçuluq Ferması",
         "description": "Toyuq və yumurta istehsalı",
         "icon": "🐔",
         "region": "Lənkəran",
+        "farmer_name": "Nigar",
     },
 }
 
@@ -780,11 +785,16 @@ st.markdown(get_all_styles(), unsafe_allow_html=True)
 
 # ============= HEADER =============
 
+# Get current farmer name from selected scenario
+current_scenario_label = SCENARIO_LABELS.get(st.session_state.current_profile, {})
+current_farmer_name = current_scenario_label.get("farmer_name", "")
+
 st.markdown(
     render_header(
         title="Yonca AI",
         subtitle="Şəxsi Fermer Köməkçiniz",
-        icon="🌿"
+        icon="🌿",
+        farmer_name=current_farmer_name
     ),
     unsafe_allow_html=True
 )

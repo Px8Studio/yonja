@@ -6,11 +6,36 @@
 
 ## 📚 Documentation Index
 
+### Core Documentation
+
 | # | Document | Purpose | Read When... |
 |:-:|:---------|:--------|:-------------|
 | 1 | **[01-MANIFESTO.md](01-MANIFESTO.md)** | Vision, strategy, success metrics | Starting the project |
 | 2 | **[02-SYNTHETIC-DATA-ENGINE.md](02-SYNTHETIC-DATA-ENGINE.md)** | Schema design, synthetic profiles, data contracts | Building data layer |
 | 3 | **[03-ARCHITECTURE.md](03-ARCHITECTURE.md)** | **Complete technical reference:** Auth, APIs, Docker, LangGraph, Roadmap | Building & deploying |
+
+### AI & Quality Assurance
+
+| # | Document | Purpose | Read When... |
+|:-:|:---------|:--------|:-------------|
+| 4 | **[04-TESTING-STRATEGY.md](04-TESTING-STRATEGY.md)** | Evaluation framework, golden datasets, accuracy benchmarks | Setting up testing |
+| 5 | **[05-PROMPT-ENGINEERING.md](05-PROMPT-ENGINEERING.md)** | System prompts, versioning, few-shot examples | Tuning LLM behavior |
+| 6 | **[06-CONVERSATION-DESIGN.md](06-CONVERSATION-DESIGN.md)** | Dialogue flows, intent taxonomy, edge cases | Designing UX |
+
+### Operations & Infrastructure
+
+| # | Document | Purpose | Read When... |
+|:-:|:---------|:--------|:-------------|
+| 7 | **[07-OBSERVABILITY.md](07-OBSERVABILITY.md)** | Metrics, logging, tracing, alerting | Setting up monitoring |
+| 8 | **[08-SECURITY-HARDENING.md](08-SECURITY-HARDENING.md)** | Input validation, prompt injection defense, auth | Securing the system |
+| 9 | **[09-PERFORMANCE-SLA.md](09-PERFORMANCE-SLA.md)** | Latency targets, scaling strategy, load testing | Optimizing performance |
+| 10 | **[10-DEVOPS-RUNBOOK.md](10-DEVOPS-RUNBOOK.md)** | CI/CD, deployment, rollback, disaster recovery | Deploying & operating |
+
+### Demo & Presentation
+
+| # | Document | Purpose | Read When... |
+|:-:|:---------|:--------|:-------------|
+| 11 | **[11-DEMO-UI-SPEC.md](11-DEMO-UI-SPEC.md)** | Chainlit setup, demo scenarios, Azerbaijani theme | Building the demo |
 
 ---
 

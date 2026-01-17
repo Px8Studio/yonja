@@ -71,6 +71,40 @@ Our primary architectural decision is the **Sidecar Intelligence Model**. Instea
 | **Data Engine** | SDV + Custom Providers | Mirror-image synthetic scenarios |
 | **Containerization** | Docker + PostgreSQL | Self-contained microservice delivery |
 
+### Containerized Delivery Model
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+graph TB
+    subgraph docker["🐳 DOCKER CONTAINER"]
+        direction TB
+        subgraph sidecar["🧠 Yonca AI Sidecar"]
+            api["🔌 FastAPI"]
+            lang["🔄 LangGraph"]
+            llm["🤖 Qwen2.5 GGUF"]
+            rules["📚 Rulebook"]
+        end
+        subgraph data["💾 Data Layer"]
+            pg["🐘 PostgreSQL"]
+            syn["🧪 Synthetic DB"]
+        end
+        api --> lang --> llm
+        lang --> rules
+        lang --> pg
+        llm --> syn
+    end
+    
+    mobile["📱 Yonca App"]
+    ektis["🏛️ EKTIS"]
+    
+    mobile -->|"REST API"| docker
+    ektis -.->|"Zero Access"| docker
+    
+    style docker fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#0d47a1
+    style sidecar fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style data fill:#fff9c4,stroke:#f9a825,color:#5d4037
+```
+
 > 📐 **For detailed architecture:** See [03-ARCHITECTURE.md](03-ARCHITECTURE.md)
 
 ---

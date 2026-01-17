@@ -6,8 +6,8 @@ from typing import Optional
 import strawberry
 from strawberry.fastapi import GraphQLRouter
 
-from yonca.models import TaskPriority, AlertSeverity, FarmType
-from yonca.core.engine import recommendation_engine
+from yonca.models import TaskPriority, AlertSeverity, FarmType, Recommendation as ModelRecommendation
+from yonca.sidecar import generate_daily_schedule
 from yonca.data.scenarios import get_scenario_farms, ALL_SCENARIOS
 from yonca.data.generators import generate_weather_forecast
 from yonca.sidecar.intent_matcher import get_intent_matcher
@@ -272,14 +272,27 @@ class Query:
         
         farm = farms[farm_id]
         
-        # Generate recommendations
-        recommendations = recommendation_engine.generate_recommendations(
-            farm=farm,
-            max_recommendations=max_results
-        )
+        # Generate schedule (includes tasks as recommendations)
+        schedule = generate_daily_schedule(farm)
         
-        # Generate schedule
-        schedule = recommendation_engine.generate_daily_schedule(farm)
+        # Convert tasks to recommendation format for GraphQL compatibility
+        recommendations = [
+            ModelRecommendation(
+                id=task.id.replace('task-', 'rec-'),
+                farm_id=farm.id,
+                type=task.category,
+                confidence=0.85,
+                title=task.title,
+                title_az=task.title_az,
+                description=task.description,
+                description_az=task.description_az,
+                rationale=task.description,
+                rationale_az=task.description_az,
+                priority=task.priority,
+                suggested_date=task.due_date,
+            )
+            for task in schedule.tasks[:max_results]
+        ]
         
         return FarmRecommendations(
             farm_id=farm.id,
@@ -312,7 +325,7 @@ class Query:
             return None
         
         farm = farms[farm_id]
-        schedule = recommendation_engine.generate_daily_schedule(farm)
+        schedule = generate_daily_schedule(farm)
         
         return convert_schedule_to_graphql(schedule)
     
@@ -349,7 +362,7 @@ class Query:
         
         all_alerts = []
         for farm in farms_to_check:
-            schedule = recommendation_engine.generate_daily_schedule(farm)
+            schedule = generate_daily_schedule(farm)
             for a in schedule.alerts:
                 all_alerts.append(Alert(
                     id=a.id,

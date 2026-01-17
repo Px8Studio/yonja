@@ -8,7 +8,7 @@ from langchain_core.tools import tool
 
 from yonca.data.scenarios import get_scenario_farms
 from yonca.data.generators import WeatherGenerator, SoilGenerator
-from yonca.core.engine import recommendation_engine
+from yonca.sidecar import generate_daily_schedule
 
 
 @tool
@@ -387,7 +387,7 @@ def get_daily_schedule_tool(
         return f"Təsərrüfat tapılmadı. Mövcud: {available}"
     
     farm = farms[farm_id]
-    schedule = recommendation_engine.generate_daily_schedule(farm)
+    schedule = generate_daily_schedule(farm)
     
     result = f"📋 Gündəlik Plan - {farm.name}\n"
     result += f"📅 Tarix: {date.today()}\n\n"

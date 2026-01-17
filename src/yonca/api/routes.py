@@ -10,7 +10,7 @@ from yonca.models import (
     ChatMessage, ChatResponse, DailySchedule, FarmProfile,
     Alert
 )
-from yonca.core.engine import recommendation_engine
+from yonca.sidecar import generate_daily_schedule, get_schedule_service
 from yonca.sidecar.intent_matcher import get_intent_matcher
 from yonca.data.scenarios import get_scenario_farms, ALL_SCENARIOS
 from yonca.data.generators import generate_weather_forecast
@@ -73,19 +73,31 @@ async def get_recommendations(request: RecommendationRequest):
         days=7
     )
     
-    # Get recommendations
-    recommendations = recommendation_engine.generate_recommendations(
-        farm=farm,
-        target_date=target_date,
-        weather_forecast=weather_forecast,
-        max_recommendations=request.max_results
-    )
-    
-    # Generate daily schedule
-    daily_schedule = recommendation_engine.generate_daily_schedule(
+    # Generate daily schedule (includes recommendations as tasks)
+    daily_schedule = generate_daily_schedule(
         farm=farm,
         target_date=target_date
     )
+    
+    # Extract recommendations from tasks for API compatibility
+    from yonca.models import Recommendation
+    recommendations = [
+        Recommendation(
+            id=task.id.replace('task-', 'rec-'),
+            farm_id=farm.id,
+            type=task.category,
+            confidence=0.85,
+            title=task.title,
+            title_az=task.title_az,
+            description=task.description,
+            description_az=task.description_az,
+            rationale=task.description,
+            rationale_az=task.description_az,
+            priority=task.priority,
+            suggested_date=task.due_date,
+        )
+        for task in daily_schedule.tasks[:request.max_results]
+    ]
     
     return RecommendationResponse(
         farm_id=farm.id,
@@ -111,7 +123,7 @@ async def get_daily_schedule(
     
     farm = farms[farm_id]
     
-    return recommendation_engine.generate_daily_schedule(
+    return generate_daily_schedule(
         farm=farm,
         target_date=target_date or date.today()
     )
@@ -138,7 +150,7 @@ async def get_today_alerts(
     
     all_alerts = []
     for farm in farms_to_check:
-        schedule = recommendation_engine.generate_daily_schedule(farm)
+        schedule = generate_daily_schedule(farm)
         all_alerts.extend(schedule.alerts)
     
     return all_alerts

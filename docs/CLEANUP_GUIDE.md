@@ -22,7 +22,9 @@ This guide helps you safely remove redundant code and consolidate to the Sidecar
 
 | File | Status | Reason |
 |------|--------|--------|
-| `src/yonca/core/rules.py` | 🔴 **DEPRECATED** | Contains explicit deprecation notice. Already consolidated into `sidecar/rules_registry.py`. |
+| `src/yonca/core/rules.py` | ✅ **DELETED** | Consolidated into `sidecar/rules_registry.py`. |
+| `src/yonca/core/engine.py` | ✅ **DELETED** | Migrated to `sidecar/schedule_service.py`. |
+| `src/yonca/core/__init__.py` | ✅ **DELETED** | Entire `core/` folder removed. |
 
 ### Delete After Migration
 
@@ -41,7 +43,6 @@ This guide helps you safely remove redundant code and consolidate to the Sidecar
 | File | Issue | Action Required |
 |------|-------|-----------------|
 | `src/yonca/api/graphql.py` | May be unused | Verify if GraphQL is actively consumed by any frontend |
-| `src/yonca/core/engine.py` | ⚠️ **DEPRECATED** | Migrated to sidecar - update consumers (see Phase 3) |
 | `src/yonca/agent/tools.py` | LangGraph integration | Verify integration plan with sidecar architecture |
 
 ---
@@ -103,20 +104,17 @@ rm src/yonca/core/rules.py
 1. Consolidate all dataclasses to `models/__init__.py`
 2. Remove duplicate dataclass definitions in other modules
 
-### Phase 5: Migrate Core Consumers ⏳ PENDING
-The following files still import from `yonca.core` and need migration:
+### Phase 5: Migrate Core Consumers ✅ COMPLETED
+All files importing from `yonca.core` have been migrated:
 
-| File | Current Import | Migration Target |
-|------|----------------|------------------|
-| `api/routes.py` | `core.engine.recommendation_engine` | `sidecar.generate_daily_schedule` |
-| `api/graphql.py` | `core.engine.recommendation_engine` | `sidecar.SidecarRecommendationService` |
-| `agent/tools.py` | `core.engine.recommendation_engine` | `sidecar.generate_daily_schedule` |
-| `tests/test_yonca.py` | `core.engine.RecommendationEngine` | `sidecar.ScheduleService` |
+| File | Old Import | New Import | Status |
+|------|------------|------------|--------|
+| `api/routes.py` | `core.engine.recommendation_engine` | `sidecar.generate_daily_schedule` | ✅ Done |
+| `api/graphql.py` | `core.engine.recommendation_engine` | `sidecar.generate_daily_schedule` | ✅ Done |
+| `agent/tools.py` | `core.engine.recommendation_engine` | `sidecar.generate_daily_schedule` | ✅ Done |
+| `tests/test_yonca.py` | `core.engine.RecommendationEngine` | `sidecar.ScheduleService` | ✅ Done |
 
-Once all consumers are migrated, delete `core/` folder:
-```bash
-rm -rf src/yonca/core/
-```
+**Deleted:** `src/yonca/core/` folder removed ✅
 
 ---
 
@@ -140,8 +138,12 @@ After cleanup, the codebase should have:
 ```
 src/yonca/
 ├── sidecar/          # 🎯 CORE: Headless Intelligence Engine
-├── api/              # REST & GraphQL (consuming sidecar)
-├── agent/            # LangGraph orchestration (consuming sidecar)
+│   ├── recommendation_service.py  # AI recommendations
+│   ├── schedule_service.py        # Daily schedules & alerts ✅ NEW
+│   ├── rules_registry.py          # Unified agronomy rules
+│   └── ...
+├── api/              # REST & GraphQL (consuming sidecar) ✅ MIGRATED
+├── agent/            # LangGraph orchestration (consuming sidecar) ✅ MIGRATED
 ├── data/             # Synthetic data only
 ├── models/           # Unified Pydantic models
 ├── umbrella/         # UI only (consuming sidecar APIs)
@@ -153,10 +155,10 @@ src/yonca/
 ```
 
 **Deleted:**
-- ❌ `core/` folder (deprecated, merged into sidecar)
-- ❌ `umbrella/mock_backend.py`
-- ❌ `umbrella/scenario_manager.py`
-- ❌ `umbrella/agronomy_rules.py`
+- ✅ `core/` folder (deprecated, merged into sidecar)
+- ⏳ `umbrella/mock_backend.py` (pending)
+- ⏳ `umbrella/scenario_manager.py` (pending)
+- ⏳ `umbrella/agronomy_rules.py` (pending)
 
 ---
 

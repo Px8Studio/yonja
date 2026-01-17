@@ -110,7 +110,15 @@ The AI Assistant integrates as a **new navigation tab** positioned between "Mən
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
-flowchart TB
+flowchart LR
+    subgraph data["🔄 Auto-Loaded Context"]
+        direction TB
+        user["👤 User Profile"]
+        farms2["🌾 All User Farms"]
+        weather["🌤️ Local Weather"]
+        ndvi["📡 Latest NDVI"]
+    end
+    
     subgraph tab["🤖 AI Köməkçi Tab"]
         direction TB
         context["📋 Context Header<br/><i>User + Active Farms Summary</i>"]
@@ -120,17 +128,11 @@ flowchart TB
         context --> chat --> quick
     end
     
-    subgraph data["🔄 Auto-Loaded Context"]
-        user["👤 User Profile"]
-        farms2["🌾 All User Farms"]
-        weather["🌤️ Local Weather"]
-        ndvi["📡 Latest NDVI"]
-    end
-    
-    data --> context
+    data --> tab
     
     style tab fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
     style context fill:#fff9c4,stroke:#f9a825,color:#5d4037
+    style data fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
 ```
 
 ---

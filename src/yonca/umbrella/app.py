@@ -813,7 +813,7 @@ for idx, profile in enumerate(ScenarioProfile):
         is_active = st.session_state.current_profile == profile
         
         if st.button(
-            f"{label['icon']}\n{label['name'][:8]}...",
+            label['icon'],
             key=f"scenario_btn_{profile.value}",
             type="primary" if is_active else "secondary",
             use_container_width=True,

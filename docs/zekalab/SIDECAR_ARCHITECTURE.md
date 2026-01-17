@@ -21,6 +21,28 @@ Digital Umbrella's Yonca platform handles **legal government data** (subsidy app
 ╚══════════════════════════════════════════════════════════════════════════════╝
 ```
 
+---
+
+## 🌍 Ecosystem Context
+
+### The Current Landscape
+
+* **Platform Role:** Yonca is the primary digital gateway for Azerbaijani farmers to the **EKTİS** (Electronic Agriculture Information System). It is not just an app; it is a legal and operational bridge for subsidies and declarations.
+* **User Persona:** Predominantly small-to-medium holders (average ~1.6 hectares) who rely on mobile-first, low-bandwidth interfaces.
+* **Tech Maturity:** Digital Umbrella utilizes a modern stack (likely Flutter/React Native for mobile and Python/Node.js for backend) with a strong emphasis on **Data Engineering** and **Satellite Monitoring**.
+* **Critical Constraint:** Data Privacy. Because Yonca handles sensitive government-linked data (subsidies/land IDs), our module must exist in a **zero-trust, synthetic-only sandbox**.
+
+### Technical Discovery: Knowledge Gaps
+
+To achieve a "perfect handoff," these specific unknowns must be addressed:
+
+1. **Mobile Framework:** Does Yonca use Flutter, React Native, or Native (Kotlin/Swift)? This dictates if our "plug-in" is a library (SDK) or a WebView-based module.
+2. **Offline State Management:** How does Yonca currently handle data persistence in rural areas with "Edge" or "2G" connectivity?
+3. **UI Design System:** Does Digital Umbrella have a Figma design system (e.g., specific clover-green hex codes, typography) that we should adopt?
+4. **Backend Integration:** Will the AI module be hosted on Digital Umbrella's infrastructure or should it be a standalone containerized microservice (Docker/Kubernetes)?
+
+---
+
 ## 📋 Table of Contents
 
 1. [Level 0 Diagram Logic](#level-0-diagram-logic)

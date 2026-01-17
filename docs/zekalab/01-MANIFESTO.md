@@ -60,24 +60,7 @@ Our primary architectural decision is the **Sidecar Intelligence Model**. Instea
 
 ---
 
-## 2. Technology Stack Overview
-
-| Layer | Standard / Tool | Purpose |
-|:------|:----------------|:--------|
-| **Inference Engine** | Qwen2.5-7B (GGUF Q4_K_M) | Multilingual logic & local execution |
-| **Logic Layer** | Deterministic Agronomy Rulebook | Overrides LLM "hallucinations" with hard rules |
-| **API Framework** | FastAPI (Swagger/OpenAPI) | Single endpoint integration |
-| **Orchestrator** | LangGraph (Stateful) | Manages multi-step reasoning & memory |
-| **Data Engine** | SDV + Custom Providers | Mirror-image synthetic scenarios |
-| **Persistence** | PostgreSQL + Redis | Ground truth storage + Agent memory/caching |
-| **Authentication** | mygov ID Token Validation | Leverages existing Yonca auth infrastructure |
-| **Containerization** | Docker Compose | Self-contained microservice delivery |
-
-> 📐 **For detailed architecture, API schemas, and deployment:** See [03-ARCHITECTURE.md](03-ARCHITECTURE.md)
-
----
-
-## 3. UI/UX Design System
+## 2. UI/UX Design System
 
 The AI Assistant integrates as a **new navigation tab** positioned between "Məntəqələr" (Places) and "Təsərrüfatlarım" (My Farms) in the bottom navigation bar.
 
@@ -137,7 +120,7 @@ flowchart LR
 
 ---
 
-## 4. Success Metrics
+## 3. Success Metrics
 
 | Metric | Target | Achieved By |
 |:-------|:-------|:------------|
@@ -145,28 +128,6 @@ flowchart LR
 | **Data Safety** | 100% | Mirror-image synthetic engine + PII gateway |
 | **Integration Debt** | Zero | Schema-synchronized API contract |
 | **Handoff Friction** | Minimal | Dockerized microservice delivery |
-
----
-
-## 5. Development Priority Matrix
-
-```mermaid
-quadrantChart
-    title Development Priority Matrix
-    x-axis Low Risk --> High Risk
-    y-axis Low Value --> High Value
-    quadrant-1 Do First
-    quadrant-2 Plan Carefully
-    quadrant-3 Delegate
-    quadrant-4 Avoid
-    
-    "Rule Engine": [0.2, 0.9]
-    "Synthetic Data Engine": [0.15, 0.85]
-    "LLM Integration": [0.4, 0.95]
-    "API Contract": [0.3, 0.85]
-    "Real Data Hooks": [0.8, 0.7]
-    "EKTIS Integration": [0.9, 0.6]
-```
 
 ---
 

@@ -12,7 +12,7 @@
 |:-:|:---------|:--------|:-------------|
 | 1 | **[01-MANIFESTO.md](01-MANIFESTO.md)** | Vision, strategy, success metrics | Starting the project |
 | 2 | **[02-SYNTHETIC-DATA-ENGINE.md](02-SYNTHETIC-DATA-ENGINE.md)** | Schema design, synthetic profiles, data contracts | Building data layer |
-| 3 | **[03-ARCHITECTURE.md](03-ARCHITECTURE.md)** | **Complete technical reference:** Auth, APIs, Docker, LangGraph, Roadmap | Building & deploying |
+| 3 | **[03-ARCHITECTURE.md](03-ARCHITECTURE.md)** | Core architecture: Auth, LangGraph, data flow, roadmap | Understanding the system |
 
 ### AI & Quality Assurance
 
@@ -27,15 +27,29 @@
 | # | Document | Purpose | Read When... |
 |:-:|:---------|:--------|:-------------|
 | 7 | **[07-OBSERVABILITY.md](07-OBSERVABILITY.md)** | Metrics, logging, tracing, alerting | Setting up monitoring |
-| 8 | **[08-SECURITY-HARDENING.md](08-SECURITY-HARDENING.md)** | Input validation, prompt injection defense, auth | Securing the system |
+| 8 | **[08-SECURITY-HARDENING.md](08-SECURITY-HARDENING.md)** | Input validation, prompt injection defense, PII protection | Securing the system |
 | 9 | **[09-PERFORMANCE-SLA.md](09-PERFORMANCE-SLA.md)** | Latency targets, scaling strategy, load testing | Optimizing performance |
-| 10 | **[10-DEVOPS-RUNBOOK.md](10-DEVOPS-RUNBOOK.md)** | CI/CD, deployment, rollback, disaster recovery | Deploying & operating |
+| 10 | **[10-DEVOPS-RUNBOOK.md](10-DEVOPS-RUNBOOK.md)** | CI/CD, Docker, deployment, environment configs | Deploying & operating |
 
 ### Demo & Presentation
 
 | # | Document | Purpose | Read When... |
 |:-:|:---------|:--------|:-------------|
 | 11 | **[11-DEMO-UI-SPEC.md](11-DEMO-UI-SPEC.md)** | Chainlit setup, demo scenarios, Azerbaijani theme | Building the demo |
+
+---
+
+## 📋 Document Cross-References
+
+To avoid duplication, content is organized as follows:
+
+| Topic | Primary Document | References |
+|:------|:-----------------|:-----------|
+| **Schemas & Data Models** | 02-SYNTHETIC-DATA-ENGINE | 03-ARCHITECTURE links here |
+| **Security & PII** | 08-SECURITY-HARDENING | 03-ARCHITECTURE summarizes |
+| **Deployment & Docker** | 10-DEVOPS-RUNBOOK | 03-ARCHITECTURE links here |
+| **Prompts & Dialogue** | 05-PROMPT + 06-CONVERSATION | 04-TESTING uses examples |
+| **Metrics & Monitoring** | 07-OBSERVABILITY | 09-PERFORMANCE references |
 
 ---
 

@@ -1000,48 +1000,26 @@ pie showData
 
 ---
 
-## ❓ Technical Discovery: Questions for Digital Umbrella IT
+## 🔐 Security Summary
 
-With the LangGraph architecture and dual-reality data strategy, our integration requirements are well-defined. These questions will finalize the deployment strategy:
+> **📖 Full details:** See [08-SECURITY-HARDENING.md](08-SECURITY-HARDENING.md) for complete security implementation.
 
-### Authentication & Security
+### PII Protection Matrix
 
-| Question | Why It Matters |
-|:---------|:--------------|
-| **Does Yonca use a JWT (JSON Web Token) standard for the mygov ID session that we can verify in our Sidecar's middleware?** | Determines token validation implementation |
-| **For the synthetic-to-real transition, should we prepare our PostgreSQL schema to match the EKTİS 'Declaration' table exactly?** | Ensures zero-friction handoff |
-| **Will you provide a dedicated Redis instance for our service, or should we include a standalone Redis instance inside our Docker Compose?** | Affects deployment architecture |
-
-### Communication Protocol
-
-| Question | Why It Matters |
-|:---------|:--------------|
-| **Do you use WebSockets or SSE for current chat features?** | Determines how we stream the agent's reasoning in real-time |
-| **What is the mobile framework? (Flutter/React Native/Native)** | Affects SSE client implementation |
-
-### State Management Strategy
-
-| Question | Options |
-|:---------|:--------|
-| **Where should AI conversation state (memory) be stored?** | **Option A:** Our module's database (Redis/PostgreSQL) — Simpler integration<br/>**Option B:** Passed back via API — You control the data |
-
-### Audit & Visualization
-
-| Question | Capability Offered |
-|:---------|:-------------------|
-| **Can we provide LangGraph Studio visualization to your agronomists?** | Allows non-technical staff to audit AI decision paths without reading code |
-| **Do you require full audit logs of all AI decisions?** | We can provide complete reasoning traces for compliance |
-
-### Infrastructure
-
-| Question | Impact |
-|:---------|:-------|
-| **Hosting preference: Your infrastructure vs. standalone Docker?** | Affects deployment complexity and data residency |
-| **Expected concurrent users during peak farming season?** | Determines scaling strategy (horizontal vs. vertical) |
+| Data Type | Treatment | Storage |
+|:----------|:----------|:--------|
+| Farmer Name | `[ŞƏXS_1]` | Never stored |
+| Phone | `[TELEFON]` | SHA-256 hash only |
+| GPS Coords | `[KOORDİNAT]` | Region code only |
+| Farm ID | `syn_abc123` | Token mapping |
+| Soil/Weather | Passed through | No PII risk |
+| **Chat History** | Anonymized in Checkpointer | Thread ID only |
 
 ---
 
-## 🔧 Deployment Guide
+## 🚀 Deployment
+
+> **📖 Full deployment guide:** See [10-DEVOPS-RUNBOOK.md](10-DEVOPS-RUNBOOK.md) for CI/CD, Docker configs, and operational procedures.
 
 ### Quick Start
 
@@ -1055,155 +1033,6 @@ ollama pull qwen2.5:7b
 # 3. Run Yonca with Sidecar
 python -m yonca.startup
 ```
-
-### Environment Variables
-
-```bash
-# .env file
-YONCA_DEBUG=false
-YONCA_DEFAULT_LANGUAGE=az
-YONCA_RECOMMENDATION_CONFIDENCE_THRESHOLD=0.7
-
-# Ollama
-OLLAMA_HOST=http://localhost:11434
-
-# LangGraph Configuration
-LANGGRAPH_CHECKPOINT_BACKEND=postgres  # memory | redis | postgres
-LANGGRAPH_POSTGRES_URI=postgresql://user:pass@localhost:5432/yonca
-LANGGRAPH_REDIS_URL=redis://localhost:6379
-LANGGRAPH_ENABLE_STREAMING=true
-LANGGRAPH_MAX_RETRIES=3
-
-# Sidecar
-SIDECAR_INFERENCE_MODE=auto  # auto|standard|lite|offline
-SIDECAR_ENABLE_AUDIT_LOG=true
-SIDECAR_GGUF_MODEL=qwen2.5-7b-q4
-```
-
-### Docker Deployment
-
-```bash
-# Single command deployment
-docker run -d \
-  --name yonca-ai-sidecar \
-  -p 8000:8000 \
-  -e LANGGRAPH_CHECKPOINT_BACKEND=redis \
-  -e LANGGRAPH_REDIS_URL=redis://redis:6379 \
-  zekalab/yonca-sidecar:latest
-```
-
-### Docker Compose (Full Stack)
-
-```yaml
-version: '3.8'
-services:
-  yonca-sidecar:
-    image: zekalab/yonca-sidecar:latest
-    ports:
-      - "8000:8000"
-    environment:
-      - LANGGRAPH_CHECKPOINT_BACKEND=redis
-      - LANGGRAPH_REDIS_URL=redis://redis:6379
-      - LANGGRAPH_POSTGRES_URI=postgresql://yonca:secret@postgres:5432/yonca
-      - SIDECAR_AUTH_VALIDATION_URL=https://digital-umbrella.az/auth/validate
-    depends_on:
-      - postgres
-      - redis
-      - ollama
-
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      - POSTGRES_USER=yonca
-      - POSTGRES_PASSWORD=secret
-      - POSTGRES_DB=yonca
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redisdata:/data
-    command: redis-server --appendonly yes
-
-  ollama:
-    image: ollama/ollama:latest
-    volumes:
-      - ollama:/root/.ollama
-
-volumes:
-  pgdata:
-  redisdata:
-  ollama:
-```
-
-### Container Internal Structure
-
-| Service | Technology | Purpose |
-|:--------|:-----------|:--------|
-| **API Gateway** | FastAPI | Validates mygov ID tokens, routes requests |
-| **Agent Brain** | LangGraph | Orchestrates farming logic, manages state |
-| **Data Engine** | PostgreSQL | Stores synthetic profiles (ground truth) |
-| **Memory Layer** | Redis | Agent checkpoints, session cache, real-time data |
-| **Synthetic Generator** | SDV | Pre-populates DB with realistic non-real farm data |
-
-### Edge Deployment
-
-```python
-from yonca.sidecar.lite_inference import EdgeDeploymentConfig
-
-config = EdgeDeploymentConfig(
-    max_memory_mb=2000,
-    has_gpu=False,
-    expected_bandwidth_kbps=256,
-    is_intermittent=True,
-)
-```
-
----
-
-## � Implementation Checklist
-
-### Step 1: Graph Definition (Logic Layer)
-- [ ] Define `FarmingState` TypedDict with all context fields
-- [ ] Implement processing nodes: `Scenario_Analyzer`, `Recommendation_Engine`, `Safety_Guardrail`
-- [ ] Configure conditional edges for risk-based routing
-- [ ] Set up `MemorySaver` checkpointer for session persistence
-
-### Step 2: Safety First Module
-- [ ] Build Redline Scanner node for zero-real-data validation
-- [ ] Implement PII detection patterns for Azerbaijani data
-- [ ] Configure retry loop for failed compliance checks
-- [ ] Add audit logging for all blocked responses
-
-### Step 3: FastAPI Bridge
-- [ ] Wrap LangGraph in FastAPI endpoints
-- [ ] Implement SSE streaming for real-time responses
-- [ ] Add thread management for multi-session support
-- [ ] Configure CORS for mobile app access
-
-### Step 4: Deployment
-- [ ] Dockerize the complete stack
-- [ ] Document single `POST /yonca-ai/chat` endpoint
-- [ ] Provide LangGraph Studio access for agronomist auditing
-- [ ] Performance test with expected concurrent users
-
----
-
-## 🔐 Security Summary
-
-### PII Protection Matrix
-
-| Data Type | Treatment | Storage |
-|:----------|:----------|:--------|
-| Farmer Name | `[ŞƏXS_1]` | Never stored |
-| Phone | `[TELEFON]` | SHA-256 hash only |
-| GPS Coords | `[KOORDİNAT]` | Region code only |
-| Farm ID | `syn_abc123` | Token mapping |
-| Soil/Weather | Passed through | No PII risk |
-| **Chat History** | Anonymized in Checkpointer | Thread ID only |
 
 ---
 

@@ -173,21 +173,22 @@ yonca/
 
 ## 🚀 Phase 1: Foundation (Week 1-2)
 
-### 1.1 Project Initialization
+### ~~1.1 Project Initialization~~ ✅
 
 **Goal:** Set up Python project with proper structure, tooling, and basic dependencies.
 
 #### Tasks
 
-- [ ] **1.1.1** Initialize Python project with `uv` or `poetry`
-- [ ] **1.1.2** Create directory structure as shown above
-- [ ] **1.1.3** Set up `pyproject.toml` with metadata and dependencies
-- [ ] **1.1.4** Configure `ruff` for linting and formatting
-- [ ] **1.1.5** Set up `pytest` with initial config
-- [ ] **1.1.6** Create `.gitignore` for Python projects
-- [ ] **1.1.7** Initialize Git repository
+- [x] **1.1.1** Initialize Python project with `uv` or `poetry`
+- [x] **1.1.2** Create directory structure as shown above
+- [x] **1.1.3** Set up `pyproject.toml` with metadata and dependencies
+- [x] **1.1.4** Configure `ruff` for linting and formatting
+- [x] **1.1.5** Set up `pytest` with initial config
+- [x] **1.1.6** Create `.gitignore` for Python projects
+- [x] **1.1.7** Initialize Git repository
 
-#### Commands
+<details>
+<summary>📁 Commands (Reference Only)</summary>
 
 ```powershell
 # Create project directory
@@ -201,8 +202,10 @@ uv init
 # OR
 poetry init
 ```
+</details>
 
-#### Dependencies (pyproject.toml)
+<details>
+<summary>📦 Dependencies Reference (pyproject.toml)</summary>
 
 ```toml
 [project]
@@ -260,21 +263,23 @@ dev = [
     "httpx>=0.26.0",  # for testing
 ]
 ```
+</details>
 
 ---
 
-### 1.2 Configuration System
+### ~~1.2 Configuration System~~ ✅
 
 **Goal:** Implement environment-based configuration with dual-mode support.
 
 #### Tasks
 
-- [ ] **1.2.1** Create `src/yonca/config.py` with Pydantic Settings
-- [ ] **1.2.2** Create `.env.example` with all variables
-- [ ] **1.2.3** Create `.env.local` for local development
-- [ ] **1.2.4** Add deployment mode detection
+- [x] **1.2.1** Create `src/yonca/config.py` with Pydantic Settings
+- [x] **1.2.2** Create `.env.example` with all variables
+- [x] **1.2.3** Create `.env.local` for local development
+- [x] **1.2.4** Add deployment mode detection
 
-#### Implementation
+<details>
+<summary>📝 Implementation Reference</summary>
 
 ```python
 # src/yonca/config.py
@@ -351,22 +356,28 @@ def get_settings() -> Settings:
 
 settings = get_settings()
 ```
+</details>
 
 ---
 
-### 1.3 Basic FastAPI Setup
+### ~~1.3 Basic FastAPI Setup~~ ✅
 
 **Goal:** Create minimal FastAPI application with health checks.
 
 #### Tasks
 
-- [ ] **1.3.1** Create `src/yonca/api/main.py` with FastAPI app
-- [ ] **1.3.2** Implement health check endpoint
-- [ ] **1.3.3** Add CORS middleware
-- [ ] **1.3.4** Create basic error handlers
-- [ ] **1.3.5** Test locally with `uvicorn`
+- [x] **1.3.1** Create `src/yonca/api/main.py` with FastAPI app
+- [x] **1.3.2** Implement health check endpoint
+- [x] **1.3.3** Add CORS middleware
+- [x] **1.3.4** Create basic error handlers
+- [x] **1.3.5** Test locally with `uvicorn`
 
-#### Implementation
+> 💡 **How to run:** Use VS Code Task `🌿 Yonca API: Start Development Server` (Ctrl+Shift+P → Tasks: Run Task)
+> 
+> Or run manually: `uvicorn yonca.api.main:app --host localhost --port 8000 --reload`
+
+<details>
+<summary>📝 Implementation Reference</summary>
 
 ```python
 # src/yonca/api/main.py
@@ -433,6 +444,7 @@ async def health_check():
         version="0.1.0",
     )
 ```
+</details>
 
 ---
 
@@ -520,15 +532,17 @@ CMD ["uvicorn", "yonca.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 | Task | Status | Notes |
 |:-----|:------:|:------|
-| Project initialization | ⬜ | |
-| Directory structure | ⬜ | |
-| pyproject.toml | ⬜ | |
-| Configuration system | ⬜ | |
-| Environment files | ⬜ | |
-| FastAPI basic setup | ⬜ | |
-| Health endpoint | ⬜ | |
-| Dockerfile | ⬜ | |
-| docker-compose.local.yml | ⬜ | |
+| Project initialization | ✅ | uv + pyproject.toml |
+| Directory structure | ✅ | Full structure created |
+| pyproject.toml | ✅ | With all dependencies |
+| Configuration system | ✅ | Pydantic Settings + dual mode |
+| Environment files | ✅ | .env.example created |
+| FastAPI basic setup | ✅ | main.py + routes |
+| Health endpoint | ✅ | /health + /health/ready |
+| Chat endpoint stub | ✅ | /yonca-ai/chat |
+| VS Code Tasks | ✅ | Dev server task |
+| Dockerfile | ⬜ | Next step |
+| docker-compose.local.yml | ⬜ | Next step |
 | Local stack test | ⬜ | |
 
 ---

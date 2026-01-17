@@ -39,37 +39,52 @@ Because Yonca tracks real-world variables like "NDVI (Vegetation Index)" and "So
 
 ### 2.1 Schema Synchronization
 
-We will build our synthetic database to mirror the EKTİS data structure exactly.
+We model **two distinct but linked entities**: the **User Profile** (WHO is asking) and **Farm Profiles** (WHAT they own). This separation enables personalized AI responses.
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 erDiagram
-    SYNTHETIC_FARMER {
-        string farmer_id PK "syn_farmer_001"
+    USER_PROFILE {
+        string user_id PK "syn_user_001"
         string full_name "Əli Məmmədov (MASKED)"
-        string region_code "AZ-ABS"
         string phone_hash "sha256:..."
+        string region_code "AZ-ABS"
         string language_pref "az_AZ"
+        string experience_level "intermediate"
+        int farming_years "12"
+        string education_level "secondary"
+        string preferred_units "metric"
+        boolean receives_subsidies "true"
+        string notification_pref "sms"
     }
     
-    SOWING_DECLARATION {
-        string declaration_id PK "syn_decl_2026_001"
-        string farmer_id FK
-        string parcel_id FK
-        string crop_type "Winter Wheat"
-        date sowing_date "2025-10-15"
-        float area_hectares "5.2"
-        string status "CONFIRMED"
+    FARM_PROFILE {
+        string farm_id PK "syn_farm_001"
+        string user_id FK
+        string farm_name "Şərq Təsərrüfatı"
+        string farm_type "mixed_crop"
+        float total_area_ha "8.5"
+        string primary_activity "wheat_cotton"
+        boolean is_primary "true"
     }
     
     PARCEL {
         string parcel_id PK "syn_parcel_001"
-        string farmer_id FK
+        string farm_id FK
         float lat "40.4093"
         float lon "49.8671"
         string soil_type "Loam"
         string irrigation_system "Pivot"
         string region "Aran"
+        float area_hectares "5.2"
+    }
+    
+    SOWING_DECLARATION {
+        string declaration_id PK "syn_decl_2026_001"
+        string parcel_id FK
+        string crop_type "Winter Wheat"
+        date sowing_date "2025-10-15"
+        string status "CONFIRMED"
     }
     
     CROP_ROTATION_LOG {
@@ -88,16 +103,56 @@ erDiagram
         string health_status "HEALTHY"
     }
     
-    SYNTHETIC_FARMER ||--o{ SOWING_DECLARATION : "declares"
-    SYNTHETIC_FARMER ||--o{ PARCEL : "owns"
+    USER_PROFILE ||--o{ FARM_PROFILE : "owns"
+    FARM_PROFILE ||--o{ PARCEL : "contains"
+    PARCEL ||--o{ SOWING_DECLARATION : "declares"
     PARCEL ||--o{ CROP_ROTATION_LOG : "history"
     PARCEL ||--o{ NDVI_READING : "monitored"
 ```
 
-For every **Synthetic Farmer**, we generate:
-- Fake `DeclarationID` matching EKTIS format
-- Fake `ParcelID` with proper regional coding
-- Historical `CropRotation` log with realistic yields
+### 2.1.1 User Profile vs Farm Profile
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+graph TB
+    subgraph user["👤 USER PROFILE<br/><i>WHO is asking?</i>"]
+        persona["Experience: Intermediate<br/>Years: 12<br/>Language: Azerbaijani<br/>Subsidies: Yes"]
+    end
+    
+    subgraph farms["🌾 FARM PROFILES<br/><i>WHAT do they own?</i>"]
+        farm1["🌾 Farm 1<br/>Wheat/Cotton<br/>5.2 ha"]
+        farm2["🍎 Farm 2<br/>Orchard<br/>2.3 ha"]
+        farm3["🐄 Farm 3<br/>Livestock<br/>1.0 ha"]
+    end
+    
+    subgraph ai["🤖 AI Response"]
+        how["HOW to explain<br/><i>Based on experience</i>"]
+        what["WHAT to recommend<br/><i>Based on farms</i>"]
+    end
+    
+    user --> how
+    farms --> what
+    how --> response["💬 Personalized<br/>Recommendation"]
+    what --> response
+    
+    style user fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    style farms fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style ai fill:#fff9c4,stroke:#f9a825,color:#5d4037
+```
+
+| Attribute Type | Determines | Example Impact |
+|:---------------|:-----------|:---------------|
+| **Experience Level** | Explanation depth | Novice → detailed steps; Expert → brief summary |
+| **Farming Years** | Trust in traditional methods | Veteran → respect local practices |
+| **Education Level** | Technical vocabulary | Higher → scientific terms OK |
+| **Notification Pref** | Delivery channel | SMS for low-connectivity areas |
+| **Subsidy Status** | Financial recommendations | Eligible → mention subsidy deadlines |
+
+For every **Synthetic User**, we generate:
+- Complete persona with realistic attributes
+- 1-5 Farm Profiles reflecting Azerbaijani farm diversity
+- Parcels with proper regional coding per farm
+- Historical `CropRotation` logs with realistic yields
 
 ### 2.2 Geospatial Realism
 
@@ -214,19 +269,41 @@ class AzerbaijaniAgrarianProvider(BaseProvider):
 
 ---
 
-## 4. Synthetic Farm Profiles (Simulated Twins)
+## 4. Synthetic User & Farm Profiles
 
-We generate **5+ distinct farm profiles** that represent the diversity of Azerbaijani agriculture.
+We generate **5+ distinct user profiles**, each owning **1-5 farm profiles** representing the diversity of Azerbaijani agriculture.
+
+### 4.1 User Persona Archetypes
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 graph TB
-    subgraph personas["🧑‍🌾 Simulated Farm Twins"]
-        wheat["🌾 <b>Wheat Twin</b><br/>syn_wheat_001<br/><i>5ha, Pivot Irrigation</i><br/>Aran Region"]
-        cotton["🧵 <b>Cotton Twin</b><br/>syn_cotton_001<br/><i>8ha, Drip Irrigation</i><br/>Mil-Muğan"]
-        orchard["🍎 <b>Orchard Twin</b><br/>syn_orchard_001<br/><i>2ha Apple/Pear</i><br/>Quba"]
-        livestock["🐄 <b>Livestock Twin</b><br/>syn_livestock_001<br/><i>50 cattle, Pasture</i><br/>Şəki"]
-        mixed["🌻 <b>Mixed Twin</b><br/>syn_mixed_001<br/><i>3ha Veg + Poultry</i><br/>Lənkəran"]
+    subgraph users["👤 Synthetic User Personas"]
+        novice["🌱 <b>Novice Farmer</b><br/>syn_user_001<br/><i>2 years exp, 1 farm</i><br/>Needs detailed guidance"]
+        experienced["🧑‍🌾 <b>Experienced Holder</b><br/>syn_user_002<br/><i>15 years exp, 2 farms</i><br/>Prefers brief advice"]
+        commercial["💼 <b>Commercial Operator</b><br/>syn_user_003<br/><i>10 years, 4 farms</i><br/>Data-driven decisions"]
+        traditional["👴 <b>Traditional Farmer</b><br/>syn_user_004<br/><i>30 years, 1 farm</i><br/>Respects local methods"]
+        diversified["🌈 <b>Diversified Owner</b><br/>syn_user_005<br/><i>8 years, 3 farms</i><br/>Mixed crop + livestock"]
+    end
+    
+    style novice fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    style experienced fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
+    style commercial fill:#fff9c4,stroke:#f9a825,color:#5d4037
+    style traditional fill:#ffccbc,stroke:#e64a19,color:#bf360c
+    style diversified fill:#e1bee7,stroke:#7b1fa2,color:#4a148c
+```
+
+### 4.2 Farm Profile Types
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+graph TB
+    subgraph farms["🌾 Farm Profile Types"]
+        wheat["🌾 <b>Wheat Farm</b><br/>5ha, Pivot Irrigation<br/>Aran Region"]
+        cotton["🧵 <b>Cotton Farm</b><br/>8ha, Drip Irrigation<br/>Mil-Muğan"]
+        orchard["🍎 <b>Orchard</b><br/>2ha Apple/Pear<br/>Quba"]
+        livestock["🐄 <b>Livestock</b><br/>50 cattle, Pasture<br/>Şəki"]
+        mixed["🌻 <b>Mixed/Vegetable</b><br/>3ha Veg + Poultry<br/>Lənkəran"]
     end
     
     style wheat fill:#fff9c4,stroke:#f9a825,color:#5d4037
@@ -236,25 +313,76 @@ graph TB
     style mixed fill:#e1bee7,stroke:#7b1fa2,color:#4a148c
 ```
 
-### Profile JSON Schema
+### 4.3 Example: User with Multiple Farms
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+graph TB
+    subgraph user["👤 syn_user_003 (Commercial Operator)"]
+        profile["Experience: 10 years<br/>Education: University<br/>Subsidies: Yes<br/>Notification: App + SMS"]
+    end
+    
+    subgraph owned["🌾 Owned Farm Profiles"]
+        f1["Farm 1: Wheat<br/>syn_farm_003a<br/>12 ha, Aran"]
+        f2["Farm 2: Cotton<br/>syn_farm_003b<br/>8 ha, Mil-Muğan"]
+        f3["Farm 3: Vineyard<br/>syn_farm_003c<br/>3 ha, Şəmkir"]
+        f4["Farm 4: Vegetables<br/>syn_farm_003d<br/>2 ha, Lənkəran"]
+    end
+    
+    user --> owned
+    
+    style user fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    style owned fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+```
+
+### 4.4 JSON Schemas
+
+#### User Profile Schema
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SyntheticUserProfile",
+  "description": "User persona for AI personalization",
+  "type": "object",
+  "required": ["user_id", "experience_level", "farm_ids"],
+  "properties": {
+    "user_id": { "type": "string", "pattern": "^syn_user_\\d{3}$" },
+    "full_name_masked": { "type": "string", "example": "[ŞƏXS_001]" },
+    "region_code": { "type": "string", "pattern": "^AZ-[A-Z]{3}$" },
+    "experience_level": { "type": "string", "enum": ["novice", "intermediate", "expert"] },
+    "farming_years": { "type": "integer", "minimum": 0, "maximum": 60 },
+    "education_level": { "type": "string", "enum": ["primary", "secondary", "technical", "university"] },
+    "language_pref": { "type": "string", "default": "az_AZ" },
+    "preferred_units": { "type": "string", "enum": ["metric", "local"] },
+    "receives_subsidies": { "type": "boolean" },
+    "notification_pref": { "type": "string", "enum": ["sms", "app", "both", "none"] },
+    "farm_ids": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+  }
+}
+```
+
+#### Farm Profile Schema
 
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "SyntheticFarmProfile",
-  "description": "Mirror-image of EKTIS farm profile for AI training",
+  "description": "Mirror-image of EKTIS farm profile",
   "type": "object",
-  "required": ["farm_id", "farmer_id", "parcels", "active_declarations"],
+  "required": ["farm_id", "user_id", "parcels", "active_declarations"],
   "properties": {
     "farm_id": {
       "type": "string",
-      "pattern": "^syn_[a-z]+_\\d{3}$",
-      "example": "syn_wheat_001"
+      "pattern": "^syn_farm_\\d{3}[a-z]?$",
+      "example": "syn_farm_003a"
     },
-    "farmer_id": {
+    "user_id": {
       "type": "string",
-      "pattern": "^syn_farmer_\\d{3}$"
+      "pattern": "^syn_user_\\d{3}$"
     },
+    "farm_name": { "type": "string", "example": "Şərq Təsərrüfatı" },
+    "farm_type": { "type": "string", "enum": ["crop", "livestock", "orchard", "mixed"] },
     "region": {
       "type": "string",
       "enum": ["Aran", "Quba-Qusar", "Şəki-Zaqatala", "Mil-Muğan", "Lənkəran"]
@@ -320,21 +448,39 @@ graph TB
         "date": { "type": "string", "format": "date" },
         "details": { "type": "string" }
       }
-    },
-    "language_pref": {
-      "type": "string",
-      "default": "az_AZ"
     }
   }
 }
 ```
 
-### Example: Wheat Farm Twin
+### 4.5 Complete Example: User with Farms
+
+#### User Profile
 
 ```json
 {
-  "farm_id": "syn_wheat_001",
-  "farmer_id": "syn_farmer_001",
+  "user_id": "syn_user_002",
+  "full_name_masked": "[ŞƏXS_002]",
+  "region_code": "AZ-ARN",
+  "experience_level": "expert",
+  "farming_years": 15,
+  "education_level": "technical",
+  "language_pref": "az_AZ",
+  "preferred_units": "metric",
+  "receives_subsidies": true,
+  "notification_pref": "both",
+  "farm_ids": ["syn_farm_002a", "syn_farm_002b"]
+}
+```
+
+#### Farm Profile 1 (Wheat)
+
+```json
+{
+  "farm_id": "syn_farm_002a",
+  "user_id": "syn_user_002",
+  "farm_name": "Əsas Buğda Sahəsi",
+  "farm_type": "crop",
   "region": "Aran",
   "parcels": [
     {
@@ -366,86 +512,53 @@ graph TB
     "type": "fertilizer_N",
     "date": "2026-01-10",
     "details": "Applied 50kg/ha urea"
-  },
-  "language_pref": "az_AZ"
-}
-```
-
----
-
-## 5. The API Handshake
-
-Our module exposes a single, secure REST endpoint that Digital Umbrella can consume immediately.
-
-### Endpoint Contract
-
-```
-POST /v1/ai/assistant/chat
-```
-
-**Request:**
-```json
-{
-  "profile_id": "syn_wheat_001",
-  "message": "Suvarma vaxtıdır?",
-  "context": {
-    "include_ndvi": true,
-    "include_weather": true
   }
 }
 ```
 
-**Response:**
+#### Farm Profile 2 (Orchard)
+
 ```json
 {
-  "request_id": "req_abc123",
-  "agent_reasoning": "NDVI 0.55 göstərir ki, bitki sağlamdır. Hava proqnozu: növbəti 3 gün yağış yoxdur. Torpaq nəmliyi 28% (kritik həddə yaxın).",
-  "message": "Bəli, növbəti 2 gün ərzində suvarma məsləhətdir. Səhər tezdən suvarmaq daha effektivdir.",
-  "confidence": 0.92,
-  "rule_matched": "AZ-IRR-001",
-  "source_citation": "Torpaq nəmliyi < 30% olduqda suvarma tələb olunur."
+  "farm_id": "syn_farm_002b",
+  "user_id": "syn_user_002",
+  "farm_name": "Alma Bağı",
+  "farm_type": "orchard",
+  "region": "Quba-Qusar",
+  "parcels": [
+    {
+      "parcel_id": "AZ-QBA-2847",
+      "coordinates": { "lat": 41.36, "lon": 48.51 },
+      "area_hectares": 2.3,
+      "soil_type": "Loam",
+      "irrigation_system": "Drip"
+    }
+  ],
+  "active_declarations": [
+    {
+      "declaration_id": "DECL-2026-291847",
+      "crop": "Apple (Gala)",
+      "sowing_date": "2020-03-15",
+      "expected_harvest": "2026-09-15",
+      "status": "CONFIRMED"
+    }
+  ],
+  "ndvi_history": [
+    { "date": "2026-01-01", "value": 0.35, "health_status": "HEALTHY" },
+    { "date": "2026-01-15", "value": 0.38, "health_status": "HEALTHY" }
+  ],
+  "crop_rotation_history": [],
+  "last_action": {
+    "type": "pruning",
+    "date": "2026-01-05",
+    "details": "Winter pruning completed"
+  }
 }
 ```
 
 ---
 
-## 6. Why This Wins the Handoff
-
-The biggest fear for an IT team at a company like Digital Umbrella is **"Integration Debt"**—the fear that they will have to rewrite their app to fit our AI.
-
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
-graph LR
-    subgraph fears["😰 IT Team Fears"]
-        rewrite["Rewrite app code"]
-        access["Give DB access"]
-        maintain["Maintain AI state"]
-        mismatch["Schema mismatch"]
-    end
-    
-    subgraph solutions["✅ Our Solutions"]
-        docker["Dockerized self-contained"]
-        synthetic["Pre-loaded synthetic DB"]
-        stateless["LangGraph handles state"]
-        mirror["Mirror-image schema"]
-    end
-    
-    fears -->|"Eliminated by"| solutions
-    
-    style fears fill:#ffcdd2,stroke:#c62828,color:#b71c1c
-    style solutions fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
-```
-
-| Fear | Our Solution |
-|:-----|:-------------|
-| **"We'll have to rewrite our app"** | Single REST endpoint, standard JSON |
-| **"They need our database access"** | Docker image pre-loaded with synthetic DB—zero access needed |
-| **"Managing AI conversation state"** | LangGraph handles memory inside the container |
-| **"Their schema won't match ours"** | Mirror-image engine—we replicate YOUR structure |
-
----
-
-## 7. Data Contracts with Great Expectations
+## 5. Data Contracts with Great Expectations
 
 We enforce strict data contracts to ensure our synthetic data always meets the technical requirements of the Yonca API.
 
@@ -496,70 +609,10 @@ expectation_suite.add_expectation(
 
 ---
 
-## 8. Transition Roadmap
-
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
-flowchart LR
-    subgraph phase1["📦 Phase 1: Now"]
-        p1["100% Synthetic<br/>Mirror-image engine<br/>5+ farm twins<br/>Data contracts"]
-    end
-    
-    subgraph phase2["🔀 Phase 2: +6mo"]
-        p2["Hybrid Mode<br/>Real weather APIs<br/>Anonymized regional stats<br/>Schema validation"]
-    end
-    
-    subgraph phase3["🚀 Phase 3: +12mo"]
-        p3["Production<br/>Real EKTIS data<br/>Hot-swap adapter<br/>Zero code changes"]
-    end
-    
-    phase1 -->|"Schema locked"| phase2 -->|"Flip the switch"| phase3
-    
-    style phase1 fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px,color:#1b5e20
-    style phase2 fill:#fff9c4,stroke:#f9a825,color:#5d4037
-    style phase3 fill:#e1f5fe,stroke:#0288d1,color:#01579b
-```
-
-### Hot-Swap Data Adapter
-
-```python
-# src/yonca/sidecar/data_adapter.py
-from typing import Protocol
-
-class DataAdapter(Protocol):
-    """Interface for swappable data sources.
-    
-    Phase 1: SyntheticDataAdapter (current)
-    Phase 2: HybridDataAdapter (real weather + synthetic farms)
-    Phase 3: EKTISDataAdapter (full production)
-    """
-    
-    def get_farm_profile(self, farm_id: str) -> FarmProfile: ...
-    def get_weather(self, lat: float, lon: float, days: int) -> list[WeatherData]: ...
-    def get_ndvi_history(self, parcel_id: str, days: int) -> list[NDVIReading]: ...
-    def get_soil_data(self, parcel_id: str) -> SoilData: ...
-
-# Current implementation
-class SyntheticDataAdapter:
-    """Phase 1: All data from mirror-image synthetic engine."""
-    
-    def get_farm_profile(self, farm_id: str) -> FarmProfile:
-        return self._synthetic_db.query(farm_id)
-
-# Future implementation (same interface!)
-class EKTISDataAdapter:
-    """Phase 3: Real data from EKTIS API."""
-    
-    def get_farm_profile(self, farm_id: str) -> FarmProfile:
-        return self._ektis_client.fetch_farm(farm_id)
-```
-
----
-
 <div align="center">
 
 **📄 Document:** `02-SYNTHETIC-DATA-ENGINE.md`  
 **⬅️ Previous:** [01-MANIFESTO.md](01-MANIFESTO.md) — Vision & Principles  
-**➡️ Next:** [03-ARCHITECTURE.md](03-ARCHITECTURE.md) — Technical Deep-Dive
+**➡️ Next:** [03-ARCHITECTURE.md](03-ARCHITECTURE.md) — Technical Deep-Dive (includes API contracts & transition roadmap)
 
 </div>

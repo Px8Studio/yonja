@@ -69,55 +69,69 @@ Our primary architectural decision is the **Sidecar Intelligence Model**. Instea
 | **API Framework** | FastAPI (Swagger/OpenAPI) | Single endpoint integration |
 | **Orchestrator** | LangGraph (Stateful) | Manages multi-step reasoning & memory |
 | **Data Engine** | SDV + Custom Providers | Mirror-image synthetic scenarios |
-| **Containerization** | Docker + PostgreSQL | Self-contained microservice delivery |
+| **Persistence** | PostgreSQL + Redis | Ground truth storage + Agent memory/caching |
+| **Authentication** | mygov ID Token Validation | Leverages existing Yonca auth infrastructure |
+| **Containerization** | Docker Compose | Self-contained microservice delivery |
 
-### Containerized Delivery Model
-
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
-graph TB
-    subgraph docker["🐳 DOCKER CONTAINER"]
-        direction TB
-        subgraph sidecar["🧠 Yonca AI Sidecar"]
-            api["🔌 FastAPI"]
-            lang["🔄 LangGraph"]
-            llm["🤖 Qwen2.5 GGUF"]
-            rules["📚 Rulebook"]
-        end
-        subgraph data["💾 Data Layer"]
-            pg["🐘 PostgreSQL"]
-            syn["🧪 Synthetic DB"]
-        end
-        api --> lang --> llm
-        lang --> rules
-        lang --> pg
-        llm --> syn
-    end
-    
-    mobile["📱 Yonca App"]
-    ektis["🏛️ EKTIS"]
-    
-    mobile -->|"REST API"| docker
-    ektis -.->|"Zero Access"| docker
-    
-    style docker fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#0d47a1
-    style sidecar fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    style data fill:#fff9c4,stroke:#f9a825,color:#5d4037
-```
-
-> 📐 **For detailed architecture:** See [03-ARCHITECTURE.md](03-ARCHITECTURE.md)
+> 📐 **For detailed architecture, API schemas, and deployment:** See [03-ARCHITECTURE.md](03-ARCHITECTURE.md)
 
 ---
 
-## 3. UI/UX Standards
+## 3. UI/UX Design System
 
-The UI is designed to be **Invisible yet Informative**—following the "Contextual Card" pattern.
+The AI Assistant integrates as a **new navigation tab** positioned between "Məntəqələr" (Places) and "Təsərrüfatlarım" (My Farms) in the bottom navigation bar.
 
-| Principle | Implementation | Reason |
-|:----------|:---------------|:-------|
-| **🎨 Visual Continuity** | Yonca Palette (Forest Green `#2E7D32`), 15px rounded corners | Match existing brand identity |
-| **✅ The "Why" Factor** | Source Citation on every recommendation | Farmers trust logic they can verify |
-| **📱 Native-First Viewport** | Mobile Aspect Ratio forced | Prevent "Desktop Drift" |
+### Navigation Placement
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        📱 Bottom Navigation Bar                              │
+├─────────────┬─────────────┬─────────────┬─────────────────┬─────────────────┤
+│     🏠      │     📍      │    🤖       │       🌾        │        ⋯        │
+│ Əsas səhifə │  Məntəqələr │ AI Köməkçi  │  Təsərrüfatlarım│    Daha çox     │
+└─────────────┴─────────────┴──────┬──────┴─────────────────┴─────────────────┘
+                                   │
+                             ▲ NEW TAB ▲
+                         (Primary: #2E7D32)
+```
+
+### Design Principles (Extracted from Yonca App)
+
+| Principle | Implementation | Reference |
+|:----------|:---------------|:----------|
+| **🎨 Brand Palette** | Primary `#2E7D32`, Accent `#4CAF50`, Background `#F5F5F5` | Logo, buttons, cards |
+| **📐 Card System** | 12-16px radius, subtle shadow, white background | Feature cards, weather widget |
+| **📝 Typography** | Bold headers, regular body, Azerbaijani-optimized | Clear hierarchy |
+| **📏 Spacing** | 16px grid, 12px card gaps, 20px section margins | Consistent rhythm |
+| **🌡️ Context Cards** | Location + weather always visible | Top of home screen |
+| **✅ Trust Signals** | Source citations, confidence indicators | Every AI recommendation |
+
+### AI Assistant Tab Behavior
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+flowchart TB
+    subgraph tab["🤖 AI Köməkçi Tab"]
+        direction TB
+        context["📋 Context Header<br/><i>User + Active Farms Summary</i>"]
+        chat["💬 Chat Interface<br/><i>Conversation with AI</i>"]
+        quick["⚡ Quick Actions<br/><i>Common Tasks</i>"]
+        
+        context --> chat --> quick
+    end
+    
+    subgraph data["🔄 Auto-Loaded Context"]
+        user["👤 User Profile"]
+        farms2["🌾 All User Farms"]
+        weather["🌤️ Local Weather"]
+        ndvi["📡 Latest NDVI"]
+    end
+    
+    data --> context
+    
+    style tab fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style context fill:#fff9c4,stroke:#f9a825,color:#5d4037
+```
 
 ---
 

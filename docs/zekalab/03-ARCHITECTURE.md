@@ -4,6 +4,117 @@
 
 ---
 
+## 🏗️ Dual-Reality Data Architecture
+
+To integrate seamlessly with the **Yonca** ecosystem while respecting its government-grade security, we adopt a "dual-reality" data architecture. This ensures our AI agent operates in a safe synthetic environment during the prototype phase, while the infrastructure is technically ready to handle complex authentication methods (mygov ID, SİMA, Asan İmza) when moved to production.
+
+### Multi-Layered Data Stack
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+graph TB
+    subgraph docker["🐳 DOCKER CONTAINER"]
+        direction TB
+        subgraph services["🧠 Microservices"]
+            api["🔌 Service 1: API Gateway<br/><i>FastAPI + Token Validation</i>"]
+            brain["🧠 Service 2: Agent Brain<br/><i>LangGraph Orchestrator</i>"]
+            data["💾 Service 3: Data Engine<br/><i>PostgreSQL + Redis</i>"]
+            syngen["🧪 Service 4: Synthetic Generator<br/><i>SDV + MOSTLY AI</i>"]
+        end
+        
+        subgraph storage["📊 Persistence Layer"]
+            pg["🐘 PostgreSQL<br/><i>Ground Truth: Synthetic Profiles</i>"]
+            redis["⚡ Redis<br/><i>Agent Memory + Cache</i>"]
+        end
+        
+        api --> brain
+        brain --> data
+        brain --> redis
+        data --> pg
+        syngen --> pg
+    end
+    
+    subgraph external["🌐 External"]
+        yonca["📱 Yonca App"]
+        mygov["🔐 mygov ID Gateway"]
+    end
+    
+    yonca -->|"JWT Token"| api
+    mygov -.->|"Token Validation"| api
+    
+    style docker fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#0d47a1
+    style services fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style storage fill:#fff9c4,stroke:#f9a825,color:#5d4037
+```
+
+### A. PostgreSQL: The Persistence Layer
+
+| Aspect | Description |
+|:-------|:------------|
+| **Purpose** | Stores "Ground Truth" for 5+ synthetic farm profiles |
+| **Content** | Detailed schemas mirroring EKTİS—parcel boundaries, sowing declarations, crop health logs |
+| **Isolation** | Entirely isolated; prototype contains ONLY synthetic engine data |
+| **Tools** | Populated via **SDV** or **MOSTLY AI** |
+
+### B. Redis: The Context & Speed Layer
+
+| Aspect | Description |
+|:-------|:------------|
+| **Purpose** | "Short-term memory" for LangGraph agents + fast lookups |
+| **Agent State** | Stores conversation Checkpoints—if farmer closes app mid-conversation, Redis remembers the exact state |
+| **Real-time Data** | Caches simulated live feeds (synthetic weather, market prices) for instant AI responses |
+| **Session Management** | Manages thread IDs and conversation history |
+
+---
+
+## 🔐 Government Authentication Integration
+
+The Yonca platform uses **mygov ID** (formerly *digital.login*), the standard gateway for Azerbaijani e-services supporting **SİMA** and **Asan İmza**.
+
+### The Token Bridge Strategy
+
+Our sidecar module does **NOT** directly handle Asan İmza or SİMA login. Instead, it leverages the existing security of the main Yonca app:
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+sequenceDiagram
+    participant F as 🧑‍🌾 Farmer
+    participant Y as 📱 Yonca App
+    participant M as 🔐 mygov ID
+    participant S as 🧠 AI Sidecar
+    participant P as 🛡️ Privacy Gateway
+    
+    F->>Y: Open App
+    Y->>M: Redirect to Login
+    F->>M: Authenticate (SİMA/Asan İmza)
+    M-->>Y: Identity Token (JWT)
+    Y->>S: API Request + JWT Header
+    S->>S: Validate Token
+    S->>P: Map Real ID → Synthetic Profile
+    P-->>S: syn_user_xxx
+    S->>S: Process with Synthetic Data Only
+    S-->>Y: AI Response
+    Y-->>F: Personalized Advice
+```
+
+### Authentication Flow
+
+| Step | Action | Component |
+|:-----|:-------|:----------|
+| **1. Handshake** | User logs into Yonca via mygov ID (SİMA or Asan İmza) | Yonca App receives **Identity Token** |
+| **2. Stateless Validation** | Token included in header of every API request to Sidecar | Validated against Digital Umbrella's auth server |
+| **3. Privacy Guardrail** | Real user ID mapped to **Synthetic Profile ID** | AI agent only "sees" synthetic profile (100% data safety) |
+
+### Understanding Auth Methods
+
+| Method | Technology | Usage |
+|:-------|:-----------|:------|
+| **Asan İmza** | PKI-based identification via specialized SIM card | High-security government transactions |
+| **SİMA** | Cloud-based signature using face recognition + biometrics | Mobile-friendly authentication |
+| **mygov ID** | Unified platform handling redirection to auth services | Single sign-on for all e-services |
+
+---
+
 ## 🧠 Core Technology: LangGraph Agentic Framework
 
 We propose building the Yonca AI Sidecar using **LangGraph**—an enterprise-grade agentic framework that transforms the system from a simple "input-output" advisor into a **Stateful Farming Orchestrator** that reasons, remembers, and self-corrects.
@@ -525,10 +636,112 @@ flowchart LR
 # Prepared for seamless Phase 2 transition
 
 class DataAdapter(Protocol):
-    """Interface for swappable data sources."""
+    """Interface for swappable data sources.
+    
+    Phase 1: SyntheticDataAdapter (current)
+    Phase 2: HybridDataAdapter (real weather + synthetic farms)
+    Phase 3: EKTISDataAdapter (full production)
+    """
     def get_farm_profile(self, farm_id: str) -> FarmProfile: ...
     def get_weather(self, region: str, days: int) -> list[WeatherData]: ...
+    def get_ndvi_history(self, parcel_id: str, days: int) -> list[NDVIReading]: ...
     def get_soil_data(self, farm_id: str) -> SoilData: ...
+
+# Current implementation
+class SyntheticDataAdapter:
+    """Phase 1: All data from mirror-image synthetic engine."""
+    
+    def get_farm_profile(self, farm_id: str) -> FarmProfile:
+        return self._synthetic_db.query(farm_id)
+
+# Future implementation (same interface!)
+class EKTISDataAdapter:
+    """Phase 3: Real data from EKTIS API."""
+    
+    def get_farm_profile(self, farm_id: str) -> FarmProfile:
+        return self._ektis_client.fetch_farm(farm_id)
+```
+
+---
+
+## 🤝 The API Handshake
+
+Our module exposes a single, secure REST endpoint that Digital Umbrella can consume immediately. The API is **user-centric**—pass the user ID, and the system automatically loads all their farms.
+
+### Why This Wins the Handoff
+
+The biggest fear for an IT team is **"Integration Debt"**—the fear that they will have to rewrite their app to fit our AI.
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+graph LR
+    subgraph fears["😰 IT Team Fears"]
+        rewrite["Rewrite app code"]
+        access["Give DB access"]
+        maintain["Maintain AI state"]
+        mismatch["Schema mismatch"]
+        auth["Handle gov auth"]
+    end
+    
+    subgraph solutions["✅ Our Solutions"]
+        docker["Dockerized self-contained"]
+        synthetic["Pre-loaded synthetic DB"]
+        stateless["LangGraph + Redis handles state"]
+        mirror["Mirror-image schema"]
+        token["Token Bridge (JWT validation)"]
+    end
+    
+    fears -->|"Eliminated by"| solutions
+    
+    style fears fill:#ffcdd2,stroke:#c62828,color:#b71c1c
+    style solutions fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
+```
+
+| Fear | Our Solution |
+|:-----|:-------------|
+| **"We'll have to rewrite our app"** | Single REST endpoint, standard JSON |
+| **"They need our database access"** | Docker image pre-loaded with synthetic DB—zero access needed |
+| **"Managing AI conversation state"** | LangGraph + Redis handles memory inside the container |
+| **"Their schema won't match ours"** | Mirror-image engine—we replicate YOUR structure |
+| **"Authentication complexity"** | Token Bridge—we validate your existing mygov ID JWTs |
+
+### Primary Endpoint Contract
+
+```
+POST /v1/ai/assistant/chat
+```
+
+**Request:**
+```json
+{
+  "user_id": "syn_user_002",
+  "active_farm_id": "syn_farm_002a",
+  "message": "Suvarma vaxtıdır?",
+  "context": {
+    "include_ndvi": true,
+    "include_weather": true,
+    "include_all_farms": false
+  }
+}
+```
+
+| Field | Required | Description |
+|:------|:---------|:------------|
+| `user_id` | ✅ | Identifies WHO is asking (loads persona) |
+| `active_farm_id` | ⚪ | Which farm the question is about (optional—defaults to primary) |
+| `message` | ✅ | The farmer's question in Azerbaijani |
+| `context.include_all_farms` | ⚪ | If `true`, AI considers ALL user's farms for cross-farm advice |
+
+**Response:**
+```json
+{
+  "request_id": "req_abc123",
+  "agent_reasoning": "NDVI 0.55 göstərir ki, bitki sağlamdır. Hava proqnozu: növbəti 3 gün yağış yoxdur. Torpaq nəmliyi 28% (kritik həddə yaxın).",
+  "message": "Bəli, növbəti 2 gün ərzində suvarma məsləhətdir. Səhər tezdən suvarmaq daha effektivdir.",
+  "confidence": 0.92,
+  "rule_matched": "AZ-IRR-001",
+  "source_citation": "Torpaq nəmliyi < 30% olduqda suvarma tələb olunur."
+}
 ```
 
 ---
@@ -789,7 +1002,15 @@ pie showData
 
 ## ❓ Technical Discovery: Questions for Digital Umbrella IT
 
-With the LangGraph architecture, our integration requirements are well-defined. These questions will finalize the deployment strategy:
+With the LangGraph architecture and dual-reality data strategy, our integration requirements are well-defined. These questions will finalize the deployment strategy:
+
+### Authentication & Security
+
+| Question | Why It Matters |
+|:---------|:--------------|
+| **Does Yonca use a JWT (JSON Web Token) standard for the mygov ID session that we can verify in our Sidecar's middleware?** | Determines token validation implementation |
+| **For the synthetic-to-real transition, should we prepare our PostgreSQL schema to match the EKTİS 'Declaration' table exactly?** | Ensures zero-friction handoff |
+| **Will you provide a dedicated Redis instance for our service, or should we include a standalone Redis instance inside our Docker Compose?** | Affects deployment architecture |
 
 ### Communication Protocol
 
@@ -881,10 +1102,13 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - LANGGRAPH_CHECKPOINT_BACKEND=postgres
+      - LANGGRAPH_CHECKPOINT_BACKEND=redis
+      - LANGGRAPH_REDIS_URL=redis://redis:6379
       - LANGGRAPH_POSTGRES_URI=postgresql://yonca:secret@postgres:5432/yonca
+      - SIDECAR_AUTH_VALIDATION_URL=https://digital-umbrella.az/auth/validate
     depends_on:
       - postgres
+      - redis
       - ollama
 
   postgres:
@@ -896,6 +1120,14 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    command: redis-server --appendonly yes
+
   ollama:
     image: ollama/ollama:latest
     volumes:
@@ -903,8 +1135,19 @@ services:
 
 volumes:
   pgdata:
+  redisdata:
   ollama:
 ```
+
+### Container Internal Structure
+
+| Service | Technology | Purpose |
+|:--------|:-----------|:--------|
+| **API Gateway** | FastAPI | Validates mygov ID tokens, routes requests |
+| **Agent Brain** | LangGraph | Orchestrates farming logic, manages state |
+| **Data Engine** | PostgreSQL | Stores synthetic profiles (ground truth) |
+| **Memory Layer** | Redis | Agent checkpoints, session cache, real-time data |
+| **Synthetic Generator** | SDV | Pre-populates DB with realistic non-real farm data |
 
 ### Edge Deployment
 

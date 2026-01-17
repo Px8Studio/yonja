@@ -166,7 +166,7 @@ def _get_recommendation_service():
 def load_farm_for_scenario(profile: ScenarioProfile) -> UIFarmProfile:
     """Load and adapt a farm profile for the given scenario."""
     farms = _get_scenario_farms()
-    scenario_id = SCENARIO_MAP.get(profile)
+    scenario_id = SCENARIO_MAP.get(profile, "scenario-wheat")
     
     canonical_farm = farms.get(scenario_id)
     if canonical_farm is None:
@@ -263,13 +263,19 @@ def generate_recommendations(farm: UIFarmProfile) -> dict:
     # Build request
     request = RecommendationRequest(
         farm_id=farm.id,
+        farmer_id=None,
+        farmer_name=None,
         region=farm.region,
         farm_type=farm.profile_type.value,
         crops=[c.crop_type for c in farm.crops],
         livestock_types=[l.animal_type for l in farm.livestock],
         area_hectares=farm.area_hectares,
+        soil_type=farm.soil.soil_type if farm.soil else None,
         soil_moisture_percent=farm.soil.moisture_percent if farm.soil else None,
+        soil_ph=farm.soil.ph_level if farm.soil else None,
         nitrogen_level=farm.soil.nitrogen_kg_ha if farm.soil else None,
+        phosphorus_level=farm.soil.phosphorus_kg_ha if farm.soil else None,
+        potassium_level=farm.soil.potassium_kg_ha if farm.soil else None,
         temperature_min=farm.weather.temperature_min if farm.weather else None,
         temperature_max=farm.weather.temperature_max if farm.weather else None,
         humidity_percent=farm.weather.humidity_percent if farm.weather else None,
@@ -277,6 +283,8 @@ def generate_recommendations(farm: UIFarmProfile) -> dict:
         query="",
         language="az",
         max_recommendations=5,
+        include_rulebook_refs=True,
+        inference_mode=None,
     )
     
     # Get recommendations
@@ -294,7 +302,7 @@ def generate_recommendations(farm: UIFarmProfile) -> dict:
             }
             for r in response.recommendations
         ]
-    except Exception:
+    except (RuntimeError, ValueError, ConnectionError):
         # Fallback to rule-based
         items = _generate_fallback_recommendations(farm)
     
@@ -605,7 +613,7 @@ def _handle_soil_intent(farm: UIFarmProfile, confidence: float) -> str:
     return "Torpaq analizi mövcud deyil."
 
 
-def _handle_schedule_intent(farm: UIFarmProfile, confidence: float) -> str:
+def _handle_schedule_intent(farm: UIFarmProfile, confidence: float) -> str:  # noqa: ARG001
     return (
         f"📋 **{datetime.now().strftime('%d.%m.%Y')} üçün plan:**\n\n"
         "1. **06:00** - Sahə müayinəsi\n"

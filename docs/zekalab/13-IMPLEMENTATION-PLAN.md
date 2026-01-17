@@ -880,18 +880,66 @@ rules:
 
 ## 🖥️ Phase 6: Demo & Deployment (Week 11-12)
 
-### 6.1 Chainlit Demo UI
+### 6.1 Chainlit Demo UI (Native LangGraph Integration)
 
-**Goal:** Create interactive demo interface.
+**Goal:** Create interactive demo interface using Chainlit's **native LangGraph integration**.
+
+> ⚡ **Key Insight:** Chainlit's `cl.LangchainCallbackHandler` provides automatic step visualization, token streaming, and session persistence—reducing development from **1-2 weeks** (custom React) to **~1 hour**.
+
+#### Why Native Integration?
+
+| Aspect | Native Chainlit | Custom React |
+|:-------|:----------------|:-------------|
+| Development Time | ~1 hour | 1-2 weeks |
+| Step Visualization | Automatic | Manual components |
+| Session Persistence | `cl.user_session` | Custom state mgmt |
+| Maintenance | Python-only | JS/TS + Python |
 
 #### Tasks
 
 - [ ] **6.1.1** Set up Chainlit project (`demo-ui/`)
-- [ ] **6.1.2** Implement chat interface
-- [ ] **6.1.3** Add farm profile selector
-- [ ] **6.1.4** Add streaming response display
+- [ ] **6.1.2** Implement native LangGraph integration with `cl.LangchainCallbackHandler`
+- [ ] **6.1.3** Configure `thread_id` for session persistence via `cl.context.session.id`
+- [ ] **6.1.4** Add farm profile selector using `cl.ChatSettings`
 - [ ] **6.1.5** Apply Azerbaijani localization
 - [ ] **6.1.6** Create Dockerfile for demo
+
+#### Implementation Pattern
+
+```python
+# demo-ui/app.py — Key Integration Points
+import chainlit as cl
+from langchain.schema.runnable.config import RunnableConfig
+from yonca.agent.graph import create_yonca_graph
+
+# Compile graph with checkpointer
+app = create_yonca_graph().compile(checkpointer=memory)
+
+@cl.on_chat_start
+async def start():
+    # Store graph in session for persistence
+    cl.user_session.set("graph", app)
+    await cl.Message(content="Yonca AI Köməkçisinə xoş gəlmisiniz!").send()
+
+@cl.on_message
+async def main(message: cl.Message):
+    graph = cl.user_session.get("graph")
+    
+    # 🔑 Native callback handler — automatic step visualization
+    cb = cl.LangchainCallbackHandler()
+    
+    # 🔑 Session persistence via thread_id
+    config = RunnableConfig(
+        callbacks=[cb],
+        configurable={"thread_id": cl.context.session.id}
+    )
+    
+    # Stream with automatic UI updates
+    async for event in graph.astream({"messages": [("user", message.content)]}, config):
+        pass  # Callback handler updates UI automatically
+```
+
+> 📖 **Full Implementation:** See [11-DEMO-UI-SPEC.md](11-DEMO-UI-SPEC.md) Section 4.1
 
 ---
 
@@ -944,11 +992,11 @@ rules:
 
 | Task | Status | Notes |
 |:-----|:------:|:------|
-| Chainlit setup | ⬜ | |
-| Chat interface | ⬜ | |
-| Farm selector | ⬜ | |
-| Streaming display | ⬜ | |
-| Azerbaijani UI | ⬜ | |
+| Chainlit setup | ⬜ | Native LangGraph integration |
+| `cl.LangchainCallbackHandler` | ⬜ | Automatic step visualization |
+| Session persistence (`thread_id`) | ⬜ | Via `cl.context.session.id` |
+| Farm selector | ⬜ | `cl.ChatSettings` widget |
+| Azerbaijani UI | ⬜ | Localization strings |
 | Docker Compose finalized | ⬜ | |
 | Ollama service | ⬜ | |
 | PostgreSQL service | ⬜ | |
@@ -956,6 +1004,8 @@ rules:
 | render.yaml | ⬜ | |
 | Render deployment | ⬜ | |
 | GitHub Actions | ⬜ | |
+
+> 💡 **Time Savings:** Using native Chainlit + LangGraph integration reduces UI development from ~2 weeks to ~1 hour. The callback handler provides automatic step visualization, token streaming, and intermediate state display—no custom React required.
 
 ---
 

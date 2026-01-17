@@ -21,7 +21,31 @@
 
 **Winner: Chainlit** — Purpose-built for conversational AI with native LangGraph support.
 
-### 1.2 Demo Architecture
+### 1.2 Native LangGraph Integration (Recommended Pattern)
+
+Chainlit provides a **native integration** with LangGraph via `cl.LangchainCallbackHandler`. This is the **gold standard** for Python developers and eliminates the need for custom React UI.
+
+#### Why Choose Native Integration Over Custom React?
+
+| Feature | Chainlit + LangGraph Native | Custom React (Vite/Tailwind) |
+|:--------|:----------------------------|:-----------------------------|
+| **Development Time** | **~1 hour** | **1-2 weeks** |
+| **Logic Visualization** | Automatic (Steps/Nodes) | Manual components |
+| **Maintenance** | Single language (Python) | Split (JS/TS + Python) |
+| **Token Streaming** | Zero-code | Custom implementation |
+| **Session Persistence** | Built-in `cl.user_session` | Manual state management |
+| **Intermediate Steps** | Automatic Chain-of-Thought | Custom components needed |
+| **Mobile UX** | Responsive out-of-box | Fully custom (more work) |
+
+#### Key Benefits for Digital Umbrella Demo
+
+1. **Observability (The "Handoff" Winner):** Automatic "Chain of Thought" display builds trust. Stakeholders see exactly when AI is "Checking Irrigation Rules" or "Calling Weather Tool."
+
+2. **Session Management:** `cl.user_session` stores the LangGraph Thread ID natively. If farmer refreshes the page, conversation state is preserved.
+
+3. **Zero UI Plumbing:** No React components to write. Focus on the agent logic, not the frontend.
+
+### 1.3 Demo Architecture
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
@@ -193,7 +217,157 @@ timeout = 3600
 
 ## 4. Implementation
 
-### 4.1 Main Application
+### 4.1 Native LangGraph Integration (Recommended)
+
+This is the **recommended pattern** using Chainlit's native `LangchainCallbackHandler` for automatic step visualization and streaming.
+
+```python
+# demo-ui/app.py — Native LangGraph Integration
+import chainlit as cl
+from langgraph.graph import StateGraph
+from langchain.schema.runnable.config import RunnableConfig
+from typing import TypedDict, Annotated
+from langgraph.graph.message import add_messages
+
+# Import compiled graph from main app
+from yonca.agent.graph import create_yonca_graph
+from yonca.agent.memory import create_checkpointer
+from services.mock_data import get_demo_farms
+
+# ============================================
+# STATE & GRAPH SETUP
+# ============================================
+class YoncaState(TypedDict):
+    """LangGraph state for Yonca conversations."""
+    messages: Annotated[list, add_messages]
+    farm_context: dict
+    user_intent: str | None
+    rules_applied: list[str]
+
+# Create checkpointer for session persistence
+memory = create_checkpointer()
+
+# Compile the graph with checkpointer
+app = create_yonca_graph().compile(checkpointer=memory)
+
+# ============================================
+# LOCALIZATION
+# ============================================
+AZ_STRINGS = {
+    "welcome": "🌾 **Yonca AI Köməkçisinə xoş gəlmisiniz!**\n\nMən sizin virtual aqronomam. Əkin, suvarma, gübrələmə və digər kənd təsərrüfatı məsələlərində kömək edə bilərəm.",
+    "farm_loaded": "📍 Təsərrüfat məlumatları yükləndi",
+    "thinking": "Düşünürəm...",
+}
+
+# ============================================
+# SESSION START — Store Graph in Session
+# ============================================
+@cl.on_chat_start
+async def start():
+    """Initialize session with LangGraph and farm context."""
+    
+    # Store the compiled graph in user session
+    cl.user_session.set("graph", app)
+    
+    # Load demo farm data
+    farms = get_demo_farms()
+    default_farm = farms[0]
+    cl.user_session.set("farm_context", default_farm)
+    
+    # Welcome message
+    await cl.Message(
+        content=AZ_STRINGS["welcome"],
+        author="Yonca"
+    ).send()
+    
+    # Show farm context
+    farm_info = f"""
+📍 **Seçilmiş təsərrüfat:** {default_farm["name"]}
+🌱 **Əkin:** {default_farm["crop"]}
+📐 **Sahə:** {default_farm["area_ha"]} hektar
+📍 **Rayon:** {default_farm["region"]}
+"""
+    await cl.Message(content=farm_info, author="Sistem").send()
+
+# ============================================
+# MESSAGE HANDLER — Native LangGraph Integration
+# ============================================
+@cl.on_message
+async def main(message: cl.Message):
+    """Handle messages with native LangGraph callback handler."""
+    
+    # Retrieve graph from session
+    graph = cl.user_session.get("graph")
+    farm_context = cl.user_session.get("farm_context")
+    
+    # 🔑 KEY: Chainlit's native LangGraph callback handler
+    # This automatically creates "Steps" in the UI for each node
+    cb = cl.LangchainCallbackHandler()
+    
+    # Configure graph with session thread_id for persistence
+    # The thread_id ensures conversation state survives page refresh
+    config = RunnableConfig(
+        callbacks=[cb],
+        configurable={
+            "thread_id": cl.context.session.id,  # 🔑 Session persistence
+        }
+    )
+    
+    # Prepare initial state with farm context
+    initial_state = {
+        "messages": [("user", message.content)],
+        "farm_context": farm_context,
+        "user_intent": None,
+        "rules_applied": [],
+    }
+    
+    # Stream the response — Chainlit handles visualization automatically
+    response_msg = cl.Message(content="", author="Yonca")
+    await response_msg.send()
+    
+    async for event in graph.astream(initial_state, config):
+        # The callback handler (cb) automatically updates the UI
+        # showing which node is executing (Supervisor, Agronomist, etc.)
+        
+        # Extract final response for streaming to user
+        if "messages" in event:
+            last_msg = event["messages"][-1]
+            if hasattr(last_msg, "content") and last_msg.type == "ai":
+                await response_msg.stream_token(last_msg.content)
+    
+    await response_msg.update()
+```
+
+#### What Happens Automatically:
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+sequenceDiagram
+    participant F as 🧑‍🌾 Farmer
+    participant UI as 🖥️ Chainlit UI
+    participant CB as 📊 CallbackHandler
+    participant G as 🧠 LangGraph
+
+    F->>UI: "Pomidoru nə vaxt suvarmalıyam?"
+    UI->>CB: cl.LangchainCallbackHandler()
+    CB->>G: graph.astream(state, config)
+    
+    G-->>CB: Node: supervisor (start)
+    CB-->>UI: 🔄 Step: "Routing Query"
+    
+    G-->>CB: Node: agronomist (thinking)
+    CB-->>UI: 🔄 Step: "Checking Irrigation Rules"
+    
+    G-->>CB: Node: validator (checking)
+    CB-->>UI: 🔄 Step: "Validating Response"
+    
+    G-->>CB: Final response (streaming)
+    CB-->>UI: 📝 Token-by-token display
+    
+    UI-->>F: Complete response with visible chain-of-thought
+```
+
+### 4.2 Alternative: API Client Pattern
 
 ```python
 # app.py

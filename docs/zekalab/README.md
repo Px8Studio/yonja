@@ -48,7 +48,9 @@ See **[12-DUAL-MODE-DEPLOYMENT.md](12-DUAL-MODE-DEPLOYMENT.md)** for full detail
 
 | # | Document | Purpose | Read When... |
 |:-:|:---------|:--------|:-------------|
-| 11 | **[11-DEMO-UI-SPEC.md](11-DEMO-UI-SPEC.md)** | Chainlit setup, demo scenarios, Azerbaijani theme | Building the demo |
+| 11 | **[11-DEMO-UI-SPEC.md](11-DEMO-UI-SPEC.md)** | Chainlit + LangGraph native integration, demo scenarios | Building the demo |
+
+> 💡 **Demo Stack:** We use Chainlit's **native LangGraph integration** (`cl.LangchainCallbackHandler`) for automatic step visualization, token streaming, and session persistence. This reduces UI development from **1-2 weeks** (custom React) to **~1 hour**.
 
 ### Deployment & Implementation
 

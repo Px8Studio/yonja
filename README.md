@@ -87,21 +87,22 @@ YONCA_LLM_MODEL=gemini-2.0-flash
 
 ### Installation
 
+> **Tooling Note:** We use **Poetry** for dependency management (reads `pyproject.toml`, creates reproducible environments). **Uvicorn** is the ASGI server that runs FastAPI—it's installed as a dependency, not a separate tool.
+
 ```bash
 # Clone the repository
 git clone https://github.com/ZekaLab/yonja.git
 cd yonja
 
-# Create virtual environment (Python 3.12)
-python -m venv .venv312
-.venv312\Scripts\activate  # Windows
-source .venv312/bin/activate  # Linux/Mac
+# Option A: Poetry (Recommended)
+poetry install              # Creates .venv and installs all deps
+poetry shell                # Activates the environment
 
-# Install with your preferred LLM provider
-pip install -e ".[ollama]"    # For local Qwen3
-pip install -e ".[gemini]"    # For Google Gemini
-pip install -e ".[all-llms]"  # Both options
-pip install -e ".[dev]"       # Development tools
+# Option B: pip + venv
+python -m venv .venv
+.venv\Scripts\activate      # Windows
+source .venv/bin/activate   # Linux/Mac
+pip install -e ".[dev]"     # Install in editable mode
 ```
 
 ### 🎮 Start Yonca AI

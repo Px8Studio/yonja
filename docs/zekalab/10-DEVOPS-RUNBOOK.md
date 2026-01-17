@@ -137,6 +137,29 @@ SYNTHETIC_DATA_SEED=42
 SYNTHETIC_FARMS_COUNT=1000
 ```
 
+### 2.4 Python Tooling Stack
+
+| Tool | Purpose | Usage |
+|:-----|:--------|:------|
+| **Poetry** | Dependency management & packaging | `poetry install`, `poetry add <pkg>` |
+| **venv** | Environment isolation (created by Poetry) | `.venv/` directory |
+| **Uvicorn** | ASGI server for FastAPI | `uvicorn yonca.api.main:app` |
+
+**How they relate:**
+- Poetry reads `pyproject.toml` → resolves versions → installs packages (including uvicorn) into `.venv/`
+- Uvicorn is a dependency, not a separate tool—it runs when you start the server
+- In Docker, the container itself provides isolation, so venv is optional
+
+```bash
+# Development workflow
+poetry install                                    # Setup environment
+poetry run uvicorn yonca.api.main:app --reload   # Run server
+
+# Or activate first
+poetry shell
+uvicorn yonca.api.main:app --reload
+```
+
 ---
 
 ## 3. CI/CD Pipeline

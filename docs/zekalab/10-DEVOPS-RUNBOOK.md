@@ -36,10 +36,10 @@ mindmap
 
 | Environment | Purpose | Data | LLM Model | Infrastructure |
 |:------------|:--------|:-----|:----------|:---------------|
-| **Local** | Developer workstation | Mock/Synthetic | Qwen-3B (lite) | Docker Compose |
-| **Dev** | Feature development | Synthetic only | Qwen-7B Q4 | Single node |
-| **Staging** | Pre-production testing | Synthetic + load | Qwen-7B Q4 | Prod-like |
-| **Production** | Live service | Synthetic (prod) | Qwen-7B Q4 | HA cluster |
+| **Local** | Developer workstation | Mock/Synthetic | Qwen3-4B Q4 | Docker Compose |
+| **Dev** | Feature development | Synthetic only | Qwen3-4B Q4 | Single node |
+| **Staging** | Pre-production testing | Synthetic + load | Qwen3-4B Q4 | Prod-like |
+| **Production** | Live service | Synthetic (prod) | Qwen3-4B Q4 | HA cluster |
 
 ### 2.2 Environment Configuration
 
@@ -101,7 +101,7 @@ REDIS_URL=redis://localhost:6379/0
 REDIS_MAX_CONNECTIONS=50
 
 # LLM Configuration
-LLM_MODEL_PATH=/models/qwen2.5-7b-instruct-q4_k_m.gguf
+LLM_MODEL_PATH=/models/qwen3-4b-instruct-q4_k_m.gguf
 LLM_CONTEXT_SIZE=4096
 LLM_MAX_TOKENS=1000
 LLM_TEMPERATURE=0.7
@@ -396,13 +396,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: models/
-          key: llm-model-qwen-7b-q4
+          key: llm-model-qwen3-4b-q4
       
       - name: Run golden dataset evaluation
         run: |
           python -m yonca.evaluation.runner \
             --dataset tests/golden/dataset.json \
-            --model models/qwen2.5-7b-instruct-q4_k_m.gguf \
+            --model models/qwen3-4b-instruct-q4_k_m.gguf \
             --threshold 0.85 \
             --output eval-results.json
       
@@ -637,7 +637,7 @@ services:
     volumes:
       - ./models:/models:ro
     command: >
-      --model /models/qwen2.5-7b-instruct-q4_k_m.gguf
+      --model /models/qwen3-4b-instruct-q4_k_m.gguf
       --host 0.0.0.0
       --port 8080
       --ctx-size 4096
@@ -742,9 +742,9 @@ spec:
             - sh
             - -c
             - |
-              if [ ! -f /models/qwen2.5-7b-instruct-q4_k_m.gguf ]; then
-                curl -L -o /models/qwen2.5-7b-instruct-q4_k_m.gguf \
-                  "https://huggingface.co/Qwen/Qwen2.5-7B-Instruct-GGUF/resolve/main/qwen2.5-7b-instruct-q4_k_m.gguf"
+              if [ ! -f /models/qwen3-4b-instruct-q4_k_m.gguf ]; then
+                curl -L -o /models/qwen3-4b-instruct-q4_k_m.gguf \
+                  "https://huggingface.co/Qwen/Qwen3-4B-Instruct-GGUF/resolve/main/qwen3-4b-instruct-q4_k_m.gguf"
               fi
           volumeMounts:
             - name: model-storage
@@ -1066,7 +1066,7 @@ kubectl rollout history deployment/yonca-sidecar --revision=5
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 graph TB
     subgraph registry["📦 Model Registry"]
-        v1["v1.0.0<br/><i>Qwen2.5-7B Q4_K_M</i>"]
+        v1["v1.0.0<br/><i>Qwen3-4B Q4_K_M</i>"]
         v2["v1.1.0<br/><i>+ Agricultural fine-tune</i>"]
         v3["v1.2.0<br/><i>+ Azerbaijani boost</i>"]
     end
@@ -1093,21 +1093,21 @@ graph TB
 models:
   - name: yonca-base
     version: 1.0.0
-    base_model: Qwen2.5-7B-Instruct
+    base_model: Qwen3-4B-Instruct
     quantization: Q4_K_M
-    file: qwen2.5-7b-instruct-q4_k_m.gguf
-    size_gb: 4.5
+    file: qwen3-4b-instruct-q4_k_m.gguf
+    size_gb: 2.6
     checksum: sha256:abc123...
     created: 2026-01-10
     status: deprecated
     
   - name: yonca-agri
     version: 1.1.0
-    base_model: Qwen2.5-7B-Instruct
+    base_model: Qwen3-4B-Instruct
     fine_tune: agricultural-az
     quantization: Q4_K_M
     file: yonca-agri-v1.1.0.gguf
-    size_gb: 4.5
+    size_gb: 2.6
     checksum: sha256:def456...
     created: 2026-01-15
     status: production
@@ -1115,11 +1115,11 @@ models:
     
   - name: yonca-agri-az
     version: 1.2.0
-    base_model: Qwen2.5-7B-Instruct
+    base_model: Qwen3-4B-Instruct
     fine_tune: agricultural-az-enhanced
     quantization: Q4_K_M
     file: yonca-agri-az-v1.2.0.gguf
-    size_gb: 4.5
+    size_gb: 2.6
     checksum: sha256:ghi789...
     created: 2026-01-17
     status: staging

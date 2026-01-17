@@ -598,7 +598,7 @@ flowchart TB
     subgraph input["📥 Input"]
         cases["Test Cases<br/><i>Golden Dataset</i>"]
         prompts["Current Prompts<br/><i>Version controlled</i>"]
-        model["Model Config<br/><i>Qwen2.5-7B Q4_K_M</i>"]
+        model["Model Config<br/><i>Qwen3-4B Q4_K_M</i>"]
     end
     
     subgraph eval["🔬 Evaluation Engine"]
@@ -675,7 +675,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Download Model
-        run: ./scripts/download_model.sh qwen2.5-7b-q4_k_m
+        run: ./scripts/download_model.sh qwen3-4b-q4_k_m
       - name: Run Evaluation Suite
         run: pytest tests/evaluation/ -v --tb=long
       - name: Upload Evaluation Report
@@ -860,7 +860,7 @@ sequenceDiagram
 {
   "report_id": "eval-2026-01-17-001",
   "timestamp": "2026-01-17T14:30:00Z",
-  "model_version": "qwen2.5-7b-q4_k_m",
+  "model_version": "qwen3-4b-q4_k_m",
   "prompt_version": "v1.2.0",
   "dataset_version": "v1.2.0",
   

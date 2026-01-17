@@ -6,7 +6,7 @@
 ## 🎯 What This Is
 
 **Yonca AI** is a **Headless AI Sidecar** that generates personalized farming task lists by combining:
-- **Local LLM** (Qwen2.5-7B via Ollama) for natural language in Azerbaijani
+- **Local LLM** (Qwen3-4B via Ollama) for natural language in Azerbaijani
 - **Deterministic Agronomy Rules** to ensure ≥90% logical accuracy
 - **Synthetic Farm Scenarios** so no real farmer data is ever needed
 
@@ -56,7 +56,7 @@ yonca-ai/
 - ✅ 100% offline capability
 - ✅ No API costs
 - ✅ Data never leaves your machine
-- ✅ Best Azerbaijani language support with Qwen2.5
+- ✅ Best Azerbaijani language support with Qwen3
 
 **Install Ollama:**
 
@@ -98,7 +98,7 @@ python -m venv .venv312
 source .venv312/bin/activate  # Linux/Mac
 
 # Install with your preferred LLM provider
-pip install -e ".[ollama]"    # For local Qwen2.5
+pip install -e ".[ollama]"    # For local Qwen3
 pip install -e ".[gemini]"    # For Google Gemini
 pip install -e ".[all-llms]"  # Both options
 pip install -e ".[dev]"       # Development tools
@@ -135,7 +135,7 @@ python -m yonca.startup --check-only
 
 ✅ Ollama installed
 ✅ Ollama server running
-✅ Model qwen2.5:7b ready
+✅ Model qwen3:4b ready
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃     🌿 Yonca AI Status             ┃
@@ -143,7 +143,7 @@ python -m yonca.startup --check-only
 ┃ Component  ┃ Status                ┃
 ┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━┩
 │ Ollama     │ ✅ Running            │
-│ LLM Model  │ ✅ qwen2.5:7b         │
+│ LLM Model  │ ✅ qwen3:4b           │
 │ API        │ 🚀 Starting...        │
 └────────────┴───────────────────────┘
 
@@ -160,9 +160,8 @@ INFO:     Uvicorn running on http://127.0.0.1:8000
 
 | Provider | Model | Size | Best For |
 |----------|-------|------|----------|
-| **Ollama** | `qwen2.5:7b` | 4.7GB | 🇦🇿 Azerbaijani (Recommended) |
-| **Ollama** | `qwen2.5:3b` | 2.0GB | Fast responses, limited RAM |
-| **Ollama** | `qwen2.5:14b` | 9.0GB | Highest quality |
+| **Ollama** | `qwen3:4b` | 2.6GB | 🇦🇿 Azerbaijani (Recommended) |
+| **Ollama** | `qwen3:1.7b` | 1.2GB | Fast responses, limited RAM |
 | **Gemini** | `gemini-2.0-flash` | Cloud | Production, high volume |
 | **Gemini** | `gemini-1.5-pro` | Cloud | Complex reasoning |
 
@@ -172,7 +171,7 @@ INFO:     Uvicorn running on http://127.0.0.1:8000
 from yonca.agent import create_ollama_agent, create_gemini_agent
 
 # Local Ollama (Azerbaijani-optimized)
-agent = create_ollama_agent(model="qwen2.5:7b")
+agent = create_ollama_agent(model="qwen3:4b")
 response = agent.chat("Buğda sahəsini nə vaxt suvarmaq lazımdır?")
 
 # Google Gemini (Cloud)

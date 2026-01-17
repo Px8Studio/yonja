@@ -606,7 +606,7 @@ def retrieve_context(state: FarmingState) -> FarmingState:
 def generate_response(state: FarmingState) -> FarmingState:
     """Generate response using LLM."""
     with tracer.start_as_current_span("model_inference") as span:
-        span.set_attribute("llm.model", "qwen2.5-7b-q4_k_m")
+        span.set_attribute("llm.model", "qwen3-4b-q4_k_m")
         span.set_attribute("llm.prompt_tokens", count_tokens(state["prompt"]))
         
         response = llm.generate(state["prompt"])

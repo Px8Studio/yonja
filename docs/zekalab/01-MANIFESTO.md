@@ -46,7 +46,7 @@ Our primary architectural decision is the **Sidecar Intelligence Model**. Instea
 |:-------|:---------------|:--------|
 | **🔗 Integration Philosophy** | Headless API Layer (REST/GraphQL) | Core GovTech systems remain untouched |
 | **🔒 Data Sovereignty** | Mirror-Image Synthetic Engine | Zero legal/operational friction |
-| **📶 Edge-Ready Logic** | Qwen2.5-7B Quantized (GGUF) | Works offline in rural zones |
+| **📶 Edge-Ready Logic** | Qwen3-4B Quantized (GGUF) | Works offline in rural zones |
 | **🔄 Hot-Swap Ready** | Schema-synchronized data layer | Flip from synthetic to real with zero code changes |
 
 ### Four Guarantees

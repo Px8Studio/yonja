@@ -294,7 +294,7 @@ graph TB
         subgraph sidecar["🧠 SIDECAR INTELLIGENCE MODULE"]
             api["🔌 /sidecar/recommendations"]
             pii["🛡️ PII Gateway<br/><i>Sanitize</i>"]
-            rag["🤖 RAG Engine<br/><i>Qwen2.5</i>"]
+            rag["🤖 RAG Engine<br/><i>Qwen3</i>"]
             lite["⚡ Lite-Inference<br/><i>GGUF</i>"]
             rules["📚 Agronomy<br/>Rulebook"]
             
@@ -526,7 +526,7 @@ flowchart TB
         step1["① Intent Detection<br/><i>Azerbaijani → category</i>"]
         step2["② Knowledge Retrieval<br/><i>Semantic search</i>"]
         step3["③ Rule Evaluation<br/><i>Deterministic</i>"]
-        step4["④ LLM Generation<br/><i>Qwen2.5-7B</i>"]
+        step4["④ LLM Generation<br/><i>Qwen3-4B</i>"]
         step5["⑤ Validation<br/><i>>90% accuracy</i>"]
         
         step1 --> step2 --> step3 --> step4 --> step5
@@ -557,7 +557,7 @@ flowchart TB
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 graph LR
     subgraph modes["⚡ Inference Modes"]
-        standard["🖥️ STANDARD<br/><i>Full Qwen2.5-7B</i><br/><i>Ollama</i>"]
+        standard["🖥️ STANDARD<br/><i>Full Qwen3-4B</i><br/><i>Ollama</i>"]
         lite["📱 LITE<br/><i>Quantized GGUF</i><br/><i><4.5GB RAM</i>"]
         offline["📶 OFFLINE<br/><i>Pure Rules</i><br/><i><50ms latency</i>"]
     end
@@ -571,10 +571,9 @@ graph LR
 
 | Model | Quantization | Memory | Speed | Use Case |
 |:------|:-------------|:-------|:------|:---------|
-| qwen2.5-7b | Q4_K_M | 4.5GB | 15 tok/s | Full capability |
-| qwen2.5-7b | Q5_K_M | 5.5GB | 12 tok/s | Quality priority |
-| qwen2.5-3b | Q4_K_M | 2.0GB | 25 tok/s | Mobile server |
-| qwen2.5-1.5b | Q4_K_M | 1.2GB | 40 tok/s | Edge device |
+| qwen3-4b | Q4_K_M | 2.6GB | 22 tok/s | **Recommended** |
+| qwen3-4b | Q5_K_M | 3.0GB | 18 tok/s | Quality priority |
+| qwen3-1.7b | Q4_K_M | 1.2GB | 40 tok/s | Edge device |
 
 ---
 
@@ -1027,8 +1026,8 @@ pie showData
 # 1. Install dependencies
 poetry install --all-extras
 
-# 2. Start Ollama with Qwen2.5
-ollama pull qwen2.5:7b
+# 2. Start Ollama with Qwen3
+ollama pull qwen3:4b
 
 # 3. Run Yonca with Sidecar
 python -m yonca.startup

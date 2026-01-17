@@ -72,10 +72,10 @@ pie title Latency Budget (3s P95 Target)
 | **Input Validation** | 50 | 80 | Regex + sanitization |
 | **Context Assembly** | 150 | 250 | User + farm + weather |
 | **RAG Retrieval** | 300 | 500 | Vector similarity search |
-| **LLM Inference** | 2000 | 2500 | Qwen2.5-7B Q4_K_M |
+| **LLM Inference** | 1500 | 2000 | Qwen3-4B Q4_K_M |
 | **Post-processing** | 200 | 300 | Rules + safety checks |
 | **Response Streaming** | 200 | 300 | SSE delivery |
-| **TOTAL** | 3000 | 4080 | 25% buffer |
+| **TOTAL** | 2500 | 3580 | 25% buffer |
 
 ### 2.3 Availability Calculation
 
@@ -739,7 +739,7 @@ class DegradationManager:
     
     async def _lite_response(self, query: str, context: dict) -> str:
         """Use smaller model, cached RAG."""
-        # Use Qwen2.5-3B instead of 7B
+        # Use Qwen3-4B for optimal quality/speed balance
         # Use cached similar queries
         pass
     

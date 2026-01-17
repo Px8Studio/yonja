@@ -22,16 +22,17 @@ COLORS = {
     "secondary_light": "#C8E6C9",   # Very light mint
     "background": "#F8F9FA",        # Light gray background
     "card_bg": "#FFFFFF",           # White cards
-    "text_primary": "#212121",      # Near black for text
-    "text_secondary": "#757575",    # Gray for secondary text
+    "text_primary": "#1A1A1A",      # Darker for better contrast (was #212121)
+    "text_secondary": "#555555",    # Darker gray for better contrast (was #757575)
     "text_white": "#FFFFFF",        # White text
-    "critical": "#D32F2F",          # Red for critical
-    "high": "#F57C00",              # Orange for high priority
-    "medium": "#FBC02D",            # Yellow for medium
-    "low": "#388E3C",               # Green for low priority
+    "critical": "#C62828",          # Darker red for better contrast (was #D32F2F)
+    "high": "#E65100",              # Darker orange for better contrast (was #F57C00)
+    "medium": "#F9A825",            # Darker yellow-amber (was #FBC02D)
+    "medium_text": "#1A1A1A",       # Text color for medium badges
+    "low": "#2E7D32",               # Use primary green for consistency (was #388E3C)
     "chat_user": "#DCF8C6",         # WhatsApp green for user messages
     "chat_bot": "#FFFFFF",          # White for bot messages
-    "border": "#E0E0E0",            # Light border
+    "border": "#BDBDBD",            # Slightly darker border for visibility (was #E0E0E0)
 }
 
 
@@ -42,10 +43,9 @@ def get_mobile_container_css() -> str:
     """
     return f"""
     <style>
-        /* Hide Streamlit branding */
-        #MainMenu {{visibility: hidden;}}
+        /* Keep Streamlit header/menu visible for deploy button */
+        /* Only hide the 'Made with Streamlit' footer */
         footer {{visibility: hidden;}}
-        header {{visibility: hidden;}}
         
         /* Remove default padding */
         .block-container {{
@@ -177,12 +177,14 @@ def get_card_css() -> str:
         
         .priority-badge.medium {{
             background: {COLORS['medium']};
-            color: {COLORS['text_primary']};
+            color: #1A1A1A;
+            font-weight: 600;
         }}
         
         .priority-badge.low {{
             background: {COLORS['secondary']};
-            color: {COLORS['text_primary']};
+            color: #1B5E20;
+            font-weight: 600;
         }}
         
         /* Card description */

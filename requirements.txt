@@ -1,5 +1,5 @@
 # Install the local package (yonca) - required for Streamlit Cloud
--e .
+.
 
 # Core dependencies
 fastapi>=0.104.0

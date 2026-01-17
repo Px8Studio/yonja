@@ -10,387 +10,522 @@ Design principles:
 2. Yonca brand colors: Forest Green (#2E7D32) + Soft Mint (#A5D6A7)
 3. High contrast for outdoor visibility
 4. Familiar chat bubble patterns
+5. Theme-aware: Syncs with Streamlit's native light/dark themes
 """
 
-# ============= YONCA BRAND COLORS =============
+# ============= YONCA BRAND COLORS (Light Theme - Default) =============
 
-COLORS = {
+COLORS_LIGHT = {
     "primary": "#2E7D32",           # Forest Green
     "primary_dark": "#1B5E20",      # Darker green for headers
     "primary_light": "#4CAF50",     # Lighter green for accents
     "secondary": "#A5D6A7",         # Soft Mint
     "secondary_light": "#C8E6C9",   # Very light mint
     "background": "#F8F9FA",        # Light gray background
+    "background_outer": "#E8E8E8",  # Outer container background
     "card_bg": "#FFFFFF",           # White cards
-    "text_primary": "#1A1A1A",      # Darker for better contrast (was #212121)
-    "text_secondary": "#555555",    # Darker gray for better contrast (was #757575)
+    "text_primary": "#1A1A1A",      # Darker for better contrast
+    "text_secondary": "#555555",    # Darker gray for better contrast
     "text_white": "#FFFFFF",        # White text
-    "critical": "#C62828",          # Darker red for better contrast (was #D32F2F)
-    "high": "#E65100",              # Darker orange for better contrast (was #F57C00)
-    "medium": "#F9A825",            # Darker yellow-amber (was #FBC02D)
+    "critical": "#C62828",          # Darker red for better contrast
+    "critical_gradient": "#FFEBEE", # Light red for critical card bg
+    "high": "#E65100",              # Darker orange for better contrast
+    "high_gradient": "#FFF3E0",     # Light orange for high card bg
+    "medium": "#F9A825",            # Darker yellow-amber
     "medium_text": "#1A1A1A",       # Text color for medium badges
-    "low": "#2E7D32",               # Use primary green for consistency (was #388E3C)
+    "low": "#2E7D32",               # Use primary green for consistency
     "chat_user": "#DCF8C6",         # WhatsApp green for user messages
     "chat_bot": "#FFFFFF",          # White for bot messages
-    "border": "#BDBDBD",            # Slightly darker border for visibility (was #E0E0E0)
+    "border": "#BDBDBD",            # Slightly darker border for visibility
+    "shadow": "rgba(0,0,0,0.08)",   # Shadow color
+    "shadow_strong": "rgba(0,0,0,0.1)",  # Stronger shadow
 }
+
+# ============= YONCA BRAND COLORS (Dark Theme) =============
+
+COLORS_DARK = {
+    "primary": "#4CAF50",           # Brighter green for dark mode
+    "primary_dark": "#2E7D32",      # Forest green (now serves as medium)
+    "primary_light": "#81C784",     # Light green for accents
+    "secondary": "#1B5E20",         # Dark mint
+    "secondary_light": "#2E7D32",   # Medium green for secondary elements
+    "background": "#1E1E1E",        # Dark background
+    "background_outer": "#121212",  # Outer container background
+    "card_bg": "#2D2D2D",           # Dark cards
+    "text_primary": "#E8E8E8",      # Light text for dark bg
+    "text_secondary": "#B0B0B0",    # Lighter gray for secondary text
+    "text_white": "#FFFFFF",        # White text (unchanged)
+    "critical": "#EF5350",          # Brighter red for dark mode
+    "critical_gradient": "#4A1A1A", # Dark red for critical card bg
+    "high": "#FF9800",              # Brighter orange for dark mode
+    "high_gradient": "#3D2E1A",     # Dark orange for high card bg
+    "medium": "#FFC107",            # Brighter amber for dark mode
+    "medium_text": "#1A1A1A",       # Dark text on amber badge
+    "low": "#4CAF50",               # Brighter green for dark mode
+    "chat_user": "#1B4D1B",         # Dark green for user messages
+    "chat_bot": "#3D3D3D",          # Dark gray for bot messages
+    "border": "#4A4A4A",            # Darker border for dark mode
+    "shadow": "rgba(0,0,0,0.3)",    # Stronger shadow for dark mode
+    "shadow_strong": "rgba(0,0,0,0.4)",  # Even stronger shadow
+}
+
+# Default to light theme colors (backward compatible)
+COLORS = COLORS_LIGHT
+
+
+def get_theme_css_variables() -> str:
+    """
+    Generate CSS custom properties that sync with Streamlit's theme.
+    Uses CSS media query and Streamlit's data-theme attribute for detection.
+    """
+    return f"""
+    <style>
+        /* ============= CSS CUSTOM PROPERTIES FOR THEMING ============= */
+        
+        /* Light theme (default) */
+        :root, [data-theme="light"], [data-testid="stAppViewContainer"]:not([data-theme="dark"]) {{
+            --yonca-primary: {COLORS_LIGHT['primary']};
+            --yonca-primary-dark: {COLORS_LIGHT['primary_dark']};
+            --yonca-primary-light: {COLORS_LIGHT['primary_light']};
+            --yonca-secondary: {COLORS_LIGHT['secondary']};
+            --yonca-secondary-light: {COLORS_LIGHT['secondary_light']};
+            --yonca-background: {COLORS_LIGHT['background']};
+            --yonca-background-outer: {COLORS_LIGHT['background_outer']};
+            --yonca-card-bg: {COLORS_LIGHT['card_bg']};
+            --yonca-text-primary: {COLORS_LIGHT['text_primary']};
+            --yonca-text-secondary: {COLORS_LIGHT['text_secondary']};
+            --yonca-text-white: {COLORS_LIGHT['text_white']};
+            --yonca-critical: {COLORS_LIGHT['critical']};
+            --yonca-critical-gradient: {COLORS_LIGHT['critical_gradient']};
+            --yonca-high: {COLORS_LIGHT['high']};
+            --yonca-high-gradient: {COLORS_LIGHT['high_gradient']};
+            --yonca-medium: {COLORS_LIGHT['medium']};
+            --yonca-medium-text: {COLORS_LIGHT['medium_text']};
+            --yonca-low: {COLORS_LIGHT['low']};
+            --yonca-chat-user: {COLORS_LIGHT['chat_user']};
+            --yonca-chat-bot: {COLORS_LIGHT['chat_bot']};
+            --yonca-border: {COLORS_LIGHT['border']};
+            --yonca-shadow: {COLORS_LIGHT['shadow']};
+            --yonca-shadow-strong: {COLORS_LIGHT['shadow_strong']};
+        }}
+        
+        /* Dark theme - triggered by Streamlit's dark theme */
+        [data-theme="dark"],
+        .stApp[data-theme="dark"],
+        [data-testid="stAppViewContainer"][data-theme="dark"] {{
+            --yonca-primary: {COLORS_DARK['primary']};
+            --yonca-primary-dark: {COLORS_DARK['primary_dark']};
+            --yonca-primary-light: {COLORS_DARK['primary_light']};
+            --yonca-secondary: {COLORS_DARK['secondary']};
+            --yonca-secondary-light: {COLORS_DARK['secondary_light']};
+            --yonca-background: {COLORS_DARK['background']};
+            --yonca-background-outer: {COLORS_DARK['background_outer']};
+            --yonca-card-bg: {COLORS_DARK['card_bg']};
+            --yonca-text-primary: {COLORS_DARK['text_primary']};
+            --yonca-text-secondary: {COLORS_DARK['text_secondary']};
+            --yonca-text-white: {COLORS_DARK['text_white']};
+            --yonca-critical: {COLORS_DARK['critical']};
+            --yonca-critical-gradient: {COLORS_DARK['critical_gradient']};
+            --yonca-high: {COLORS_DARK['high']};
+            --yonca-high-gradient: {COLORS_DARK['high_gradient']};
+            --yonca-medium: {COLORS_DARK['medium']};
+            --yonca-medium-text: {COLORS_DARK['medium_text']};
+            --yonca-low: {COLORS_DARK['low']};
+            --yonca-chat-user: {COLORS_DARK['chat_user']};
+            --yonca-chat-bot: {COLORS_DARK['chat_bot']};
+            --yonca-border: {COLORS_DARK['border']};
+            --yonca-shadow: {COLORS_DARK['shadow']};
+            --yonca-shadow-strong: {COLORS_DARK['shadow_strong']};
+        }}
+        
+        /* Also detect via prefers-color-scheme for system theme */
+        @media (prefers-color-scheme: dark) {{
+            :root:not([data-theme="light"]) {{
+                --yonca-primary: {COLORS_DARK['primary']};
+                --yonca-primary-dark: {COLORS_DARK['primary_dark']};
+                --yonca-primary-light: {COLORS_DARK['primary_light']};
+                --yonca-secondary: {COLORS_DARK['secondary']};
+                --yonca-secondary-light: {COLORS_DARK['secondary_light']};
+                --yonca-background: {COLORS_DARK['background']};
+                --yonca-background-outer: {COLORS_DARK['background_outer']};
+                --yonca-card-bg: {COLORS_DARK['card_bg']};
+                --yonca-text-primary: {COLORS_DARK['text_primary']};
+                --yonca-text-secondary: {COLORS_DARK['text_secondary']};
+                --yonca-text-white: {COLORS_DARK['text_white']};
+                --yonca-critical: {COLORS_DARK['critical']};
+                --yonca-critical-gradient: {COLORS_DARK['critical_gradient']};
+                --yonca-high: {COLORS_DARK['high']};
+                --yonca-high-gradient: {COLORS_DARK['high_gradient']};
+                --yonca-medium: {COLORS_DARK['medium']};
+                --yonca-medium-text: {COLORS_DARK['medium_text']};
+                --yonca-low: {COLORS_DARK['low']};
+                --yonca-chat-user: {COLORS_DARK['chat_user']};
+                --yonca-chat-bot: {COLORS_DARK['chat_bot']};
+                --yonca-border: {COLORS_DARK['border']};
+                --yonca-shadow: {COLORS_DARK['shadow']};
+                --yonca-shadow-strong: {COLORS_DARK['shadow_strong']};
+            }}
+        }}
+    </style>
+    """
 
 
 def get_mobile_container_css() -> str:
     """
     CSS to create a mobile phone simulation container.
     Centers content in a 390-430px viewport.
+    Uses CSS variables for theme support.
     """
-    return f"""
+    return """
     <style>
         /* Keep Streamlit header/menu visible for deploy button */
         /* Only hide the 'Made with Streamlit' footer */
-        footer {{visibility: hidden;}}
+        footer {visibility: hidden;}
         
         /* Remove default padding */
-        .block-container {{
+        .block-container {
             padding-top: 1rem !important;
             padding-bottom: 1rem !important;
             padding-left: 1rem !important;
             padding-right: 1rem !important;
             max-width: 430px !important;
             margin: 0 auto !important;
-        }}
+        }
         
-        /* Mobile viewport simulation */
-        .main {{
-            background-color: {COLORS['background']} !important;
-        }}
+        /* Mobile viewport simulation - uses CSS variables */
+        .main {
+            background-color: var(--yonca-background) !important;
+        }
         
         /* Stacked content wrapper */
-        .stApp {{
-            background-color: #E8E8E8;
-        }}
+        .stApp {
+            background-color: var(--yonca-background-outer);
+        }
         
         /* Custom container for mobile look */
-        .mobile-container {{
+        .mobile-container {
             max-width: 430px;
             min-width: 390px;
             margin: 0 auto;
-            background: {COLORS['background']};
+            background: var(--yonca-background);
             min-height: 100vh;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        }}
+            box-shadow: 0 0 20px var(--yonca-shadow-strong);
+        }
     </style>
     """
 
 
 def get_header_css() -> str:
     """CSS for app header with Yonca branding."""
-    return f"""
+    return """
     <style>
-        .app-header {{
-            background: linear-gradient(135deg, {COLORS['primary']} 0%, {COLORS['primary_dark']} 100%);
-            color: {COLORS['text_white']};
+        .app-header {
+            background: linear-gradient(135deg, var(--yonca-primary) 0%, var(--yonca-primary-dark) 100%);
+            color: var(--yonca-text-white);
             padding: 16px;
             border-radius: 0 0 20px 20px;
             margin: -1rem -1rem 1rem -1rem;
             text-align: center;
-        }}
+        }
         
-        .app-header h1 {{
+        .app-header h1 {
             margin: 0;
             font-size: 1.5rem;
             font-weight: 600;
-        }}
+        }
         
-        .app-header .subtitle {{
+        .app-header .subtitle {
             font-size: 0.85rem;
             opacity: 0.9;
             margin-top: 4px;
-        }}
+        }
         
-        .header-icon {{
+        .header-icon {
             font-size: 2rem;
             margin-bottom: 8px;
-        }}
+        }
     </style>
     """
 
 
 def get_card_css() -> str:
     """CSS for insight cards with rounded corners."""
-    return f"""
+    return """
     <style>
         /* Base card styling */
-        .insight-card {{
-            background: {COLORS['card_bg']};
+        .insight-card {
+            background: var(--yonca-card-bg);
             border-radius: 15px;
             padding: 16px;
             margin-bottom: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            border-left: 4px solid {COLORS['primary']};
-        }}
+            box-shadow: 0 2px 8px var(--yonca-shadow);
+            border-left: 4px solid var(--yonca-primary);
+        }
         
-        .insight-card.critical {{
-            border-left-color: {COLORS['critical']};
-            background: linear-gradient(90deg, #FFEBEE 0%, {COLORS['card_bg']} 20%);
-        }}
+        .insight-card.critical {
+            border-left-color: var(--yonca-critical);
+            background: linear-gradient(90deg, var(--yonca-critical-gradient) 0%, var(--yonca-card-bg) 20%);
+        }
         
-        .insight-card.high {{
-            border-left-color: {COLORS['high']};
-            background: linear-gradient(90deg, #FFF3E0 0%, {COLORS['card_bg']} 20%);
-        }}
+        .insight-card.high {
+            border-left-color: var(--yonca-high);
+            background: linear-gradient(90deg, var(--yonca-high-gradient) 0%, var(--yonca-card-bg) 20%);
+        }
         
-        .insight-card.medium {{
-            border-left-color: {COLORS['medium']};
-        }}
+        .insight-card.medium {
+            border-left-color: var(--yonca-medium);
+        }
         
-        .insight-card.low {{
-            border-left-color: {COLORS['low']};
-        }}
+        .insight-card.low {
+            border-left-color: var(--yonca-low);
+        }
         
         /* Card title */
-        .card-title {{
+        .card-title {
             font-size: 1rem;
             font-weight: 600;
-            color: {COLORS['text_primary']};
+            color: var(--yonca-text-primary);
             margin-bottom: 8px;
             display: flex;
             align-items: center;
             gap: 8px;
-        }}
+        }
         
         /* Priority badge */
-        .priority-badge {{
+        .priority-badge {
             font-size: 0.7rem;
             padding: 2px 8px;
             border-radius: 12px;
             font-weight: 500;
             text-transform: uppercase;
-        }}
+        }
         
-        .priority-badge.critical {{
-            background: {COLORS['critical']};
+        .priority-badge.critical {
+            background: var(--yonca-critical);
             color: white;
-        }}
+        }
         
-        .priority-badge.high {{
-            background: {COLORS['high']};
+        .priority-badge.high {
+            background: var(--yonca-high);
             color: white;
-        }}
+        }
         
-        .priority-badge.medium {{
-            background: {COLORS['medium']};
-            color: #1A1A1A;
+        .priority-badge.medium {
+            background: var(--yonca-medium);
+            color: var(--yonca-medium-text);
             font-weight: 600;
-        }}
+        }
         
-        .priority-badge.low {{
-            background: {COLORS['secondary']};
-            color: #1B5E20;
+        .priority-badge.low {
+            background: var(--yonca-secondary);
+            color: var(--yonca-primary-dark);
             font-weight: 600;
-        }}
+        }
         
         /* Card description */
-        .card-description {{
+        .card-description {
             font-size: 0.9rem;
-            color: {COLORS['text_secondary']};
+            color: var(--yonca-text-secondary);
             margin-bottom: 12px;
             line-height: 1.5;
-        }}
+        }
         
         /* Action section */
-        .card-action {{
-            background: {COLORS['secondary_light']};
+        .card-action {
+            background: var(--yonca-secondary-light);
             padding: 12px;
             border-radius: 10px;
             font-size: 0.85rem;
-            color: {COLORS['text_primary']};
-        }}
+            color: var(--yonca-text-primary);
+        }
         
-        .card-action-title {{
+        .card-action-title {
             font-weight: 600;
             margin-bottom: 4px;
-            color: {COLORS['primary_dark']};
-        }}
+            color: var(--yonca-primary-dark);
+        }
         
         /* Why section - collapsible */
-        .why-section {{
+        .why-section {
             margin-top: 12px;
             padding-top: 12px;
-            border-top: 1px dashed {COLORS['border']};
-        }}
+            border-top: 1px dashed var(--yonca-border);
+        }
         
-        .why-title {{
+        .why-title {
             font-size: 0.85rem;
             font-weight: 600;
-            color: {COLORS['primary']};
+            color: var(--yonca-primary);
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 4px;
-        }}
+        }
         
-        .why-content {{
+        .why-content {
             font-size: 0.8rem;
-            color: {COLORS['text_secondary']};
+            color: var(--yonca-text-secondary);
             margin-top: 8px;
             padding: 10px;
-            background: {COLORS['background']};
+            background: var(--yonca-background);
             border-radius: 8px;
             line-height: 1.5;
-        }}
+        }
         
         /* Confidence indicator */
-        .confidence-bar {{
+        .confidence-bar {
             height: 4px;
-            background: {COLORS['border']};
+            background: var(--yonca-border);
             border-radius: 2px;
             margin-top: 8px;
             overflow: hidden;
-        }}
+        }
         
-        .confidence-fill {{
+        .confidence-fill {
             height: 100%;
-            background: {COLORS['primary']};
+            background: var(--yonca-primary);
             border-radius: 2px;
             transition: width 0.3s ease;
-        }}
+        }
     </style>
     """
 
 
 def get_chat_css() -> str:
     """CSS for WhatsApp/Telegram-like chat bubbles."""
-    return f"""
+    return """
     <style>
         /* Chat container */
-        .chat-container {{
+        .chat-container {
             display: flex;
             flex-direction: column;
             gap: 12px;
             padding: 16px 0;
-        }}
+        }
         
         /* Chat bubble base */
-        .chat-bubble {{
+        .chat-bubble {
             max-width: 85%;
             padding: 10px 14px;
             border-radius: 18px;
             font-size: 0.9rem;
             line-height: 1.4;
             position: relative;
-        }}
+        }
         
         /* User message (right side, green) */
-        .chat-bubble.user {{
-            background: {COLORS['chat_user']};
-            color: {COLORS['text_primary']};
+        .chat-bubble.user {
+            background: var(--yonca-chat-user);
+            color: var(--yonca-text-primary);
             align-self: flex-end;
             border-bottom-right-radius: 4px;
-        }}
+        }
         
-        /* Bot message (left side, white) */
-        .chat-bubble.bot {{
-            background: {COLORS['chat_bot']};
-            color: {COLORS['text_primary']};
+        /* Bot message (left side, white/dark) */
+        .chat-bubble.bot {
+            background: var(--yonca-chat-bot);
+            color: var(--yonca-text-primary);
             align-self: flex-start;
             border-bottom-left-radius: 4px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }}
+            box-shadow: 0 1px 2px var(--yonca-shadow);
+        }
         
         /* Message timestamp */
-        .chat-time {{
+        .chat-time {
             font-size: 0.7rem;
-            color: {COLORS['text_secondary']};
+            color: var(--yonca-text-secondary);
             margin-top: 4px;
             text-align: right;
-        }}
+        }
         
         /* Typing indicator */
-        .typing-indicator {{
+        .typing-indicator {
             display: flex;
             gap: 4px;
             padding: 10px 14px;
-            background: {COLORS['chat_bot']};
+            background: var(--yonca-chat-bot);
             border-radius: 18px;
             align-self: flex-start;
             border-bottom-left-radius: 4px;
-        }}
+        }
         
-        .typing-dot {{
+        .typing-dot {
             width: 8px;
             height: 8px;
-            background: {COLORS['text_secondary']};
+            background: var(--yonca-text-secondary);
             border-radius: 50%;
             animation: typing 1s infinite;
-        }}
+        }
         
-        .typing-dot:nth-child(2) {{
+        .typing-dot:nth-child(2) {
             animation-delay: 0.2s;
-        }}
+        }
         
-        .typing-dot:nth-child(3) {{
+        .typing-dot:nth-child(3) {
             animation-delay: 0.4s;
-        }}
+        }
         
-        @keyframes typing {{
-            0%, 100% {{ opacity: 0.3; transform: scale(0.8); }}
-            50% {{ opacity: 1; transform: scale(1); }}
-        }}
+        @keyframes typing {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1); }
+        }
         
         /* Chat input area */
-        .chat-input-area {{
+        .chat-input-area {
             display: flex;
             gap: 8px;
             padding: 12px;
-            background: {COLORS['card_bg']};
-            border-top: 1px solid {COLORS['border']};
+            background: var(--yonca-card-bg);
+            border-top: 1px solid var(--yonca-border);
             position: sticky;
             bottom: 0;
-        }}
+        }
         
         /* Quick reply buttons */
-        .quick-replies {{
+        .quick-replies {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
             margin-top: 8px;
-        }}
+        }
         
-        .quick-reply-btn {{
-            background: {COLORS['secondary_light']};
-            color: {COLORS['primary_dark']};
-            border: 1px solid {COLORS['secondary']};
+        .quick-reply-btn {
+            background: var(--yonca-secondary-light);
+            color: var(--yonca-primary-dark);
+            border: 1px solid var(--yonca-secondary);
             padding: 6px 12px;
             border-radius: 16px;
             font-size: 0.8rem;
             cursor: pointer;
             transition: all 0.2s;
-        }}
+        }
         
-        .quick-reply-btn:hover {{
-            background: {COLORS['primary']};
+        .quick-reply-btn:hover {
+            background: var(--yonca-primary);
             color: white;
-            border-color: {COLORS['primary']};
-        }}
+            border-color: var(--yonca-primary);
+        }
     </style>
     """
 
 
 def get_fab_css() -> str:
     """CSS for the floating action button (AI Pulse)."""
-    return f"""
+    return """
     <style>
         /* Floating Action Button */
-        .fab-container {{
+        .fab-container {
             position: fixed;
             bottom: 80px;
             right: 20px;
             z-index: 1000;
-        }}
+        }
         
-        .fab {{
+        .fab {
             width: 56px;
             height: 56px;
             border-radius: 50%;
-            background: linear-gradient(135deg, {COLORS['primary']} 0%, {COLORS['primary_light']} 100%);
+            background: linear-gradient(135deg, var(--yonca-primary) 0%, var(--yonca-primary-light) 100%);
             color: white;
             border: none;
             box-shadow: 0 4px 12px rgba(46, 125, 50, 0.4);
@@ -400,29 +535,29 @@ def get_fab_css() -> str:
             justify-content: center;
             font-size: 1.5rem;
             transition: all 0.3s ease;
-        }}
+        }
         
-        .fab:hover {{
+        .fab:hover {
             transform: scale(1.1);
             box-shadow: 0 6px 20px rgba(46, 125, 50, 0.5);
-        }}
+        }
         
-        .fab.pulse {{
+        .fab.pulse {
             animation: pulse 2s infinite;
-        }}
+        }
         
-        @keyframes pulse {{
-            0% {{ box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7); }}
-            70% {{ box-shadow: 0 0 0 15px rgba(46, 125, 50, 0); }}
-            100% {{ box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); }}
-        }}
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(46, 125, 50, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); }
+        }
         
         /* Notification badge on FAB */
-        .fab-badge {{
+        .fab-badge {
             position: absolute;
             top: -4px;
             right: -4px;
-            background: {COLORS['critical']};
+            background: var(--yonca-critical);
             color: white;
             font-size: 0.7rem;
             font-weight: 600;
@@ -432,127 +567,127 @@ def get_fab_css() -> str:
             display: flex;
             align-items: center;
             justify-content: center;
-        }}
+        }
     </style>
     """
 
 
 def get_timeline_css() -> str:
     """CSS for the daily routine timeline."""
-    return f"""
+    return """
     <style>
         /* Timeline container */
-        .timeline {{
+        .timeline {
             position: relative;
             padding-left: 24px;
-        }}
+        }
         
         /* Timeline line */
-        .timeline::before {{
+        .timeline::before {
             content: '';
             position: absolute;
             left: 8px;
             top: 0;
             bottom: 0;
             width: 2px;
-            background: {COLORS['secondary']};
-        }}
+            background: var(--yonca-secondary);
+        }
         
         /* Timeline item */
-        .timeline-item {{
+        .timeline-item {
             position: relative;
             padding-bottom: 20px;
-        }}
+        }
         
         /* Timeline dot */
-        .timeline-dot {{
+        .timeline-dot {
             position: absolute;
             left: -20px;
             top: 4px;
             width: 12px;
             height: 12px;
             border-radius: 50%;
-            background: {COLORS['primary']};
-            border: 2px solid {COLORS['card_bg']};
-        }}
+            background: var(--yonca-primary);
+            border: 2px solid var(--yonca-card-bg);
+        }
         
-        .timeline-dot.critical {{
-            background: {COLORS['critical']};
+        .timeline-dot.critical {
+            background: var(--yonca-critical);
             animation: pulse-dot 1.5s infinite;
-        }}
+        }
         
-        .timeline-dot.high {{
-            background: {COLORS['high']};
-        }}
+        .timeline-dot.high {
+            background: var(--yonca-high);
+        }
         
-        @keyframes pulse-dot {{
-            0%, 100% {{ transform: scale(1); }}
-            50% {{ transform: scale(1.3); }}
-        }}
+        @keyframes pulse-dot {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+        }
         
         /* Timeline content */
-        .timeline-content {{
-            background: {COLORS['card_bg']};
+        .timeline-content {
+            background: var(--yonca-card-bg);
             padding: 12px 16px;
             border-radius: 12px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-        }}
+            box-shadow: 0 1px 4px var(--yonca-shadow);
+        }
         
-        .timeline-time {{
+        .timeline-time {
             font-size: 0.8rem;
             font-weight: 600;
-            color: {COLORS['primary']};
+            color: var(--yonca-primary);
             margin-bottom: 4px;
-        }}
+        }
         
-        .timeline-title {{
+        .timeline-title {
             font-size: 0.95rem;
             font-weight: 500;
-            color: {COLORS['text_primary']};
+            color: var(--yonca-text-primary);
             display: flex;
             align-items: center;
             gap: 8px;
-        }}
+        }
         
-        .timeline-desc {{
+        .timeline-desc {
             font-size: 0.8rem;
-            color: {COLORS['text_secondary']};
+            color: var(--yonca-text-secondary);
             margin-top: 4px;
-        }}
+        }
         
-        .timeline-duration {{
+        .timeline-duration {
             font-size: 0.75rem;
-            color: {COLORS['text_secondary']};
+            color: var(--yonca-text-secondary);
             margin-top: 6px;
             display: flex;
             align-items: center;
             gap: 4px;
-        }}
+        }
     </style>
     """
 
 
 def get_profile_card_css() -> str:
     """CSS for the farm profile overview card."""
-    return f"""
+    return """
     <style>
         /* Profile overview card */
-        .profile-card {{
-            background: linear-gradient(135deg, {COLORS['primary']} 0%, {COLORS['primary_light']} 100%);
+        .profile-card {
+            background: linear-gradient(135deg, var(--yonca-primary) 0%, var(--yonca-primary-light) 100%);
             color: white;
             border-radius: 20px;
             padding: 20px;
             margin-bottom: 16px;
-        }}
+        }
         
-        .profile-header {{
+        .profile-header {
             display: flex;
             align-items: center;
             gap: 16px;
             margin-bottom: 16px;
-        }}
+        }
         
-        .profile-icon {{
+        .profile-icon {
             font-size: 3rem;
             background: rgba(255,255,255,0.2);
             width: 64px;
@@ -561,45 +696,45 @@ def get_profile_card_css() -> str:
             display: flex;
             align-items: center;
             justify-content: center;
-        }}
+        }
         
-        .profile-name {{
+        .profile-name {
             font-size: 1.2rem;
             font-weight: 600;
-        }}
+        }
         
-        .profile-type {{
+        .profile-type {
             font-size: 0.85rem;
             opacity: 0.9;
-        }}
+        }
         
         /* Profile stats grid */
-        .profile-stats {{
+        .profile-stats {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 12px;
-        }}
+        }
         
-        .stat-item {{
+        .stat-item {
             background: rgba(255,255,255,0.15);
             padding: 10px 12px;
             border-radius: 12px;
-        }}
+        }
         
-        .stat-label {{
+        .stat-label {
             font-size: 0.75rem;
             opacity: 0.85;
-        }}
+        }
         
-        .stat-value {{
+        .stat-value {
             font-size: 1.1rem;
             font-weight: 600;
             margin-top: 2px;
-        }}
+        }
         
         /* Alert badge */
-        .alert-badge {{
-            background: {COLORS['critical']};
+        .alert-badge {
+            background: var(--yonca-critical);
             color: white;
             padding: 8px 12px;
             border-radius: 10px;
@@ -608,31 +743,31 @@ def get_profile_card_css() -> str:
             display: flex;
             align-items: center;
             gap: 8px;
-        }}
+        }
     </style>
     """
 
 
 def get_scenario_switcher_css() -> str:
     """CSS for scenario selection buttons."""
-    return f"""
+    return """
     <style>
         /* Scenario switcher */
-        .scenario-switcher {{
+        .scenario-switcher {
             display: flex;
             gap: 8px;
             overflow-x: auto;
             padding: 12px 0;
             -webkit-overflow-scrolling: touch;
-        }}
+        }
         
-        .scenario-btn {{
+        .scenario-btn {
             flex-shrink: 0;
             padding: 12px 16px;
             border-radius: 12px;
-            border: 2px solid {COLORS['secondary']};
-            background: {COLORS['card_bg']};
-            color: {COLORS['text_primary']};
+            border: 2px solid var(--yonca-secondary);
+            background: var(--yonca-card-bg);
+            color: var(--yonca-text-primary);
             font-size: 0.85rem;
             cursor: pointer;
             transition: all 0.2s;
@@ -641,34 +776,35 @@ def get_scenario_switcher_css() -> str:
             align-items: center;
             gap: 4px;
             min-width: 80px;
-        }}
+        }
         
-        .scenario-btn:hover {{
-            border-color: {COLORS['primary']};
-            background: {COLORS['secondary_light']};
-        }}
+        .scenario-btn:hover {
+            border-color: var(--yonca-primary);
+            background: var(--yonca-secondary-light);
+        }
         
-        .scenario-btn.active {{
-            border-color: {COLORS['primary']};
-            background: {COLORS['primary']};
+        .scenario-btn.active {
+            border-color: var(--yonca-primary);
+            background: var(--yonca-primary);
             color: white;
-        }}
+        }
         
-        .scenario-icon {{
+        .scenario-icon {
             font-size: 1.5rem;
-        }}
+        }
         
-        .scenario-label {{
+        .scenario-label {
             font-size: 0.75rem;
             font-weight: 500;
-        }}
+        }
     </style>
     """
 
 
 def get_all_styles() -> str:
-    """Combine all CSS styles into a single string."""
+    """Combine all CSS styles into a single string, including theme variables."""
     return (
+        get_theme_css_variables() +
         get_mobile_container_css() +
         get_header_css() +
         get_card_css() +
@@ -712,7 +848,7 @@ def render_insight_card(
         "low": "AŞAĞI",
     }
     
-    time_html = f'<div style="font-size:0.8rem;color:#757575;margin-bottom:8px;">⏰ {time_slot}</div>' if time_slot else ""
+    time_html = f'<div style="font-size:0.8rem;color:var(--yonca-text-secondary);margin-bottom:8px;">⏰ {time_slot}</div>' if time_slot else ""
     
     why_html = ""
     if why_title and why_content:

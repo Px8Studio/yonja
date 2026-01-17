@@ -2,12 +2,22 @@
 Yonca AI - Digital Umbrella Streamlit App
 """
 import sys
+import os
 from pathlib import Path
 
 # Add src to path for Streamlit Cloud deployment
-src_path = Path(__file__).parent.parent.parent
-if str(src_path) not in sys.path:
-    sys.path.insert(0, str(src_path))
+# __file__ = /mount/src/yonja/src/yonca/umbrella/app.py
+# We need to add: /mount/src/yonja/src
+_current_file = Path(__file__).resolve()
+_src_path = _current_file.parent.parent.parent  # Go up 3 levels: umbrella -> yonca -> src
+if str(_src_path) not in sys.path:
+    sys.path.insert(0, str(_src_path))
+
+# Also try adding via PYTHONPATH-style approach for robustness
+_repo_root = _src_path.parent  # /mount/src/yonja
+_alt_src = _repo_root / "src"
+if _alt_src.exists() and str(_alt_src) not in sys.path:
+    sys.path.insert(0, str(_alt_src))
 
 import streamlit as st
 from datetime import datetime

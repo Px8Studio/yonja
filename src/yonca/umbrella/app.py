@@ -39,6 +39,9 @@ from yonca.umbrella.styles import (
     COLORS,
 )
 
+# Import unified intent matcher from sidecar (consolidation)
+from yonca.sidecar.intent_matcher import get_intent_matcher, IntentMatch
+
 
 # ============= PAGE CONFIG =============
 
@@ -80,18 +83,31 @@ def init_session_state():
 init_session_state()
 
 
-# ============= INTENT-BASED CHAT RESPONSE =============
+# ============= INTENT-BASED CHAT RESPONSE (Unified) =============
+
+# Get the singleton intent matcher
+_intent_matcher = get_intent_matcher()
+
 
 def generate_chat_response(user_message: str, farm) -> str:
     """
     Generate an intent-based response in Azerbaijani.
     
+    Uses the unified IntentMatcher from sidecar module for
+    dialect-aware, pattern-based intent detection.
+    
     This simulates Qwen2.5-7B inference for demo purposes.
     """
-    msg_lower = user_message.lower()
+    # Use unified intent matcher
+    intent_result: IntentMatch = _intent_matcher.match(user_message)
+    intent = intent_result.intent
+    confidence = intent_result.confidence
     
-    # Irrigation intent
-    if any(word in msg_lower for word in ["suvar", "su", "nəmlik", "quru"]):
+    # Log for debugging (visible in console)
+    # print(f"[Intent] {intent} ({confidence:.0%}) - patterns: {intent_result.matched_patterns}")
+    
+    # Route to appropriate handler based on detected intent
+    if intent == "irrigation":
         if farm.soil:
             moisture = farm.soil.moisture_percent
             if moisture < 25:
@@ -100,25 +116,28 @@ def generate_chat_response(user_message: str, farm) -> str:
                     f"Torpaq nəmliyi {moisture}% - kritik səviyyədədir.\n\n"
                     "**Tövsiyə:** Bu gün saat 06:00-08:00 arasında suvarmanı başlayın. "
                     "Hər hektara 40-50mm su verin.\n\n"
-                    "❓ *Niyə?* Çiçəkləmə dövründə su stresi məhsuldarlığı 30%-ə qədər azalda bilər."
+                    "❓ *Niyə?* Çiçəkləmə dövründə su stresi məhsuldarlığı 30%-ə qədər azalda bilər.\n\n"
+                    f"📊 *Etibarlılıq: {confidence:.0%}*"
                 )
             elif moisture < 40:
                 return (
                     f"💧 **Suvarma planlaşdırın**\n\n"
                     f"Torpaq nəmliyi {moisture}% - orta səviyyədədir.\n\n"
                     "**Tövsiyə:** Sabah səhər suvarma tövsiyə olunur. "
-                    "Damcı suvarma sistemindən istifadə edin."
+                    "Damcı suvarma sistemindən istifadə edin.\n\n"
+                    f"📊 *Etibarlılıq: {confidence:.0%}*"
                 )
             else:
                 return (
                     f"✅ **Suvarma lazım deyil**\n\n"
                     f"Torpaq nəmliyi {moisture}% - optimal səviyyədədir.\n\n"
-                    "Növbəti yoxlama 2 gün sonra."
+                    "Növbəti yoxlama 2 gün sonra.\n\n"
+                    f"📊 *Etibarlılıq: {confidence:.0%}*"
                 )
         return "Torpaq məlumatları mövcud deyil. Əvvəlcə nəmlik ölçmə aparın."
     
     # Fertilization intent
-    if any(word in msg_lower for word in ["gübrə", "azot", "fosfor", "qida"]):
+    elif intent == "fertilization":
         if farm.soil:
             nitrogen = farm.soil.nitrogen_kg_ha
             if nitrogen < 25:
@@ -126,18 +145,20 @@ def generate_chat_response(user_message: str, farm) -> str:
                     f"🌱 **Azot gübrəsi tövsiyəsi**\n\n"
                     f"Azot səviyyəsi {nitrogen} kq/ha - aşağıdır.\n\n"
                     "**Tövsiyə:** Ammonium nitrat (NH₄NO₃) gübrəsini 80-100 kq/ha dozasında tətbiq edin.\n\n"
-                    "⏰ *Ən yaxşı vaxt:* Səhər suvarması ilə birlikdə"
+                    "⏰ *Ən yaxşı vaxt:* Səhər suvarması ilə birlikdə\n\n"
+                    f"📊 *Etibarlılıq: {confidence:.0%}*"
                 )
             else:
                 return (
                     f"✅ **Gübrə hazırda lazım deyil**\n\n"
                     f"Azot səviyyəsi {nitrogen} kq/ha - normal həddədədir.\n\n"
-                    "2 həftə sonra yenidən yoxlayın."
+                    "2 həftə sonra yenidən yoxlayın.\n\n"
+                    f"📊 *Etibarlılıq: {confidence:.0%}*"
                 )
         return "Torpaq analizi məlumatı mövcud deyil."
     
-    # Disease/pest intent
-    if any(word in msg_lower for word in ["xəstəlik", "zərərverici", "göbələk", "böcək", "sarı"]):
+    # Disease/pest intent (matches both "disease" and "pest_control" from intent matcher)
+    elif intent in ("disease", "pest_control"):
         if farm.weather and farm.weather.humidity_percent > 70:
             return (
                 f"⚠️ **Xəstəlik riski yüksəkdir!**\n\n"
@@ -146,15 +167,17 @@ def generate_chat_response(user_message: str, farm) -> str:
                 "• Yarpaq ləkələri\n"
                 "• Unlu şeh əlamətləri\n"
                 "• Gövdə çürüməsi\n\n"
-                "**Tövsiyə:** Fungisid tətbiqi planlaşdırın."
+                "**Tövsiyə:** Fungisid tətbiqi planlaşdırın.\n\n"
+                f"📊 *Etibarlılıq: {confidence:.0%}*"
             )
         return (
             "✅ **Xəstəlik riski aşağıdır**\n\n"
-            "Hazırkı şərait normal həddədədir. Həftəlik vizual müayinə davam edin."
+            "Hazırkı şərait normal həddədədir. Həftəlik vizual müayinə davam edin.\n\n"
+            f"📊 *Etibarlılıq: {confidence:.0%}*"
         )
     
-    # Daily schedule intent
-    if any(word in msg_lower for word in ["bu gün", "plan", "cədvəl", "nə edim", "işlər"]):
+    # Planting intent (for schedule questions)
+    elif intent == "planting":
         return (
             f"📋 **{datetime.now().strftime('%d.%m.%Y')} üçün plan:**\n\n"
             "1. **06:00** - Sahə müayinəsi\n"
@@ -162,11 +185,12 @@ def generate_chat_response(user_message: str, farm) -> str:
             "3. **09:00** - Gübrə tətbiqi\n"
             "4. **11:00-16:00** - İstirahət (günorta istisi)\n"
             "5. **17:00** - Avadanlıq baxımı\n\n"
-            "📌 *\"Gündəlik Plan\" tabına baxın detallı cədvəl üçün.*"
+            "📌 *\"Gündəlik Plan\" tabına baxın detallı cədvəl üçün.*\n\n"
+            f"📊 *Etibarlılıq: {confidence:.0%}*"
         )
     
     # Weather intent
-    if any(word in msg_lower for word in ["hava", "yağış", "temperatur", "proqnoz"]):
+    elif intent == "weather":
         if farm.weather:
             w = farm.weather
             rain_status = "🌧️ Yağış gözlənilir" if w.condition == "rainy" else "☀️ Quru hava"
@@ -177,12 +201,13 @@ def generate_chat_response(user_message: str, farm) -> str:
                 f"Rütubət: {w.humidity_percent}%\n"
                 f"Külək: {w.wind_speed_kmh} km/saat\n\n"
                 f"**Proqnoz:** {rain_status}\n\n"
-                f"*Yağış planlarınızı suvarma cədvəlinə uyğunlaşdırın.*"
+                f"*Yağış planlarınızı suvarma cədvəlinə uyğunlaşdırın.*\n\n"
+                f"📊 *Etibarlılıq: {confidence:.0%}*"
             )
         return "Hava məlumatı mövcud deyil."
     
     # Livestock intent
-    if any(word in msg_lower for word in ["heyvan", "mal-qara", "inək", "qoyun", "toyuq", "peyvənd"]):
+    elif intent == "livestock":
         if farm.livestock:
             total = sum(l.count for l in farm.livestock)
             animals = ", ".join([f"{l.count} {l.animal_type}" for l in farm.livestock])
@@ -195,16 +220,55 @@ def generate_chat_response(user_message: str, farm) -> str:
                     "• Ventilyasiya sistemini yoxlayın\n"
                     "• Əlavə su mənbələri təmin edin\n"
                     "• Günorta yemlənməni təxirə salın\n"
-                    "• Respirator simptomlara diqqət edin"
+                    "• Respirator simptomlara diqqət edin\n\n"
+                    f"📊 *Etibarlılıq: {confidence:.0%}*"
                 )
             return (
                 f"🐄 **Heyvandarlıq vəziyyəti**\n\n"
                 f"Cəmi: {total} baş ({animals})\n\n"
-                "✅ Şərait normaldır. Gündəlik sağlamlıq yoxlamasını davam edin."
+                "✅ Şərait normaldır. Gündəlik sağlamlıq yoxlamasını davam edin.\n\n"
+                f"📊 *Etibarlılıq: {confidence:.0%}*"
             )
         return "Bu təsərrüfatda heyvandarlıq məlumatı yoxdur."
     
-    # Help intent
+    # Soil intent
+    elif intent == "soil":
+        if farm.soil:
+            return (
+                f"🌱 **Torpaq Analizi**\n\n"
+                f"• Nəmlik: {farm.soil.moisture_percent}%\n"
+                f"• pH: {farm.soil.ph_level}\n"
+                f"• Azot (N): {farm.soil.nitrogen_kg_ha} kq/ha\n"
+                f"• Fosfor (P): {farm.soil.phosphorus_kg_ha} kq/ha\n"
+                f"• Kalium (K): {farm.soil.potassium_kg_ha} kq/ha\n\n"
+                f"📊 *Etibarlılıq: {confidence:.0%}*"
+            )
+        return "Torpaq analizi məlumatı mövcud deyil."
+    
+    # Harvest intent
+    elif intent == "harvest":
+        if farm.crops:
+            crop = farm.crops[0]
+            return (
+                f"🌾 **Məhsul Yığımı**\n\n"
+                f"Bitki: {crop.crop_type}\n"
+                f"Mərhələ: {crop.growth_stage}\n\n"
+                "**Tövsiyə:** Məhsul yığımından əvvəl torpaq nəmliyini yoxlayın.\n\n"
+                f"📊 *Etibarlılıq: {confidence:.0%}*"
+            )
+        return "Bitki məlumatı mövcud deyil."
+    
+    # Check for greeting patterns in the original message
+    msg_lower = user_message.lower()
+    if any(word in msg_lower for word in ["salam", "xoş", "necəsən", "hello", "hi"]):
+        return (
+            f"Salam! 👋\n\n"
+            f"Mən Yonca AI - sizin şəxsi fermer köməkçinizəm.\n\n"
+            f"Hazırda **{farm.name}** ({farm.region}) üzərində işləyirik.\n\n"
+            "Sizə necə kömək edə bilərəm?"
+        )
+    
+    # Help keywords
     if any(word in msg_lower for word in ["kömək", "help", "nə edə bilərsən", "imkan"]):
         return (
             "🌿 **Yonca AI ilə nə edə bilərsiniz:**\n\n"
@@ -217,16 +281,19 @@ def generate_chat_response(user_message: str, farm) -> str:
             "*İstənilən sualınızı Azərbaycan dilində yaza bilərsiniz!*"
         )
     
-    # Greeting
-    if any(word in msg_lower for word in ["salam", "xoş", "necəsən"]):
+    # Plan/schedule keywords (fallback)
+    if any(word in msg_lower for word in ["bu gün", "plan", "cədvəl", "nə edim", "işlər"]):
         return (
-            f"Salam! 👋\n\n"
-            f"Mən Yonca AI - sizin şəxsi fermer köməkçinizəm.\n\n"
-            f"Hazırda **{farm.name}** ({farm.region}) üzərində işləyirik.\n\n"
-            "Sizə necə kömək edə bilərəm?"
+            f"📋 **{datetime.now().strftime('%d.%m.%Y')} üçün plan:**\n\n"
+            "1. **06:00** - Sahə müayinəsi\n"
+            "2. **07:00** - Suvarma (əgər lazımdırsa)\n"
+            "3. **09:00** - Gübrə tətbiqi\n"
+            "4. **11:00-16:00** - İstirahət (günorta istisi)\n"
+            "5. **17:00** - Avadanlıq baxımı\n\n"
+            "📌 *\"Gündəlik Plan\" tabına baxın detallı cədvəl üçün.*"
         )
     
-    # Default response
+    # Default response with detected intent info
     return (
         "🤔 Sualınızı tam başa düşmədim.\n\n"
         "Aşağıdakı mövzularda kömək edə bilərəm:\n"

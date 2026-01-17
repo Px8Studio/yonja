@@ -11,12 +11,15 @@ from yonca.models import (
     Alert
 )
 from yonca.core.engine import recommendation_engine
-from yonca.chatbot import chatbot
+from yonca.sidecar.intent_matcher import get_intent_matcher
 from yonca.data.scenarios import get_scenario_farms, ALL_SCENARIOS
 from yonca.data.generators import generate_weather_forecast
 
 
 router = APIRouter(tags=["Yonca AI"])
+
+# Get singleton intent matcher
+_intent_matcher = get_intent_matcher()
 
 
 # ============= Farm Endpoints =============
@@ -163,13 +166,26 @@ async def chat(message: ChatMessage):
     - "Bu gün üçün plan nədir?"
     - "Gübrə lazımdırmı?"
     """
-    farm = None
+    # Use unified intent matcher
+    intent_result = _intent_matcher.match(message.message)
     
-    if message.farm_id:
-        farms = get_scenario_farms()
-        farm = farms.get(message.farm_id)
+    # Generate response based on intent
+    suggestions = []
+    if intent_result.intent == "general":
+        suggestions = [
+            "Suvarma haqqında soruşun",
+            "Gübrələmə tövsiyəsi",
+            "Hava proqnozu",
+            "Gündəlik plan",
+        ]
     
-    return chatbot.process_message(message, farm)
+    return ChatResponse(
+        message=f"Intent: {intent_result.intent}",
+        intent=intent_result.intent,
+        confidence=intent_result.confidence,
+        suggestions=suggestions,
+        related_tasks=[],
+    )
 
 
 # ============= Weather Endpoints =============

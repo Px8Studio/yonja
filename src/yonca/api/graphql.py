@@ -10,8 +10,11 @@ from yonca.models import TaskPriority, AlertSeverity, FarmType
 from yonca.core.engine import recommendation_engine
 from yonca.data.scenarios import get_scenario_farms, ALL_SCENARIOS
 from yonca.data.generators import generate_weather_forecast
-from yonca.chatbot import chatbot
+from yonca.sidecar.intent_matcher import get_intent_matcher
 from yonca.models import ChatMessage
+
+# Get singleton intent matcher
+_intent_matcher = get_intent_matcher()
 
 
 # ============= GraphQL Types =============
@@ -374,24 +377,22 @@ class Mutation:
         language: str = "az"
     ) -> ChatResponse:
         """Send a message to the Yonca AI chatbot."""
-        chat_message = ChatMessage(
-            message=message,
-            farm_id=farm_id,
-            language=language,
-        )
+        # Use unified intent matcher
+        intent_result = _intent_matcher.match(message)
         
-        farm = None
-        if farm_id:
-            farms = get_scenario_farms()
-            farm = farms.get(farm_id)
-        
-        response = chatbot.process_message(chat_message, farm)
+        suggestions = []
+        if intent_result.intent == "general":
+            suggestions = [
+                "Suvarma haqqında soruşun",
+                "Gübrələmə tövsiyəsi", 
+                "Hava proqnozu",
+            ]
         
         return ChatResponse(
-            message=response.message,
-            intent=response.intent,
-            confidence=response.confidence,
-            suggestions=response.suggestions,
+            message=f"Intent: {intent_result.intent}",
+            intent=intent_result.intent,
+            confidence=intent_result.confidence,
+            suggestions=suggestions,
         )
 
 

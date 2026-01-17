@@ -6,6 +6,19 @@ Manages synthetic farm profiles for demonstration.
 Supports 5 scenarios: Wheat, Livestock, Orchard, Mixed, Poultry.
 
 100% synthetic data - no real farmer data is used.
+
+NOTE: Model Naming
+==================
+This module defines its own `FarmProfile` dataclass for the Streamlit UI.
+The canonical Pydantic models are in `yonca.models`.
+The canonical scenario data is in `yonca.data.scenarios`.
+
+The umbrella-specific FarmProfile includes UI-specific fields like
+`satellite_alert` that aren't needed in the core data layer.
+
+For future consolidation, consider:
+- Using yonca.models.FarmProfile as the base
+- Adding UI-specific fields via composition or inheritance
 """
 
 from dataclasses import dataclass, field

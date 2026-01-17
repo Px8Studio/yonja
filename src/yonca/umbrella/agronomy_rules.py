@@ -9,6 +9,12 @@ If the LLM suggests something that contradicts basic agronomy principles
 (e.g., watering during a rainstorm), the logic guard overrides it.
 
 Based on Azerbaijani agricultural best practices and ETSN standards.
+
+NOTE: This module provides VALIDATION rules for the Streamlit UI.
+      For the canonical GENERATION rules, see: yonca.sidecar.rules_registry
+      
+      The rules here validate LLM outputs AFTER generation.
+      The rules in rules_registry are used to GENERATE recommendations.
 """
 
 from dataclasses import dataclass
@@ -20,6 +26,13 @@ from yonca.umbrella.mock_backend import (
     FarmProfileRequest,
     RecommendationItem,
     RecommendationType,
+)
+
+# Import unified rules for future consolidation
+# TODO: Migrate validation logic to use unified rules
+from yonca.sidecar.rules_registry import (
+    AGRONOMY_RULES as UNIFIED_RULES,
+    RuleCategory,
 )
 
 

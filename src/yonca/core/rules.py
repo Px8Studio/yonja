@@ -1,6 +1,19 @@
 """
 Yonca AI - Rule-Based Recommendation Rules
 Defines agricultural rules for different scenarios.
+
+DEPRECATION NOTICE:
+==================
+This module is being consolidated into yonca.sidecar.rules_registry.
+The canonical rules source is now: yonca.sidecar.rules_registry.AGRONOMY_RULES
+
+This file is maintained for backwards compatibility with:
+- yonca.core.engine (RecommendationEngine)
+- yonca.agent.tools (LangGraph tools)
+
+Migration path:
+- New code should import from yonca.sidecar.rules_registry
+- This module will be removed in a future version
 """
 from dataclasses import dataclass
 from enum import Enum

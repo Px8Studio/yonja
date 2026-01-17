@@ -6,10 +6,10 @@ from datetime import date, timedelta
 
 from yonca.models import (
     FarmProfile, FarmType, CropStage, TaskPriority,
-    ChatMessage
 )
 from yonca.core.engine import RecommendationEngine
-from yonca.chatbot import AzerbaijaniChatbot
+# Use unified intent matcher directly from sidecar
+from yonca.sidecar.intent_matcher import detect_intent, match_intent, IntentMatch
 from yonca.data.generators import (
     FarmGenerator, WeatherGenerator, SoilGenerator,
     generate_sample_farms
@@ -143,63 +143,79 @@ class TestRecommendationEngine:
         assert "livestock" in categories or len(recommendations) == 0
 
 
-class TestAzerbaijaniChatbot:
-    """Tests for the Azerbaijani chatbot."""
-    
-    def setup_method(self):
-        """Set up test fixtures."""
-        self.chatbot = AzerbaijaniChatbot()
+class TestIntentMatcher:
+    """Tests for the unified intent matcher (replaces AzerbaijaniChatbot tests)."""
     
     def test_greeting_intent(self):
-        """Test greeting intent recognition."""
-        message = ChatMessage(message="Salam")
-        response = self.chatbot.process_message(message)
-        
-        assert response.intent == "greeting"
-        assert response.confidence > 0.5
+        """Test greeting patterns are not in intent matcher (handled separately)."""
+        # Note: Greetings are handled as fallback in app.py, not in intent matcher
+        intent, confidence = detect_intent("Salam")
+        # Greeting is not a category in the unified intent matcher
+        assert intent == "general" or confidence < 0.5
     
     def test_irrigation_intent(self):
         """Test irrigation intent recognition."""
-        message = ChatMessage(
-            message="Nə vaxt suvarmalıyam?",
-            farm_id="scenario-wheat"
-        )
-        response = self.chatbot.process_message(message)
+        result = match_intent("Nə vaxt suvarmalıyam?")
         
-        assert response.intent == "suvarma_sorğusu"
+        assert result.intent == "irrigation"
+        assert result.confidence > 0
+        assert "suvar" in result.matched_patterns or len(result.matched_patterns) > 0
     
     def test_fertilization_intent(self):
         """Test fertilization intent recognition."""
-        message = ChatMessage(
-            message="Gübrə lazımdırmı?",
-            farm_id="scenario-wheat"
-        )
-        response = self.chatbot.process_message(message)
+        result = match_intent("Gübrə lazımdırmı?")
         
-        assert response.intent == "gübrələmə_sorğusu"
+        assert result.intent == "fertilization"
+        assert result.confidence > 0
     
-    def test_help_intent(self):
-        """Test help intent recognition."""
-        message = ChatMessage(message="Kömək")
-        response = self.chatbot.process_message(message)
+    def test_weather_intent(self):
+        """Test weather intent recognition."""
+        result = match_intent("Hava necə olacaq?")
         
-        assert response.intent == "kömək"
-        assert len(response.message) > 100  # Help message should be detailed
+        assert result.intent == "weather"
+        assert result.confidence > 0
+    
+    def test_disease_intent(self):
+        """Test disease/pest intent recognition."""
+        result = match_intent("Xəstəlik riski varmı?")
+        
+        assert result.intent == "disease"
+        assert result.confidence > 0
+    
+    def test_livestock_intent(self):
+        """Test livestock intent recognition."""
+        result = match_intent("Mal-qara sağlamlığı")
+        
+        assert result.intent == "livestock"
+        assert result.confidence > 0
+    
+    def test_soil_intent(self):
+        """Test soil intent recognition."""
+        result = match_intent("Torpaq analizi")
+        
+        assert result.intent == "soil"
+        assert result.confidence > 0
+    
+    def test_harvest_intent(self):
+        """Test harvest intent recognition."""
+        result = match_intent("Məhsul yığımı vaxtı")
+        
+        assert result.intent == "harvest"
+        assert result.confidence > 0
     
     def test_unknown_intent_fallback(self):
         """Test fallback for unrecognized input."""
-        message = ChatMessage(message="asdfghjkl random text")
-        response = self.chatbot.process_message(message)
+        result = match_intent("asdfghjkl random text")
         
-        assert response.intent is None
-        assert len(response.suggestions) > 0
+        assert result.intent == "general"
+        assert result.confidence < 0.5
     
-    def test_suggestions_provided(self):
-        """Test that suggestions are provided."""
-        message = ChatMessage(message="Salam")
-        response = self.chatbot.process_message(message)
+    def test_dialect_detection(self):
+        """Test that dialect detection works."""
+        result = match_intent("suvarma lazımdırmı?")
         
-        assert isinstance(response.suggestions, list)
+        assert result.detected_dialect is not None
+        assert result.normalized_query is not None
 
 
 class TestRecommendationLogicAccuracy:

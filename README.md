@@ -1,20 +1,29 @@
-# 🌿 Yonca AI - Smart Farm Planning Assistant
+# 🌿 Yonca AI - Headless Intelligence as a Service
 
-> AI-driven daily farm planning assistant for the Yonca agricultural platform.
-> Uses **LangGraph** for AI orchestration and **Qwen2.5** for Azerbaijani language support.
+> **Sidecar Intelligence Engine** for the Yonca agricultural platform.
+> High-security, edge-ready AI backend with REST/GraphQL APIs, PII protection, and Azerbaijani language support.
 
 ## 🎯 Overview
 
-Yonca AI provides intelligent recommendations for daily farm operations using **LangGraph-powered AI agents** and synthetic datasets. Built to demonstrate the next evolution of personalized, intelligent farm assistance without requiring real farmer data.
+Yonca AI is a **Headless Intelligence as a Service** backend—a detached, high-performance AI module that integrates seamlessly with existing platforms via API. Built with a "Logic-First" methodology, it delivers deterministic, rule-validated farm recommendations using 100% synthetic data.
+
+**Key Architecture Principles:**
+- **Sidecar Model**: Standalone AI engine that never touches core platform systems
+- **Data Sovereignty**: 100% synthetic datasets—zero legal/operational friction
+- **Edge-Ready**: Lightweight inference with Qwen2.5-7B for low-connectivity zones
+- **Logic-First**: Deterministic agronomy rulebook overrides LLM hallucinations
 
 ## ✨ Features
 
-- **LangGraph AI Agent** - Intelligent orchestration with tool-calling capabilities
+- **PII Gateway** - Zero-trust data sanitization layer
+- **RAG Engine** - Retrieval-Augmented Generation with agronomy rulebook
+- **Lite Inference** - Edge-optimized GGUF quantization support
+- **Rules Registry** - Deterministic agronomy rules with AZ- prefixes
 - **Multi-LLM Support** - Google Gemini (cloud) or Qwen2.5 via Ollama (local)
-- **Azerbaijani Language** - Native language support with Qwen2.5's Turkic optimization
-- **5+ Farm Scenarios** - Wheat, Livestock, Orchard, Vegetable, Mixed farming profiles
-- **Offline Support** - Works in low-connectivity environments with local LLM
-- **REST & GraphQL APIs** - Flexible integration options
+- **Azerbaijani Language** - Native language support with Turkic dialect normalization
+- **Trust Scores** - Confidence scoring with source citations
+- **Digital Twin** - Simulation engine for scenario planning
+- **REST & GraphQL APIs** - Flexible headless integration options
 - **100% Synthetic Data** - Complete data safety, no real farmer data
 
 ## 🏗️ Architecture
@@ -23,18 +32,21 @@ Yonca AI provides intelligent recommendations for daily farm operations using **
 yonca-ai/
 ├── src/
 │   └── yonca/
+│       ├── sidecar/          # 🎯 CORE: Sidecar Intelligence Engine
+│       │   ├── pii_gateway   # Zero-trust data sanitization
+│       │   ├── rag_engine    # Retrieval-augmented generation
+│       │   ├── rules_registry# Deterministic agronomy rules
+│       │   ├── intent_matcher# Azerbaijani intent detection
+│       │   ├── lite_inference# Edge-ready LLM inference
+│       │   ├── trust         # Confidence scoring
+│       │   └── digital_twin  # Farm simulation
 │       ├── api/              # REST & GraphQL endpoints
-│       ├── agent/            # LangGraph AI agent
-│       ├── core/             # Business logic
-│       │   ├── engine/       # Recommendation engine
-│       │   ├── rules/        # Rule definitions
-│       │   └── scheduler/    # Task scheduling
-│       ├── chatbot/          # Azerbaijani chatbot
-│       ├── data/             # Synthetic data & generators
-│       ├── models/           # Data models
-│       └── startup.py        # Startup manager with Ollama checks
+│       ├── agent/            # LangGraph AI orchestration
+│       ├── data/             # Synthetic scenarios & generators
+│       ├── models/           # Pydantic data models
+│       └── startup.py        # Startup with Ollama health checks
 ├── tests/                    # Test suite
-└── docs/                     # Documentation
+└── docs/                     # Documentation & API specs
 ```
 
 ## 🚀 Quick Start
@@ -80,7 +92,7 @@ YONCA_LLM_MODEL=gemini-2.0-flash
 
 ```bash
 # Clone the repository
-git clone https://github.com/Px8Studio/yonja.git
+git clone https://github.com/ZekaLab/yonja.git
 cd yonja
 
 # Create virtual environment (Python 3.12)
@@ -199,8 +211,8 @@ pytest tests/ -v --cov=src/yonca
 
 ## 📄 License
 
-MIT License - Digital Umbrella © 2026
+MIT License - ZekaLab © 2026
 
 ## 🤝 Contributing
 
-This is a prototype demonstration. For integration with the Yonca platform, contact Digital Umbrella.
+This is a prototype demonstration. For integration with the Yonca platform, contact ZekaLab.

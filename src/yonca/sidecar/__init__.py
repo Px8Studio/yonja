@@ -22,7 +22,7 @@ Consolidated Modules (Cleanup v2):
 - Rules Registry: Unified agronomy rules with AZ- prefixes
 - Intent Matcher: Consolidated intent detection patterns
 
-Author: Digital Umbrella
+Author: ZekaLab
 License: MIT
 """
 

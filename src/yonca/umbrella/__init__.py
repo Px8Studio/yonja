@@ -5,30 +5,32 @@ Yonca AI - Digital Umbrella Prototype
 Streamlit-based "Personalized Farm Assistant" demonstration.
 Mobile-first UI designed for Azerbaijani farmers.
 
+Architecture:
+    This module consumes the Sidecar Intelligence Engine for recommendations.
+    Farm scenarios are loaded from the canonical yonca.data.scenarios module.
+    
 Modules:
-- scenario_manager: Synthetic dataset management with 5 farm profiles
-- mock_backend: FastAPI-structured mock API for sidecar architecture
-- agronomy_rules: Deterministic logic guard for LLM recommendations
+- app: Main Streamlit application with UI adapters
 - styles: Custom CSS for mobile-first WhatsApp-like UI
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
-from yonca.umbrella.scenario_manager import ScenarioManager, ScenarioProfile
-from yonca.umbrella.mock_backend import (
-    MockBackend, 
-    RecommendationPayload,
-    FarmProfileRequest,
-    RecommendationItem,
+# Re-export UI components for convenience
+from yonca.umbrella.app import (
+    ScenarioProfile,
+    SCENARIO_LABELS,
+    SCENARIO_MAP,
+    UIFarmProfile,
+    adapt_farm_profile,
+    generate_ui_recommendations,
 )
-from yonca.umbrella.agronomy_rules import AgronomyLogicGuard
 
 __all__ = [
-    "ScenarioManager",
-    "ScenarioProfile", 
-    "MockBackend",
-    "RecommendationPayload",
-    "FarmProfileRequest",
-    "RecommendationItem",
-    "AgronomyLogicGuard",
+    "ScenarioProfile",
+    "SCENARIO_LABELS",
+    "SCENARIO_MAP",
+    "UIFarmProfile",
+    "adapt_farm_profile",
+    "generate_ui_recommendations",
 ]

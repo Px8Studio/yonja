@@ -943,4 +943,5 @@ BASE URL: /api/v1/sidecar
 
 ---
 
+*ZekaLab - Headless Intelligence as a Service*
 *Built with 🌿 for Azerbaijan's agricultural future*

@@ -1,10 +1,10 @@
 [tool.poetry]
 name = "yonca-ai"
 version = "0.2.0"
-description = "AI-driven daily farm planning assistant for Yonca platform"
+description = "Headless Intelligence as a Service - AI-driven farm planning for Yonca platform"
 readme = "README.md"
 license = "MIT"
-authors = ["Digital Umbrella <dev@digitalumbrella.az>"]
+authors = ["ZekaLab <dev@zekalab.io>"]
 keywords = ["agriculture", "ai", "farming", "recommendation-engine", "azerbaijan", "langgraph"]
 packages = [{include = "yonca", from = "src"}]
 

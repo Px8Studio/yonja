@@ -448,16 +448,16 @@ async def health_check():
 
 ---
 
-### 1.4 Docker Setup
+### ~~1.4 Docker Setup~~ ✅
 
 **Goal:** Create Docker configuration for local development.
 
 #### Tasks
 
-- [ ] **1.4.1** Create `Dockerfile` with multi-stage build
-- [ ] **1.4.2** Create `docker-compose.local.yml`
-- [ ] **1.4.3** Test full stack locally
-- [ ] **1.4.4** Document startup commands
+- [x] **1.4.1** Create `Dockerfile` with multi-stage build
+- [x] **1.4.2** Create `docker-compose.local.yml`
+- [x] **1.4.3** Test full stack locally
+- [x] **1.4.4** Document startup commands
 
 #### Implementation
 
@@ -541,9 +541,9 @@ CMD ["uvicorn", "yonca.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 | Health endpoint | ✅ | /health + /health/ready |
 | Chat endpoint stub | ✅ | /yonca-ai/chat |
 | VS Code Tasks | ✅ | Dev server task |
-| Dockerfile | ⬜ | Next step |
-| docker-compose.local.yml | ⬜ | Next step |
-| Local stack test | ⬜ | |
+| Dockerfile | ✅ | Multi-stage build (dev + prod) |
+| docker-compose.local.yml | ✅ | API + Ollama + Redis |
+| Local stack test | ✅ | All containers healthy |
 
 ---
 

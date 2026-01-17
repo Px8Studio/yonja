@@ -1,0 +1,153 @@
+# Docker Compose for Local Development
+# Usage: docker-compose -f docker-compose.local.yml up -d
+
+services:
+  # ================================================
+  # Yonca AI API (Development Mode)
+  # ================================================
+  api:
+    build:
+      context: .
+      target: development
+      dockerfile: Dockerfile
+    container_name: yonca-api
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount source code for hot reload
+      - ./src:/app/src
+      - ./prompts:/app/prompts
+      - ./data:/app/data
+    environment:
+      # Deployment settings
+      - DEPLOYMENT_MODE=local
+      - ENVIRONMENT=development
+      - DEBUG=true
+      
+      # API settings
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:8501
+      
+      # LLM Provider (use Ollama for local)
+      - LLM_PROVIDER=ollama
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=qwen2.5:3b
+      
+      # Database (SQLite for local development)
+      - DATABASE_URL=sqlite+aiosqlite:///./data/yonca.db
+      
+      # Redis
+      - REDIS_URL=redis://redis:6379/0
+      
+      # Security (development only - change in production!)
+      - JWT_SECRET=dev-secret-change-in-production
+      - JWT_ALGORITHM=HS256
+      - JWT_EXPIRY_HOURS=24
+      
+      # Observability
+      - LOG_LEVEL=DEBUG
+      - LOG_FORMAT=console
+      - PROMETHEUS_ENABLED=true
+      
+      # Rate limiting
+      - RATE_LIMIT_REQUESTS_PER_MINUTE=100
+      - RATE_LIMIT_BURST=150
+    depends_on:
+      - redis
+      - ollama
+    networks:
+      - yonca-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ================================================
+  # Ollama (Local LLM Server)
+  # ================================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: yonca-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - yonca-network
+    restart: unless-stopped
+    # Uncomment for GPU support (requires nvidia-docker)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # ================================================
+  # Redis (Caching & Session Storage)
+  # ================================================
+  redis:
+    image: redis:7-alpine
+    container_name: yonca-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - yonca-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ================================================
+  # PostgreSQL (Optional - for production-like local testing)
+  # ================================================
+  # Uncomment if you want to use PostgreSQL instead of SQLite
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: yonca-postgres
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   environment:
+  #     - POSTGRES_DB=yonca
+  #     - POSTGRES_USER=yonca
+  #     - POSTGRES_PASSWORD=yonca_dev_password
+  #   networks:
+  #     - yonca-network
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U yonca"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+# ================================================
+# Networks
+# ================================================
+networks:
+  yonca-network:
+    driver: bridge
+
+# ================================================
+# Volumes
+# ================================================
+volumes:
+  ollama-data:
+    driver: local
+  redis-data:
+    driver: local
+  # postgres-data:
+  #   driver: local

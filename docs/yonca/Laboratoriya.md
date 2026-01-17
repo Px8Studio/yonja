@@ -10,6 +10,8 @@ Səmərəlilik və dəqiqlik: Nümunələrin coğrafi koordinatlara əsasən gö
  
 
 Sistemin istifadəçiləri
+
 Dövlət və özəl laboratoriyalar sistemin əsas istifadəçiləridir
 Fermerlər torpaqlarının analiz nəticələrini elektron qaydada əldə edə və izləyə bilərlər
+
 KTN və aidiyyəti alt qurumların məlumatları əsasında statistik və analitik təhlil nəticələri ilə tanış ola bilərlər

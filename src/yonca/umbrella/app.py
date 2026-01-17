@@ -814,7 +814,7 @@ for idx, profile in enumerate(ScenarioProfile):
         
         if st.button(
             label['icon'],
-            key=f"scenario_btn_{idx}_{profile.value}",
+            key=f"scenario_{profile.value}",
             type="primary" if is_active else "secondary",
             use_container_width=True,
         ):

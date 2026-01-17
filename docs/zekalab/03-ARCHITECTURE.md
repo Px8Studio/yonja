@@ -4,6 +4,56 @@
 
 ---
 
+## 🧠 Core Technology: LangGraph Agentic Framework
+
+We propose building the Yonca AI Sidecar using **LangGraph**—an enterprise-grade agentic framework that transforms the system from a simple "input-output" advisor into a **Stateful Farming Orchestrator** that reasons, remembers, and self-corrects.
+
+### Why LangGraph?
+
+| Capability | Benefit for Digital Umbrella |
+|:-----------|:-----------------------------|
+| **Graph-Based Logic** | Visual flowchart of AI decision-making—auditable by non-technical agronomists |
+| **Native Checkpointing** | Farmer loses connection mid-chat? LangGraph saves the exact conversation state |
+| **Vendor Agnostic** | Deployable on any cloud (Azure, AWS) or local Baku servers—meets Data Safety requirements |
+| **Human-in-the-Loop** | Built-in interrupt nodes for verifying risky agricultural advice before delivery |
+| **Cycles & Loops** | Validation loops catch incorrect recommendations *before* the farmer sees them |
+
+### Agentic Architecture: The Supervisor Pattern
+
+```mermaid
+graph TB
+    subgraph supervisor["🎯 Supervisor Agent"]
+        sup["Orchestrator<br/><i>Routes tasks to specialists</i>"]
+    end
+    
+    subgraph specialists["👥 Specialist Sub-Agents"]
+        agro["🌾 Agronomist Agent<br/><i>Sowing dates, crop cycles</i>"]
+        subsidy["💰 Subsidy Specialist<br/><i>EKTIS deadlines, applications</i>"]
+        weather["⛅ Weather Analyst<br/><i>Forecast monitoring</i>"]
+    end
+    
+    subgraph memory["💾 Memory Layer"]
+        short["Short-Term<br/><i>Current session</i>"]
+        long["Long-Term<br/><i>Farmer history via Checkpointer</i>"]
+    end
+    
+    sup --> agro
+    sup --> subsidy
+    sup --> weather
+    agro --> short
+    subsidy --> short
+    weather --> short
+    short <--> long
+    
+    style supervisor fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px
+    style specialists fill:#e3f2fd,stroke:#1565c0
+    style memory fill:#fff9c4,stroke:#f9a825
+```
+
+The system **remembers context**—if a farmer mentioned a pest issue three days ago, the assistant recalls it in subsequent sessions, even when using synthetic profiles.
+
+---
+
 ## 🎯 Why "Sidecar"?
 
 Digital Umbrella's Yonca platform handles **legal government data** (subsidy applications, EKTIS integration). We can't access that, so we run as a **sidecar**—a separate AI module.
@@ -90,7 +140,65 @@ graph LR
 
 ---
 
-## 📐 System Architecture
+## � Integration Bridge: FastAPI + LangGraph Server
+
+Since Yonca is a mobile app and LangGraph is a Python-based framework, we provide a robust API bridge ensuring smooth handoff between systems.
+
+### Request Flow Architecture
+
+```mermaid
+sequenceDiagram
+    participant M as 📱 Yonca Mobile App
+    participant F as 🔌 FastAPI Gateway
+    participant L as 🧠 LangGraph Server
+    participant S as 📊 Synthetic Data
+    participant R as 📚 Rulebook
+    
+    M->>F: POST /yonca-ai/chat
+    F->>L: Start Thread (farmer_id)
+    L->>L: Load Graph State
+    L->>S: Fetch Weather/Soil Data
+    S-->>L: Synthetic Scenario
+    L->>R: Validate Against Rules
+    R-->>L: Rule Matches
+    L->>L: Execute Nodes
+    L-->>F: SSE Stream Response
+    F-->>M: Real-time "typing" effect
+```
+
+### Server-Sent Events (SSE) Streaming
+
+The farmer sees the AI "typing" its reasoning in real-time—creating a premium, responsive experience:
+
+```python
+# Streaming endpoint example
+@app.post("/yonca-ai/chat")
+async def chat_endpoint(request: ChatRequest):
+    thread_id = f"farmer_{request.farm_id}"
+    
+    async def generate():
+        async for event in graph.astream(
+            {"messages": request.messages},
+            config={"configurable": {"thread_id": thread_id}}
+        ):
+            yield f"data: {json.dumps(event)}\n\n"
+    
+    return StreamingResponse(generate(), media_type="text/event-stream")
+```
+
+### Single Endpoint Simplicity
+
+Digital Umbrella's IT team doesn't need to understand LangGraph internals—they simply call:
+
+```
+POST /yonca-ai/chat
+```
+
+The entire intelligence module is a **Dockerized Microservice** ready to deploy.
+
+---
+
+## �📐 System Architecture
 
 ### Level 0: Context Diagram
 
@@ -206,7 +314,122 @@ flowchart LR
 
 ---
 
-### 2. RAG Engine with Rulebook
+### 2. LangGraph Orchestration Engine
+
+**Location:** `src/yonca/sidecar/graph_engine.py`
+
+The heart of the system—a **stateful graph** that orchestrates all AI decision-making with built-in safety and memory.
+
+```mermaid
+flowchart TB
+    subgraph graph["🧠 LangGraph State Machine"]
+        state["📋 State<br/><i>TypedDict: farm_profile,<br/>weather, chat_history</i>"]
+        
+        subgraph nodes["Processing Nodes"]
+            analyze["🔍 Scenario Analyzer<br/><i>Parse farmer context</i>"]
+            recommend["💡 Recommendation Engine<br/><i>Generate advice</i>"]
+            guard["🛡️ Safety Guardrail<br/><i>Validate output</i>"]
+            redline["🚫 Redline Scanner<br/><i>Zero real data check</i>"]
+        end
+        
+        subgraph edges["Conditional Routing"]
+            cond1{"Risk Level?"}
+            cond2{"Data Leak?"}
+        end
+        
+        state --> analyze
+        analyze --> recommend
+        recommend --> cond1
+        cond1 -->|"High"| guard
+        cond1 -->|"Low/Medium"| cond2
+        guard --> cond2
+        cond2 -->|"Clean"| output["✅ Response"]
+        cond2 -->|"Detected"| redline
+        redline -->|"Retry"| recommend
+    end
+    
+    style nodes fill:#e3f2fd,stroke:#1565c0
+    style guard fill:#fff9c4,stroke:#f9a825,stroke-width:2px
+    style redline fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+```
+
+#### State Schema
+
+```python
+from typing import TypedDict, Annotated
+from langgraph.graph import StateGraph
+from langgraph.checkpoint.memory import MemorySaver
+
+class FarmingState(TypedDict):
+    """Complete state for farming advisory session."""
+    farm_profile: dict          # Synthetic farm data
+    weather_data: list[dict]    # Recent/forecast weather
+    soil_conditions: dict       # Current soil metrics
+    chat_history: list[dict]    # Conversation memory
+    current_query: str          # User's question
+    recommendations: list[dict] # Generated advice
+    risk_level: str             # low | medium | high
+    confidence_score: float     # 0.0 - 1.0
+    validation_notes: list[str] # Audit trail
+```
+
+#### Graph Definition
+
+```python
+# Build the LangGraph
+graph = StateGraph(FarmingState)
+
+# Add processing nodes
+graph.add_node("scenario_analyzer", analyze_scenario)
+graph.add_node("recommendation_engine", generate_recommendations)
+graph.add_node("safety_guardrail", validate_safety)
+graph.add_node("redline_scanner", scan_for_real_data)
+
+# Add conditional edges
+graph.add_conditional_edges(
+    "recommendation_engine",
+    route_by_risk,
+    {"high": "safety_guardrail", "low": "redline_scanner", "medium": "redline_scanner"}
+)
+
+# Compile with persistence
+checkpointer = MemorySaver()  # Or PostgresSaver for production
+app = graph.compile(checkpointer=checkpointer)
+```
+
+#### The "Redline" Compliance Node
+
+Digital Umbrella's top priority is **Data Safety**. The Redline Scanner automatically:
+
+- Scans every AI response for real data patterns
+- Blocks any hallucinated PII or actual farm IDs
+- Ensures **zero real data** leakage
+- Acts as an automated compliance officer
+
+```python
+def scan_for_real_data(state: FarmingState) -> FarmingState:
+    """Compliance node: ensures no real data in responses."""
+    response_text = state["recommendations"][-1]["description"]
+    
+    violations = []
+    # Check for real phone patterns
+    if re.search(r'\+994\d{9}', response_text):
+        violations.append("Phone number detected")
+    # Check for real farm ID patterns
+    if re.search(r'FARM-\d{6}', response_text):
+        violations.append("Real farm ID detected")
+    
+    if violations:
+        state["validation_notes"].extend(violations)
+        # Route back to recommendation engine for retry
+        return {**state, "retry_required": True}
+    
+    return {**state, "retry_required": False}
+```
+
+---
+
+### 3. RAG Engine with Rulebook
 
 **Location:** `src/yonca/sidecar/rag_engine.py`
 
@@ -239,7 +462,7 @@ flowchart TB
 
 ---
 
-### 3. Lite-Inference Engine
+### 4. Lite-Inference Engine
 
 **Location:** `src/yonca/sidecar/lite_inference.py`
 
@@ -405,9 +628,15 @@ flowchart TB
 ```mermaid
 graph LR
     subgraph core["🔌 Core Endpoints"]
+        chat["POST /yonca-ai/chat<br/><i>Main advisory endpoint</i>"]
         rec["POST /recommendations<br/><i>Get AI advice</i>"]
         status["GET /status<br/><i>Service health</i>"]
         caps["GET /capabilities<br/><i>Inference mode</i>"]
+    end
+    
+    subgraph graph_ep["🧠 LangGraph"]
+        threads["GET /threads/{id}<br/><i>Session state</i>"]
+        history["GET /threads/{id}/history<br/><i>Conversation memory</i>"]
     end
     
     subgraph rules_ep["📚 Rulebook"]
@@ -426,7 +655,10 @@ graph LR
 
 | Endpoint | Method | Description |
 |:---------|:-------|:------------|
-| `/recommendations` | POST | Get AI recommendations |
+| `/yonca-ai/chat` | POST | **Primary streaming chat endpoint** (SSE) |
+| `/recommendations` | POST | Get AI recommendations (batch) |
+| `/threads/{thread_id}` | GET | Retrieve LangGraph session state |
+| `/threads/{thread_id}/history` | GET | Get conversation memory |
 | `/status` | GET | Service health & stats |
 | `/capabilities` | GET | Current inference mode |
 | `/models` | GET | Available model info |
@@ -572,6 +804,39 @@ pie showData
 
 ---
 
+## ❓ Technical Discovery: Questions for Digital Umbrella IT
+
+With the LangGraph architecture, our integration requirements are well-defined. These questions will finalize the deployment strategy:
+
+### Communication Protocol
+
+| Question | Why It Matters |
+|:---------|:--------------|
+| **Do you use WebSockets or SSE for current chat features?** | Determines how we stream the agent's reasoning in real-time |
+| **What is the mobile framework? (Flutter/React Native/Native)** | Affects SSE client implementation |
+
+### State Management Strategy
+
+| Question | Options |
+|:---------|:--------|
+| **Where should AI conversation state (memory) be stored?** | **Option A:** Our module's database (Redis/PostgreSQL) — Simpler integration<br/>**Option B:** Passed back via API — You control the data |
+
+### Audit & Visualization
+
+| Question | Capability Offered |
+|:---------|:-------------------|
+| **Can we provide LangGraph Studio visualization to your agronomists?** | Allows non-technical staff to audit AI decision paths without reading code |
+| **Do you require full audit logs of all AI decisions?** | We can provide complete reasoning traces for compliance |
+
+### Infrastructure
+
+| Question | Impact |
+|:---------|:-------|
+| **Hosting preference: Your infrastructure vs. standalone Docker?** | Affects deployment complexity and data residency |
+| **Expected concurrent users during peak farming season?** | Determines scaling strategy (horizontal vs. vertical) |
+
+---
+
 ## 🔧 Deployment Guide
 
 ### Quick Start
@@ -598,10 +863,64 @@ YONCA_RECOMMENDATION_CONFIDENCE_THRESHOLD=0.7
 # Ollama
 OLLAMA_HOST=http://localhost:11434
 
+# LangGraph Configuration
+LANGGRAPH_CHECKPOINT_BACKEND=postgres  # memory | redis | postgres
+LANGGRAPH_POSTGRES_URI=postgresql://user:pass@localhost:5432/yonca
+LANGGRAPH_REDIS_URL=redis://localhost:6379
+LANGGRAPH_ENABLE_STREAMING=true
+LANGGRAPH_MAX_RETRIES=3
+
 # Sidecar
 SIDECAR_INFERENCE_MODE=auto  # auto|standard|lite|offline
 SIDECAR_ENABLE_AUDIT_LOG=true
 SIDECAR_GGUF_MODEL=qwen2.5-7b-q4
+```
+
+### Docker Deployment
+
+```bash
+# Single command deployment
+docker run -d \
+  --name yonca-ai-sidecar \
+  -p 8000:8000 \
+  -e LANGGRAPH_CHECKPOINT_BACKEND=redis \
+  -e LANGGRAPH_REDIS_URL=redis://redis:6379 \
+  zekalab/yonca-sidecar:latest
+```
+
+### Docker Compose (Full Stack)
+
+```yaml
+version: '3.8'
+services:
+  yonca-sidecar:
+    image: zekalab/yonca-sidecar:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - LANGGRAPH_CHECKPOINT_BACKEND=postgres
+      - LANGGRAPH_POSTGRES_URI=postgresql://yonca:secret@postgres:5432/yonca
+    depends_on:
+      - postgres
+      - ollama
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=yonca
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=yonca
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama:/root/.ollama
+
+volumes:
+  pgdata:
+  ollama:
 ```
 
 ### Edge Deployment
@@ -619,6 +938,34 @@ config = EdgeDeploymentConfig(
 
 ---
 
+## � Implementation Checklist
+
+### Step 1: Graph Definition (Logic Layer)
+- [ ] Define `FarmingState` TypedDict with all context fields
+- [ ] Implement processing nodes: `Scenario_Analyzer`, `Recommendation_Engine`, `Safety_Guardrail`
+- [ ] Configure conditional edges for risk-based routing
+- [ ] Set up `MemorySaver` checkpointer for session persistence
+
+### Step 2: Safety First Module
+- [ ] Build Redline Scanner node for zero-real-data validation
+- [ ] Implement PII detection patterns for Azerbaijani data
+- [ ] Configure retry loop for failed compliance checks
+- [ ] Add audit logging for all blocked responses
+
+### Step 3: FastAPI Bridge
+- [ ] Wrap LangGraph in FastAPI endpoints
+- [ ] Implement SSE streaming for real-time responses
+- [ ] Add thread management for multi-session support
+- [ ] Configure CORS for mobile app access
+
+### Step 4: Deployment
+- [ ] Dockerize the complete stack
+- [ ] Document single `POST /yonca-ai/chat` endpoint
+- [ ] Provide LangGraph Studio access for agronomist auditing
+- [ ] Performance test with expected concurrent users
+
+---
+
 ## 🔐 Security Summary
 
 ### PII Protection Matrix
@@ -630,6 +977,7 @@ config = EdgeDeploymentConfig(
 | GPS Coords | `[KOORDİNAT]` | Region code only |
 | Farm ID | `syn_abc123` | Token mapping |
 | Soil/Weather | Passed through | No PII risk |
+| **Chat History** | Anonymized in Checkpointer | Thread ID only |
 
 ---
 
@@ -642,6 +990,6 @@ config = EdgeDeploymentConfig(
 ---
 
 *ZekaLab — Headless Intelligence as a Service*  
-*Built with 🌿 for Azerbaijan's agricultural future*
+*Built with 🌿 LangGraph for Azerbaijan's agricultural future*
 
 </div>

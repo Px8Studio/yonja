@@ -55,38 +55,6 @@ The system **remembers context**—if a farmer mentioned a pest issue three days
 
 ---
 
-## 🎯 Why "Sidecar"?
-
-Digital Umbrella's Yonca platform handles **legal government data** (subsidy applications, EKTIS integration). We can't access that, so we run as a **sidecar**—a separate AI module.
-
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
-graph LR
-    subgraph protected["🔒 Protected Zone"]
-        yonca["🏛️ YONCA PLATFORM<br/><i>Legal/Financial Data</i>"]
-    end
-    
-    subgraph sandbox["🧪 Sandbox Zone"]
-        sidecar["🌿 AI SIDECAR<br/><i>Recommendations Only</i>"]
-    end
-    
-    yonca <-.->|"API Contract<br/>(No DB Access)"| sidecar
-    
-    style protected fill:#ffcdd2,stroke:#c62828,stroke-width:3px,color:#b71c1c
-    style sandbox fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px,color:#1b5e20
-```
-
-### Four Guarantees
-
-| # | Guarantee | Implementation |
-|:-:|:----------|:---------------|
-| 1 | **Never touches database** | Uses synthetic farm scenarios only |
-| 2 | **Strips all PII** | Farmer names/IDs hashed before AI processing |
-| 3 | **Validates with rules** | Every LLM output checked against agronomy rulebook |
-| 4 | **Ready to plug in** | Same API contract, just flip data source later |
-
----
-
 ## 🌍 Ecosystem Context
 
 ### The Current Landscape
@@ -999,7 +967,7 @@ config = EdgeDeploymentConfig(
 <div align="center">
 
 **📄 Document:** `03-ARCHITECTURE.md`  
-**⬅️ Previous:** [02-GAP-ANALYSIS.md](02-GAP-ANALYSIS.md) — Client Discovery  
+**⬅️ Previous:** [02-SYNTHETIC-DATA-ENGINE.md](02-SYNTHETIC-DATA-ENGINE.md) — Mirror-Image Data Strategy  
 **🏠 Index:** [README.md](README.md) — Documentation Hub
 
 ---

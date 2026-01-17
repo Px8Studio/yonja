@@ -807,15 +807,6 @@ st.markdown("### 🔄 Təsərrüfat Seçimi")
 # Create columns for scenario buttons
 cols = st.columns(5)
 
-# If this is inside a function, add a section identifier parameter
-# or ensure the profile switcher is only rendered once per page load
-
-# Use session state to generate a stable unique suffix
-if "button_render_id" not in st.session_state:
-    st.session_state.button_render_id = 0
-st.session_state.button_render_id += 1
-render_id = st.session_state.button_render_id
-
 for idx, profile in enumerate(ScenarioProfile):
     label = SCENARIO_LABELS[profile]
     with cols[idx]:
@@ -823,7 +814,7 @@ for idx, profile in enumerate(ScenarioProfile):
         
         if st.button(
             f"{label['icon']}\n{label['name'][:8]}...",
-            key=f"switcher_scenario_{profile.value}_{idx}_r{render_id}",
+            key=f"scenario_btn_{profile.value}",
             type="primary" if is_active else "secondary",
             use_container_width=True,
         ):
@@ -913,7 +904,7 @@ with tab_recs:
     )
     
     # Generate recommendations button
-    if st.button("🔄 Tövsiyələri Yenilə", type="primary", use_container_width=True):
+    if st.button("🔄 Tövsiyələri Yenilə", key="btn_refresh_recommendations", type="primary", use_container_width=True):
         with st.spinner("AI təhlil edir..."):
             # Generate recommendations using sidecar service
             st.session_state.recommendations = generate_ui_recommendations(
@@ -1133,6 +1124,6 @@ API Sorğuları: {st.session_state.request_counter}
 Chat Mesajları: {len(st.session_state.chat_history)}
     """)
     
-    if st.button("🗑️ Söhbəti Təmizlə"):
+    if st.button("🗑️ Söhbəti Təmizlə", key="btn_clear_chat"):
         st.session_state.chat_history = []
         st.rerun()

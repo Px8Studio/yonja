@@ -1,7 +1,32 @@
 """
 Yonca AI - Recommendation Engine
+
+⚠️ DEPRECATION NOTICE ⚠️
+========================
+This module is DEPRECATED and will be removed in a future release.
+
+Migration Guide:
+----------------
+- For recommendations: Use `yonca.sidecar.recommendation_service.SidecarRecommendationService`
+- For daily schedules: Use `yonca.sidecar.schedule_service.ScheduleService`
+- For rules: Use `yonca.sidecar.rules_registry`
+
+The unique logic from this module has been migrated to:
+- `sidecar/schedule_service.py` - DailySchedule, Task conversion, Alerts
+- `sidecar/rules_registry.py` - All agronomy rules with AZ- prefixes
+
+Example migration:
+    # Old (deprecated):
+    from yonca.core.engine import recommendation_engine
+    schedule = recommendation_engine.generate_daily_schedule(farm)
+    
+    # New (recommended):
+    from yonca.sidecar import generate_daily_schedule
+    schedule = generate_daily_schedule(farm)
+
 AI-driven recommendation system for farm operations.
 """
+import warnings
 from datetime import date, datetime, timedelta
 from typing import Optional
 from uuid import uuid4
@@ -24,9 +49,17 @@ class RecommendationEngine:
     """
     AI-driven recommendation engine for farm operations.
     Uses rule-based logic to generate contextual recommendations.
+    
+    ⚠️ DEPRECATED: Use yonca.sidecar.SidecarRecommendationService instead.
     """
     
     def __init__(self):
+        warnings.warn(
+            "RecommendationEngine is deprecated. "
+            "Use yonca.sidecar.SidecarRecommendationService instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         self.rules = ALL_RULES
         
     def generate_recommendations(

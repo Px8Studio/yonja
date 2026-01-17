@@ -41,7 +41,7 @@ This guide helps you safely remove redundant code and consolidate to the Sidecar
 | File | Issue | Action Required |
 |------|-------|-----------------|
 | `src/yonca/api/graphql.py` | May be unused | Verify if GraphQL is actively consumed by any frontend |
-| `src/yonca/core/engine.py` | Parallel implementation | Evaluate if sidecar fully replaces this; may have unique logic worth preserving |
+| `src/yonca/core/engine.py` | ⚠️ **DEPRECATED** | Migrated to sidecar - update consumers (see Phase 3) |
 | `src/yonca/agent/tools.py` | LangGraph integration | Verify integration plan with sidecar architecture |
 
 ---
@@ -61,6 +61,7 @@ This guide helps you safely remove redundant code and consolidate to the Sidecar
 - ✅ `src/yonca/sidecar/validation.py` - Input validation
 - ✅ `src/yonca/sidecar/data_adapter.py` - Data transformation
 - ✅ `src/yonca/sidecar/recommendation_service.py` - Recommendation generation
+- ✅ `src/yonca/sidecar/schedule_service.py` - **NEW** Daily schedule & alerts (migrated from core/engine.py)
 - ✅ `src/yonca/sidecar/api_routes.py` - Sidecar REST API
 
 ### Data Layer
@@ -86,21 +87,36 @@ This guide helps you safely remove redundant code and consolidate to the Sidecar
 rm src/yonca/core/rules.py
 ```
 
-### Phase 2: Refactor Umbrella App
-1. Update `umbrella/app.py` to import from `sidecar/` instead of `mock_backend.py`
-2. Replace `MockYoncaBackend` with sidecar services
-3. Delete `umbrella/mock_backend.py`
-4. Delete `umbrella/scenario_manager.py` (use `data/scenarios.py`)
-5. Delete `umbrella/agronomy_rules.py` (use `sidecar/rules_registry.py`)
-
-### Phase 3: Evaluate Core Module
-1. Audit `core/engine.py` for unique logic not in sidecar
-2. Migrate any valuable logic to sidecar modules
-3. Consider deprecating entire `core/` folder
+### Phase 3: Evaluate Core Module ✅ COMPLETED
+1. ✅ Audited `core/engine.py` for unique logic not in sidecar
+2. ✅ Migrated valuable logic to `sidecar/schedule_service.py`:
+   - `ScheduleService` class (daily schedule generation)
+   - `generate_daily_schedule()` convenience function
+   - `_generate_alerts()` (weather-based alert generation)
+   - `TASK_DURATION_ESTIMATES` (task duration mapping)
+3. ✅ Added deprecation warnings to `core/` folder
+   - `core/__init__.py` emits DeprecationWarning on import
+   - `RecommendationEngine` emits DeprecationWarning on instantiation
+4. ⏳ Delete `core/` folder after downstream consumers migrate
 
 ### Phase 4: Model Unification
 1. Consolidate all dataclasses to `models/__init__.py`
 2. Remove duplicate dataclass definitions in other modules
+
+### Phase 5: Migrate Core Consumers ⏳ PENDING
+The following files still import from `yonca.core` and need migration:
+
+| File | Current Import | Migration Target |
+|------|----------------|------------------|
+| `api/routes.py` | `core.engine.recommendation_engine` | `sidecar.generate_daily_schedule` |
+| `api/graphql.py` | `core.engine.recommendation_engine` | `sidecar.SidecarRecommendationService` |
+| `agent/tools.py` | `core.engine.recommendation_engine` | `sidecar.generate_daily_schedule` |
+| `tests/test_yonca.py` | `core.engine.RecommendationEngine` | `sidecar.ScheduleService` |
+
+Once all consumers are migrated, delete `core/` folder:
+```bash
+rm -rf src/yonca/core/
+```
 
 ---
 
@@ -110,7 +126,8 @@ rm src/yonca/core/rules.py
 |---------|-------------------|---------------------|
 | Agronomy Rules | `sidecar/rules_registry.py` | `core/rules.py` ❌, `umbrella/agronomy_rules.py` ⚠️ |
 | Farm Scenarios | `data/scenarios.py` | `umbrella/scenario_manager.py` ⚠️ |
-| Recommendations | `sidecar/recommendation_service.py` | `umbrella/mock_backend.py` ⚠️, `core/engine.py` ⚠️ |
+| Recommendations | `sidecar/recommendation_service.py` | `umbrella/mock_backend.py` ⚠️, ~~`core/engine.py`~~ ✅ migrated |
+| Daily Schedules | `sidecar/schedule_service.py` | ~~`core/engine.py`~~ ✅ migrated |
 | Intent Matching | `sidecar/intent_matcher.py` | ✅ (Already consolidated) |
 | Data Models | `models/__init__.py` | Various local dataclasses ⚠️ |
 

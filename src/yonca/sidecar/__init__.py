@@ -55,6 +55,14 @@ from yonca.sidecar.recommendation_service import (
     RecommendationResponse as SidecarRecommendationResponse,
 )
 
+# Schedule Service (migrated from core/engine.py)
+from yonca.sidecar.schedule_service import (
+    ScheduleService,
+    get_schedule_service,
+    generate_daily_schedule,
+    TASK_DURATION_ESTIMATES,
+)
+
 # Strategic Enhancement Modules
 from yonca.sidecar.validation import (
     AgronomistInTheLoopValidator,
@@ -107,6 +115,11 @@ __all__ = [
     "SidecarRecommendationService",
     "SidecarRecommendationRequest",
     "SidecarRecommendationResponse",
+    # Schedule Service (migrated from core/engine.py)
+    "ScheduleService",
+    "get_schedule_service",
+    "generate_daily_schedule",
+    "TASK_DURATION_ESTIMATES",
     # Agronomist-in-the-Loop
     "AgronomistInTheLoopValidator",
     "ValidationTier",

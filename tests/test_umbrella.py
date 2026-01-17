@@ -18,15 +18,15 @@ from yonca.sidecar.recommendation_service import (
 )
 from yonca.sidecar.rules_registry import AGRONOMY_RULES, RuleCategory
 
-# Import UI adapters from app.py
-from yonca.umbrella.app import (
+# Import UI adapters from core (not app, which has Streamlit side effects)
+from yonca.umbrella.core import (
     ScenarioProfile,
     SCENARIO_LABELS,
     SCENARIO_MAP,
-    adapt_farm_profile,
-    generate_ui_recommendations,
+    _adapt_farm_profile as adapt_farm_profile,
+    generate_recommendations as generate_ui_recommendations,
     UIFarmProfile,
-    _generate_rule_based_recommendations,
+    _generate_fallback_recommendations as _generate_rule_based_recommendations,
 )
 
 
@@ -81,7 +81,7 @@ class TestScenarioManager:
             assert "name" in label
             assert "description" in label
             assert "icon" in label
-            assert "region" in label
+            assert "farmer_name" in label  # Changed from "region" to match actual data structure
 
 
 class TestUIAdapters:
@@ -123,7 +123,7 @@ class TestUIAdapters:
             area_hectares=50.0,
         )
         # Add low moisture soil data
-        from yonca.umbrella.app import UISoilData
+        from yonca.umbrella.core import UISoilData
         ui_farm.soil = UISoilData(
             soil_type="clay",
             moisture_percent=15,  # Low moisture

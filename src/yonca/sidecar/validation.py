@@ -16,7 +16,7 @@ Validation Tiers:
 - Tier 3: Sync Review (high-stakes, requires real-time expert approval)
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional
@@ -219,7 +219,7 @@ class AgronomistInTheLoopValidator:
     # Categories that can be auto-approved if rule-based
     AUTO_APPROVE_CATEGORIES = ["irrigation", "fertilization", "harvest"]
     
-    def __init__(self, agronomists: list[AgronomistProfile] = None):
+    def __init__(self, agronomists: Optional[list[AgronomistProfile]] = None):
         """
         Initialize the validator.
         
@@ -303,7 +303,6 @@ class AgronomistInTheLoopValidator:
         rec_id = recommendation.get("id", f"rec_{uuid4().hex[:8]}")
         confidence = recommendation.get("confidence", 0.5)
         rule_id = recommendation.get("rule_id")
-        rec_type = recommendation.get("type", "general")
         
         # Determine tier
         tier = self.determine_validation_tier(recommendation, source, confidence)
@@ -349,7 +348,7 @@ class AgronomistInTheLoopValidator:
         confidence: float
     ) -> ValidationResult:
         """Queue recommendation for async expert review."""
-        rec_id = recommendation.get("id")
+        rec_id = recommendation.get("id") or f"rec_{uuid4().hex[:8]}"
         
         # Create queue item
         queue_item = ValidationQueueItem(
@@ -390,11 +389,11 @@ class AgronomistInTheLoopValidator:
     def _require_sync_approval(
         self,
         recommendation: dict,
-        farm_context: dict,
+        _farm_context: dict,  # Reserved for production use
         confidence: float
     ) -> ValidationResult:
         """Require synchronous expert approval (blocks until approved)."""
-        rec_id = recommendation.get("id")
+        rec_id = recommendation.get("id") or f"rec_{uuid4().hex[:8]}"
         
         # In production, this would wait for real-time expert input
         # For demo, we simulate a conservative rejection for safety

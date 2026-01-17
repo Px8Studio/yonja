@@ -412,7 +412,7 @@ class AgronomyRAGEngine:
                 
                 recommendations.append(llm_rec)
                 
-            except Exception as e:
+            except (RuntimeError, ValueError, ConnectionError):
                 # Fallback to rule-based if LLM fails
                 pass
         

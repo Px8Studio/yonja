@@ -174,7 +174,7 @@ class AgronomyRule:
             try:
                 triggered = self.validator(context)
                 return triggered, self.confidence_weight if triggered else 0.0
-            except Exception:
+            except (TypeError, ValueError, KeyError):
                 return False, 0.0
         
         # Otherwise, check threshold-based conditions

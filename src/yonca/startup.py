@@ -5,6 +5,7 @@ Handles Ollama verification and graceful startup.
 import subprocess
 import sys
 import time
+from typing import Optional
 import httpx
 from rich.console import Console
 from rich.panel import Panel
@@ -33,7 +34,8 @@ def check_ollama_installed() -> bool:
             ["ollama", "--version"],
             capture_output=True,
             text=True,
-            timeout=5
+            timeout=5,
+            check=False
         )
         return result.returncode == 0
     except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -73,7 +75,7 @@ def start_ollama_server() -> bool:
             if check_ollama_running():
                 return True
         return False
-    except Exception:
+    except (FileNotFoundError, OSError, subprocess.SubprocessError):
         return False
 
 
@@ -87,7 +89,7 @@ def check_model_available(model: str = REQUIRED_MODEL) -> bool:
             # Check for exact match or partial match (qwen2.5:7b or qwen2.5:7b-...)
             return any(model in name or name.startswith(model.split(":")[0]) for name in model_names)
         return False
-    except Exception:
+    except (httpx.RequestError, httpx.HTTPStatusError, KeyError):
         return False
 
 
@@ -98,15 +100,16 @@ def pull_model(model: str = REQUIRED_MODEL) -> bool:
         result = subprocess.run(
             ["ollama", "pull", model],
             capture_output=False,
-            text=True
+            text=True,
+            check=False
         )
         return result.returncode == 0
-    except Exception as e:
+    except (FileNotFoundError, OSError, subprocess.SubprocessError) as e:
         console.print(f"[red]Error pulling model: {e}[/red]")
         return False
 
 
-def run_startup_checks(model: str = None) -> dict:
+def run_startup_checks(model: Optional[str] = None) -> dict:
     """
     Run all startup checks and return status.
     

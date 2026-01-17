@@ -338,7 +338,7 @@ class DialectHandler:
         "Abşeron": Dialect.STANDARD,
     }
     
-    def __init__(self, terms: list[TermMapping] = None):
+    def __init__(self, terms: Optional[list[TermMapping]] = None):
         """
         Initialize the dialect handler.
         
@@ -400,17 +400,17 @@ class DialectHandler:
         
         # Find highest scoring dialect
         if max(dialect_scores.values()) > 0:
-            return max(dialect_scores, key=dialect_scores.get)
+            return max(dialect_scores, key=lambda d: dialect_scores[d])
         
         return Dialect.STANDARD
     
-    def normalize(self, text: str, source_dialect: Optional[Dialect] = None) -> str:
+    def normalize(self, text: str, _source_dialect: Optional[Dialect] = None) -> str:
         """
         Normalize regional dialect text to standard Azerbaijani.
         
         Args:
             text: Input text (possibly in regional dialect)
-            source_dialect: Known source dialect (optional)
+            _source_dialect: Known source dialect (reserved for future use)
             
         Returns:
             Text with regional terms replaced by standard terms
@@ -634,8 +634,8 @@ class MultilingualIntentMatcher:
             Tuple of (intent, confidence, normalized_text)
         """
         # Detect and normalize dialect
-        dialect = self.dialect_handler.detect_dialect(text, region)
-        normalized = self.dialect_handler.normalize(text)
+        detected_dialect = self.dialect_handler.detect_dialect(text, region)
+        normalized = self.dialect_handler.normalize(text, detected_dialect)
         
         # Match against intent patterns
         text_lower = normalized.lower()

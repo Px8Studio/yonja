@@ -10,14 +10,14 @@ Unified service that orchestrates:
 This is the main entry point for the Sidecar Intelligence Architecture.
 """
 
-from datetime import date, datetime
+from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Optional
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-from yonca.sidecar.pii_gateway import PIIGateway, SanitizedRequest, SanitizedResponse
+from yonca.sidecar.pii_gateway import PIIGateway
 from yonca.sidecar.rag_engine import AgronomyRAGEngine, RulebookValidator
 from yonca.sidecar.lite_inference import (
     LiteInferenceEngine, 
@@ -321,6 +321,8 @@ class SidecarRecommendationService:
                 description_az=rec.get("description_az", ""),
                 source=rec.get("source", "hybrid"),
                 rule_id=rec.get("rule_id") if request.include_rulebook_refs else None,
+                suggested_time=rec.get("suggested_time"),
+                estimated_duration_minutes=rec.get("estimated_duration_minutes"),
             )
             recommendation_items.append(item)
         
@@ -401,7 +403,7 @@ def create_sidecar_router():
         try:
             return service.get_recommendations(request)
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
     
     @router.get("/status")
     async def get_status():

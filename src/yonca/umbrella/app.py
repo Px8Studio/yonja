@@ -1,23 +1,13 @@
 """
 Yonca AI - Digital Umbrella Streamlit App
-==========================================
-
-Mobile-first "Personalized Farm Assistant" prototype.
-Primary language: Azerbaijani (az)
-
-Usage:
-    streamlit run src/yonca/umbrella/app.py
-
-Features:
-    1. Scenario Switcher - Toggle between 5 farm profiles
-    2. Profile Overview - Synthetic data display
-    3. AI Advisory - Core value proposition with insight cards
-    4. Simple Chat - Intent-based Azerbaijani chatbot
-
-Architecture Note:
-    This app consumes the Sidecar Intelligence Engine for recommendations.
-    Farm scenarios are loaded from the canonical yonca.data.scenarios module.
 """
+import sys
+from pathlib import Path
+
+# Add src to path for Streamlit Cloud deployment
+src_path = Path(__file__).parent.parent.parent
+if str(src_path) not in sys.path:
+    sys.path.insert(0, str(src_path))
 
 import streamlit as st
 from datetime import datetime

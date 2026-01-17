@@ -804,7 +804,7 @@ for idx, profile in enumerate(ScenarioProfile):
         
         if st.button(
             f"{label['icon']}\n{label['name'][:8]}...",
-            key=f"scenario_{profile.value}",
+            key=f"switcher_scenario_{profile.value}_{idx}",
             type="primary" if is_active else "secondary",
             use_container_width=True,
         ):

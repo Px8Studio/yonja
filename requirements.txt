@@ -1,7 +1,5 @@
-# Install the local package (yonca) - required for Streamlit Cloud
-.
-
-# Core dependencies
+# Core dependencies first (Streamlit Cloud installs these before the local package)
+# This ensures build dependencies are available
 fastapi>=0.104.0
 uvicorn>=0.24.0
 pydantic>=2.0.0
@@ -9,3 +7,7 @@ httpx>=0.25.0
 strawberry-graphql[fastapi]>=0.215.0
 streamlit>=1.28.0
 rich>=13.0.0
+
+# Install the local yonca package (must come after core deps)
+# The setup.py + pyproject.toml handles src-layout installation
+-e .

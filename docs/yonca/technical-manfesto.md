@@ -40,6 +40,7 @@ To ensure the prototype is "Production-Ready," we adhere to the following techni
 | **Inference Engine** | Qwen2.5-7B (GGUF) | Multilingual logic & local execution. |
 | **Logic Layer** | Deterministic Agronomy Rulebook | Overrides LLM "hallucinations" with hard rules. |
 | **API Framework** | FastAPI (Swagger/OpenAPI) | Provides the integratable backend documentation. |
+| **Orchestrator** | **LangGraph** | Manages stateful reasoning loops (Check Weather -> Check Rules -> advise). |
 | **UI Framework** | Mobile-Framed Streamlit | High-speed logic validation with a mobile "look." |
 | **Data Engine** | Synthetic Scenario Manager | Generates 5 distinct farm profiles (Wheat, Livestock, etc.). |
 
@@ -76,7 +77,7 @@ src/yonca/
 │   ├── trust             # Confidence scoring with citations
 │   └── digital_twin      # Simulation engine
 ├── api/                  # REST + GraphQL endpoints
-├── agent/                # LangGraph tools (optional advanced mode)
+├── agent/                # 🧠 CORE: LangGraph Orchestrator (Stateful Workflows)
 ├── data/                 # Synthetic scenarios + generators
 ├── models/               # Canonical Pydantic models
 └── umbrella/             # Streamlit demo UI

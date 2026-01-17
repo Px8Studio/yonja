@@ -47,7 +47,7 @@ class Settings(BaseSettings):
 
     # Ollama (Local)
     ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "qwen2.5:7b"
+    ollama_model: str = "qwen3:4b"  # Can also use: qwen3:1.7b, llama3.2, mistral, etc.
 
     # Gemini (Cloud)
     gemini_api_key: str | None = None

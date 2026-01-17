@@ -69,3 +69,6 @@ data/
 *.csv
 *.json
 !tests/**/*.json
+
+# Models
+models/

@@ -48,6 +48,8 @@ yonca-ai/
 
 ## 🚀 Quick Start
 
+> 📚 **For detailed model switching and architecture guide, see [MODEL-SWITCHING-GUIDE.md](docs/MODEL-SWITCHING-GUIDE.md)**
+
 ### Prerequisites
 
 #### Option A: Local LLM with Ollama (Recommended for Azerbaijani 🇦🇿)

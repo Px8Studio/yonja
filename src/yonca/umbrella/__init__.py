@@ -16,7 +16,14 @@ Usage:
 Note: Import from core.py to avoid triggering Streamlit execution.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.2.0"
+
+# Lazy imports to avoid circular dependencies on Streamlit Cloud
+def __getattr__(name):
+    if name in ("FarmProfile", "FarmType", "Location"):
+        from yonca.models import FarmProfile, FarmType, Location
+        return locals()[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 # Re-export UI components from core module (no Streamlit side effects)
 from yonca.umbrella.core import (

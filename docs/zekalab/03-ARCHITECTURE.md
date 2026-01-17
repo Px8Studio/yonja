@@ -21,6 +21,7 @@ We propose building the Yonca AI Sidecar using **LangGraph**—an enterprise-gra
 ### Agentic Architecture: The Supervisor Pattern
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 graph TB
     subgraph supervisor["🎯 Supervisor Agent"]
         sup["Orchestrator<br/><i>Routes tasks to specialists</i>"]
@@ -45,9 +46,9 @@ graph TB
     weather --> short
     short <--> long
     
-    style supervisor fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px
-    style specialists fill:#e3f2fd,stroke:#1565c0
-    style memory fill:#fff9c4,stroke:#f9a825
+    style supervisor fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px,color:#1b5e20
+    style specialists fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    style memory fill:#fff9c4,stroke:#f9a825,color:#5d4037
 ```
 
 The system **remembers context**—if a farmer mentioned a pest issue three days ago, the assistant recalls it in subsequent sessions, even when using synthetic profiles.
@@ -59,6 +60,7 @@ The system **remembers context**—if a farmer mentioned a pest issue three days
 Digital Umbrella's Yonca platform handles **legal government data** (subsidy applications, EKTIS integration). We can't access that, so we run as a **sidecar**—a separate AI module.
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 graph LR
     subgraph protected["🔒 Protected Zone"]
         yonca["🏛️ YONCA PLATFORM<br/><i>Legal/Financial Data</i>"]
@@ -70,8 +72,8 @@ graph LR
     
     yonca <-.->|"API Contract<br/>(No DB Access)"| sidecar
     
-    style protected fill:#ffcdd2,stroke:#c62828,stroke-width:3px
-    style sandbox fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px
+    style protected fill:#ffcdd2,stroke:#c62828,stroke-width:3px,color:#b71c1c
+    style sandbox fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px,color:#1b5e20
 ```
 
 ### Four Guarantees
@@ -90,6 +92,7 @@ graph LR
 ### The Current Landscape
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 graph TB
     subgraph farmer["🧑‍🌾 Farmer"]
         phone["📱 Smartphone<br/><i>Low-bandwidth</i>"]
@@ -112,9 +115,9 @@ graph TB
     ektis <--> subsidy
     ektis <--> registry
     
-    style farmer fill:#e8f5e9,stroke:#2e7d32
-    style platform fill:#e1f5fe,stroke:#01579b
-    style gov fill:#fff9c4,stroke:#f9a825
+    style farmer fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style platform fill:#e1f5fe,stroke:#01579b,color:#01579b
+    style gov fill:#fff9c4,stroke:#f9a825,color:#5d4037
 ```
 
 | Aspect | Current State |
@@ -127,6 +130,7 @@ graph TB
 ### Technical Discovery Gaps
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 graph LR
     subgraph gaps["❓ Questions for Digital Umbrella"]
         q1["📱 Mobile Framework?<br/><i>Flutter/React Native/Native</i>"]
@@ -135,7 +139,7 @@ graph LR
         q4["☁️ Hosting?<br/><i>Their infra vs standalone Docker</i>"]
     end
     
-    style gaps fill:#fff3e0,stroke:#ef6c00
+    style gaps fill:#fff3e0,stroke:#ef6c00,color:#e65100
 ```
 
 ---
@@ -203,6 +207,7 @@ The entire intelligence module is a **Dockerized Microservice** ready to deploy.
 ### Level 0: Context Diagram
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 graph TB
     subgraph platform["🏛️ YONCA PLATFORM"]
         restapi["EXISTING REST API<br/><code>/api/v1/farms</code><br/><code>/api/v1/recommendations</code><br/><code>/api/v1/chatbot</code>"]
@@ -240,9 +245,9 @@ graph TB
     
     sidecar -.->|"Ready-to-Plug"| future
     
-    style sidecar fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px
-    style synthetic fill:#e3f2fd,stroke:#1565c0
-    style rules fill:#fff9c4,stroke:#f9a825,stroke-width:2px
+    style sidecar fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px,color:#1b5e20
+    style synthetic fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    style rules fill:#fff9c4,stroke:#f9a825,stroke-width:2px,color:#5d4037
 ```
 
 ### Data Flow
@@ -278,6 +283,7 @@ sequenceDiagram
 ### 1. PII-Stripping Gateway
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 flowchart LR
     subgraph ingest["① INGEST"]
         raw["Raw Request"]
@@ -298,9 +304,9 @@ flowchart LR
         safeRes --> personal --> final
     end
     
-    style ingest fill:#ffcdd2,stroke:#c62828
-    style process fill:#fff9c4,stroke:#f9a825
-    style egress fill:#c8e6c9,stroke:#2e7d32
+    style ingest fill:#ffcdd2,stroke:#c62828,color:#b71c1c
+    style process fill:#fff9c4,stroke:#f9a825,color:#5d4037
+    style egress fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
 ```
 
 **Location:** `src/yonca/sidecar/pii_gateway.py`
@@ -321,6 +327,7 @@ flowchart LR
 The heart of the system—a **stateful graph** that orchestrates all AI decision-making with built-in safety and memory.
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 flowchart TB
     subgraph graph["🧠 LangGraph State Machine"]
         state["📋 State<br/><i>TypedDict: farm_profile,<br/>weather, chat_history</i>"]
@@ -348,9 +355,9 @@ flowchart TB
         redline -->|"Retry"| recommend
     end
     
-    style nodes fill:#e3f2fd,stroke:#1565c0
-    style guard fill:#fff9c4,stroke:#f9a825,stroke-width:2px
-    style redline fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    style nodes fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    style guard fill:#fff9c4,stroke:#f9a825,stroke-width:2px,color:#5d4037
+    style redline fill:#ffcdd2,stroke:#c62828,stroke-width:2px,color:#b71c1c
 ```
 
 #### State Schema
@@ -434,6 +441,7 @@ def scan_for_real_data(state: FarmingState) -> FarmingState:
 **Location:** `src/yonca/sidecar/rag_engine.py`
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 flowchart TB
     subgraph pipeline["🤖 RAG Pipeline"]
         step1["① Intent Detection<br/><i>Azerbaijani → category</i>"]
@@ -445,8 +453,8 @@ flowchart TB
         step1 --> step2 --> step3 --> step4 --> step5
     end
     
-    style step3 fill:#fff9c4,stroke:#f9a825,stroke-width:2px
-    style step5 fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style step3 fill:#fff9c4,stroke:#f9a825,stroke-width:2px,color:#5d4037
+    style step5 fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
 ```
 
 **Rulebook Categories:**
@@ -467,6 +475,7 @@ flowchart TB
 **Location:** `src/yonca/sidecar/lite_inference.py`
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 graph LR
     subgraph modes["⚡ Inference Modes"]
         standard["🖥️ STANDARD<br/><i>Full Qwen2.5-7B</i><br/><i>Ollama</i>"]
@@ -474,9 +483,9 @@ graph LR
         offline["📶 OFFLINE<br/><i>Pure Rules</i><br/><i><50ms latency</i>"]
     end
     
-    style standard fill:#bbdefb,stroke:#1565c0
-    style lite fill:#fff9c4,stroke:#f9a825
-    style offline fill:#c8e6c9,stroke:#2e7d32
+    style standard fill:#bbdefb,stroke:#1565c0,color:#0d47a1
+    style lite fill:#fff9c4,stroke:#f9a825,color:#5d4037
+    style offline fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
 ```
 
 **GGUF Model Options:**
@@ -520,6 +529,7 @@ timeline
 ### Phase Details
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 flowchart LR
     subgraph phase1["📦 Phase 1: Prototype<br/><i>Current</i>"]
         syn["100% Synthetic<br/>• Scenario farms<br/>• Generated weather<br/>• PII Gateway"]
@@ -535,9 +545,9 @@ flowchart LR
     
     phase1 -->|"6 months"| phase2 -->|"12 months"| phase3
     
-    style phase1 fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px
-    style phase2 fill:#fff9c4,stroke:#f9a825
-    style phase3 fill:#e1f5fe,stroke:#0288d1
+    style phase1 fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px,color:#1b5e20
+    style phase2 fill:#fff9c4,stroke:#f9a825,color:#5d4037
+    style phase3 fill:#e1f5fe,stroke:#0288d1,color:#01579b
 ```
 
 ### Hot-Swap Interface
@@ -560,6 +570,7 @@ class DataAdapter(Protocol):
 ### Target: ≥90% Accuracy
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 flowchart LR
     subgraph pipeline["Accuracy Assurance Pipeline"]
         llm["🤖 LLM Output<br/><i>0.5 base</i>"]
@@ -570,8 +581,8 @@ flowchart LR
         llm --> validate --> resolve --> score
     end
     
-    style validate fill:#fff9c4,stroke:#f9a825,stroke-width:2px
-    style score fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style validate fill:#fff9c4,stroke:#f9a825,stroke-width:2px,color:#5d4037
+    style score fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
 ```
 
 ### Scoring Logic
@@ -587,6 +598,7 @@ flowchart LR
 ### Example Validation Flow
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 flowchart TB
     subgraph query["📝 User Query"]
         q["Torpaq nəmliyi 25%,<br/>bu gün suvarmaq lazımdır?"]
@@ -616,7 +628,7 @@ flowchart TB
     
     query --> step1 --> step2 --> step3 --> step4
     
-    style step4 fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style step4 fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
 ```
 
 ---
@@ -626,6 +638,7 @@ flowchart TB
 ### REST Endpoints
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 graph LR
     subgraph core["🔌 Core Endpoints"]
         chat["POST /yonca-ai/chat<br/><i>Main advisory endpoint</i>"]
@@ -722,6 +735,7 @@ graph LR
 ### Five Enhancement Modules
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 graph TB
     subgraph enhancements["🎯 Strategic Enhancement Modules"]
         direction TB
@@ -745,11 +759,11 @@ graph TB
         row1 --> core --> row2
     end
     
-    style expert fill:#e1bee7,stroke:#7b1fa2
-    style dialect fill:#b2dfdb,stroke:#00796b
-    style temporal fill:#ffccbc,stroke:#e64a19
-    style trust fill:#c8e6c9,stroke:#2e7d32
-    style twin fill:#bbdefb,stroke:#1565c0
+    style expert fill:#e1bee7,stroke:#7b1fa2,color:#4a148c
+    style dialect fill:#b2dfdb,stroke:#00796b,color:#004d40
+    style temporal fill:#ffccbc,stroke:#e64a19,color:#bf360c
+    style trust fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
+    style twin fill:#bbdefb,stroke:#1565c0,color:#0d47a1
 ```
 
 ### Module Summary
@@ -765,6 +779,7 @@ graph TB
 ### Validation Tiers
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 flowchart LR
     subgraph tier1["🟢 Tier 1: Automatic"]
         auto["Pre-approved<br/>Rules match<br/>>90% confidence"]
@@ -785,9 +800,9 @@ flowchart LR
     queue --> badge2
     block --> badge3
     
-    style tier1 fill:#c8e6c9,stroke:#2e7d32
-    style tier2 fill:#fff9c4,stroke:#f9a825
-    style tier3 fill:#ffcdd2,stroke:#c62828
+    style tier1 fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
+    style tier2 fill:#fff9c4,stroke:#f9a825,color:#5d4037
+    style tier3 fill:#ffcdd2,stroke:#c62828,color:#b71c1c
 ```
 
 ### Digital Twin Simulation

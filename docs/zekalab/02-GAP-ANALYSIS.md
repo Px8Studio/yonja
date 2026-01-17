@@ -7,6 +7,7 @@
 ## 1. The Core Challenge
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 graph LR
     subgraph current["📋 CURRENT STATE<br/><i>Transactional System</i>"]
         record["Records what happened"]
@@ -22,8 +23,8 @@ graph LR
     
     current -->|"🧠 AI Bridge"| target
     
-    style current fill:#ffcdd2,stroke:#c62828
-    style target fill:#c8e6c9,stroke:#2e7d32
+    style current fill:#ffcdd2,stroke:#c62828,color:#b71c1c
+    style target fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
 ```
 
 ### Transformation Matrix
@@ -42,6 +43,7 @@ graph LR
 We propose a **Headless AI Sidecar** that acts as a brain, sitting alongside the existing "Body" of the Yonca app.
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 graph TB
     subgraph ecosystem["🌍 Current Yonca Ecosystem<br/><i style='color:#666'>(The Body)</i>"]
         mobile["📱 Yonca Mobile App"]
@@ -68,10 +70,10 @@ graph TB
     
     mobile <-->|"3. Requests Advice<br/>(Anonymized)"| api
     
-    style ecosystem fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style sidecar fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px
-    style rules fill:#fff9c4,stroke:#f9a825,stroke-width:2px
-    style llm fill:#e1bee7,stroke:#7b1fa2,stroke-width:2px
+    style ecosystem fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#01579b
+    style sidecar fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px,color:#1b5e20
+    style rules fill:#fff9c4,stroke:#f9a825,stroke-width:2px,color:#5d4037
+    style llm fill:#e1bee7,stroke:#7b1fa2,stroke-width:2px,color:#4a148c
 ```
 
 ---
@@ -102,6 +104,7 @@ mindmap
 ### Gap 1: Agronomic Context
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 flowchart LR
     subgraph current["📋 What EKTIS Likely Has"]
         area["Area: 5ha"]
@@ -117,8 +120,8 @@ flowchart LR
     
     current -->|"Gap"| missing
     
-    style current fill:#fff9c4,stroke:#f9a825
-    style missing fill:#ffcdd2,stroke:#c62828
+    style current fill:#fff9c4,stroke:#f9a825,color:#5d4037
+    style missing fill:#ffcdd2,stroke:#c62828,color:#b71c1c
 ```
 
 **❓ Question to Client:**
@@ -130,6 +133,7 @@ flowchart LR
 ### Gap 2: Feedback Loop
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 flowchart LR
     subgraph now["📱 Current Flow"]
         direction TB
@@ -146,8 +150,8 @@ flowchart LR
     
     now -->|"Enhancement"| future
     
-    style now fill:#ffcdd2,stroke:#c62828
-    style future fill:#c8e6c9,stroke:#2e7d32
+    style now fill:#ffcdd2,stroke:#c62828,color:#b71c1c
+    style future fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
 ```
 
 **❓ Question to Client:**
@@ -159,6 +163,7 @@ flowchart LR
 ### Gap 3: Technical Integration
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 flowchart TB
     subgraph simple["🔧 Simple REST<br/><i>Client Suggestion</i>"]
         req1["Request"] --> endpoint1["GET /advice"] --> res1["Response"]
@@ -175,9 +180,9 @@ flowchart TB
     
     simple -.->|"Limitation:<br/>No multi-step reasoning"| smart
     
-    style simple fill:#fff9c4,stroke:#f9a825
-    style smart fill:#c8e6c9,stroke:#2e7d32
-    style agent fill:#e1bee7,stroke:#7b1fa2,stroke-width:2px
+    style simple fill:#fff9c4,stroke:#f9a825,color:#5d4037
+    style smart fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
+    style agent fill:#e1bee7,stroke:#7b1fa2,stroke-width:2px,color:#4a148c
 ```
 
 **🎯 Recommendation:**
@@ -240,6 +245,7 @@ erDiagram
 ## 5. Five Synthetic Personas
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 graph TB
     subgraph personas["🧑‍🌾 Synthetic Farm Profiles"]
         wheat["🌾 Wheat Farmer<br/><i>5ha, Pivot Irrigation</i><br/>Aran Region"]
@@ -249,11 +255,11 @@ graph TB
         mixed["🌻 Mixed Farm<br/><i>3ha Veg + Poultry</i><br/>Lənkəran"]
     end
     
-    style wheat fill:#fff9c4,stroke:#f9a825
-    style cotton fill:#e1f5fe,stroke:#0288d1
-    style orchard fill:#c8e6c9,stroke:#2e7d32
-    style livestock fill:#ffccbc,stroke:#e64a19
-    style mixed fill:#e1bee7,stroke:#7b1fa2
+    style wheat fill:#fff9c4,stroke:#f9a825,color:#5d4037
+    style cotton fill:#e1f5fe,stroke:#0288d1,color:#01579b
+    style orchard fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
+    style livestock fill:#ffccbc,stroke:#e64a19,color:#bf360c
+    style mixed fill:#e1bee7,stroke:#7b1fa2,color:#4a148c
 ```
 
 | Profile | Crop/Activity | Region | Irrigation | Special Challenge |
@@ -269,6 +275,7 @@ graph TB
 ## 6. Next Steps
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 flowchart LR
     step1["📋 Define API Contract<br/><i>Swagger/OpenAPI spec</i>"]
     step2["🧪 Generate Synthetic Data<br/><i>5 farm profiles</i>"]
@@ -276,9 +283,9 @@ flowchart LR
     
     step1 --> step2 --> step3
     
-    style step1 fill:#e1f5fe,stroke:#0288d1
-    style step2 fill:#fff9c4,stroke:#f9a825
-    style step3 fill:#c8e6c9,stroke:#2e7d32
+    style step1 fill:#e1f5fe,stroke:#0288d1,color:#01579b
+    style step2 fill:#fff9c4,stroke:#f9a825,color:#5d4037
+    style step3 fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
 ```
 
 | Step | Deliverable | Outcome |

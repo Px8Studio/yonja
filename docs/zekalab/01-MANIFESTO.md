@@ -41,6 +41,7 @@ mindmap
 Our primary architectural decision is the **Sidecar Intelligence Model**. Instead of proposing a rebuild of the Yonca platform, we position our prototype as a detached, high-performance module.
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 graph TB
     subgraph platform["🏛️ YONCA PLATFORM<br/><i>Digital Umbrella's Domain</i>"]
         mobile["📱 Mobile App"]
@@ -65,9 +66,9 @@ graph TB
     mobile -->|"① Anonymized Query"| api
     api -->|"② Verified Advice"| mobile
     
-    style platform fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style sidecar fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px
-    style rules fill:#fff9c4,stroke:#f9a825,stroke-width:2px
+    style platform fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#01579b
+    style sidecar fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px,color:#1b5e20
+    style rules fill:#fff9c4,stroke:#f9a825,stroke-width:2px,color:#5d4037
 ```
 
 ### Strategy Pillars
@@ -85,6 +86,7 @@ graph TB
 ### Technology Stack
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 block-beta
     columns 3
     
@@ -112,12 +114,12 @@ block-beta
         SYNTHETIC["Synthetic<br/>Scenarios"]
     end
     
-    style inference fill:#bbdefb,stroke:#1565c0
-    style logic fill:#fff9c4,stroke:#f9a825
-    style api fill:#c8e6c9,stroke:#2e7d32
-    style orchestrator fill:#e1bee7,stroke:#7b1fa2
-    style ui fill:#ffccbc,stroke:#e64a19
-    style data fill:#b2dfdb,stroke:#00796b
+    style inference fill:#bbdefb,stroke:#1565c0,color:#0d47a1
+    style logic fill:#fff9c4,stroke:#f9a825,color:#5d4037
+    style api fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
+    style orchestrator fill:#e1bee7,stroke:#7b1fa2,color:#4a148c
+    style ui fill:#ffccbc,stroke:#e64a19,color:#bf360c
+    style data fill:#b2dfdb,stroke:#00796b,color:#004d40
 ```
 
 ### Stack Details
@@ -134,6 +136,7 @@ block-beta
 ### Data Flow
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 flowchart LR
     A["🧑‍🌾 Farmer Input<br/><i>(Azerbaijani)</i>"] 
     --> B["🎯 Intent<br/>Matcher"]
@@ -143,10 +146,10 @@ flowchart LR
     --> F["📦 JSON<br/>Payload"]
     --> G["📱 Mobile<br/>UI Card"]
     
-    style A fill:#e8f5e9,stroke:#2e7d32
-    style D fill:#fff9c4,stroke:#f9a825,stroke-width:2px
-    style E fill:#bbdefb,stroke:#1565c0
-    style G fill:#ffccbc,stroke:#e64a19
+    style A fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style D fill:#fff9c4,stroke:#f9a825,stroke-width:2px,color:#5d4037
+    style E fill:#bbdefb,stroke:#1565c0,color:#0d47a1
+    style G fill:#ffccbc,stroke:#e64a19,color:#bf360c
 ```
 
 ---
@@ -158,6 +161,7 @@ The UI is designed to be **Invisible yet Informative**. We follow the "Contextua
 ### Design Principles
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 graph LR
     subgraph design["🎨 Design System"]
         color["🎨 Yonca Palette<br/><code>#2E7D32</code>"]
@@ -169,9 +173,9 @@ graph LR
     color --> trust
     radius --> mobile
     
-    style design fill:#f5f5f5,stroke:#424242
-    style color fill:#e8f5e9,stroke:#2e7d32
-    style trust fill:#fff9c4,stroke:#f9a825
+    style design fill:#f5f5f5,stroke:#424242,color:#212121
+    style color fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style trust fill:#fff9c4,stroke:#f9a825,color:#5d4037
 ```
 
 | Principle | Implementation | Reason |
@@ -185,6 +189,7 @@ graph LR
 ## 4. Codebase Architecture
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 graph TB
     subgraph src["📁 src/yonca/"]
         subgraph sidecar["🎯 sidecar/ — Headless Intelligence Engine"]
@@ -212,8 +217,8 @@ graph TB
     sidecar --> data
     sidecar --> models
     
-    style sidecar fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px
-    style agent fill:#e1bee7,stroke:#7b1fa2,stroke-width:2px
+    style sidecar fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px,color:#1b5e20
+    style agent fill:#e1bee7,stroke:#7b1fa2,stroke-width:2px,color:#4a148c
 ```
 
 **Key Principle:** Everything flows through `sidecar/` — the UI and API are thin consumers.

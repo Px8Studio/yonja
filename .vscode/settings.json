@@ -1,0 +1,13 @@
+{
+  // Add Poetry to terminal PATH for this workspace
+  "terminal.integrated.env.windows": {
+    "PATH": "${env:USERPROFILE}\\AppData\\Roaming\\Python\\Scripts;${env:PATH}"
+  },
+  
+  // Python settings for Poetry integration
+  "python.terminal.activateEnvironment": true,
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+  
+  // Optional: Auto-select Poetry's virtual environment
+  "python.poetryPath": "poetry"
+}

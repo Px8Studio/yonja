@@ -27,272 +27,155 @@ engineio.payload.Payload.max_decode_packets = 500
 import chainlit as cl
 from chainlit.input_widget import Select
 from langchain_core.runnables import RunnableConfig
+from langchain_core.messages import HumanMessage, AIMessage
 import structlog
 
 # Import from main yonca package
 from yonca.agent.graph import compile_agent_graph
 from yonca.agent.memory import get_checkpointer
-from yonca.agent.state import create_initial_state
 
-# Import demo services
-from services.mock_data import MockDataService
-from components.farm_selector import format_farm_context_for_prompt
-
-logger = structlog.get_logger(__name__)
+logger = structlog.get_logger()
 
 # ============================================
-# LOCALIZATION (Azerbaijani)
+# LOCALIZATION
 # ============================================
-AZ = {
-    "welcome_title": "🌾 **Yonca AI Köməkçisinə xoş gəlmisiniz!**",
-    "welcome_body": "Mən sizin virtual aqronomam. Əkin, suvarma, gübrələmə və digər kənd təsərrüfatı məsələlərində kömək edə bilərəm.",
-    "farm_loaded": "📍 **Təsərrüfat yükləndi:** {farm_name}",
-    "farm_changed": "📍 **Təsərrüfat dəyişdirildi:** {farm_name}",
-    "farm_select_label": "Təsərrüfat seçin",
+AZ_STRINGS = {
+    "welcome": "🌾 **Yonca AI Köməkçisinə xoş gəlmisiniz!**\n\nMən sizin virtual aqronomam. Əkin, suvarma, gübrələmə və digər kənd təsərrüfatı məsələlərində kömək edə bilərəm.",
+    "farm_loaded": "📍 Təsərrüfat məlumatları yükləndi",
     "thinking": "Düşünürəm...",
-    "error": "⚠️ Bağışlayın, texniki xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.",
-    "feedback_thanks": "Rəyiniz üçün təşəkkür edirik! 🙏",
-    # Node step names
-    "step_supervisor": "🎯 Sorğu yönləndirilir",
-    "step_context": "📂 Kontekst yüklənir",
-    "step_agronomist": "🌱 Aqronomiya analizi",
-    "step_weather": "🌤️ Hava məlumatları",
-    "step_validator": "✅ Cavab yoxlanılır",
+    "error": "❌ Xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.",
+    "select_farm": "Təsərrüfat seçin",
 }
 
-
 # ============================================
-# LANGGRAPH SETUP
+# SESSION MANAGEMENT
 # ============================================
-
-def get_compiled_graph():
-    """Get or create the compiled LangGraph with checkpointer.
-    
-    Uses Redis checkpointer for session persistence.
-    """
-    try:
-        checkpointer = get_checkpointer()
-        return compile_agent_graph(checkpointer)
-    except Exception:  # noqa: BLE001
-        logger.warning("Could not connect to Redis, running without checkpointer")
-        return compile_agent_graph(None)
-
-
-# Module-level graph instance (lazy initialized)
-_GRAPH = None
-
-
-def get_graph():
-    """Lazy initialization of the graph."""
-    global _GRAPH  # noqa: PLW0603
-    if _GRAPH is None:
-        _GRAPH = get_compiled_graph()
-    return _GRAPH
-
-
-# ============================================
-# SESSION START
-# ============================================
-
 @cl.on_chat_start
 async def on_chat_start():
-    """Initialize the chat session."""
+    """Initialize chat session with farm context."""
+    session_id = cl.user_session.get("id")
     
-    # Load demo farm data
-    mock_service = MockDataService()
-    farms = mock_service.get_all_farms()
-    default_farm = farms[0] if farms else None
+    # Default farm for demo
+    farm_id = "demo_farm_001"
+    cl.user_session.set("farm_id", farm_id)
     
-    # Store farm context in session
-    cl.user_session.set("farm_context", default_farm)
-    cl.user_session.set("all_farms", farms)
+    # Initialize the agent graph with checkpointer
+    checkpointer = get_checkpointer()
+    agent = compile_agent_graph(checkpointer=checkpointer)
+    cl.user_session.set("agent", agent)
     
-    # Create farm selector settings
-    farm_options = mock_service.get_farm_selector_options()
-    await cl.ChatSettings(
-        [
-            Select(
-                id="farm_id",
-                label=AZ["farm_select_label"],
-                values=[opt["value"] for opt in farm_options],
-                initial_value=farm_options[0]["value"] if farm_options else None,
-            ),
-        ]
-    ).send()
+    # Store thread_id for LangGraph (use session_id for continuity)
+    cl.user_session.set("thread_id", session_id)
+    
+    logger.info("session_started", session_id=session_id, farm_id=farm_id)
     
     # Send welcome message
-    welcome_msg = f"{AZ['welcome_title']}\n\n{AZ['welcome_body']}"
-    await cl.Message(content=welcome_msg, author="Yonca").send()
-    
-    # Show selected farm info
-    if default_farm:
-        farm_info = _format_farm_info(default_farm)
-        await cl.Message(
-            content=AZ["farm_loaded"].format(farm_name=default_farm["name"]) + "\n\n" + farm_info,
-            author="Sistem",
-        ).send()
-    
-    logger.info(
-        "session_started",
-        session_id=cl.context.session.id,
-        farm_id=default_farm["id"] if default_farm else None,
-    )
+    await cl.Message(
+        content=AZ_STRINGS["welcome"],
+        author="Yonca"
+    ).send()
 
-
-def _format_farm_info(farm: dict) -> str:
-    """Format farm information for display."""
-    ndvi_display = f"{farm['last_ndvi']:.2f}" if farm.get("last_ndvi") else "N/A"
-    return f"""
-🌱 **Əkin:** {farm["crop"]}
-📐 **Sahə:** {farm["area_ha"]} hektar  
-🏔️ **Rayon:** {farm["district"]}, {farm["region"]}
-🌍 **Torpaq:** {farm["soil_type"]}
-💧 **Suvarma:** {farm["irrigation_type"]}
-📊 **NDVI:** {ndvi_display}
-"""
-
-
-# ============================================
-# SETTINGS CHANGE (Farm Selector)
-# ============================================
-
-@cl.on_settings_update
-async def on_settings_update(settings: dict):
-    """Handle farm selection change."""
-    farm_id = settings.get("farm_id")
-    if not farm_id:
-        return
-    
-    farms = cl.user_session.get("all_farms", [])
-    selected_farm = next((f for f in farms if f["id"] == farm_id), None)
-    
-    if selected_farm:
-        # Update session
-        cl.user_session.set("farm_context", selected_farm)
-        
-        # Notify user
-        farm_info = _format_farm_info(selected_farm)
-        await cl.Message(
-            content=AZ["farm_changed"].format(farm_name=selected_farm["name"]) + "\n\n" + farm_info,
-            author="Sistem",
-        ).send()
-        
-        logger.info(
-            "farm_changed",
-            session_id=cl.context.session.id,
-            farm_id=farm_id,
-        )
-
-
-# ============================================
-# MESSAGE HANDLER (LangGraph Integration)
-# ============================================
 
 @cl.on_message
 async def on_message(message: cl.Message):
-    """Handle incoming messages using LangGraph.
+    """Handle incoming user messages."""
+    session_id = cl.user_session.get("id")
+    farm_id = cl.user_session.get("farm_id", "demo_farm_001")
+    thread_id = cl.user_session.get("thread_id", session_id)
+    agent = cl.user_session.get("agent")
     
-    Uses Chainlit's native LangchainCallbackHandler for automatic
-    step visualization and streaming.
-    """
-    farm_context = cl.user_session.get("farm_context", {})
+    if not agent:
+        # Re-initialize if agent is missing (shouldn't happen)
+        checkpointer = get_checkpointer()
+        agent = compile_agent_graph(checkpointer=checkpointer)
+        cl.user_session.set("agent", agent)
     
-    # Create callback handler for step visualization
-    # This automatically shows which LangGraph node is executing
-    cb = cl.LangchainCallbackHandler(
-        # Customize step names in Azerbaijani
-        # to_keep=["supervisor", "context_loader", "agronomist", "weather", "validator"],
-    )
-    
-    # Configure graph execution with session thread_id
-    config = RunnableConfig(
-        callbacks=[cb],
-        configurable={
-            # Use Chainlit session ID as thread_id for persistence
-            "thread_id": cl.context.session.id,
-        },
-    )
-    
-    # Create initial state
-    initial_state = create_initial_state(
-        thread_id=cl.context.session.id,
-        user_input=message.content,
-        language="az",
-    )
-    
-    # Add farm context to state for personalized responses
-    if farm_context:
-        initial_state["farm_context"] = farm_context
-        # Include formatted context in the prompt
-        initial_state["context"] = format_farm_context_for_prompt(farm_context)
-    
-    # Create response message placeholder
+    # Create response message for streaming
     response_msg = cl.Message(content="", author="Yonca")
     await response_msg.send()
     
-    try:
-        graph = get_graph()
-        final_response = ""
-        
-        # Stream the response
-        async for event in graph.astream(initial_state, config):
-            # The callback handler (cb) automatically updates the UI
-            # showing which node is executing
-            
-            # Extract the final response content
-            if isinstance(event, dict):
-                # Check for response in different possible locations
-                if "response" in event:
-                    final_response = event["response"]
-                elif "messages" in event:
-                    messages = event["messages"]
-                    if messages and hasattr(messages[-1], "content"):
-                        final_response = messages[-1].content
-        
-        # Update the response message with final content
-        if final_response:
-            response_msg.content = final_response
-            await response_msg.update()
-        else:
-            # Fallback if no response was captured
-            response_msg.content = "Bağışlayın, cavab hazırlana bilmədi. Zəhmət olmasa yenidən cəhd edin."
-            await response_msg.update()
-        
-        logger.info(
-            "message_handled",
-            session_id=cl.context.session.id,
-            user_message_length=len(message.content),
-            response_length=len(final_response),
-        )
-        
-    except Exception:  # noqa: BLE001
-        logger.exception(
-            "message_handler_error",
-            session_id=cl.context.session.id,
-        )
-        response_msg.content = AZ["error"]
-        await response_msg.update()
-
-
-# ============================================
-# SESSION END
-# ============================================
-
-@cl.on_chat_end
-async def on_chat_end():
-    """Clean up when session ends."""
-    logger.info(
-        "session_ended",
-        session_id=cl.context.session.id,
+    # Build input for the agent
+    input_messages = {
+        "messages": [HumanMessage(content=message.content)]
+    }
+    
+    # LangGraph config with thread_id for memory
+    config = RunnableConfig(
+        configurable={
+            "thread_id": thread_id,
+            "farm_id": farm_id,
+        },
+        callbacks=[cl.LangchainCallbackHandler()],
     )
+    
+    full_response = ""
+    
+    try:
+        # Stream events from the agent
+        async for event in agent.astream_events(input_messages, config=config, version="v2"):
+            kind = event.get("event")
+            
+            # Handle different event types
+            if kind == "on_chat_model_stream":
+                # Token streaming from LLM
+                chunk = event.get("data", {}).get("chunk")
+                if chunk and hasattr(chunk, "content") and chunk.content:
+                    token = chunk.content
+                    full_response += token
+                    await response_msg.stream_token(token)
+            
+            elif kind == "on_chain_end":
+                # Check for final output in chain end
+                output = event.get("data", {}).get("output")
+                if output and isinstance(output, dict):
+                    messages = output.get("messages", [])
+                    if messages and not full_response:
+                        # Fallback: if streaming didn't work, get final message
+                        last_msg = messages[-1]
+                        if isinstance(last_msg, AIMessage) and last_msg.content:
+                            full_response = last_msg.content
+                            await response_msg.stream_token(full_response)
+        
+        # Finalize the message
+        if not full_response:
+            # Last resort: invoke synchronously to debug
+            logger.warning("no_streaming_response", session_id=session_id)
+            result = await agent.ainvoke(input_messages, config=config)
+            if result and "messages" in result:
+                for msg in reversed(result["messages"]):
+                    if isinstance(msg, AIMessage) and msg.content:
+                        full_response = msg.content
+                        response_msg.content = full_response
+                        await response_msg.update()
+                        break
+        
+        # Update final content
+        response_msg.content = full_response
+        await response_msg.update()
+        
+    except Exception as e:
+        logger.error("message_error", error=str(e), session_id=session_id)
+        response_msg.content = AZ_STRINGS["error"]
+        await response_msg.update()
+        raise
+    
+    logger.info(
+        "message_handled",
+        session_id=session_id,
+        user_message_length=len(message.content),
+        response_length=len(full_response),
+    )
+
+
+@cl.on_stop
+async def on_stop():
+    """Handle user stopping generation."""
+    logger.info("generation_stopped", session_id=cl.user_session.get("id"))
 
 
 # ============================================
 # MAIN
 # ============================================
-
 if __name__ == "__main__":
-    # This allows running with: python app.py
-    # But chainlit run app.py is preferred
     import chainlit.cli
     chainlit.cli.run_chainlit(__file__)

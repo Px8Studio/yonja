@@ -4,6 +4,24 @@
 
 ---
 
+> [!WARNING]
+> ## 🚧 Implementation Status: NOT YET IMPLEMENTED
+> 
+> This document describes the **target architecture** for observability. As of January 2026:
+> 
+> | Component | Status | Location |
+> |:----------|:-------|:---------|
+> | Prometheus Metrics | ❌ Not implemented | `src/yonca/observability/metrics.py` - missing |
+> | Structured Logging | ❌ Not implemented | `src/yonca/observability/logging.py` - missing |
+> | OpenTelemetry Tracing | ❌ Not implemented | `src/yonca/observability/tracing.py` - missing |
+> | Metrics Middleware | ❌ Not implemented | `src/yonca/api/middleware/metrics.py` - missing |
+> 
+> **Current state:** `src/yonca/observability/` contains only an empty `__init__.py`.
+> 
+> **Priority:** Medium — implement after core features stabilize.
+
+---
+
 ## 1. Observability Philosophy
 
 ```mermaid

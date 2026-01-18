@@ -173,6 +173,22 @@ docker-compose -f docker-compose.local.yml up -d
 | **Phase 2: Hybrid** | ⏳ Planned | 6-12 months | Real weather APIs, k-anonymity |
 | **Phase 3: Production** | 📋 Roadmap | 12-24 months | EKTIS integration, OAuth 2.0 |
 
+### ✅ Implementation Checklist (January 2026)
+
+| Component | Status | Notes |
+|:----------|:------:|:------|
+| **LLM Providers** | ✅ | Ollama, Groq, Gemini — all working |
+| **API Routes** | ✅ | `/chat`, `/health`, `/models` endpoints |
+| **LangGraph Agent** | ✅ | Supervisor → Context → Agronomist/Weather → Validator |
+| **Data Layer** | ✅ | PostgreSQL + Redis + SQLAlchemy async |
+| **Security** | ✅ | Input validation, PII gateway, prompt injection defense |
+| **Rules Engine** | ✅ | YAML rules for irrigation, fertilization, pest, harvest |
+| **Demo UI** | ✅ | Chainlit with LangGraph native integration |
+| **Unit Tests** | ✅ | 6 test files, ~85% coverage |
+| **Observability** | ❌ | `src/yonca/observability/` is empty — see [07-OBSERVABILITY.md](07-OBSERVABILITY.md) |
+| **Evaluation Tests** | ❌ | `tests/evaluation/` is empty — see [04-TESTING-STRATEGY.md](04-TESTING-STRATEGY.md) |
+| **Weather API** | ⚠️ | Synthetic only — TODO: integrate real API |
+
 ---
 
 <div align="center">

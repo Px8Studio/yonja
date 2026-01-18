@@ -46,8 +46,36 @@ from yonca.observability import create_langfuse_handler
 # Import demo-ui config and API client
 from config import settings as demo_settings
 from services.yonca_client import YoncaClient, YoncaClientError
+from data_layer import get_data_layer, load_user_settings, save_user_settings
 
 logger = structlog.get_logger()
+
+# ============================================
+# DATA PERSISTENCE (Chainlit Data Layer)
+# ============================================
+# This enables:
+# - User persistence (OAuth users stored in Postgres)
+# - Thread/conversation history
+# - ChatSettings persistence across sessions
+#
+# Requires Postgres database. SQLite falls back to session-only storage.
+# Set DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/yonca
+# ============================================
+if demo_settings.enable_data_persistence and demo_settings.data_persistence_enabled:
+    @cl.data_layer
+    def _get_data_layer():
+        """Register Chainlit data layer for persistence."""
+        return get_data_layer()
+    
+    logger.info(
+        "data_persistence_enabled",
+        database=demo_settings.effective_database_url.split("@")[-1] if "@" in demo_settings.effective_database_url else "local",
+    )
+else:
+    logger.warning(
+        "data_persistence_disabled",
+        reason="Requires Postgres database (DATABASE_URL with postgresql://)",
+    )
 
 # Log integration mode at startup
 logger.info(
@@ -187,47 +215,66 @@ AZ_STRINGS = {
 # ============================================
 # This is the native Chainlit way to handle per-user settings.
 # Settings appear in the sidebar and persist per session.
-# Use @cl.on_settings_update to react to changes.
+# With data layer enabled, settings are ALSO persisted to database
+# and restored when the user logs in again.
 # ============================================
-async def setup_chat_settings():
+async def setup_chat_settings(user: Optional[cl.User] = None):
     """Initialize chat settings panel for user preferences.
     
     These settings appear in Chainlit's sidebar when the user clicks
     the settings icon. Values are stored in cl.user_session["chat_settings"].
+    
+    If data persistence is enabled and user is authenticated,
+    settings are loaded from database (persisted across sessions).
+    
+    Args:
+        user: Authenticated user (from OAuth) for loading persisted settings
     """
+    # Load persisted settings if user is authenticated
+    persisted = await load_user_settings(user)
+    
+    # Map persisted values to initial indices
+    language_values = ["Azərbaycanca", "English", "Русский"]
+    detail_values = ["Qısa", "Orta", "Ətraflı"]
+    unit_values = ["Metrik (ha, kg)", "Yerli (sotka, pud)"]
+    
+    language_idx = language_values.index(persisted.get("language", "Azərbaycanca")) if persisted.get("language") in language_values else 0
+    detail_idx = detail_values.index(persisted.get("detail_level", "Orta")) if persisted.get("detail_level") in detail_values else 1
+    units_idx = unit_values.index(persisted.get("units", "Metrik (ha, kg)")) if persisted.get("units") in unit_values else 0
+    
     settings = await cl.ChatSettings(
         [
             Select(
                 id="language",
                 label=AZ_STRINGS["settings_language"],
-                values=["Azərbaycanca", "English", "Русский"],
-                initial_index=0,
+                values=language_values,
+                initial_index=language_idx,
                 description="Yonca cavablarının dili",
             ),
             Select(
                 id="detail_level",
                 label=AZ_STRINGS["settings_detail_level"],
-                values=["Qısa", "Orta", "Ətraflı"],
-                initial_index=1,
+                values=detail_values,
+                initial_index=detail_idx,
                 description="Cavabların nə qədər ətraflı olacağı",
             ),
             Select(
                 id="units",
                 label=AZ_STRINGS["settings_units"],
-                values=["Metrik (ha, kg)", "Yerli (sotka, pud)"],
-                initial_index=0,
+                values=unit_values,
+                initial_index=units_idx,
                 description="Sahə və çəki ölçü vahidləri",
             ),
             Switch(
                 id="notifications",
                 label=AZ_STRINGS["settings_notifications"],
-                initial=True,
+                initial=persisted.get("notifications", True),
                 description="Suvarma və hava xəbərdarlıqları",
             ),
             Switch(
                 id="show_sources",
                 label="Mənbələri göstər",
-                initial=False,
+                initial=persisted.get("show_sources", False),
                 description="Tövsiyələrin mənbəyini göstər",
             ),
         ]
@@ -241,12 +288,24 @@ async def on_settings_update(settings: dict):
     
     Called when user modifies any setting in the sidebar.
     Settings are automatically stored in cl.user_session["chat_settings"].
+    
+    If data persistence is enabled, settings are ALSO saved to database
+    so they persist across sessions.
     """
+    user: Optional[cl.User] = cl.user_session.get("user")
+    
     logger.info(
         "settings_updated",
         session_id=cl.user_session.get("id"),
+        user=user.identifier if user else "anonymous",
         settings=settings,
     )
+    
+    # Persist settings to database if user is authenticated
+    if user:
+        saved = await save_user_settings(user, settings)
+        if saved:
+            logger.info("settings_persisted", user=user.identifier)
     
     # Acknowledge the change to user
     language = settings.get("language", "Azərbaycanca")
@@ -407,8 +466,8 @@ async def on_chat_start():
     cl.user_session.set("thread_id", session_id)
     
     # Initialize Chat Settings (sidebar preferences panel)
-    # This is the native Chainlit way to handle per-user preferences
-    user_settings = await setup_chat_settings()
+    # Pass user so settings can be loaded from database (if data persistence enabled)
+    user_settings = await setup_chat_settings(user=user)
     cl.user_session.set("user_preferences", user_settings)
     
     # Initialize based on integration mode

@@ -11,3 +11,5 @@ langchain-core>=0.3.0
 
 # Import from main app
 # (demo-ui runs alongside main yonca package)
+
+asyncpg>=0.31.0

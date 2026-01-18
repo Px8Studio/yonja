@@ -1,42 +1,40 @@
 {
     "version": "2.0.0",
     // ════════════════════════════════════════════════════════════════════════
-    // BRANDING & NAMING GUIDELINES (ZekaLab IP Protection)
+    // YONCA AI — Task Configuration
     // ════════════════════════════════════════════════════════════════════════
     // 
-    // Product Name: YONCA AI — Kənd Təsərrüfatı Köməkçisi
-    //               (YONCA AI — Agricultural Assistant)
+    // QUICK REFERENCE:
+    //   🚀 Start:  "🚀 Start All" — Docker + API + Demo UI (one click)
+    //   🛑 Stop:   "🛑 Stop All" — Stops everything cleanly
+    //   🧪 Test:   "🧪 Test: All"
+    //   🗄️ DB:     "🗄️ DB: Migrate" — Apply schema changes
     //
-    // AVOID in user-facing UI:
-    //   - "Sidecar" — This is internal architecture terminology
-    //   - "DigiRella" / "Digital Umbrella" — Client name, not product name
-    //   - "ZekaLab" — Our company, but product should stand alone
+    // ARCHITECTURE:
+    //   Local Dev:  Postgres (5433) + Ollama + Redis → Python API + Chainlit
+    //   Production: Render.com (see render.yaml)
     //
-    // USE in user-facing UI:
-    //   - "Yonca" or "Yonca AI" — The product/agent name
-    //   - "Sizin ağıllı kənd təsərrüfatı köməkçiniz" — Tagline
-    //
-    // Context: Developed by ZekaLab for DigiRella's Yonca mobile app.
-    // ZekaLab retains IP ownership. This solution is designed to be
-    // white-labeled and integrated into DigiRella's ecosystem via API.
+    // DATABASE (Local):
+    //   Host: localhost:5433 | User: yonca | Pass: yonca_dev_password
+    //   Connection: postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca
     // ════════════════════════════════════════════════════════════════════════
     "tasks": [
-        // ================================================
-        // 🐳 Docker Stack Management
-        // ================================================
+        // ════════════════════════════════════════════════════════════════════
+        // 🐳 INFRASTRUCTURE (Docker Services)
+        // ════════════════════════════════════════════════════════════════════
         {
-            "label": "🐳 Docker: Start All Services",
-            "detail": "Start Ollama, Redis, and API containers",
+            "label": "🐳 Docker: Up",
+            "detail": "Start Postgres + Ollama + Redis",
             "type": "shell",
             "command": "docker-compose",
-            "args": ["-f", "docker-compose.local.yml", "up", "-d"],
+            "args": ["-f", "docker-compose.local.yml", "up", "-d", "postgres", "ollama", "redis"],
             "options": { "cwd": "${workspaceFolder}" },
             "problemMatcher": [],
             "presentation": { "reveal": "always", "panel": "shared" }
         },
         {
-            "label": "🐳 Docker: Stop All Services",
-            "detail": "Stop and remove all containers",
+            "label": "🐳 Docker: Down",
+            "detail": "Stop all Docker containers",
             "type": "shell",
             "command": "docker-compose",
             "args": ["-f", "docker-compose.local.yml", "down"],
@@ -45,157 +43,126 @@
             "presentation": { "reveal": "always", "panel": "shared" }
         },
         {
-            "label": "🐳 Docker: Start (Ollama + Redis only)",
-            "detail": "Start just Ollama and Redis (for local Python dev)",
+            "label": "🐳 Docker: Status",
+            "detail": "Show container health",
             "type": "shell",
             "command": "docker-compose",
-            "args": ["-f", "docker-compose.local.yml", "up", "-d", "ollama", "redis"],
+            "args": ["-f", "docker-compose.local.yml", "ps", "-a"],
             "options": { "cwd": "${workspaceFolder}" },
             "problemMatcher": [],
             "presentation": { "reveal": "always", "panel": "shared" }
         },
         {
-            "label": "🐳 Docker: View Logs",
-            "detail": "Follow logs from all containers",
+            "label": "🐳 Docker: Logs",
+            "detail": "Stream all container logs",
             "type": "shell",
             "command": "docker-compose",
-            "args": ["-f", "docker-compose.local.yml", "logs", "-f"],
+            "args": ["-f", "docker-compose.local.yml", "logs", "-f", "--tail=100"],
             "options": { "cwd": "${workspaceFolder}" },
-            "problemMatcher": [],
             "isBackground": true,
+            "problemMatcher": [],
             "presentation": { "reveal": "always", "panel": "dedicated" }
         },
+        // ════════════════════════════════════════════════════════════════════
+        // 🌿 APPLICATION (Python Services)
+        // ════════════════════════════════════════════════════════════════════
         {
-            "label": "🐳 Docker: Container Status",
-            "detail": "Show running containers and health",
-            "type": "shell",
-            "command": "docker-compose",
-            "args": ["-f", "docker-compose.local.yml", "ps"],
-            "options": { "cwd": "${workspaceFolder}" },
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "shared" }
-        },
-        // ================================================
-        // 📊 Langfuse (Self-Hosted Observability)
-        // ================================================
-        {
-            "label": "📊 Langfuse: Start",
-            "detail": "Start Langfuse server and database",
-            "type": "shell",
-            "command": "docker-compose",
-            "args": ["-f", "docker-compose.local.yml", "up", "-d", "langfuse-server", "langfuse-db"],
-            "options": { "cwd": "${workspaceFolder}" },
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "shared" }
-        },
-        {
-            "label": "📊 Langfuse: Open Dashboard",
-            "detail": "Open Langfuse UI at http://localhost:3001",
-            "type": "shell",
-            "command": "Start-Process",
-            "args": ["http://localhost:3001"],
-            "options": { "cwd": "${workspaceFolder}" },
-            "problemMatcher": [],
-            "presentation": { "reveal": "silent", "panel": "shared" }
-        },
-        {
-            "label": "📊 Langfuse: View Logs",
-            "detail": "Follow Langfuse container logs",
-            "type": "shell",
-            "command": "docker",
-            "args": ["logs", "-f", "yonca-langfuse"],
-            "options": { "cwd": "${workspaceFolder}" },
-            "problemMatcher": [],
-            "isBackground": true,
-            "presentation": { "reveal": "always", "panel": "dedicated" }
-        },
-        {
-            "label": "📊 Langfuse: Stop",
-            "detail": "Stop Langfuse server and database",
-            "type": "shell",
-            "command": "docker-compose",
-            "args": ["-f", "docker-compose.local.yml", "stop", "langfuse-server", "langfuse-db"],
-            "options": { "cwd": "${workspaceFolder}" },
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "shared" }
-        },
-        // ================================================
-        // 🤖 LLM Model Management
-        // ================================================
-        {
-            "label": "🤖 Models: First-Time Setup",
-            "detail": "Pull qwen3:4b and import ATLLaMA (run once)",
-            "type": "shell",
-            "command": "docker-compose",
-            "args": ["-f", "docker-compose.local.yml", "--profile", "setup", "up", "model-setup"],
-            "options": { "cwd": "${workspaceFolder}" },
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "dedicated" },
-            "dependsOn": ["🐳 Docker: Start (Ollama + Redis only)"]
-        },
-        {
-            "label": "🤖 Models: List Available",
-            "detail": "Show models in Ollama",
-            "type": "shell",
-            "command": "docker",
-            "args": ["exec", "yonca-ollama", "ollama", "list"],
-            "options": { "cwd": "${workspaceFolder}" },
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "shared" }
-        },
-        {
-            "label": "🤖 Models: Test qwen3:4b",
-            "detail": "Interactive chat with Qwen3",
-            "type": "shell",
-            "command": "docker",
-            "args": ["exec", "-it", "yonca-ollama", "ollama", "run", "qwen3:4b"],
-            "options": { "cwd": "${workspaceFolder}" },
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "dedicated", "focus": true }
-        },
-        {
-            "label": "🤖 Models: Test atllama",
-            "detail": "Interactive chat with ATLLaMA (Azerbaijani)",
-            "type": "shell",
-            "command": "docker",
-            "args": ["exec", "-it", "yonca-ollama", "ollama", "run", "atllama"],
-            "options": { "cwd": "${workspaceFolder}" },
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "dedicated", "focus": true }
-        },
-        // ================================================
-        // 🌿 Local Python Development
-        // ================================================
-        {
-            "label": "🌿 Yonca API: Start Development Server",
-            "detail": "Run API locally with hot reload",
+            "label": "🌿 API: Start",
+            "detail": "FastAPI with hot reload (localhost:8000)",
             "type": "shell",
             "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
-            "args": [
-                "-m", "uvicorn",
-                "yonca.api.main:app",
-                "--host", "localhost",
-                "--port", "8000",
-                "--reload"
-            ],
+            "args": ["-m", "uvicorn", "yonca.api.main:app", "--host", "localhost", "--port", "8000", "--reload"],
             "options": {
                 "cwd": "${workspaceFolder}",
-                "env": { "PYTHONPATH": "${workspaceFolder}/src" }
-            },
-            "problemMatcher": [],
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "dedicated",
-                "showReuseMessage": false,
-                "clear": true
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/src",
+                    "DATABASE_URL": "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
+                }
             },
             "isBackground": true,
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
             "group": { "kind": "build", "isDefault": true }
         },
         {
-            "label": "🧪 Yonca: Run Tests",
+            "label": "🖥️ UI: Start",
+            "detail": "Chainlit Demo (localhost:8501)",
+            "type": "shell",
+            "command": "${workspaceFolder}\\.venv\\Scripts\\chainlit.exe",
+            "args": ["run", "app.py", "-w", "--port", "8501"],
+            "options": {
+                "cwd": "${workspaceFolder}/demo-ui",
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/src;${workspaceFolder}/demo-ui",
+                    "INTEGRATION_MODE": "direct",
+                    "LLM_PROVIDER": "ollama",
+                    "OLLAMA_BASE_URL": "http://localhost:11434",
+                    "REDIS_URL": "redis://localhost:6379/0",
+                    "DATABASE_URL": "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca",
+                    "ENABLE_DATA_PERSISTENCE": "true"
+                }
+            },
+            "isBackground": true,
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
+        },
+        // ════════════════════════════════════════════════════════════════════
+        // 🗄️ DATABASE
+        // ════════════════════════════════════════════════════════════════════
+        {
+            "label": "🗄️ DB: Migrate",
+            "detail": "Apply pending Alembic migrations",
+            "type": "shell",
+            "command": "${workspaceFolder}\\.venv\\Scripts\\alembic.exe",
+            "args": ["upgrade", "head"],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/src",
+                    "DATABASE_URL": "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
+                }
+            },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "🗄️ DB: Seed",
+            "detail": "Populate with synthetic farmer data",
+            "type": "shell",
+            "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+            "args": ["scripts/seed_database.py"],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/src",
+                    "DATABASE_URL": "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
+                }
+            },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "🗄️ DB: New Migration",
+            "detail": "Generate migration from model changes",
+            "type": "shell",
+            "command": "${workspaceFolder}\\.venv\\Scripts\\alembic.exe",
+            "args": ["revision", "--autogenerate", "-m", "${input:migrationMessage}"],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/src",
+                    "DATABASE_URL": "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
+                }
+            },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        // ════════════════════════════════════════════════════════════════════
+        // 🧪 QUALITY (Tests & Linting)
+        // ════════════════════════════════════════════════════════════════════
+        {
+            "label": "🧪 Test: All",
+            "detail": "Run pytest with verbose output",
             "type": "shell",
             "command": "pytest",
             "args": ["tests/", "-v", "--tb=short"],
@@ -208,7 +175,8 @@
             "group": "test"
         },
         {
-            "label": "🔍 Yonca: Lint & Format Check",
+            "label": "🔍 Lint",
+            "detail": "Run ruff check",
             "type": "shell",
             "command": "ruff",
             "args": ["check", "src/", "tests/"],
@@ -216,243 +184,94 @@
             "problemMatcher": [],
             "presentation": { "reveal": "always", "panel": "shared" }
         },
-        // ================================================
-        // 🗄️ Database Management
-        // ================================================
+        // ════════════════════════════════════════════════════════════════════
+        // 🤖 MODELS (One-time setup)
+        // ════════════════════════════════════════════════════════════════════
         {
-            "label": "🗄️ Database: Run Migrations",
-            "detail": "Apply pending Alembic migrations",
-            "type": "shell",
-            "command": "${workspaceFolder}\\.venv\\Scripts\\alembic.exe",
-            "args": ["upgrade", "head"],
-            "options": {
-                "cwd": "${workspaceFolder}",
-                "env": { "PYTHONPATH": "${workspaceFolder}/src" }
-            },
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "shared" }
-        },
-        {
-            "label": "🗄️ Database: Seed Synthetic Data",
-            "detail": "Populate database with 5 synthetic farmer profiles",
-            "type": "shell",
-            "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
-            "args": ["scripts/seed_database.py"],
-            "options": {
-                "cwd": "${workspaceFolder}",
-                "env": { "PYTHONPATH": "${workspaceFolder}/src" }
-            },
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "shared" }
-        },
-        {
-            "label": "🗄️ Database: Reset & Seed",
-            "detail": "Drop all tables and reseed with fresh data",
-            "type": "shell",
-            "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
-            "args": ["scripts/seed_database.py", "--reset"],
-            "options": {
-                "cwd": "${workspaceFolder}",
-                "env": { "PYTHONPATH": "${workspaceFolder}/src" }
-            },
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "shared" }
-        },
-        {
-            "label": "🗄️ Database: Create Migration",
-            "detail": "Generate new Alembic migration from model changes",
-            "type": "shell",
-            "command": "${workspaceFolder}\\.venv\\Scripts\\alembic.exe",
-            "args": ["revision", "--autogenerate", "-m", "${input:migrationMessage}"],
-            "options": {
-                "cwd": "${workspaceFolder}",
-                "env": { "PYTHONPATH": "${workspaceFolder}/src" }
-            },
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "shared" }
-        },
-        // ================================================
-        // 🚀 Compound Tasks (Workflows)
-        // ================================================
-        {
-            "label": "🚀 Dev: Start Everything",
-            "detail": "Start Docker services + local API server",
-            "dependsOn": [
-                "🐳 Docker: Start (Ollama + Redis only)",
-                "🌿 Yonca API: Start Development Server"
-            ],
-            "dependsOrder": "sequence",
-            "problemMatcher": []
-        },
-        {
-            "label": "🛑 Dev: Stop Everything",
-            "detail": "Stop Docker containers",
+            "label": "🤖 Models: Setup",
+            "detail": "Pull qwen3:4b + import ATLLaMA (run once after Docker: Up)",
             "type": "shell",
             "command": "docker-compose",
-            "args": ["-f", "docker-compose.local.yml", "down"],
+            "args": ["-f", "docker-compose.local.yml", "--profile", "setup", "up", "model-setup"],
             "options": { "cwd": "${workspaceFolder}" },
             "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "shared" }
-        },
-        // ================================================
-        // 🖥️ Demo UI (Chainlit)
-        // ================================================
-        {
-            "label": "🖥️ Demo UI: Start Local (Python)",
-            "detail": "Run Chainlit demo locally with hot reload (Direct LangGraph mode)",
-            "type": "shell",
-            "command": "${workspaceFolder}\\.venv\\Scripts\\chainlit.exe",
-            "args": ["run", "app.py", "-w", "--port", "8501"],
-            "options": {
-                "cwd": "${workspaceFolder}/demo-ui",
-                "env": { 
-                    "PYTHONPATH": "${workspaceFolder}/src;${workspaceFolder}/demo-ui",
-                    "INTEGRATION_MODE": "direct",
-                    "LLM_PROVIDER": "ollama",
-                    "OLLAMA_BASE_URL": "http://localhost:11434",
-                    "REDIS_URL": "redis://localhost:6379/0"
-                }
-            },
-            "problemMatcher": [],
-            "presentation": {
-                "reveal": "always",
-                "panel": "dedicated",
-                "showReuseMessage": false,
-                "clear": true
-            },
-            "isBackground": true
-        },
-        {
-            "label": "🖥️ Demo UI: Start API Bridge Mode",
-            "detail": "Run Chainlit via FastAPI (Production Pattern - like mobile app)",
-            "type": "shell",
-            "command": "${workspaceFolder}\\.venv\\Scripts\\chainlit.exe",
-            "args": ["run", "app.py", "-w", "--port", "8501"],
-            "options": {
-                "cwd": "${workspaceFolder}/demo-ui",
-                "env": { 
-                    "PYTHONPATH": "${workspaceFolder}/src;${workspaceFolder}/demo-ui",
-                    "INTEGRATION_MODE": "api",
-                    "YONCA_API_URL": "http://localhost:8000",
-                    "REDIS_URL": "redis://localhost:6379/0"
-                }
-            },
-            "problemMatcher": [],
-            "presentation": {
-                "reveal": "always",
-                "panel": "dedicated",
-                "showReuseMessage": false,
-                "clear": true
-            },
-            "isBackground": true
-        },
-        {
-            "label": "🖥️ Demo UI: Start Docker",
-            "detail": "Run Chainlit demo in Docker container",
-            "type": "shell",
-            "command": "docker-compose",
-            "args": ["-f", "docker-compose.local.yml", "--profile", "demo", "up", "-d", "demo-ui"],
-            "options": { "cwd": "${workspaceFolder}" },
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "shared" }
-        },
-        {
-            "label": "🖥️ Demo UI: Stop Docker",
-            "detail": "Stop Demo UI container",
-            "type": "shell",
-            "command": "docker-compose",
-            "args": ["-f", "docker-compose.local.yml", "--profile", "demo", "stop", "demo-ui"],
-            "options": { "cwd": "${workspaceFolder}" },
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "shared" }
-        },
-        {
-            "label": "🖥️ Demo UI: View Logs",
-            "detail": "Follow demo-ui container logs",
-            "type": "shell",
-            "command": "docker",
-            "args": ["logs", "-f", "yonca-demo-ui"],
-            "options": { "cwd": "${workspaceFolder}" },
-            "problemMatcher": [],
-            "isBackground": true,
             "presentation": { "reveal": "always", "panel": "dedicated" }
         },
         {
-            "label": "🚀 Dev: Full Stack with Demo UI",
-            "detail": "Start Docker + API + Demo UI (Direct mode)",
-            "dependsOn": [
-                "🐳 Docker: Start (Ollama + Redis only)",
-                "🌿 Yonca API: Start Development Server",
-                "🖥️ Demo UI: Start Local (Python)"
-            ],
-            "dependsOrder": "sequence",
-            "problemMatcher": []
-        },
-        {
-            "label": "🏆 Demo: Gold Standard (API Bridge)",
-            "detail": "Full 3-tier architecture: Chainlit → FastAPI → LangGraph",
-            "dependsOn": [
-                "🐳 Docker: Start (Ollama + Redis only)",
-                "🌿 Yonca API: Start Development Server",
-                "🖥️ Demo UI: Start API Bridge Mode"
-            ],
-            "dependsOrder": "sequence",
-            "problemMatcher": []
-        },
-        // ================================================
-        // 🔥 ALMIGHTY TASKS (One-Click Everything)
-        // ================================================
-        {
-            "label": "🩺 Health: Check All Services",
-            "detail": "Verify Docker, Ollama, Redis, API, and UI health",
+            "label": "🤖 Models: List",
+            "detail": "Show available Ollama models",
             "type": "shell",
-            "command": "powershell",
-            "args": ["-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/health_check.ps1"],
+            "command": "docker",
+            "args": ["exec", "yonca-ollama", "ollama", "list"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        // ════════════════════════════════════════════════════════════════════
+        // 📊 OBSERVABILITY (Optional - Langfuse)
+        // ════════════════════════════════════════════════════════════════════
+        {
+            "label": "📊 Langfuse: Start",
+            "detail": "Start self-hosted observability (localhost:3001)",
+            "type": "shell",
+            "command": "docker-compose",
+            "args": ["-f", "docker-compose.local.yml", "up", "-d", "langfuse-server", "langfuse-db"],
             "options": { "cwd": "${workspaceFolder}" },
             "problemMatcher": [],
             "presentation": { "reveal": "always", "panel": "shared" }
         },
         {
-            "label": "🔥 Yonca: Start Everything (Smart)",
-            "detail": "Starts Docker → API → UI with health checks",
+            "label": "📊 Langfuse: Open",
+            "detail": "Open Langfuse dashboard in browser",
             "type": "shell",
-            "command": "powershell",
-            "args": [
-                "-ExecutionPolicy", "Bypass", "-Command",
-                "Write-Host '🌿 YONCA AI — Starting All Services' -ForegroundColor Green; Write-Host ''; docker-compose -f docker-compose.local.yml up -d ollama redis; Write-Host '⏳ Waiting for Docker services...'; Start-Sleep -Seconds 5; $attempt = 0; while ($attempt -lt 12) { try { $r = Invoke-RestMethod 'http://localhost:11434/api/tags' -TimeoutSec 2; Write-Host '✅ Ollama ready'; break } catch { $attempt++; Start-Sleep 5 } }; Write-Host '🚀 Starting FastAPI...'; Start-Process -FilePath '${workspaceFolder}\\.venv\\Scripts\\python.exe' -ArgumentList '-m', 'uvicorn', 'yonca.api.main:app', '--host', 'localhost', '--port', '8000', '--reload' -WorkingDirectory '${workspaceFolder}' -WindowStyle Hidden; Start-Sleep 3; Write-Host '🖥️ Starting Chainlit UI...'; Start-Process -FilePath '${workspaceFolder}\\.venv\\Scripts\\chainlit.exe' -ArgumentList 'run', 'app.py', '-w', '--port', '8501' -WorkingDirectory '${workspaceFolder}\\demo-ui' -WindowStyle Hidden; Start-Sleep 3; Write-Host ''; Write-Host '════════════════════════════════════════' -ForegroundColor Cyan; Write-Host '✅ YONCA AI is running!' -ForegroundColor Green; Write-Host '   📍 API:  http://localhost:8000/docs' -ForegroundColor White; Write-Host '   🖥️ UI:   http://localhost:8501' -ForegroundColor White; Write-Host '════════════════════════════════════════' -ForegroundColor Cyan; Start-Process 'http://localhost:8501'"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}",
-                "env": {
-                    "PYTHONPATH": "${workspaceFolder}/src;${workspaceFolder}/demo-ui",
-                    "INTEGRATION_MODE": "direct",
-                    "LLM_PROVIDER": "ollama",
-                    "OLLAMA_BASE_URL": "http://localhost:11434",
-                    "REDIS_URL": "redis://localhost:6379/0"
-                }
-            },
+            "command": "Start-Process",
+            "args": ["http://localhost:3001"],
             "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
+            "presentation": { "reveal": "silent" }
+        },
+        // ════════════════════════════════════════════════════════════════════
+        // 🚀 WORKFLOWS (Compound Tasks)
+        // ════════════════════════════════════════════════════════════════════
+        {
+            "label": "🚀 Start All",
+            "detail": "Docker → then API + UI in parallel",
+            "dependsOn": ["🐳 Docker: Up", "🚀 Start Apps"],
+            "dependsOrder": "sequence",
+            "problemMatcher": []
         },
         {
-            "label": "🛑 Yonca: Stop Everything",
-            "detail": "Stop all services (Docker, API, UI)",
+            "label": "🚀 Start Apps",
+            "detail": "API + UI (parallel) - internal task",
+            "dependsOn": ["🌿 API: Start", "🖥️ UI: Start"],
+            "dependsOrder": "parallel",
+            "problemMatcher": []
+        },
+        {
+            "label": "🛑 Stop All",
+            "detail": "Stop Docker + kill Python processes",
             "type": "shell",
             "command": "powershell",
             "args": [
-                "-ExecutionPolicy", "Bypass", "-Command",
-                "Write-Host '🛑 Stopping Yonca AI services...' -ForegroundColor Yellow; Get-Process -Name python -ErrorAction SilentlyContinue | Where-Object { $_.Path -like '*yonja*' } | Stop-Process -Force -ErrorAction SilentlyContinue; Get-Process -Name chainlit -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue; docker-compose -f docker-compose.local.yml down; Write-Host '✅ All services stopped' -ForegroundColor Green"
+                "-Command",
+                "Write-Host '🛑 Stopping services...' -ForegroundColor Yellow; Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue; docker-compose -f docker-compose.local.yml down; Write-Host '✅ Stopped' -ForegroundColor Green"
             ],
             "options": { "cwd": "${workspaceFolder}" },
             "problemMatcher": [],
             "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "🔄 Restart All",
+            "detail": "Stop → Start (clean restart)",
+            "dependsOn": ["🛑 Stop All", "🚀 Start All"],
+            "dependsOrder": "sequence",
+            "problemMatcher": []
         }
     ],
     "inputs": [
         {
             "id": "migrationMessage",
             "type": "promptString",
-            "description": "Enter migration message (e.g., 'Add user settings table')"
+            "description": "Migration message (e.g., 'Add user settings')"
         }
     ]
 }

@@ -26,7 +26,7 @@ from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 import structlog
 
 if TYPE_CHECKING:
-    from chainlit.types import PersistedUser
+    from chainlit.user import PersistedUser
 
 logger = structlog.get_logger(__name__)
 

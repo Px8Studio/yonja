@@ -95,7 +95,11 @@ class DemoSettings:
     enable_farm_selector: bool = True
     enable_weather_widget: bool = True
     enable_thinking_steps: bool = True
-    enable_data_persistence: bool = True  # Enable Chainlit data layer
+    
+    # Data persistence (requires Postgres - set via ENABLE_DATA_PERSISTENCE env var)
+    enable_data_persistence: bool = field(
+        default_factory=lambda: os.getenv("ENABLE_DATA_PERSISTENCE", "true").lower() in ("true", "1", "yes")
+    )
 
 
 # Global settings instance

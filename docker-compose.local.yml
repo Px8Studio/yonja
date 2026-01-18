@@ -34,8 +34,8 @@ services:
       - OLLAMA_BASE_URL=http://ollama:11434
       - OLLAMA_MODEL=qwen3:4b
       
-      # Database (SQLite for local development)
-      - DATABASE_URL=sqlite+aiosqlite:///./data/yonca.db
+      # Database (PostgreSQL for production parity)
+      - DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
       
       # Redis
       - REDIS_URL=redis://redis:6379/0
@@ -54,8 +54,12 @@ services:
       - RATE_LIMIT_REQUESTS_PER_MINUTE=100
       - RATE_LIMIT_BURST=150
     depends_on:
-      - redis
-      - ollama
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
     networks:
       - yonca-network
     restart: unless-stopped
@@ -228,28 +232,27 @@ services:
       retries: 5
 
   # ================================================
-  # PostgreSQL (Optional - for production-like local testing)
+  # PostgreSQL (Yonca Application Database)
   # ================================================
-  # Uncomment if you want to use PostgreSQL instead of SQLite
-  # postgres:
-  #   image: postgres:15-alpine
-  #   container_name: yonca-postgres
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - postgres-data:/var/lib/postgresql/data
-  #   environment:
-  #     - POSTGRES_DB=yonca
-  #     - POSTGRES_USER=yonca
-  #     - POSTGRES_PASSWORD=yonca_dev_password
-  #   networks:
-  #     - yonca-network
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U yonca"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
+  postgres:
+    image: postgres:15-alpine
+    container_name: yonca-postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=yonca
+      - POSTGRES_USER=yonca
+      - POSTGRES_PASSWORD=yonca_dev_password
+    networks:
+      - yonca-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yonca"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # ================================================
   # Chainlit Demo UI
@@ -277,8 +280,10 @@ services:
       # Redis for checkpointing
       - REDIS_URL=redis://redis:6379/0
       
-      # Database
-      - DATABASE_URL=sqlite+aiosqlite:///./data/yonca.db
+      # Database (PostgreSQL for data persistence)
+      - DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
+      - CHAINLIT_DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
+      - ENABLE_DATA_PERSISTENCE=true
       
       # Yonca API (optional, for API client pattern)
       - YONCA_API_URL=http://api:8000
@@ -286,8 +291,12 @@ services:
       # Python path
       - PYTHONPATH=/app/src:/app/demo-ui
     depends_on:
-      - redis
-      - ollama
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
     networks:
       - yonca-network
     restart: unless-stopped
@@ -311,5 +320,5 @@ volumes:
     driver: local
   langfuse-db-data:
     driver: local
-  # postgres-data:
-  #   driver: local
+  postgres-data:
+    driver: local

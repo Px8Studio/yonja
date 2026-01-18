@@ -25,6 +25,7 @@ langgraph = "^1.0.0"
 langgraph-checkpoint-redis = "^0.3.2"
 langchain-core = "^0.3.0"
 langchain = "^0.3.0"
+langfuse = "^2.0.0"  # Self-hosted observability (LangSmith alternative)
 sqlalchemy = "^2.0.0"
 alembic = "^1.13.0"
 redis = "^5.0.0"
@@ -36,7 +37,6 @@ python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 passlib = "^1.7.4"
 aiosqlite = "^0.19.0"
 chainlit = "^2.9.0"
-langsmith = "^0.6.4"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"

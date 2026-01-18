@@ -4,21 +4,52 @@
 
 ---
 
-> [!WARNING]
-> ## 🚧 Implementation Status: NOT YET IMPLEMENTED
+> [!TIP]
+> ## ✅ Langfuse Integration: IMPLEMENTED
 > 
-> This document describes the **target architecture** for observability. As of January 2026:
+> **Self-hosted LLM observability** is now available via Langfuse (open-source LangSmith alternative).
+> This provides 100% data residency - all traces stay within your infrastructure.
 > 
 > | Component | Status | Location |
 > |:----------|:-------|:---------|
-> | Prometheus Metrics | ❌ Not implemented | `src/yonca/observability/metrics.py` - missing |
-> | Structured Logging | ❌ Not implemented | `src/yonca/observability/logging.py` - missing |
-> | OpenTelemetry Tracing | ❌ Not implemented | `src/yonca/observability/tracing.py` - missing |
-> | Metrics Middleware | ❌ Not implemented | `src/yonca/api/middleware/metrics.py` - missing |
+> | Langfuse Integration | ✅ Implemented | `src/yonca/observability/langfuse.py` |
+> | Docker Compose | ✅ Configured | `docker-compose.local.yml` |
+> | Config Settings | ✅ Added | `src/yonca/config.py` |
+> | Agent Callbacks | ✅ Wired | `src/yonca/agent/graph.py` |
 > 
-> **Current state:** `src/yonca/observability/` contains only an empty `__init__.py`.
+> **Quick Start:**
+> ```bash
+> # 1. Start Langfuse
+> docker-compose -f docker-compose.local.yml up langfuse-server langfuse-db -d
 > 
-> **Priority:** Medium — implement after core features stabilize.
+> # 2. Open http://localhost:3001, create account, get API keys
+> 
+> # 3. Add to .env:
+> YONCA_LANGFUSE_SECRET_KEY=sk-lf-...
+> YONCA_LANGFUSE_PUBLIC_KEY=pk-lf-...
+> ```
+>
+> **Dashboard Features:**
+> - 🔍 Full LangGraph node tracing with timing
+> - 💰 Token/cost tracking per model
+> - 📊 Session grouping by thread_id
+> - 👥 Per-user analytics
+> - 📝 Prompt versioning
+> - ⚡ Evaluation datasets
+
+---
+
+> [!NOTE]
+> ## 📈 Additional Observability (Future)
+> 
+> The Prometheus/Grafana stack below describes **additional** infrastructure monitoring.
+> This is **optional** and can be implemented after core features stabilize.
+> 
+> | Component | Status | Priority |
+> |:----------|:-------|:---------|
+> | Prometheus Metrics | ❌ Not implemented | Medium |
+> | Structured Logging | ❌ Not implemented | Medium |
+> | OpenTelemetry Tracing | ❌ Not implemented | Low (Langfuse covers LLM tracing) |
 
 ---
 

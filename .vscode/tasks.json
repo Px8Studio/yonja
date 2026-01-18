@@ -56,6 +56,50 @@
             "presentation": { "reveal": "always", "panel": "shared" }
         },
         // ================================================
+        // 📊 Langfuse (Self-Hosted Observability)
+        // ================================================
+        {
+            "label": "📊 Langfuse: Start",
+            "detail": "Start Langfuse server and database",
+            "type": "shell",
+            "command": "docker-compose",
+            "args": ["-f", "docker-compose.local.yml", "up", "-d", "langfuse-server", "langfuse-db"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "📊 Langfuse: Open Dashboard",
+            "detail": "Open Langfuse UI at http://localhost:3001",
+            "type": "shell",
+            "command": "Start-Process",
+            "args": ["http://localhost:3001"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "presentation": { "reveal": "silent", "panel": "shared" }
+        },
+        {
+            "label": "📊 Langfuse: View Logs",
+            "detail": "Follow Langfuse container logs",
+            "type": "shell",
+            "command": "docker",
+            "args": ["logs", "-f", "yonca-langfuse"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "isBackground": true,
+            "presentation": { "reveal": "always", "panel": "dedicated" }
+        },
+        {
+            "label": "📊 Langfuse: Stop",
+            "detail": "Stop Langfuse server and database",
+            "type": "shell",
+            "command": "docker-compose",
+            "args": ["-f", "docker-compose.local.yml", "stop", "langfuse-server", "langfuse-db"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        // ================================================
         // 🤖 LLM Model Management
         // ================================================
         {

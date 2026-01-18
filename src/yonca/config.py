@@ -108,6 +108,16 @@ class Settings(BaseSettings):
     log_format: str = "json"
     prometheus_enabled: bool = True
 
+    # ===== Langfuse (Self-Hosted Observability) =====
+    # Open-source LLM tracing - 100% data residency control
+    # Dashboard: http://localhost:3001 (when running docker-compose)
+    langfuse_enabled: bool = True
+    langfuse_secret_key: str | None = None  # Get from Langfuse UI → Settings → API Keys
+    langfuse_public_key: str | None = None  # Get from Langfuse UI → Settings → API Keys
+    langfuse_host: str = "http://localhost:3001"  # Self-hosted instance
+    langfuse_debug: bool = False  # Enable for trace debugging
+    langfuse_sample_rate: float = 1.0  # 1.0 = trace 100% of requests
+
     # ===== App Metadata =====
     app_name: str = "Yonca AI"
     app_version: str = "0.1.0"

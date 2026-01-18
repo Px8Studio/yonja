@@ -8,18 +8,25 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class DeploymentMode(str, Enum):
-    """Deployment mode enum."""
+    """Deployment mode enum.
+    
+    OPEN_SOURCE: Open-source models (Llama, Qwen, Mistral) via Groq or self-hosted
+    CLOUD: Proprietary cloud models (Gemini, etc.)
+    """
 
-    LOCAL = "local"
-    CLOUD = "cloud"
+    OPEN_SOURCE = "open_source"  # Open-source models (fast with proper hardware)
+    CLOUD = "cloud"  # Proprietary cloud models
 
 
 class LLMProvider(str, Enum):
-    """LLM provider enum."""
+    """LLM provider enum.
+    
+    GROQ: Open-source models (Llama, Qwen, Mistral) with enterprise-grade performance
+    GEMINI: Google's proprietary cloud models
+    """
 
-    OLLAMA = "ollama"
-    GEMINI = "gemini"
-    GROQ = "groq"  # Ultra-fast cloud inference
+    GROQ = "groq"  # Open-source models, production-ready infrastructure
+    GEMINI = "gemini"  # Proprietary cloud models
 
 
 class Settings(BaseSettings):
@@ -33,7 +40,7 @@ class Settings(BaseSettings):
     )
 
     # ===== Deployment =====
-    deployment_mode: DeploymentMode = DeploymentMode.LOCAL
+    deployment_mode: DeploymentMode = DeploymentMode.OPEN_SOURCE
     environment: str = "development"
     debug: bool = False
 
@@ -44,18 +51,22 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:3000", "http://localhost:8501"]
 
     # ===== LLM Provider =====
-    llm_provider: LLMProvider = LLMProvider.OLLAMA
+    llm_provider: LLMProvider = LLMProvider.GROQ
 
-    # Ollama (Local) - Slow on CPU, fast with GPU
-    ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "qwen3:4b"  # Can also use: atllama, qwen3:1.7b
-
-    # Groq (Cloud) - Ultra-fast LPU hardware, FREE tier!
-    # Get key at: https://console.groq.com/
+    # ===== Open-Source Models (via Groq) =====
+    # Demonstrates enterprise-ready performance with proper infrastructure
+    # Can be self-hosted with appropriate hardware (LPU, GPU clusters)
+    # Get free API key at: https://console.groq.com/
     groq_api_key: str | None = None
-    groq_model: str = "llama-3.3-70b-versatile"  # Best for Azerbaijani (prev: llama-3.1-8b-instant)
+    groq_model: str = "llama-3.3-70b-versatile"  # Best for Azerbaijani language quality
+    
+    # Alternative Groq models:
+    # - "qwen3-32b": Best for math/logic, calculations
+    # - "llama-3.1-8b-instant": Fastest open-source option
+    # - "mixtral-8x7b-32768": Large context, good for complex queries
 
-    # Gemini (Cloud) - Google's fast cloud API
+    # ===== Proprietary Cloud Models =====
+    # Google Gemini - Closed-source cloud API
     # Get key at: https://ai.google.dev/
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-2.0-flash-exp"
@@ -91,20 +102,20 @@ class Settings(BaseSettings):
     default_language: str = "az"
 
     @property
-    def is_local(self) -> bool:
-        """Check if running in local mode."""
-        return self.deployment_mode == DeploymentMode.LOCAL
+    def is_open_source(self) -> bool:
+        """Check if using open-source models."""
+        return self.deployment_mode == DeploymentMode.OPEN_SOURCE
 
     @property
     def is_cloud(self) -> bool:
-        """Check if running in cloud mode."""
+        """Check if using proprietary cloud models."""
         return self.deployment_mode == DeploymentMode.CLOUD
 
     @property
     def active_llm_model(self) -> str:
         """Get the active LLM model name based on provider."""
-        if self.llm_provider == LLMProvider.OLLAMA:
-            return self.ollama_model
+        if self.llm_provider == LLMProvider.GROQ:
+            return self.groq_model
         return self.gemini_model
 
 

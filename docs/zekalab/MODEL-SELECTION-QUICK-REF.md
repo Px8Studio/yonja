@@ -2,7 +2,7 @@
 
 ## TL;DR - Which Model to Use?
 
-### Cloud Mode (Groq)
+### Open-Source Mode (Groq - Recommended)
 ```bash
 # Chat with farmers (user-facing)
 llama-3.3-70b-versatile  # ⭐ Best Azerbaijani quality
@@ -11,13 +11,10 @@ llama-3.3-70b-versatile  # ⭐ Best Azerbaijani quality
 qwen3-32b  # ⭐ Best math/logic
 ```
 
-### Local Mode (Ollama)
+### Proprietary Mode (Gemini - Fallback Only)
 ```bash
-# Chat with farmers
-atllama  # ⭐ Fine-tuned for Azerbaijani, no Turkish leakage
-
-# Internal calculations
-qwen3:4b  # Good math, but rewrite output with atllama
+# ⚠️ Only use when open-source unavailable
+gemini-2.0-flash-exp  # Cannot self-host, vendor lock-in
 ```
 
 ---
@@ -25,17 +22,16 @@ qwen3:4b  # Good math, but rewrite output with atllama
 ## Current Rankings (2026)
 
 ### For Azerbaijani Language Quality
-1. 🥇 **atllama** (local) - Fine-tuned, zero Turkish leakage
-2. 🥈 **llama-3.3-70b-versatile** (Groq) - Balanced multilingual
-3. 🥉 **llama-3.1-8b-instant** (Groq) - Fast, decent quality
-4. ⚠️ **qwen3-32b** (Groq) - Math great, language has Turkish leakage
-5. ⚠️ **qwen3:4b** (local) - Same as above, smaller
+1. 🥇 **llama-3.3-70b-versatile** (Groq) - Best multilingual balance
+2. 🥈 **llama-3.1-8b-instant** (Groq) - Fast, decent quality
+3. 🥉 **mixtral-8x7b-32768** (Groq) - Good alternative
+4. ⚠️ **qwen3-32b** (Groq) - Math great, but Turkish leakage risk
+5. ⚠️ **gemini-2.0-flash-exp** - Proprietary, cannot self-host
 
 ### For Math & Logic
 1. 🥇 **qwen3-32b** (Groq) - Superior calculations
-2. 🥈 **qwen3:4b** (local) - Good for local
-3. 🥉 **llama-3.3-70b-versatile** (Groq) - Decent
-4. **atllama** (local) - Basic math only
+2. 🥈 **llama-3.3-70b-versatile** (Groq) - Good all-around
+3. 🥉 **gemini-2.0-flash-exp** - Proprietary fallback
 
 ---
 
@@ -44,30 +40,31 @@ qwen3:4b  # Good math, but rewrite output with atllama
 ```
 Are you deploying to production with real farmers?
 │
-├─ YES → Use Groq (cloud)
+├─ YES → Use Groq (open-source models)
 │   │
 │   ├─ User will see this output?
 │   │   ├─ YES → llama-3.3-70b-versatile
 │   │   └─ NO (internal calculation) → qwen3-32b
 │   │
-│   └─ Fallback if Groq down → atllama (local)
+│   └─ Need self-hosting for gov compliance?
+│       └─ YES → Deploy vLLM/TGI with same models
 │
-└─ NO (development/testing/offline)
+└─ NO (development/testing)
     │
-    └─ Use Ollama (local)
+    └─ Use Groq API (free tier: 14,400 req/day)
         │
         ├─ User will see this output?
-        │   └─ YES → atllama (always!)
+        │   └─ YES → llama-3.3-70b-versatile
         │
         └─ NO (internal calculation)
-            └─ qwen3:4b, then rewrite with atllama
+            └─ qwen3-32b, then rewrite with Llama
 ```
 
 ---
 
 ## Testing Commands
 
-### Test Groq (Cloud)
+### Test Groq (Open-Source Models)
 ```powershell
 # Test Llama for language quality
 $env:YONCA_LLM_PROVIDER = "groq"
@@ -78,14 +75,14 @@ $env:YONCA_GROQ_API_KEY = "gsk_your_key_here"
 # Should respond in pure Azerbaijani, no Turkish words
 ```
 
-### Test Ollama (Local)
+### Test Self-Hosted (Production)
 ```powershell
-# Test ATLLaMA for offline quality
-$env:YONCA_LLM_PROVIDER = "ollama"
-$env:YONCA_OLLAMA_MODEL = "atllama"
+# Point to your vLLM/TGI server
+$env:YONCA_LLM_PROVIDER = "groq"
+$env:YONCA_GROQ_BASE_URL = "http://your-llm-cluster:8000"
+$env:YONCA_GROQ_MODEL = "meta-llama/Llama-3.3-70B-Instruct"
 
-# Start API and test
-# Slower, but best Azerbaijani quality
+# Same API, same code - just local
 ```
 
 ---
@@ -94,24 +91,25 @@ $env:YONCA_OLLAMA_MODEL = "atllama"
 
 ### Recommended Production Config (.env)
 ```bash
-# Primary provider (cloud for speed)
+# Open-Source Mode (Recommended)
+YONCA_DEPLOYMENT_MODE=open_source
 YONCA_LLM_PROVIDER=groq
-YONCA_GROQ_MODEL=llama-3.3-70b-versatile  # Changed from llama-3.1-8b-instant
+YONCA_GROQ_MODEL=llama-3.3-70b-versatile
 YONCA_GROQ_API_KEY=gsk_your_key_here
 
-# Fallback provider (local for offline)
-YONCA_OLLAMA_BASE_URL=http://localhost:11434
-YONCA_OLLAMA_MODEL=atllama  # Changed from qwen3:4b
+# For self-hosted production:
+# YONCA_GROQ_BASE_URL=http://your-llm-cluster:8000
 ```
 
-### Development Config (local only)
+### Development Config (Groq free tier)
 ```bash
-YONCA_LLM_PROVIDER=ollama
-YONCA_OLLAMA_MODEL=atllama
-YONCA_OLLAMA_BASE_URL=http://localhost:11434
+YONCA_LLM_PROVIDER=groq
+YONCA_GROQ_MODEL=llama-3.3-70b-versatile
+YONCA_GROQ_API_KEY=gsk_your_key_here
+# Free tier: 14,400 requests/day
 ```
 
-### Testing Config (fastest)
+### Fast Testing Config
 ```bash
 YONCA_LLM_PROVIDER=groq
 YONCA_GROQ_MODEL=llama-3.1-8b-instant  # Fast but lower quality
@@ -192,10 +190,12 @@ Ollama (atllama) on GPU (RTX 4060):
 
 1. **Update your .env:**
    ```bash
+   YONCA_LLM_PROVIDER=groq
    YONCA_GROQ_MODEL=llama-3.3-70b-versatile
+   YONCA_GROQ_API_KEY=gsk_your_key_here
    ```
 
-2. **Test the new model:**
+2. **Test the model:**
    ```bash
    # Restart API server
    # Send test message: "Buğda əkmək üçün ən yaxşı vaxt nədir?"
@@ -204,13 +204,25 @@ Ollama (atllama) on GPU (RTX 4060):
 
 3. **When building LangGraph:**
    - Use `get_model_for_node()` helper from `model_roles.py`
-   - Reasoning nodes → Qwen
-   - Chat nodes → Llama/ATLLaMA
+   - Reasoning nodes → Qwen (math/logic)
+   - Chat nodes → Llama (Azerbaijani quality)
 
-4. **Monitor production:**
-   - Log all responses
-   - Flag Turkish word occurrences
-   - Collect farmer feedback on language quality
+4. **For production (government compliance):**
+   - Deploy vLLM or TGI on-premises
+   - Point `YONCA_GROQ_BASE_URL` to your cluster
+   - Same models, full data control
+
+---
+
+## Why Open-Source?
+
+| Benefit | Description |
+|:--------|:------------|
+| **Self-Hosting** | Deploy same models on your own infrastructure |
+| **No Vendor Lock-in** | Switch providers anytime, no code changes |
+| **Data Privacy** | Keep all data on-premises for government compliance |
+| **Cost Control** | One-time hardware investment vs per-token pricing |
+| **Customization** | Fine-tune models on Azerbaijani agricultural data |
 
 ---
 
@@ -218,5 +230,6 @@ Ollama (atllama) on GPU (RTX 4060):
 
 Questions? Check:
 - Full guide: [LANGUAGE-INTERFERENCE-GUIDE.md](LANGUAGE-INTERFERENCE-GUIDE.md)
-- Model config: [src/yonca/llm/model_roles.py](../src/yonca/llm/model_roles.py)
-- System prompts: [prompts/system/](../prompts/system/)
+- Deployment: [12-DUAL-MODE-DEPLOYMENT.md](12-DUAL-MODE-DEPLOYMENT.md)
+- Model config: [src/yonca/llm/model_roles.py](../../src/yonca/llm/model_roles.py)
+- System prompts: [prompts/system/](../../prompts/system/)

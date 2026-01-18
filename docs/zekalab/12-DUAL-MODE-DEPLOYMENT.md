@@ -1,6 +1,17 @@
 # 🔀 Yonca AI — Dual-Mode Deployment Architecture
 
-> **Purpose:** Define the dual-mode deployment strategy supporting both **Local** (Docker + local LLMs) and **Cloud** (Docker on Render + Gemini API) deployments.
+> **Purpose:** Define the dual-mode deployment strategy supporting both **Open-Source** (Groq or self-hosted LLMs) and **Proprietary Cloud** (Gemini API) deployments.
+
+---
+
+## 🎯 Open-Source First Philosophy
+
+Yonca AI is built on **open-source models** to demonstrate enterprise-ready AI that:
+
+✅ **Can be self-hosted** - Full control over deployment  
+✅ **No vendor lock-in** - Not dependent on proprietary APIs  
+✅ **Transparent & auditable** - Open weights, open architectures  
+✅ **Production-ready** - Enterprise performance with proper infrastructure (200-300 tok/s)
 
 ---
 
@@ -10,18 +21,18 @@
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 mindmap
   root((🔀 Dual-Mode))
-    🏠 Local Mode
-      Docker Compose
-      Ollama/llama.cpp
-      Qwen3-4B GGUF
-      SQLite/PostgreSQL
-      Full offline capability
-    ☁️ Cloud Mode
+    � Open-Source Mode
+      Groq API (demo)
+      Self-hosted vLLM/TGI
+      Llama 3.3 70B
+      Qwen 3 32B
+      Can self-host anytime
+    ☁️ Proprietary Mode
       Render.com
       Gemini API
-      PostgreSQL managed
-      Redis managed
-      Scalable & reliable
+      Closed-source
+      Cannot self-host
+      Vendor lock-in
     🔄 Abstraction Layer
       LLM Provider Interface
       Same LangGraph logic
@@ -31,30 +42,31 @@ mindmap
 
 ### Why Dual-Mode?
 
-| Benefit | Local Mode | Cloud Mode |
-|:--------|:-----------|:-----------|
-| **Cost** | No API fees | Pay-per-use |
-| **Privacy** | 100% on-premise | Data leaves local |
-| **Latency** | GPU-dependent | ~1-2s API latency |
-| **Availability** | Self-managed | 99.9% SLA |
-| **Scaling** | Manual | Auto-scale |
-| **Development** | Rapid iteration | Production-ready |
-| **Rural Use** | Works offline | Requires internet |
+| Benefit | Open-Source (Groq/Self-Hosted) | Proprietary (Gemini) |
+|:--------|:-------------------------------|:---------------------|
+| **Models** | Llama, Qwen, Mistral (open) | Gemini (closed) |
+| **License** | Apache 2.0, Llama Community | Proprietary |
+| **Self-Hosting** | ✅ Full support | ❌ Not possible |
+| **Data Privacy** | ✅ On-premises capable | ⚠️ Cloud only |
+| **Performance** | 200-300 tok/s (with LPU/GPU) | ~80-120 tok/s |
+| **Cost (production)** | Hardware investment | Per-token pricing |
+| **Vendor Lock-in** | ✅ None | ⚠️ High |
+| **Customization** | ✅ Fine-tune, modify | ❌ Limited |
+| **Government Compliance** | ✅ Yes (on-prem) | ⚠️ Maybe |
 
 ---
 
 ## 2. Architecture Overview
 
-### 2.1 Local Mode Architecture
+### 2.1 Open-Source Mode Architecture
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
 graph TB
-    subgraph local["🏠 LOCAL DEPLOYMENT (Docker Compose)"]
+    subgraph opensource["🌿 OPEN-SOURCE DEPLOYMENT"]
         subgraph services["🧠 Services"]
             api["🔌 FastAPI<br/><i>localhost:8000</i>"]
             brain["🧠 LangGraph<br/><i>Agent Orchestrator</i>"]
-            ollama["🤖 Ollama<br/><i>Qwen3-4B</i>"]
         end
         
         subgraph data["💾 Data Layer"]
@@ -63,10 +75,17 @@ graph TB
         end
         
         api --> brain
-        brain --> ollama
         brain --> redis
         brain --> pg
     end
+    
+    subgraph llm["🤖 LLM Options (choose one)"]
+        groq["⚡ Groq API<br/><i>200-300 tok/s</i><br/><i>Open-source models</i>"]
+        selfhost["🏢 Self-Hosted<br/><i>vLLM / TGI</i><br/><i>On-premises</i>"]
+    end
+    
+    brain -->|"API Call"| groq
+    brain -.->|"Production"| selfhost
     
     subgraph client["📱 Clients"]
         demo["🖥️ Chainlit Demo<br/><i>localhost:8501</i>"]
@@ -76,12 +95,23 @@ graph TB
     demo --> api
     mobile --> api
     
-    style local fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#0d47a1
+    style opensource fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#0d47a1
     style services fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
     style data fill:#fff9c4,stroke:#f9a825,color:#5d4037
+    style llm fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
 ```
 
-### 2.2 Cloud Mode Architecture
+**Open-Source Models Available (via Groq or self-hosted):**
+
+| Model | License | Self-Hosting | Use Case |
+|:------|:--------|:-------------|:---------|
+| **Llama 3.3 70B** | Llama Community | 8x A100 GPUs | User-facing chat (best Azerbaijani) |
+| **Qwen 3 32B** | Apache 2.0 | 4x A100 GPUs | Internal calculations |
+| **Llama 3.1 8B** | Llama Community | 2x A100 GPUs | Fast responses |
+
+### 2.2 Proprietary Cloud Mode Architecture (Fallback)
+
+> ⚠️ **Note:** This mode uses closed-source Gemini and should only be used as a fallback when open-source options are unavailable.
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
@@ -103,7 +133,7 @@ graph TB
     end
     
     subgraph google["🌐 Google Cloud"]
-        gemini["🔮 Gemini API<br/><i>gemini-2.0-flash</i>"]
+        gemini["🔮 Gemini API<br/><i>gemini-2.0-flash</i><br/><i>⚠️ Proprietary</i>"]
     end
     
     brain -->|"API Call"| gemini
@@ -117,9 +147,15 @@ graph TB
     mobile --> api
     
     style render fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px,color:#1b5e20
-    style google fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    style google fill:#ffcdd2,stroke:#c62828,color:#b71c1c
     style managed fill:#fff9c4,stroke:#f9a825,color:#5d4037
 ```
+
+**Limitations of Proprietary Mode:**
+- ❌ Cannot self-host Gemini models
+- ⚠️ Vendor lock-in to Google
+- ⚠️ Data sent to Google servers
+- ⚠️ Subject to pricing changes
 
 ---
 
@@ -174,25 +210,40 @@ class LLMProvider(ABC):
         pass
 ```
 
-### 3.2 Ollama Provider (Local)
+### 3.2 Groq Provider (Open-Source - Recommended)
 
 ```python
-# src/yonca/llm/providers/ollama.py
+# src/yonca/llm/providers/groq.py
 import httpx
 from typing import AsyncIterator
 from .base import LLMProvider, LLMMessage, LLMResponse
 
-class OllamaProvider(LLMProvider):
-    """Ollama provider for local LLM inference."""
+class GroqProvider(LLMProvider):
+    """
+    Groq provider for open-source LLM inference.
+    
+    Uses open-source models (Llama, Qwen, Mistral) that CAN be self-hosted.
+    Groq demonstrates the performance these models achieve with proper infrastructure.
+    
+    Self-hosting options:
+    - vLLM on GPU cluster (8x A100 for Llama 3.3 70B)
+    - Groq LPU hardware (on-premises)
+    - Text Generation Inference (TGI)
+    """
     
     def __init__(
         self,
-        base_url: str = "http://localhost:11434",
-        model: str = "qwen3:4b",
+        api_key: str,
+        model: str = "llama-3.3-70b-versatile",
+        base_url: str = "https://api.groq.com/openai/v1",  # Or self-hosted URL
     ):
-        self.base_url = base_url
+        self.api_key = api_key
         self.model = model
-        self.client = httpx.AsyncClient(timeout=60.0)
+        self.base_url = base_url
+        self.client = httpx.AsyncClient(
+            timeout=60.0,
+            headers={"Authorization": f"Bearer {api_key}"}
+        )
     
     async def generate(
         self,
@@ -201,23 +252,20 @@ class OllamaProvider(LLMProvider):
         max_tokens: int = 1000,
     ) -> LLMResponse:
         response = await self.client.post(
-            f"{self.base_url}/api/chat",
+            f"{self.base_url}/chat/completions",
             json={
                 "model": self.model,
-                "messages": [m.model_dump() for m in messages],
-                "options": {
-                    "temperature": temperature,
-                    "num_predict": max_tokens,
-                },
-                "stream": False,
+                "messages": [{"role": m.role, "content": m.content} for m in messages],
+                "temperature": temperature,
+                "max_tokens": max_tokens,
             },
         )
         data = response.json()
         return LLMResponse(
-            content=data["message"]["content"],
-            tokens_used=data.get("eval_count", 0),
+            content=data["choices"][0]["message"]["content"],
+            tokens_used=data.get("usage", {}).get("total_tokens", 0),
             model=self.model,
-            finish_reason="stop",
+            finish_reason=data["choices"][0].get("finish_reason", "stop"),
         )
     
     async def stream(
@@ -228,33 +276,31 @@ class OllamaProvider(LLMProvider):
     ) -> AsyncIterator[str]:
         async with self.client.stream(
             "POST",
-            f"{self.base_url}/api/chat",
+            f"{self.base_url}/chat/completions",
             json={
                 "model": self.model,
-                "messages": [m.model_dump() for m in messages],
-                "options": {
-                    "temperature": temperature,
-                    "num_predict": max_tokens,
-                },
+                "messages": [{"role": m.role, "content": m.content} for m in messages],
+                "temperature": temperature,
+                "max_tokens": max_tokens,
                 "stream": True,
             },
         ) as response:
             async for line in response.aiter_lines():
-                if line:
+                if line.startswith("data: ") and not line.endswith("[DONE]"):
                     import json
-                    data = json.loads(line)
-                    if "message" in data:
-                        yield data["message"]["content"]
+                    data = json.loads(line[6:])
+                    if delta := data["choices"][0].get("delta", {}).get("content"):
+                        yield delta
     
     async def health_check(self) -> bool:
         try:
-            response = await self.client.get(f"{self.base_url}/api/tags")
+            response = await self.client.get(f"{self.base_url}/models")
             return response.status_code == 200
         except Exception:
             return False
 ```
 
-### 3.3 Gemini Provider (Cloud)
+### 3.3 Gemini Provider (Proprietary - Fallback Only)
 
 ```python
 # src/yonca/llm/providers/gemini.py
@@ -263,7 +309,18 @@ from typing import AsyncIterator
 from .base import LLMProvider, LLMMessage, LLMResponse
 
 class GeminiProvider(LLMProvider):
-    """Google Gemini API provider for cloud deployment."""
+    """
+    Google Gemini API provider (PROPRIETARY - FALLBACK ONLY).
+    
+    ⚠️ WARNING: This uses closed-source models that CANNOT be self-hosted.
+    Use only when open-source options (Groq) are unavailable.
+    
+    Limitations:
+    - Vendor lock-in to Google
+    - Data sent to Google servers
+    - Cannot be self-hosted
+    - Subject to pricing changes
+    """
     
     def __init__(
         self,
@@ -347,12 +404,12 @@ class GeminiProvider(LLMProvider):
 # src/yonca/llm/factory.py
 from enum import Enum
 from .providers.base import LLMProvider
-from .providers.ollama import OllamaProvider
+from .providers.groq import GroqProvider
 from .providers.gemini import GeminiProvider
 
 class LLMProviderType(Enum):
-    OLLAMA = "ollama"
-    GEMINI = "gemini"
+    GROQ = "groq"        # Open-source models (recommended)
+    GEMINI = "gemini"    # Proprietary fallback
 
 def create_llm_provider(
     provider_type: LLMProviderType,
@@ -360,12 +417,15 @@ def create_llm_provider(
 ) -> LLMProvider:
     """Factory function to create LLM providers."""
     
-    if provider_type == LLMProviderType.OLLAMA:
-        return OllamaProvider(
-            base_url=kwargs.get("base_url", "http://localhost:11434"),
-            model=kwargs.get("model", "qwen3:4b"),
+    if provider_type == LLMProviderType.GROQ:
+        # Open-source models via Groq (or self-hosted)
+        return GroqProvider(
+            api_key=kwargs["api_key"],
+            model=kwargs.get("model", "llama-3.3-70b-versatile"),
+            base_url=kwargs.get("base_url", "https://api.groq.com/openai/v1"),
         )
     elif provider_type == LLMProviderType.GEMINI:
+        # Proprietary fallback only
         return GeminiProvider(
             api_key=kwargs["api_key"],
             model=kwargs.get("model", "gemini-2.0-flash-exp"),
@@ -376,96 +436,127 @@ def create_llm_provider(
 
 ---
 
-## 4. Environment Configuration
+## 4. Self-Hosting Guide (Production)
 
-### 4.1 Environment Matrix
+For production deployment in Azerbaijan with government compliance, you can self-host the same open-source models.
 
-| Environment | Mode | LLM Provider | Database | Deployment |
-|:------------|:-----|:-------------|:---------|:-----------|
-| **Local Dev** | Local | Ollama (Qwen3-4B) | SQLite | Docker Compose |
-| **Local Full** | Local | Ollama (Qwen3-4B) | PostgreSQL | Docker Compose |
-| **Cloud Dev** | Cloud | Gemini Flash | PostgreSQL | Render Free |
-| **Cloud Prod** | Cloud | Gemini Flash | PostgreSQL HA | Render Pro |
+### Option A: GPU Cluster
 
-### 4.2 Environment Variables
+**Hardware Requirements:**
+```
+Production Setup:
+- 8x NVIDIA A100 80GB GPUs (for Llama 3.3 70B)
+- 4x NVIDIA A100 80GB GPUs (for Qwen 3 32B)
+- 2TB RAM
+- 10TB NVMe storage
+- High-bandwidth networking (InfiniBand)
 
-```bash
-# .env.local - Local Development
-# ================================================
-DEPLOYMENT_MODE=local
-
-# LLM Configuration (Ollama)
-LLM_PROVIDER=ollama
-OLLAMA_BASE_URL=http://ollama:11434
-OLLAMA_MODEL=qwen3:4b
-
-# Database (SQLite for simplicity)
-DATABASE_URL=sqlite:///./data/yonca.db
-
-# Redis
-REDIS_URL=redis://redis:6379/0
-
-# API
-API_HOST=0.0.0.0
-API_PORT=8000
+Cost: ~$150,000-200,000 (one-time)
+Performance: 200-300 tokens/sec
 ```
 
+**Software Stack:**
 ```bash
-# .env.cloud - Cloud Deployment (Render)
-# ================================================
-DEPLOYMENT_MODE=cloud
+# Use vLLM for optimized inference
+pip install vllm
 
-# LLM Configuration (Gemini)
-LLM_PROVIDER=gemini
-GEMINI_API_KEY=${GEMINI_API_KEY}  # Set in Render secrets
-GEMINI_MODEL=gemini-2.0-flash-exp
+# Run Llama 3.3 70B
+vllm serve meta-llama/Llama-3.3-70B-Instruct \
+    --tensor-parallel-size 8 \
+    --max-model-len 4096
 
-# Database (Render Managed PostgreSQL)
-DATABASE_URL=${DATABASE_URL}  # Provided by Render
+# Run Qwen 3 32B
+vllm serve Qwen/Qwen3-32B \
+    --tensor-parallel-size 4
+```
 
-# Redis (Render Managed)
-REDIS_URL=${REDIS_URL}  # Provided by Render
+### Option B: Groq LPU (Recommended for Production)
 
-# API
-API_HOST=0.0.0.0
-API_PORT=10000  # Render default
+**Groq's Language Processing Units (LPUs)**:
+- Purpose-built for LLM inference
+- 200-300 tokens/sec per LPU
+- Lower power consumption vs GPUs
+- Easier deployment and management
+
+**For Azerbaijan Deployment:**
+1. Contact Groq for enterprise licensing
+2. Deploy LPU cluster on-premises
+3. Run open-source models locally
+4. Same performance as Groq cloud
 ```
 
 ---
 
-## 5. Docker Configuration
+## 5. Environment Configuration
 
-### 5.1 Local Mode (docker-compose.local.yml)
+### 5.1 Environment Matrix
+
+| Environment | Mode | LLM Provider | Models | Infrastructure |
+|:------------|:-----|:-------------|:-------|:---------------|
+| **Dev** | Open-Source | Groq API | Llama 3.3, Qwen 3 | Docker Compose |
+| **Staging** | Open-Source | Groq API | Llama 3.3, Qwen 3 | Render/Cloud |
+| **Production** | Open-Source | Self-Hosted | Llama 3.3, Qwen 3 | On-Premises |
+| **Fallback** | Proprietary | Gemini API | Gemini 2.0 | Cloud only |
+
+### 5.2 Environment Variables
+
+```bash
+# .env.open_source - Open-Source Mode (RECOMMENDED)
+# ================================================
+YONCA_DEPLOYMENT_MODE=open_source
+
+# LLM Configuration (Groq - Open-Source Models)
+YONCA_LLM_PROVIDER=groq
+YONCA_GROQ_API_KEY=gsk_your_key_here
+YONCA_GROQ_MODEL=llama-3.3-70b-versatile
+
+# For self-hosted deployment:
+# YONCA_GROQ_BASE_URL=http://your-llm-cluster:8000
+
+# Database
+YONCA_DATABASE_URL=postgresql://yonca:password@localhost:5432/yonca
+
+# Redis
+YONCA_REDIS_URL=redis://localhost:6379/0
+
+# API
+YONCA_API_HOST=0.0.0.0
+YONCA_API_PORT=8000
+```
+
+```bash
+# .env.proprietary - Proprietary Fallback (NOT RECOMMENDED)
+# =========================================================
+YONCA_DEPLOYMENT_MODE=cloud
+
+# LLM Configuration (Gemini - Proprietary)
+# ⚠️ WARNING: Cannot self-host, vendor lock-in
+YONCA_LLM_PROVIDER=gemini
+YONCA_GEMINI_API_KEY=${GEMINI_API_KEY}
+YONCA_GEMINI_MODEL=gemini-2.0-flash-exp
+
+# Database (Render Managed PostgreSQL)
+YONCA_DATABASE_URL=${DATABASE_URL}
+
+# Redis (Render Managed)
+YONCA_REDIS_URL=${REDIS_URL}
+
+# API
+YONCA_API_HOST=0.0.0.0
+YONCA_API_PORT=10000
+```
+
+---
+
+## 6. Docker Configuration
+
+### 6.1 Open-Source Mode (docker-compose.local.yml)
 
 ```yaml
 # docker-compose.local.yml
 version: '3.9'
 
 services:
-  # ================================
-  # Ollama - Local LLM Server
-  # ================================
-  ollama:
-    image: ollama/ollama:latest
-    container_name: yonca-ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-    # For CPU-only, remove deploy section
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
   # ================================
   # PostgreSQL - Data Store
   # ================================
@@ -514,19 +605,17 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DEPLOYMENT_MODE=local
-      - LLM_PROVIDER=ollama
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - OLLAMA_MODEL=qwen3:4b
-      - DATABASE_URL=postgresql://yonca:yonca_dev_password@postgres:5432/yonca_dev
-      - REDIS_URL=redis://redis:6379/0
+      - YONCA_DEPLOYMENT_MODE=open_source
+      - YONCA_LLM_PROVIDER=groq
+      - YONCA_GROQ_API_KEY=${YONCA_GROQ_API_KEY}
+      - YONCA_GROQ_MODEL=llama-3.3-70b-versatile
+      - YONCA_DATABASE_URL=postgresql://yonca:yonca_dev_password@postgres:5432/yonca_dev
+      - YONCA_REDIS_URL=redis://redis:6379/0
     volumes:
       - ./src:/app/src
       - ./prompts:/app/prompts
       - ./tests:/app/tests
     depends_on:
-      ollama:
-        condition: service_healthy
       postgres:
         condition: service_healthy
       redis:
@@ -549,10 +638,11 @@ services:
       - api
 
 volumes:
-  ollama_data:
   postgres_data:
   redis_data:
 ```
+
+> 💡 **Note:** Ollama is no longer needed for local development. We use Groq API (open-source models) for fast iteration. For offline/self-hosted scenarios, deploy vLLM or TGI.
 
 ### 5.2 Cloud Mode (render.yaml)
 
@@ -624,12 +714,12 @@ databases:
 
 ---
 
-## 6. Feature Parity Matrix
+## 7. Feature Parity Matrix
 
-Both modes should support identical features:
+Both modes support identical features:
 
-| Feature | Local Mode | Cloud Mode | Notes |
-|:--------|:-----------|:-----------|:------|
+| Feature | Open-Source | Proprietary | Notes |
+|:--------|:------------|:------------|:------|
 | **Chat API** | ✅ | ✅ | Same endpoints |
 | **Streaming** | ✅ | ✅ | SSE for both |
 | **Multi-turn** | ✅ | ✅ | Redis memory |
@@ -640,32 +730,37 @@ Both modes should support identical features:
 | **Rate Limiting** | ✅ | ✅ | Same logic |
 | **Metrics** | ✅ | ✅ | Prometheus |
 | **Logging** | ✅ | ✅ | Structured |
+| **Self-Hosting** | ✅ | ❌ | Key difference |
+| **Vendor Lock-in** | ✅ None | ⚠️ High | Key difference |
 
 ---
 
-## 7. Model Selection Guide
+## 8. Model Selection Guide
 
-### 7.1 Local Mode Models
+### 8.1 Open-Source Models (via Groq or Self-Hosted)
 
-| Model | Size | RAM Required | Quality | Speed | Recommendation |
-|:------|:-----|:-------------|:--------|:------|:---------------|
-| `qwen3:4b` | 2.6 GB | 5 GB | ⭐⭐⭐⭐ | Fast | **Recommended** |
-| `qwen3:1.7b` | 1.2 GB | 3 GB | ⭐⭐⭐ | Very Fast | Edge/low memory |
-| `llama3.2:3b` | 2 GB | 4 GB | ⭐⭐⭐ | Fast | Alternative |
+| Model | License | Speed | Azerbaijani | Math | Use Case |
+|:------|:--------|:------|:------------|:-----|:---------|
+| `llama-3.3-70b-versatile` | Llama Community | 200 tok/s | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | **Primary chat** |
+| `qwen3-32b` | Apache 2.0 | 250 tok/s | ⭐⭐ ⚠️ | ⭐⭐⭐⭐⭐ | **Calculations** |
+| `llama-3.1-8b-instant` | Llama Community | 300 tok/s | ⭐⭐⭐ | ⭐⭐⭐ | Fast responses |
+| `mixtral-8x7b-32768` | Apache 2.0 | 200 tok/s | ⭐⭐⭐ | ⭐⭐⭐ | Alternative |
 
-### 7.2 Cloud Mode Models
+⚠️ = Turkish leakage risk (rewrite output with Llama)
 
-| Model | Context | Quality | Cost | Speed | Recommendation |
-|:------|:--------|:--------|:-----|:------|:---------------|
-| `gemini-2.0-flash-exp` | 1M | ⭐⭐⭐⭐ | Low | Fast | **Recommended** |
-| `gemini-1.5-flash` | 1M | ⭐⭐⭐⭐ | Low | Fast | Stable |
-| `gemini-1.5-pro` | 2M | ⭐⭐⭐⭐⭐ | Medium | Medium | Complex queries |
+### 8.2 Proprietary Models (Fallback Only)
+
+| Model | Speed | Quality | Cost | Self-Host |
+|:------|:------|:--------|:-----|:----------|
+| `gemini-2.0-flash-exp` | Fast | ⭐⭐⭐⭐ | Low | ❌ No |
+| `gemini-1.5-flash` | Fast | ⭐⭐⭐⭐ | Low | ❌ No |
+| `gemini-1.5-pro` | Medium | ⭐⭐⭐⭐⭐ | Medium | ❌ No |
 
 ---
 
-## 8. Switching Between Modes
+## 9. Switching Between Modes
 
-### 8.1 Environment Detection
+### 9.1 Environment Detection
 
 ```python
 # src/yonca/config.py
@@ -673,38 +768,44 @@ from enum import Enum
 from pydantic_settings import BaseSettings
 
 class DeploymentMode(str, Enum):
-    LOCAL = "local"
-    CLOUD = "cloud"
+    OPEN_SOURCE = "open_source"  # Open-source models (can self-host)
+    CLOUD = "cloud"              # Proprietary fallback
 
 class Settings(BaseSettings):
     # Deployment
-    deployment_mode: DeploymentMode = DeploymentMode.LOCAL
+    deployment_mode: DeploymentMode = DeploymentMode.OPEN_SOURCE
     
     # LLM Provider
-    llm_provider: str = "ollama"
+    llm_provider: str = "groq"  # Default to open-source
     
-    # Ollama (Local)
-    ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "qwen3:4b"
+    # Groq (Open-Source - Recommended)
+    groq_api_key: str | None = None
+    groq_model: str = "llama-3.3-70b-versatile"
+    groq_base_url: str = "https://api.groq.com/openai/v1"  # Or self-hosted
     
-    # Gemini (Cloud)
+    # Gemini (Proprietary - Fallback)
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-2.0-flash-exp"
     
     # Database
-    database_url: str = "sqlite:///./data/yonca.db"
+    database_url: str = "postgresql://yonca:password@localhost:5432/yonca"
     
     # Redis
     redis_url: str = "redis://localhost:6379/0"
     
+    @property
+    def is_open_source(self) -> bool:
+        return self.deployment_mode == DeploymentMode.OPEN_SOURCE
+    
     class Config:
+        env_prefix = "YONCA_"
         env_file = ".env"
         env_file_encoding = "utf-8"
 
 settings = Settings()
 ```
 
-### 8.2 Provider Selection
+### 9.2 Provider Selection
 
 ```python
 # src/yonca/llm/__init__.py
@@ -713,15 +814,18 @@ from ..config import settings
 
 def get_llm_provider():
     """Get the configured LLM provider."""
-    if settings.llm_provider == "ollama":
+    if settings.llm_provider == "groq":
+        if not settings.groq_api_key:
+            raise ValueError("YONCA_GROQ_API_KEY required for Groq provider")
         return create_llm_provider(
-            LLMProviderType.OLLAMA,
-            base_url=settings.ollama_base_url,
-            model=settings.ollama_model,
+            LLMProviderType.GROQ,
+            api_key=settings.groq_api_key,
+            model=settings.groq_model,
+            base_url=settings.groq_base_url,
         )
     elif settings.llm_provider == "gemini":
         if not settings.gemini_api_key:
-            raise ValueError("GEMINI_API_KEY required for Gemini provider")
+            raise ValueError("YONCA_GEMINI_API_KEY required for Gemini provider")
         return create_llm_provider(
             LLMProviderType.GEMINI,
             api_key=settings.gemini_api_key,
@@ -733,16 +837,16 @@ def get_llm_provider():
 
 ---
 
-## 9. Deployment Commands
+## 10. Deployment Commands
 
-### 9.1 Local Development
+### 10.1 Open-Source Development
 
 ```bash
+# Set your Groq API key
+export YONCA_GROQ_API_KEY=gsk_your_key_here
+
 # Start all services
 docker-compose -f docker-compose.local.yml up -d
-
-# Pull Ollama model (first time only)
-docker exec -it yonca-ollama ollama pull qwen3:4b
 
 # View logs
 docker-compose -f docker-compose.local.yml logs -f api
@@ -751,7 +855,18 @@ docker-compose -f docker-compose.local.yml logs -f api
 docker-compose -f docker-compose.local.yml down
 ```
 
-### 9.2 Cloud Deployment (Render)
+### 10.2 Self-Hosted Production
+
+```bash
+# Point to your self-hosted vLLM/TGI server
+export YONCA_GROQ_BASE_URL=http://your-llm-cluster:8000
+export YONCA_GROQ_MODEL=meta-llama/Llama-3.3-70B-Instruct
+
+# Deploy
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+### 10.3 Proprietary Fallback (Render)
 
 ```bash
 # Deploy via Render CLI
@@ -760,31 +875,42 @@ render blueprint launch
 # Or via GitHub integration:
 # 1. Connect repo to Render
 # 2. Render auto-deploys on push to main
-# 3. Set GEMINI_API_KEY in Render dashboard
+# 3. Set YONCA_GEMINI_API_KEY in Render dashboard
 ```
 
 ---
 
-## 10. Cost Analysis
+## 11. Cost Analysis
 
-### 10.1 Local Mode Costs
+### 11.1 Open-Source Mode Costs
 
+**Development (Groq API):**
+| Component | Free Tier | Paid |
+|:----------|:----------|:-----|
+| Groq API | 14,400 req/day | ~$10/mo |
+| PostgreSQL | $0 (local) | $7/mo (hosted) |
+| Redis | $0 (local) | $10/mo (hosted) |
+| **Total** | **$0** | **~$27/mo** |
+
+**Production (Self-Hosted):**
 | Component | One-time | Monthly | Notes |
 |:----------|:---------|:--------|:------|
-| GPU (RTX 3060) | $300 | - | Optional, speeds up 3x |
-| Electricity | - | ~$5 | Running 24/7 |
-| **Total** | $300 | ~$5 | After initial investment |
+| GPU Cluster | $150-200k | ~$500 | 8x A100 + 4x A100 |
+| Electricity | - | ~$200 | Running 24/7 |
+| DevOps | - | ~$2000 | Staff cost |
+| **Total** | ~$200k | ~$2700/mo | Full control |
 
-### 10.2 Cloud Mode Costs (Render)
+### 11.2 Proprietary Mode Costs (Render + Gemini)
 
 | Component | Free Tier | Starter | Pro |
 |:----------|:----------|:--------|:----|
 | Web Service | Limited | $7/mo | $25/mo |
 | PostgreSQL | - | $7/mo | $25/mo |
 | Redis | - | $10/mo | $25/mo |
-| **Subtotal** | $0 | $24/mo | $75/mo |
 | Gemini API | Free tier | ~$5/mo | ~$20/mo |
 | **Total** | $0 | ~$29/mo | ~$95/mo |
+
+> ⚠️ **Note:** Proprietary mode has lower upfront cost but permanent vendor lock-in.
 
 ---
 

@@ -4,14 +4,21 @@
 
 ---
 
-## � Dual-Mode Deployment
+## 🌿 Open-Source First Architecture
 
-**Yonca AI supports two deployment modes:**
+**Yonca AI is built on open-source models** to demonstrate enterprise-ready AI that:
 
-| Mode | LLM | Database | Hosting | Best For |
-|:-----|:----|:---------|:--------|:---------|
-| 🏠 **Local** | Ollama (Qwen3) | PostgreSQL/SQLite | Docker Compose | Development, offline, privacy |
-| ☁️ **Cloud** | Gemini API | PostgreSQL | Render.com | Production, scalability |
+✅ **Can be self-hosted** - Full control over deployment  
+✅ **No vendor lock-in** - Not dependent on proprietary APIs  
+✅ **Transparent & auditable** - Open weights, open architectures  
+✅ **Production-ready** - Enterprise performance (200-300 tok/s)  
+
+### Deployment Modes
+
+| Mode | Models | License | Self-Host | Best For |
+|:-----|:-------|:--------|:----------|:---------|
+| 🌿 **Open-Source** | Llama 3.3, Qwen 3 | Apache 2.0 / Llama Community | ✅ Yes | **Recommended** |
+| ☁️ **Proprietary** | Gemini | Proprietary | ❌ No | Fallback only |
 
 See **[12-DUAL-MODE-DEPLOYMENT.md](12-DUAL-MODE-DEPLOYMENT.md)** for full details.
 
@@ -81,7 +88,7 @@ To avoid duplication, content is organized as follows:
 |:----------|:---------------|
 | 🔒 **Zero Real Data** | Mirror-image synthetic engine replicating EKTIS schema |
 | ✅ **Rule-Validated** | Agronomy rulebook overrides LLM (≥90% accuracy) |
-| � **Dual-Mode** | Local (Ollama) + Cloud (Gemini) deployment options |
+| 🌿 **Open-Source First** | Llama + Qwen models that can be self-hosted |
 | 🔌 **Plug-and-Play** | Single REST endpoint, Dockerized microservice |
 | 🔄 **Hot-Swap Ready** | Flip from synthetic to real data with zero code changes |
 | 🔐 **Auth Bridge** | Leverages existing mygov ID/SİMA/Asan İmza tokens |
@@ -90,28 +97,28 @@ To avoid duplication, content is organized as follows:
 
 ## 🏗️ Architecture Overview
 
-### Local Mode (Docker Compose + Ollama)
+### Open-Source Mode (Groq or Self-Hosted)
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                 🏠 LOCAL DOCKER COMPOSE                      │
+│                 🌿 OPEN-SOURCE MODE                         │
 ├─────────────────────────────────────────────────────────────┤
-│  🔌 FastAPI Gateway  →  🧠 LangGraph Brain  →  🤖 Ollama    │
-│         ↓                      ↓                 (Qwen3)   │
-│  🔐 JWT Validation      ⚡ Redis (Memory)                   │
-│                               ↓                             │
+│  🔌 FastAPI Gateway  →  🧠 LangGraph Brain  →  ⚡ Groq API   │
+│         ↓                      ↓              (Llama/Qwen)  │
+│  🔐 JWT Validation      ⚡ Redis (Memory)       OR          │
+│                               ↓              🏢 Self-Hosted  │
 │                    🐘 PostgreSQL (Synthetic Data)           │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Cloud Mode (Render.com + Gemini API)
+### Proprietary Fallback (Render.com + Gemini API)
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                   ☁️ RENDER.COM                              │
+│                   ☁️ PROPRIETARY MODE (⚠️ Fallback)          │
 ├─────────────────────────────────────────────────────────────┤
 │  🔌 FastAPI Gateway  →  🧠 LangGraph Brain  →  🔮 Gemini    │
 │         ↓                      ↓                 (API)      │
-│  🔐 JWT Validation      ⚡ Redis (Managed)                  │
-│                               ↓                             │
+│  🔐 JWT Validation      ⚡ Redis (Managed)     ❌ Can't      │
+│                               ↓                 Self-Host   │
 │                    🐘 PostgreSQL (Managed)                  │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -126,13 +133,13 @@ cat docs/zekalab/01-MANIFESTO.md              # Vision (5 min)
 cat docs/zekalab/12-DUAL-MODE-DEPLOYMENT.md   # Deployment Strategy (10 min)
 cat docs/zekalab/13-IMPLEMENTATION-PLAN.md    # Build Guide (15 min)
 
-# 2. Local Development Setup
+# 2. Open-Source Development (Recommended)
+export YONCA_GROQ_API_KEY=gsk_your_key_here
 docker-compose -f docker-compose.local.yml up -d
-docker exec -it yonca-ollama ollama pull qwen3:4b
 
-# 3. Cloud Deployment (Render)
-# Set GEMINI_API_KEY in Render dashboard, then:
-render blueprint launch
+# 3. Self-Hosted Production (Government Compliance)
+# Deploy vLLM/TGI on your infrastructure
+# Point YONCA_GROQ_BASE_URL to your cluster
 ```
 
 ---

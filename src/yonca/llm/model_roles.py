@@ -1,47 +1,52 @@
 # Yonca AI - Model Role Configuration
-# Dual-Strategy Approach for Language Quality + Logic Accuracy
+# Open-Source vs Proprietary Model Strategy
 
 """
-MODEL ROLES IN YONCA AI ARCHITECTURE
-=====================================
+MODEL ARCHITECTURE IN YONCA AI
+================================
 
-Based on 2026 benchmarks and Azerbaijani language testing, we use a dual-model
-strategy to balance linguistic quality with mathematical/logical reasoning.
+OPEN-SOURCE MODELS (via Groq or self-hosted):
+- Llama, Qwen, Mistral, Mixtral - fully open-source
+- Can be self-hosted with appropriate hardware (GPU clusters, LPU)
+- Groq demonstrates enterprise-grade performance these models can achieve
+- With proper infrastructure: 200-300 tokens/sec, production-ready
 
-Background:
+PROPRIETARY CLOUD MODELS:
+- Gemini (Google) - closed-source, cloud-only
+- Cannot be self-hosted
+- Vendor lock-in
+
+Philosophy:
 -----------
-Azerbaijani is linguistically close to Turkish, causing "language interference"
-in general-purpose models. Models trained with Turkish data often "leak" Turkish
-vocabulary when uncertain (e.g., "eylül" instead of "Sentyabr", "zemin" instead
-of "torpaq").
+We prioritize open-source models to demonstrate:
+1. Enterprise-readiness with proper infrastructure
+2. No vendor lock-in
+3. Full control over deployment
+4. Transparency and auditability
 
-The Solution: Role-Based Model Selection
------------------------------------------
-Different models excel at different tasks:
-- Llama models: Better multilingual balance, less Turkish leakage
-- Qwen models: Superior math/logic, but higher Turkish interference
-- ATLLaMA (local): Fine-tuned specifically for Azerbaijani
-
-Strategy:
----------
-1. LOGIC/CALCULATION Nodes → Use Qwen (output hidden from user)
-2. LANGUAGE/CHAT Nodes → Use Llama or ATLLaMA (user-facing)
-3. OFFLINE Mode → Always use ATLLaMA (best Azerbaijani quality)
+Groq serves as proof-of-concept that open-source models can match or exceed
+proprietary performance when given the right hardware.
 """
 
 # ============================================================
 # Model Role Definitions
+# ====================== (Open-Source on Groq)
 # ============================================================
 
 MODEL_ROLES = {
-    # ===== CLOUD MODELS (Groq) =====
+    # ===== OPEN-SOURCE MODELS (via Groq) =====
+    # All models below are open-source and can be self-hosted
+    
     "llama-3.3-70b-versatile": {
         "provider": "groq",
+        "license": "Llama 3 Community License (open-source)",
         "role": "chat",  # User-facing conversation
         "strength": "language_quality",
         "azerbaijani_quality": "high",
         "math_logic_quality": "medium-high",
-        "speed": "fast",
+        "speed": "fast (200+ tok/s on Groq infrastructure)",
+        "self_hostable": True,
+        "recommended_hardware": "8x A100 GPUs or Groq LPU",
         "use_for": [
             "final_response_generation",
             "farmer_conversation",
@@ -52,16 +57,19 @@ MODEL_ROLES = {
             "complex_calculations",
             "precise_numeric_schedules"
         ],
-        "notes": "Best for final user-facing responses. Less Turkish leakage."
+        "notes": "Best for final user-facing responses. Less Turkish leakage. Open-source."
     },
     
     "qwen3-32b": {
         "provider": "groq",
+        "license": "Apache 2.0 (fully open-source)",
         "role": "reasoning",  # Internal logic, hidden from user
         "strength": "math_logic",
         "azerbaijani_quality": "medium",  # Some Turkish leakage
         "math_logic_quality": "very_high",
-        "speed": "very_fast",
+        "speed": "very_fast (250-300 tok/s on Groq)",
+        "self_hostable": True,
+        "recommended_hardware": "4x A100 GPUs or optimized inference server",
         "use_for": [
             "irrigation_schedule_calculation",
             "fertilization_dosage_calculation",
@@ -73,55 +81,43 @@ MODEL_ROLES = {
             "direct_farmer_responses",
             "conversational_chat"
         ],
-        "notes": "Use for internal LangGraph nodes where output is rewritten by Llama"
+        "notes": "Use for internal calculations. Output rewritten by Llama. Open-source."
     },
     
     "llama-3.1-8b-instant": {
         "provider": "groq",
+        "license": "Llama 3 Community License (open-source)",
         "role": "chat",
         "strength": "balanced",
         "azerbaijani_quality": "medium-high",
         "math_logic_quality": "medium",
-        "speed": "very_fast",
+        "speed": "very_fast (300+ tok/s on Groq)",
+        "self_hostable": True,
+        "recommended_hardware": "2x A100 GPUs or single H100",
         "use_for": [
             "quick_responses",
             "simple_questions",
             "fallback_chat"
         ],
-        "notes": "Fast and capable, good default for Groq"
+        "notes": "Fast and capable. Open-source. Good default."
     },
     
-    # ===== LOCAL MODELS (Ollama) =====
-    "atllama": {
-        "provider": "ollama",
-        "role": "offline_expert",  # Best Azerbaijani, slow but accurate
-        "strength": "azerbaijani_native",
-        "azerbaijani_quality": "very_high",  # Fine-tuned specifically
-        "math_logic_quality": "medium",
-        "speed": "slow",  # CPU-dependent
-        "use_for": [
-            "offline_mode",
-            "azerbaijani_quality_critical",
-            "when_cloud_unavailable",
-            "final_response_when_local"
-        ],
-        "notes": "Fine-tuned on Azerbaijani. ALWAYS use when offline. No Turkish leakage."
-    },
-    
-    "qwen3:4b": {
-        "provider": "ollama",
-        "role": "local_reasoning",
-        "strength": "math_logic",
-        "azerbaijani_quality": "medium",
+    "mixtral-8x7b-32768": {
+        "provider": "groq",
+        "license": "Apache 2.0 (fully open-source)",
+        "role": "chat_complex",
+        "strength": "large_context",
+        "azerbaijani_quality": "medium-high",
         "math_logic_quality": "high",
-        "speed": "medium",  # Faster than atllama on CPU
+        "speed": "fast (180+ tok/s on Groq)",
+        "self_hostable": True,
+        "recommended_hardware": "8x A100 GPUs (MoE architecture)",
         "use_for": [
-            "local_calculations",
-            "offline_reasoning",
-            "when_atllama_unavailable"
+            "complex_multi_turn_conversations",
+            "large_context_analysis",
+            "document_understanding"
         ],
-        "notes": "Good for local reasoning, but rewrite output with ATLLaMA for language"
-    },
+        "notes": "Mixture-of-Experts architecture. Open-source. 32k context.
 }
 
 
@@ -130,8 +126,8 @@ MODEL_ROLES = {
 # ============================================================
 
 LANGGRAPH_NODE_MODELS = {
-    # ===== CLOUD MODE (Groq Available) =====
-    "cloud": {
+    # ===== OPEN-SOURCE DEPLOYMENT (Groq or Self-Hosted) =====
+    "open_source": {
         "supervisor": "llama-3.3-70b-versatile",  # Route conversations
         "intent_classifier": "llama-3.1-8b-instant",  # Fast classification
         "irrigation_calculator": "qwen3-32b",  # Math-heavy
@@ -142,16 +138,16 @@ LANGGRAPH_NODE_MODELS = {
         "rule_validator": "qwen3-32b",  # Logic validation
     },
     
-    # ===== LOCAL MODE (Offline/No API Keys) =====
-    "local": {
-        "supervisor": "atllama",  # Best Azerbaijani
-        "intent_classifier": "atllama",
-        "irrigation_calculator": "qwen3:4b",  # Calculate, then rewrite
-        "fertilization_calculator": "qwen3:4b",
-        "pest_analyzer": "qwen3:4b",
-        "weather_interpreter": "atllama",
-        "response_writer": "atllama",  # ALWAYS use for final response
-        "rule_validator": "qwen3:4b",
+    # ===== PROPRIETARY CLOUD (Gemini) =====
+    "proprietary": {
+        "supervisor": "gemini-2.0-flash-exp",
+        "intent_classifier": "gemini-2.0-flash-exp",
+        "irrigation_calculator": "gemini-2.0-flash-exp",
+        "fertilization_calculator": "gemini-2.0-flash-exp",
+        "pest_analyzer": "gemini-2.0-flash-exp",
+        "weather_interpreter": "gemini-2.0-flash-exp",
+        "response_writer": "gemini-2.0-flash-exp",
+        "rule_validator": "gemini-2.0-flash-exp",
     },
 }
 
@@ -199,27 +195,27 @@ SYSTEM_PROMPT_STRATEGY = {
 # Helper Functions
 # ============================================================
 
-def get_model_for_node(node_name: str, deployment_mode: str = "cloud") -> str:
+def get_model_for_node(node_name: str, deployment_mode: str = "open_source") -> str:
     """
     Get the recommended model for a LangGraph node.
     
     Args:
         node_name: Name of the LangGraph node
-        deployment_mode: "cloud" or "local"
+        deployment_mode: "open_source" (Groq/self-hosted) or "proprietary" (Gemini)
     
     Returns:
         Model name string
     
     Example:
-        >>> get_model_for_node("response_writer", "cloud")
+        >>> get_model_for_node("response_writer", "open_source")
         'llama-3.3-70b-versatile'
         
-        >>> get_model_for_node("response_writer", "local")
-        'atllama'
+        >>> get_model_for_node("response_writer", "proprietary")
+        'gemini-2.0-flash-exp'
     """
     return LANGGRAPH_NODE_MODELS.get(deployment_mode, {}).get(
         node_name,
-        "llama-3.1-8b-instant" if deployment_mode == "cloud" else "atllama"
+        "llama-3.1-8b-instant" if deployment_mode == "open_source" else "gemini-2.0-flash-exp"
     )
 
 
@@ -258,12 +254,12 @@ def should_rewrite_response(source_model: str, target_model: str | None = None) 
     
     Example:
         >>> should_rewrite_response("qwen3-32b")
-        True  # Qwen output should be rewritten by Llama/ATLLaMA
+        True  # Qwen output should be rewritten by Llama
         
         >>> should_rewrite_response("llama-3.3-70b-versatile")
         False  # Already language-optimized
     """
-    reasoning_models = ["qwen3-32b", "qwen3:4b"]
+    reasoning_models = ["qwen3-32b", "qwen/qwen3-32b"]
     return source_model in reasoning_models
 
 

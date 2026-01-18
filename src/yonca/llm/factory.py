@@ -2,12 +2,16 @@
 """LLM Provider Factory with multi-provider support.
 
 Creates and manages LLM provider instances based on configuration.
-Supports automatic provider selection, fallback logic, and speed-optimized selection.
 
-Providers (in speed order):
-1. Groq - Ultra-fast LPU hardware, free tier available
-2. Gemini - Google's fast cloud API, free tier available  
-3. Ollama - Local inference (slow on CPU, fast with GPU)
+Providers:
+1. Groq - Open-source models (Llama, Qwen, Mistral) with enterprise-grade infrastructure
+   - Demonstrates production-ready performance with proper hardware
+   - Can be self-hosted with appropriate infrastructure (LPU, GPU clusters)
+   - Ultra-fast inference (200-300 tokens/sec)
+   
+2. Gemini - Proprietary cloud models from Google
+   - Closed-source, cloud-only
+   - Fast cloud API with good multilingual support
 """
 
 from functools import lru_cache
@@ -16,7 +20,6 @@ from yonca.config import LLMProvider as LLMProviderEnum
 from yonca.config import settings
 
 from .providers.base import LLMProvider
-from .providers.ollama import OllamaProvider
 
 
 class LLMProviderError(Exception):
@@ -25,34 +28,20 @@ class LLMProviderError(Exception):
     pass
 
 
-def create_ollama_provider(
-    base_url: str | None = None,
-    model: str | None = None,
-    timeout: float = 300.0,  # 5 min for slow CPU inference
-) -> OllamaProvider:
-    """Create an Ollama provider instance.
-    
-    Args:
-        base_url: Ollama server URL (uses config if None)
-        model: Model name (uses config if None)
-        timeout: Request timeout in seconds (default 5 min for CPU)
-        
-    Returns:
-        Configured OllamaProvider instance.
-    """
-    return OllamaProvider(
-        base_url=base_url or settings.ollama_base_url,
-        model=model or settings.ollama_model,
-        timeout=timeout,
-    )
-
-
 def create_groq_provider(
     api_key: str | None = None,
     model: str | None = None,
     timeout: float = 30.0,
 ) -> LLMProvider:
-    """Create a Groq provider instance (ultra-fast cloud).
+    """Create a Groq provider for open-source models.
+    
+    Groq runs open-source models (Llama, Qwen, Mistral) on enterprise-grade
+    infrastructure. This demonstrates how these models perform with proper hardware.
+    
+    Can be self-hosted with:
+    - Groq LPU (Language Processing Unit) hardware
+    - NVIDIA GPU clusters (A100, H100)
+    - Optimized inference servers (vLLM, TGI)
     
     Args:
         api_key: Groq API key (uses config if None)
@@ -85,7 +74,10 @@ def create_gemini_provider(
     model: str | None = None,
     timeout: float = 60.0,
 ) -> LLMProvider:
-    """Create a Gemini provider instance.
+    """Create a Gemini provider for Google's proprietary cloud models.
+    
+    Gemini is a closed-source, cloud-only solution. Unlike open-source models,
+    it cannot be self-hosted or run on your own infrastructure.
     
     Args:
         api_key: Gemini API key (uses config if None)
@@ -131,12 +123,10 @@ def create_llm_provider(
     """
     provider = provider_type or settings.llm_provider
 
-    if provider == LLMProviderEnum.OLLAMA:
-        return create_ollama_provider(**kwargs)
+    if provider == LLMProviderEnum.GROQ:
+        return create_groq_provider(**kwargs)
     elif provider == LLMProviderEnum.GEMINI:
         return create_gemini_provider(**kwargs)
-    elif provider == LLMProviderEnum.GROQ:
-        return create_groq_provider(**kwargs)
     else:
         raise LLMProviderError(f"Unknown LLM provider: {provider}")
 
@@ -157,10 +147,8 @@ def get_llm_provider() -> LLMProvider:
 async def get_fastest_available_provider() -> LLMProvider:
     """Get the fastest available LLM provider with automatic fallback.
     
-    Checks providers in speed order: Groq -> Gemini -> Ollama
+    Checks providers in order: Groq (open-source) -> Gemini (proprietary)
     Returns the first one that passes a health check.
-    
-    This is useful for demos where speed matters more than consistency.
     
     Returns:
         The fastest available provider.
@@ -170,37 +158,28 @@ async def get_fastest_available_provider() -> LLMProvider:
     """
     errors = []
     
-    # Try Groq first (fastest - 200-300 tokens/sec)
+    # Try Groq first (fastest - 200-300 tokens/sec with open-source models)
     if settings.groq_api_key:
         try:
             provider = create_groq_provider()
             if await provider.health_check():
-                print(f"⚡ Using Groq ({provider.model_name}) - ultra-fast cloud")
+                print(f"⚡ Using Groq ({provider.model_name}) - open-source, enterprise-grade")
                 return provider
         except Exception as e:
             errors.append(f"Groq: {e}")
 
-    # Then Gemini (fast cloud)
+    # Then Gemini (proprietary cloud)
     if settings.gemini_api_key:
         try:
             provider = create_gemini_provider()
             if await provider.health_check():
-                print(f"☁️ Using Gemini ({provider.model_name}) - fast cloud")
+                print(f"☁️ Using Gemini ({provider.model_name}) - proprietary cloud")
                 return provider
         except Exception as e:
             errors.append(f"Gemini: {e}")
 
-    # Finally Ollama (local - slow on CPU)
-    try:
-        provider = create_ollama_provider()
-        if await provider.health_check():
-            print(f"🖥️ Using Ollama ({provider.model_name}) - local inference")
-            return provider
-    except Exception as e:
-        errors.append(f"Ollama: {e}")
-
     raise LLMProviderError(
-        f"No LLM providers available. Errors: {'; '.join(errors)}"
+        f"No LLM providers available. Configure YONCA_GROQ_API_KEY or YONCA_GEMINI_API_KEY. Errors: {'; '.join(errors)}"
     )
 
 
@@ -228,39 +207,32 @@ async def check_all_providers_health() -> dict:
     """
     results = {}
     
-    # Check Ollama
-    try:
-        provider = create_ollama_provider()
-        results["ollama"] = {
-            "model": provider.model_name,
-            "healthy": await provider.health_check(),
-            "speed": "slow (CPU) / fast (GPU)",
-        }
-    except Exception as e:
-        results["ollama"] = {"healthy": False, "error": str(e)}
-    
-    # Check Groq
+    # Check Groq (open-source models)
     if settings.groq_api_key:
         try:
             provider = create_groq_provider()
             results["groq"] = {
                 "model": provider.model_name,
                 "healthy": await provider.health_check(),
-                "speed": "ultra-fast (LPU)",
+                "type": "open-source",
+                "speed": "ultra-fast (200-300 tok/s)",
+                "self_hostable": True,
             }
         except Exception as e:
             results["groq"] = {"healthy": False, "error": str(e)}
     else:
         results["groq"] = {"healthy": False, "error": "No API key configured"}
     
-    # Check Gemini
+    # Check Gemini (proprietary cloud)
     if settings.gemini_api_key:
         try:
             provider = create_gemini_provider()
             results["gemini"] = {
                 "model": provider.model_name,
                 "healthy": await provider.health_check(),
-                "speed": "fast (cloud)",
+                "type": "proprietary",
+                "speed": "fast cloud",
+                "self_hostable": False,
             }
         except Exception as e:
             results["gemini"] = {"healthy": False, "error": str(e)}

@@ -15,9 +15,16 @@ from yonca.api.routes import health, chat, models
 async def lifespan(app: FastAPI):
     """Application lifespan events."""
     # Startup
-    print(f"🌿 Yonca AI starting in {settings.deployment_mode.value} mode")
-    print(f"🤖 LLM Provider: {settings.llm_provider.value}")
+    mode_display = "Open-Source" if settings.deployment_mode.value == "open_source" else "Proprietary Cloud"
+    provider_display = "Groq (Open-Source)" if settings.llm_provider.value == "groq" else "Gemini (Proprietary)"
+    
+    print(f"🌿 Yonca AI starting in {mode_display} mode")
+    print(f"🤖 LLM Provider: {provider_display}")
     print(f"📦 Active Model: {settings.active_llm_model}")
+    
+    if settings.llm_provider.value == "groq":
+        print(f"✨ Using open-source models that can be self-hosted")
+        print(f"🚀 Performance: Enterprise-grade with proper infrastructure")
     
     # Show localhost for browsing, even if binding to 0.0.0.0
     display_host = "localhost" if settings.api_host == "0.0.0.0" else settings.api_host

@@ -7,12 +7,27 @@ even after closing the app. Uses the existing Redis infrastructure.
 
 import json
 from datetime import datetime
-from typing import Any, AsyncIterator
+from typing import Any, AsyncIterator, Optional
 
 import redis.asyncio as redis
+import structlog
 
 from yonca.config import settings
 from yonca.data.redis_client import RedisClient
+
+
+log = structlog.get_logger()
+
+# Try to import Redis checkpointer
+try:
+    from langgraph.checkpoint.redis import RedisSaver
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
+    log.warning("Redis checkpointer not available, install langgraph-checkpoint-redis")
+
+# In-memory fallback
+from langgraph.checkpoint.memory import MemorySaver
 
 
 # ============================================================
@@ -541,3 +556,20 @@ def get_thread_manager() -> ThreadManager:
     if _thread_manager is None:
         _thread_manager = ThreadManager(get_checkpointer())
     return _thread_manager
+
+
+def get_checkpointer(redis_url: Optional[str] = None):
+    """Get a checkpointer, falling back to in-memory if Redis unavailable."""
+    if redis_url and REDIS_AVAILABLE:
+        try:
+            import redis
+            # Test connection first
+            r = redis.from_url(redis_url, socket_connect_timeout=2)
+            r.ping()
+            return RedisSaver.from_conn_string(redis_url)
+        except Exception as e:
+            log.warning("Could not connect to Redis, running without checkpointer", error=str(e))
+    
+    # Fallback to in-memory (sessions won't persist across restarts)
+    log.info("Using in-memory checkpointer (sessions won't persist)")
+    return MemorySaver()

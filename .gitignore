@@ -74,4 +74,5 @@ data/
 models/
 
 # Chainlit
-.chainlit/
+.chainlit/translations
+demo-ui/.chainlit/translations/

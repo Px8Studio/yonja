@@ -20,6 +20,10 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
+# Fix engineio packet limit before chainlit imports
+import engineio
+engineio.payload.Payload.max_decode_packets = 500
+
 import chainlit as cl
 from chainlit.input_widget import Select
 from langchain_core.runnables import RunnableConfig

@@ -86,6 +86,11 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 asyncio_mode = "auto"
+markers = [
+    "integration: Integration tests requiring external services",
+    "ollama: Tests requiring local Ollama server",
+    "cloud: Tests requiring cloud API keys (Groq, Gemini)",
+]
 
 [tool.mypy]
 python_version = "3.11"

@@ -283,7 +283,9 @@ yonca/
 - [x] **2.1.2** Define `LLMMessage`, `LLMResponse` models ✅
 - [x] **2.1.3** Create provider factory pattern ✅
 - [x] **2.1.4** Add HTTP connection pooling (`src/yonca/llm/http_pool.py`) ✅
-- [ ] **2.1.5** Write unit tests for providers
+- [x] **2.1.5** Write unit tests for providers ✅
+
+> 📁 **Implementation:** See `tests/unit/test_llm_providers.py` and `tests/unit/test_llm_factory.py`
 
 ---
 
@@ -354,12 +356,14 @@ curl http://localhost:11434/api/chat -d '{
 - [x] **2.5.1** Create `src/yonca/llm/factory.py` ✅
 - [x] **2.5.2** Implement `get_llm_provider()` function ✅
 - [x] **2.5.3** Add Groq, Gemini, Ollama provider creation ✅
-- [ ] **2.5.4** Add fallback logic
-- [ ] **2.5.5** Integration test all providers
+- [x] **2.5.4** Add fallback logic ✅ (`get_fastest_available_provider()`)
+- [x] **2.5.5** Integration test all providers ✅
+
+> 📁 **Implementation:** See `tests/integration/test_llm_integration.py`
 
 ---
 
-### Phase 2 Checklist
+### ~~Phase 2 Checklist~~ ✅ COMPLETE
 
 | Task | Status | Notes |
 |:-----|:------:|:------|
@@ -373,8 +377,12 @@ curl http://localhost:11434/api/chat -d '{
 | Groq provider | ✅ | `providers/groq.py` - OpenAI compatible |
 | Groq streaming | ✅ | Async iterator implemented |
 | Provider factory | ✅ | `factory.py` |
-| Unit tests | ⬜ | |
-| Integration tests | ⬜ | |
+| Fallback logic | ✅ | `get_fastest_available_provider()` |
+| Model roles/registry | ✅ | `model_roles.py`, `models.py` |
+| Unit tests | ✅ | `tests/unit/test_llm_*.py` (43 tests) |
+| Integration tests | ✅ | `tests/integration/test_llm_integration.py` |
+
+> ✅ **Phase 2 Complete!** All LLM providers implemented with full test coverage.
 
 ---
 

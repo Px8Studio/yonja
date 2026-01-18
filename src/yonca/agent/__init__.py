@@ -1,42 +1,57 @@
+# src/yonca/agent/__init__.py
+"""Agent module - LangGraph-based conversation orchestration.
+
+This module provides the core AI agent functionality:
+- State management for conversations
+- Multi-node graph execution
+- Redis-based memory persistence (via langgraph-checkpoint-redis)
+- Intent classification and routing
+
+Example:
+    ```python
+    from yonca.agent import get_agent
+    
+    agent = get_agent()
+    response = await agent.chat(
+        message="Pomidorları nə vaxt suvarmaq lazımdır?",
+        user_id="user_123",
+    )
+    print(response.content)
+    ```
 """
-Yonca AI - LangGraph Agent
-AI-powered farm assistant using LangGraph orchestration.
-"""
-from yonca.agent.graph import (
-    YoncaAgent,
-    create_yonca_agent,
-    create_gemini_agent,
-    create_ollama_agent,
+
+from yonca.agent.graph import AgentResponse, YoncaAgent, get_agent
+from yonca.agent.memory import get_checkpointer, get_checkpointer_async
+from yonca.agent.state import (
     AgentState,
-)
-from yonca.agent.tools import (
-    ALL_TOOLS,
-    get_weather_tool,
-    get_soil_analysis_tool,
-    get_irrigation_recommendation_tool,
-    get_fertilization_recommendation_tool,
-    get_pest_alert_tool,
-    get_harvest_timing_tool,
-    get_livestock_health_tool,
-    get_daily_schedule_tool,
+    Alert,
+    FarmContext,
+    Message,
+    RoutingDecision,
+    Severity,
+    UserContext,
+    UserIntent,
+    WeatherContext,
+    create_initial_state,
 )
 
 __all__ = [
-    # Main Agent
+    # Main agent
     "YoncaAgent",
-    "create_yonca_agent",
+    "AgentResponse",
+    "get_agent",
+    # State
     "AgentState",
-    # Provider-specific factories
-    "create_gemini_agent",
-    "create_ollama_agent",
-    # Tools
-    "ALL_TOOLS",
-    "get_weather_tool",
-    "get_soil_analysis_tool",
-    "get_irrigation_recommendation_tool",
-    "get_fertilization_recommendation_tool",
-    "get_pest_alert_tool",
-    "get_harvest_timing_tool",
-    "get_livestock_health_tool",
-    "get_daily_schedule_tool",
+    "UserIntent",
+    "Severity",
+    "Message",
+    "Alert",
+    "UserContext",
+    "FarmContext",
+    "WeatherContext",
+    "RoutingDecision",
+    "create_initial_state",
+    # Memory
+    "get_checkpointer",
+    "get_checkpointer_async",
 ]

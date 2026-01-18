@@ -1,0 +1,250 @@
+# Docker Compose for Local Development
+# Usage: docker-compose -f docker-compose.local.yml up -d
+
+services:
+  # ================================================
+  # Yonca AI API (Development Mode)
+  # ================================================
+  api:
+    build:
+      context: .
+      target: development
+      dockerfile: Dockerfile
+    container_name: yonca-api
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount source code for hot reload
+      - ./src:/app/src
+      - ./prompts:/app/prompts
+      - ./data:/app/data
+    environment:
+      # Deployment settings
+      - DEPLOYMENT_MODE=local
+      - ENVIRONMENT=development
+      - DEBUG=true
+      
+      # API settings
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:8501
+      
+      # LLM Provider (use Ollama for local)
+      - LLM_PROVIDER=ollama
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=qwen3:4b
+      
+      # Database (SQLite for local development)
+      - DATABASE_URL=sqlite+aiosqlite:///./data/yonca.db
+      
+      # Redis
+      - REDIS_URL=redis://redis:6379/0
+      
+      # Security (development only - change in production!)
+      - JWT_SECRET=dev-secret-change-in-production
+      - JWT_ALGORITHM=HS256
+      - JWT_EXPIRY_HOURS=24
+      
+      # Observability
+      - LOG_LEVEL=DEBUG
+      - LOG_FORMAT=console
+      - PROMETHEUS_ENABLED=true
+      
+      # Rate limiting
+      - RATE_LIMIT_REQUESTS_PER_MINUTE=100
+      - RATE_LIMIT_BURST=150
+    depends_on:
+      - redis
+      - ollama
+    networks:
+      - yonca-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ================================================
+  # Ollama (Local LLM Server)
+  # ================================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: yonca-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+      # Mount local models directory for GGUF imports
+      - ./models:/app/models:ro
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - yonca-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    # Uncomment for GPU support (requires nvidia-docker)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # ================================================
+  # Model Setup (One-time initialization)
+  # Pulls qwen3:4b and imports GGUF models
+  # ================================================
+  model-setup:
+    image: ollama/ollama:latest
+    container_name: yonca-model-setup
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ./models:/app/models:ro
+    environment:
+      - OLLAMA_HOST=ollama:11434
+    networks:
+      - yonca-network
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "🚀 Setting up models..."
+        
+        # Pull Qwen3 (primary model)
+        echo "📥 Pulling qwen3:4b..."
+        ollama pull qwen3:4b
+        
+        # Import ATLLaMA from GGUF if file exists
+        if [ -f /app/models/atllama.v3.5.Q4_K_M.gguf ]; then
+          echo "📦 Importing ATLLaMA from GGUF..."
+          cat > /tmp/Modelfile << 'EOF'
+        FROM /app/models/atllama.v3.5.Q4_K_M.gguf
+        SYSTEM "Sən Azərbaycan fermerlərə kömək edən süni intellekt köməkçisisən. Sualları Azərbaycan dilində cavablandır."
+        PARAMETER temperature 0.7
+        PARAMETER num_ctx 4096
+        EOF
+          ollama create atllama -f /tmp/Modelfile
+          echo "✅ ATLLaMA imported!"
+        else
+          echo "⚠️ ATLLaMA GGUF not found, skipping..."
+        fi
+        
+        echo "📋 Available models:"
+        ollama list
+        echo "✅ Model setup complete!"
+    profiles:
+      - setup  # Only runs with: docker-compose --profile setup up model-setup
+
+  # ================================================
+  # Redis Stack (Caching, Session Storage & LangGraph Checkpointing)
+  # Includes: RedisJSON, RediSearch (required for langgraph-checkpoint-redis)
+  # ================================================
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: yonca-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - yonca-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ================================================
+  # PostgreSQL (Optional - for production-like local testing)
+  # ================================================
+  # Uncomment if you want to use PostgreSQL instead of SQLite
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: yonca-postgres
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   environment:
+  #     - POSTGRES_DB=yonca
+  #     - POSTGRES_USER=yonca
+  #     - POSTGRES_PASSWORD=yonca_dev_password
+  #   networks:
+  #     - yonca-network
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U yonca"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  # ================================================
+  # Chainlit Demo UI
+  # ================================================
+  demo-ui:
+    build:
+      context: .
+      dockerfile: demo-ui/Dockerfile
+      target: development
+    container_name: yonca-demo-ui
+    ports:
+      - "8501:8501"
+    volumes:
+      # Mount source code for hot reload
+      - ./src:/app/src
+      - ./demo-ui:/app/demo-ui
+      - ./prompts:/app/prompts
+      - ./data:/app/data
+    environment:
+      # LLM settings
+      - LLM_PROVIDER=ollama
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=qwen3:4b
+      
+      # Redis for checkpointing
+      - REDIS_URL=redis://redis:6379/0
+      
+      # Database
+      - DATABASE_URL=sqlite+aiosqlite:///./data/yonca.db
+      
+      # Yonca API (optional, for API client pattern)
+      - YONCA_API_URL=http://api:8000
+      
+      # Python path
+      - PYTHONPATH=/app/src:/app/demo-ui
+    depends_on:
+      - redis
+      - ollama
+    networks:
+      - yonca-network
+    restart: unless-stopped
+    profiles:
+      - demo  # Only runs with: docker-compose --profile demo up
+
+# ================================================
+# Networks
+# ================================================
+networks:
+  yonca-network:
+    driver: bridge
+
+# ================================================
+# Volumes
+# ================================================
+volumes:
+  ollama-data:
+    driver: local
+  redis-data:
+    driver: local
+  # postgres-data:
+  #   driver: local

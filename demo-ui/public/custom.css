@@ -1,0 +1,229 @@
+/* Yonca AI Custom CSS
+ * Styling for the Chainlit demo UI
+ */
+
+/* ============================================
+ * Color Palette (Yonca Brand)
+ * ============================================ */
+:root {
+    --yonca-green-primary: #2e7d32;
+    --yonca-green-light: #4caf50;
+    --yonca-green-dark: #1b5e20;
+    --yonca-earth-brown: #5d4037;
+    --yonca-sky-blue: #1976d2;
+    --yonca-sun-yellow: #ffc107;
+    --yonca-cream: #fafafa;
+}
+
+/* ============================================
+ * Chat Container
+ * ============================================ */
+.cl-chat-container {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8f5e9 100%);
+}
+
+/* ============================================
+ * Messages
+ * ============================================ */
+
+/* User messages */
+.cl-message[data-author="user"] {
+    background-color: var(--yonca-sky-blue) !important;
+}
+
+/* Bot messages */
+.cl-message[data-author="Yonca"] {
+    background-color: white;
+    border-left: 4px solid var(--yonca-green-primary);
+}
+
+/* System messages */
+.cl-message[data-author="Sistem"] {
+    background-color: #fff8e1;
+    border-left: 4px solid var(--yonca-sun-yellow);
+    font-size: 0.9em;
+}
+
+/* ============================================
+ * Header / Logo Area
+ * ============================================ */
+.cl-header {
+    background: linear-gradient(90deg, var(--yonca-green-dark) 0%, var(--yonca-green-primary) 100%);
+}
+
+.cl-header-title {
+    color: white !important;
+    font-weight: 600;
+}
+
+/* ============================================
+ * Steps (LangGraph Node Visualization)
+ * ============================================ */
+.cl-step {
+    background-color: #e8f5e9;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin: 4px 0;
+}
+
+.cl-step-icon {
+    color: var(--yonca-green-primary);
+}
+
+.cl-step-name {
+    font-weight: 500;
+    color: var(--yonca-earth-brown);
+}
+
+/* Step states */
+.cl-step[data-state="running"] {
+    border-left: 3px solid var(--yonca-sun-yellow);
+    animation: pulse 1.5s infinite;
+}
+
+.cl-step[data-state="completed"] {
+    border-left: 3px solid var(--yonca-green-light);
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* ============================================
+ * Input Area
+ * ============================================ */
+.cl-input-container {
+    border-top: 2px solid var(--yonca-green-light);
+}
+
+.cl-input-textarea {
+    border-radius: 12px;
+    border: 2px solid #e0e0e0;
+}
+
+.cl-input-textarea:focus {
+    border-color: var(--yonca-green-primary);
+    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+}
+
+/* Send button */
+.cl-send-button {
+    background-color: var(--yonca-green-primary) !important;
+    border-radius: 50%;
+}
+
+.cl-send-button:hover {
+    background-color: var(--yonca-green-dark) !important;
+}
+
+/* ============================================
+ * Settings Panel (Farm Selector)
+ * ============================================ */
+.cl-settings-panel {
+    background-color: white;
+    border-left: 4px solid var(--yonca-green-primary);
+}
+
+.cl-settings-title {
+    color: var(--yonca-green-dark);
+    font-weight: 600;
+}
+
+/* Select dropdown */
+.cl-select {
+    border-radius: 8px;
+    border: 2px solid #e0e0e0;
+}
+
+.cl-select:focus {
+    border-color: var(--yonca-green-primary);
+}
+
+/* ============================================
+ * Feedback Buttons
+ * ============================================ */
+.cl-feedback-button {
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.cl-feedback-button:hover {
+    transform: scale(1.1);
+}
+
+.cl-feedback-button[data-feedback="positive"]:hover {
+    background-color: #c8e6c9;
+}
+
+.cl-feedback-button[data-feedback="negative"]:hover {
+    background-color: #ffcdd2;
+}
+
+/* ============================================
+ * Welcome Message
+ * ============================================ */
+.cl-welcome-screen {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+}
+
+/* ============================================
+ * Typography (Azerbaijani Support)
+ * ============================================ */
+body {
+    font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Ensure proper rendering of Azerbaijani characters */
+.cl-message-content {
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+}
+
+/* Code blocks */
+.cl-message-content pre {
+    background-color: #263238;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+/* ============================================
+ * Responsive Adjustments
+ * ============================================ */
+@media (max-width: 768px) {
+    .cl-message {
+        padding: 12px;
+    }
+    
+    .cl-settings-panel {
+        width: 100%;
+    }
+}
+
+/* ============================================
+ * Accessibility
+ * ============================================ */
+.cl-message:focus-visible,
+.cl-send-button:focus-visible,
+.cl-feedback-button:focus-visible {
+    outline: 3px solid var(--yonca-green-primary);
+    outline-offset: 2px;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .cl-message[data-author="Yonca"] {
+        border-left-width: 6px;
+    }
+    
+    .cl-step {
+        border: 2px solid var(--yonca-green-dark);
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .cl-step[data-state="running"] {
+        animation: none;
+    }
+}

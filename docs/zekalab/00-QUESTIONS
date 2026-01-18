@@ -1,0 +1,112 @@
+## Questions for Digital Umbrella IT Team
+
+Based on my review of your zekalab documentation, I've identified several areas where you've made assumptions that need validation. Here are the questions organized by category:
+
+---
+
+### 🔐 **1. Authentication & Authorization**
+
+| # | Question | Why It Matters |
+|---|----------|----------------|
+| 1.1 | **What is the exact format and structure of the JWT token** issued by mygov ID? (Claims, expiration, signing algorithm) | Your architecture assumes you can validate these tokens—you need the public key or validation endpoint |
+| 1.2 | **Is there a token validation endpoint** we can call, or should we validate JWTs locally with a public key? | Determines if you need network calls for every auth check |
+| 1.3 | **What user claims are included in the token?** (user_id, region, subscription tier, farm IDs?) | Affects how you map to synthetic profiles and personalize responses |
+| 1.4 | **How should the sidecar handle token refresh** during long chat sessions? | Critical for session management |
+| 1.5 | **Is there a test/sandbox mygov ID environment** we can use for integration testing? | Development without this is difficult |
+
+---
+
+### 📊 **2. EKTIS & Data Schema**
+
+| # | Question | Why It Matters |
+|---|----------|----------------|
+| 2.1 | **Can you provide the actual EKTIS database schema** (or a sanitized version) for parcels, sowing declarations, and NDVI readings? | Your synthetic engine mirrors an *assumed* schema—mismatches will break handoff |
+| 2.2 | **What is the format of parcel IDs?** (You assumed `AZ-{region}-{number}`) | Need exact format for realistic synthetic data |
+| 2.3 | **What crop types and codes are used in EKTIS?** | Your Azerbaijani crop names may not match their system codes |
+| 2.4 | **How frequently is NDVI/satellite data updated?** (Daily, weekly, on-demand?) | Affects your synthetic time-series generation |
+| 2.5 | **What is the structure of sowing declaration status values?** (PENDING, CONFIRMED, REJECTED, etc.) | Your assumptions need validation |
+
+---
+
+### 📱 **3. Mobile App & UX Integration**
+
+| # | Question | Why It Matters |
+|---|----------|----------------|
+| 3.1 | **What mobile framework does Yonca use?** (Flutter, React Native, Native Android/iOS) | Affects SSE streaming support and integration approach |
+| 3.2 | **Can you share the Figma/design system files** or at minimum exact hex codes, typography, and spacing guidelines? | You've reverse-engineered colors (#2E7D32)—need confirmation |
+| 3.3 | **How do you handle offline/low-connectivity scenarios today?** | Your "lightweight model concept" needs to align with their existing patterns |
+| 3.4 | **Is WebSocket or SSE supported in the mobile app**, or do you need request-response only? | Critical for the "typing effect" streaming you've designed |
+| 3.5 | **What is the maximum payload size for API responses?** | Your chat responses could be truncated |
+
+---
+
+### ☁️ **4. Deployment & Infrastructure**
+
+| # | Question | Why It Matters |
+|---|----------|----------------|
+| 4.1 | **Where should the sidecar be hosted?** Your infrastructure (Azure/AWS), standalone Docker, or our choice (Render.com)? | Your dual-mode design assumes flexibility—need confirmation |
+| 4.2 | **Are there data residency requirements?** Must data stay in Azerbaijan? | Affects cloud provider choice (Gemini API sends data to Google) |
+| 4.3 | **What CI/CD and container registry do you use?** (GitHub Actions, GitLab, Azure DevOps?) | For handoff and deployment automation |
+| 4.4 | **Are there firewall/network restrictions** for the sidecar to call external APIs (weather, LLM)? | Local mode may be required if external calls are blocked |
+| 4.5 | **What monitoring/logging stack do you use?** (Prometheus, Grafana, ELK, Azure Monitor?) | Your observability design should integrate with theirs |
+
+---
+
+### 🌐 **5. API Contract & Integration**
+
+| # | Question | Why It Matters |
+|---|----------|----------------|
+| 5.1 | **What is your existing API versioning strategy?** (`/api/v1/`, headers, query params?) | Your `/yonca-ai/chat` endpoint should follow their conventions |
+| 5.2 | **Do you prefer REST or GraphQL** for the sidecar API? | You've designed for REST but mentioned GraphQL as an option |
+| 5.3 | **What error response format do you use?** (Standard structure, error codes?) | Your error responses should match their existing patterns |
+| 5.4 | **Is there an API gateway in front of services?** (Kong, Apigee, AWS API Gateway?) | May affect how auth and rate limiting work |
+| 5.5 | **What correlation/request ID format do you use** for tracing across services? | Important for debugging production issues |
+
+---
+
+### 🗣️ **6. Azerbaijani Language & Content**
+
+| # | Question | Why It Matters |
+|---|----------|----------------|
+| 6.1 | **Do farmers use formal or informal Azerbaijani** in the app? (siz vs sən) | Affects chatbot tone and prompt engineering |
+| 6.2 | **Are there regional dialects we should support?** (Baku, Ganja, rural variations) | May need dialect-aware intent detection |
+| 6.3 | **Do you have an existing glossary** of agricultural terms in Azerbaijani? | Your chatbot vocabulary needs validation |
+| 6.4 | **How do farmers typically phrase queries?** Can you share example support tickets or FAQ data? | Improves intent detection accuracy |
+
+---
+
+### 📋 **7. Business Logic & Rules**
+
+| # | Question | Why It Matters |
+|---|----------|----------------|
+| 7.1 | **What agronomic guidelines/rulebase do you currently use** for recommendations? | Your "agronomy rulebook" is invented—should match their standards |
+| 7.2 | **What are the subsidy application deadlines and rules** for different crop types? | Critical for subsidy-related advice |
+| 7.3 | **What liability/disclaimer requirements exist** for AI agricultural advice? | Affects response formatting and trust signals |
+| 7.4 | **Are there topics the AI should NEVER advise on?** (pesticide brands, financial advice, medical/vet?) | Need explicit guardrails list |
+
+---
+
+### 🎯 **8. Success Criteria Clarification**
+
+| # | Question | Why It Matters |
+|---|----------|----------------|
+| 8.1 | **How will "≥90% logical accuracy" be measured?** Will you provide a test dataset or evaluation rubric? | Your testing strategy depends on this |
+| 8.2 | **What specific scenarios should the 5 farm profiles cover?** You mentioned wheat, livestock, orchard—are there must-haves? | Ensures you don't miss required scenarios |
+| 8.3 | **What does "UX compatibility" mean specifically?** Visual match? API format? Navigation placement? | 20% of scoring—needs clarity |
+| 8.4 | **Is there a demo timeline or presentation format preference?** (Live demo, recorded video, specific duration?) | For demo preparation |
+
+---
+
+### ⚠️ **Critical Assumptions Requiring Immediate Validation**
+
+These are the **highest-risk assumptions** that could require significant rework:
+
+1. **JWT token format and validation** — If wrong, authentication fails completely
+2. **EKTIS schema structure** — Mismatches mean "hot-swap to real data" won't work
+3. **SSE streaming support in mobile app** — May need to redesign response delivery
+4. **Data residency requirements** — Cloud LLM mode may be impossible
+5. **Offline model concept feasibility** — They may have specific requirements you haven't addressed
+
+---
+
+Would you like me to format these questions differently (e.g., as a formal document, email draft, or prioritized checklist)?

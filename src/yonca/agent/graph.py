@@ -1,227 +1,418 @@
+# src/yonca/agent/graph.py
+"""LangGraph main graph for the Yonca AI agent.
+
+Defines the conversation flow as a state machine with nodes
+for routing, context loading, specialist processing, and validation.
 """
-Yonca AI - LangGraph Agent
-LangGraph-based AI agent for intelligent farm planning.
-"""
-from datetime import date
-from typing import Annotated, TypedDict, Sequence
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
-from langgraph.graph import StateGraph, END
-from langgraph.prebuilt import ToolNode
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-from yonca.agent.tools import ALL_TOOLS
+from typing import Any, Literal
 
+from langgraph.graph import END, StateGraph
+from langgraph.checkpoint.base import BaseCheckpointSaver
 
-# System prompt in Azerbaijani
-SYSTEM_PROMPT = """Sən Yonca - Azərbaycan kənd təsərrüfatı üçün AI köməkçisisən.
-
-**Sənin vəzifən:**
-- Fermerlərə gündəlik iş planlaması ilə kömək etmək
-- Hava, torpaq və bitki məlumatlarına əsasən tövsiyələr vermək
-- Suvarma, gübrələmə, zərərvericilərlə mübarizə barədə məsləhət vermək
-- Heyvandarlıq qayğısı haqqında məlumat vermək
-- Məhsul yığımı vaxtını müəyyən etmək
-
-**Mühüm qaydalar:**
-1. Həmişə Azərbaycan dilində cavab ver
-2. Fermerə dost və hörmətli ol
-3. Konkret və praktik tövsiyələr ver
-4. Alətlərdən istifadə edərək dəqiq məlumat əldə et
-5. Cavabları sadə və başa düşülən formada ver
-6. Əgər məlumat yoxdursa, düzgün sorğu ver
-
-**Mövcud təsərrüfatlar:**
-- scenario-wheat: Buğda təsərrüfatı
-- scenario-livestock: Heyvandarlıq ferması  
-- scenario-orchard: Meyvə bağı
-- scenario-vegetable: Tərəvəz təsərrüfatı
-- scenario-mixed: Qarışıq təsərrüfat
-- scenario-intensive: İntensiv tərəvəzçilik
-- scenario-hazelnut: Fındıq bağı
-
-Fermer heç bir təsərrüfat göstərməsə, ilk öncə hansı təsərrüfatla maraqlandığını soruş."""
+from yonca.agent.memory import get_checkpointer
+from yonca.agent.nodes.agronomist import agronomist_node
+from yonca.agent.nodes.context_loader import context_loader_node, route_after_context
+from yonca.agent.nodes.supervisor import route_from_supervisor, supervisor_node
+from yonca.agent.nodes.validator import validator_node
+from yonca.agent.nodes.weather import weather_node
+from yonca.agent.state import AgentState, create_initial_state
 
 
-class AgentState(TypedDict):
-    """State for the LangGraph agent."""
-    messages: Annotated[Sequence[BaseMessage], "The conversation messages"]
-    farm_context: str  # Current farm context if selected
+# ============================================================
+# Graph Construction
+# ============================================================
 
-
-def create_yonca_agent(llm):
-    """
-    Create the LangGraph agent for Yonca AI.
+def create_agent_graph() -> StateGraph:
+    """Create the main agent graph.
     
-    Args:
-        llm: The language model to use (OpenAI, Azure, Anthropic, etc.)
-        
+    Graph Structure:
+    ```
+    START
+      │
+      ▼
+    supervisor ──┬──> end (greeting/off-topic handled)
+                 │
+                 ▼
+           context_loader
+                 │
+                 ├──> agronomist ──> validator ──> end
+                 │
+                 └──> weather ──────> validator ──> end
+    ```
+    
     Returns:
-        Compiled LangGraph runnable
+        Configured StateGraph ready for execution.
     """
-    # Bind tools to the LLM
-    llm_with_tools = llm.bind_tools(ALL_TOOLS)
-    
-    # Define the agent node
-    def agent_node(state: AgentState) -> dict:
-        """Process messages and decide on actions."""
-        messages = state["messages"]
-        
-        # Add system prompt if not present
-        if not messages or not isinstance(messages[0], SystemMessage):
-            messages = [SystemMessage(content=SYSTEM_PROMPT)] + list(messages)
-        
-        response = llm_with_tools.invoke(messages)
-        return {"messages": [response]}
-    
-    # Define routing logic
-    def should_continue(state: AgentState) -> str:
-        """Determine whether to continue to tools or end."""
-        messages = state["messages"]
-        last_message = messages[-1]
-        
-        # If the LLM made tool calls, route to tools
-        if hasattr(last_message, 'tool_calls') and last_message.tool_calls:
-            return "tools"
-        
-        # Otherwise, end
-        return END
-    
-    # Build the graph
-    workflow = StateGraph(AgentState)
+    # Create the graph
+    graph = StateGraph(AgentState)
     
     # Add nodes
-    workflow.add_node("agent", agent_node)
-    workflow.add_node("tools", ToolNode(ALL_TOOLS))
+    graph.add_node("supervisor", supervisor_node)
+    graph.add_node("context_loader", context_loader_node)
+    graph.add_node("agronomist", agronomist_node)
+    graph.add_node("weather", weather_node)
+    graph.add_node("validator", validator_node)
     
     # Set entry point
-    workflow.set_entry_point("agent")
+    graph.set_entry_point("supervisor")
     
-    # Add conditional edges
-    workflow.add_conditional_edges(
-        "agent",
-        should_continue,
+    # Conditional routing from supervisor
+    graph.add_conditional_edges(
+        "supervisor",
+        route_from_supervisor,
         {
-            "tools": "tools",
-            END: END,
-        }
+            "end": END,
+            "context_loader": "context_loader",
+            "agronomist": "agronomist",
+            "weather": "weather",
+        },
     )
     
-    # Add edge from tools back to agent
-    workflow.add_edge("tools", "agent")
+    # Route from context loader to specialist
+    graph.add_conditional_edges(
+        "context_loader",
+        route_after_context,
+        {
+            "agronomist": "agronomist",
+            "weather": "weather",
+        },
+    )
     
-    # Compile the graph
-    return workflow.compile()
+    # Specialist nodes go to validator
+    graph.add_edge("agronomist", "validator")
+    graph.add_edge("weather", "validator")
+    
+    # Validator goes to end
+    graph.add_edge("validator", END)
+    
+    return graph
 
+
+def compile_agent_graph(checkpointer: BaseCheckpointSaver | None = None):
+    """Compile the agent graph with optional checkpointing.
+    
+    Args:
+        checkpointer: LangGraph checkpointer for state persistence
+                     (RedisSaver, MemorySaver, or any BaseCheckpointSaver)
+        
+    Returns:
+        Compiled graph ready for invocation.
+    """
+    graph = create_agent_graph()
+    
+    if checkpointer:
+        return graph.compile(checkpointer=checkpointer)
+    
+    return graph.compile()
+
+
+# ============================================================
+# Graph Execution
+# ============================================================
 
 class YoncaAgent:
-    """
-    High-level wrapper for the Yonca AI agent.
-    Supports multiple LLM backends.
+    """Main Yonca AI agent interface.
+    
+    Provides a clean API for interacting with the agent graph,
+    handling thread management and state persistence.
+    
+    Example:
+        ```python
+        agent = YoncaAgent()
+        
+        # Start a new conversation
+        response = await agent.chat(
+            message="Pomidorları nə vaxt suvarmaq lazımdır?",
+            user_id="user_123",
+        )
+        print(response.content)
+        
+        # Continue the conversation
+        response = await agent.chat(
+            message="Bəs gübrə?",
+            thread_id=response.thread_id,
+        )
+        ```
     """
     
-    def __init__(self, llm=None, llm_provider: str = "openai", api_key: str = None, model_name: str = None):
-        """
-        Initialize the Yonca AI agent.
+    def __init__(self, use_checkpointer: bool = True):
+        """Initialize the agent.
         
         Args:
-            llm: Optional pre-configured LLM instance
-            llm_provider: Provider name ("openai", "azure", "anthropic", "ollama")
-            api_key: API key for the provider
-            model_name: Model name to use
+            use_checkpointer: Whether to enable state persistence
         """
-        if llm:
-            self.llm = llm
-        else:
-            self.llm = self._create_llm(llm_provider, api_key, model_name)
-        
-        self.graph = create_yonca_agent(self.llm)
-        self.conversation_history: list[BaseMessage] = []
+        self.use_checkpointer = use_checkpointer
+        self._graph = None
+        self._checkpointer = None
     
-    def _create_llm(self, provider: str, api_key: str = None, model_name: str = None):
-        """Create an LLM instance based on provider."""
-        if provider == "gemini":
-            from langchain_google_genai import ChatGoogleGenerativeAI
-            return ChatGoogleGenerativeAI(
-                model=model_name or "gemini-2.0-flash",
-                google_api_key=api_key,
-                temperature=0.7,
-            )
+    async def _get_graph(self):
+        """Get or create the compiled graph."""
+        if self._graph is None:
+            if self.use_checkpointer:
+                self._checkpointer = get_checkpointer()
+                self._graph = compile_agent_graph(self._checkpointer)
+            else:
+                self._graph = compile_agent_graph()
         
-        elif provider == "ollama":
-            from langchain_ollama import ChatOllama
-            return ChatOllama(
-                model=model_name or "qwen3:8b",  # Best for Azerbaijani/Turkic
-                temperature=0.7,
-            )
-        
-        else:
-            raise ValueError(f"Unknown LLM provider: {provider}. Supported: gemini, ollama")
+        return self._graph
     
-    def chat(self, message: str) -> str:
-        """
-        Send a message and get a response.
+    async def chat(
+        self,
+        message: str,
+        thread_id: str | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
+        language: str = "az",
+    ) -> "AgentResponse":
+        """Send a message and get a response.
         
         Args:
-            message: User message in Azerbaijani
+            message: The user's message
+            thread_id: Conversation thread ID (creates new if None)
+            user_id: Authenticated user ID (for context loading)
+            session_id: API session ID
+            language: Response language (default: Azerbaijani)
             
         Returns:
-            AI response in Azerbaijani
+            AgentResponse with the response and metadata
         """
-        # Add user message to history
-        self.conversation_history.append(HumanMessage(content=message))
+        import uuid
         
-        # Run the agent
-        result = self.graph.invoke({
-            "messages": self.conversation_history,
-            "farm_context": "",
-        })
+        # Create or use thread ID
+        if thread_id is None:
+            thread_id = f"thread_{uuid.uuid4().hex[:12]}"
         
-        # Extract final AI message
-        final_messages = result.get("messages", [])
+        # Create initial state
+        initial_state = create_initial_state(
+            thread_id=thread_id,
+            user_input=message,
+            user_id=user_id,
+            session_id=session_id,
+            language=language,
+        )
         
-        # Find the last AI message that isn't a tool call
-        ai_response = None
-        for msg in reversed(final_messages):
-            if isinstance(msg, AIMessage) and msg.content and not getattr(msg, 'tool_calls', []):
-                ai_response = msg.content
-                break
+        # Run the graph
+        graph = await self._get_graph()
         
-        if ai_response:
-            # Add AI response to history (for context)
-            self.conversation_history.append(AIMessage(content=ai_response))
-            return ai_response
+        config = {
+            "configurable": {
+                "thread_id": thread_id,
+            }
+        }
         
-        return "Bağışlayın, sorğunuzu başa düşə bilmədim. Zəhmət olmasa yenidən cəhd edin."
+        final_state = await graph.ainvoke(initial_state, config=config)
+        
+        # Extract response
+        response_content = final_state.get("current_response", "")
+        
+        return AgentResponse(
+            content=response_content,
+            thread_id=thread_id,
+            intent=final_state.get("intent"),
+            intent_confidence=final_state.get("intent_confidence", 0.0),
+            nodes_visited=final_state.get("nodes_visited", []),
+            alerts=[a for a in final_state.get("alerts", [])],
+            matched_rules=[r for r in final_state.get("matched_rules", [])],
+            error=final_state.get("error"),
+        )
     
-    def reset(self):
-        """Reset conversation history."""
-        self.conversation_history = []
+    async def stream_chat(
+        self,
+        message: str,
+        thread_id: str | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
+        language: str = "az",
+    ):
+        """Stream a response token by token.
+        
+        Yields tokens as they are generated for real-time display.
+        
+        Args:
+            message: The user's message
+            thread_id: Conversation thread ID
+            user_id: Authenticated user ID
+            session_id: API session ID
+            language: Response language
+            
+        Yields:
+            Dict with 'type' (token/metadata/final) and content
+        """
+        import uuid
+        
+        if thread_id is None:
+            thread_id = f"thread_{uuid.uuid4().hex[:12]}"
+        
+        initial_state = create_initial_state(
+            thread_id=thread_id,
+            user_input=message,
+            user_id=user_id,
+            session_id=session_id,
+            language=language,
+        )
+        
+        graph = await self._get_graph()
+        
+        config = {
+            "configurable": {
+                "thread_id": thread_id,
+            }
+        }
+        
+        # Stream execution
+        async for event in graph.astream(initial_state, config=config):
+            # Yield intermediate states
+            for node_name, node_output in event.items():
+                if node_name == "agronomist":
+                    # Check for response
+                    if "current_response" in node_output:
+                        yield {
+                            "type": "response",
+                            "content": node_output["current_response"],
+                            "node": node_name,
+                        }
+                elif node_name == "weather":
+                    if "current_response" in node_output:
+                        yield {
+                            "type": "response",
+                            "content": node_output["current_response"],
+                            "node": node_name,
+                        }
+                elif node_name == "supervisor":
+                    if "current_response" in node_output:
+                        yield {
+                            "type": "response",
+                            "content": node_output["current_response"],
+                            "node": node_name,
+                        }
+                elif node_name == "validator":
+                    if "matched_rules" in node_output and node_output["matched_rules"]:
+                        yield {
+                            "type": "rules",
+                            "content": node_output["matched_rules"],
+                            "node": node_name,
+                        }
+        
+        yield {
+            "type": "final",
+            "thread_id": thread_id,
+        }
     
-    def get_history(self) -> list[dict]:
-        """Get conversation history as list of dicts."""
-        history = []
-        for msg in self.conversation_history:
-            if isinstance(msg, HumanMessage):
-                history.append({"role": "user", "content": msg.content})
-            elif isinstance(msg, AIMessage):
-                history.append({"role": "assistant", "content": msg.content})
-        return history
+    async def get_conversation_history(
+        self,
+        thread_id: str,
+    ) -> list[dict]:
+        """Get conversation history for a thread.
+        
+        Uses LangGraph's checkpointer to retrieve the latest state.
+        
+        Args:
+            thread_id: Thread ID
+            
+        Returns:
+            List of messages
+        """
+        if not self._checkpointer:
+            return []
+        
+        try:
+            # Use LangGraph's standard interface
+            config = {"configurable": {"thread_id": thread_id}}
+            checkpoint_tuple = await self._checkpointer.aget_tuple(config)
+            if checkpoint_tuple and checkpoint_tuple.checkpoint:
+                return checkpoint_tuple.checkpoint.get("channel_values", {}).get("messages", [])
+        except Exception:
+            pass
+        
+        return []
+    
+    async def delete_conversation(self, thread_id: str) -> bool:
+        """Delete a conversation and its history.
+        
+        Uses LangGraph's checkpointer to delete thread data.
+        
+        Args:
+            thread_id: Thread ID to delete
+            
+        Returns:
+            True if deleted successfully
+        """
+        if not self._checkpointer:
+            return False
+        
+        try:
+            # Use LangGraph's standard interface - adelete_thread takes thread_id directly
+            await self._checkpointer.adelete_thread(thread_id)
+            return True
+        except Exception:
+            return False
 
 
-# Convenience function for creating agents
-def create_gemini_agent(api_key: str = None, model: str = "gemini-2.0-flash") -> YoncaAgent:
-    """Create a Yonca agent using Google Gemini."""
-    return YoncaAgent(llm_provider="gemini", api_key=api_key, model_name=model)
+class AgentResponse:
+    """Response from the Yonca agent."""
+    
+    def __init__(
+        self,
+        content: str,
+        thread_id: str,
+        intent: Any = None,
+        intent_confidence: float = 0.0,
+        nodes_visited: list[str] | None = None,
+        alerts: list[dict] | None = None,
+        matched_rules: list[dict] | None = None,
+        error: str | None = None,
+    ):
+        self.content = content
+        self.thread_id = thread_id
+        self.intent = intent
+        self.intent_confidence = intent_confidence
+        self.nodes_visited = nodes_visited or []
+        self.alerts = alerts or []
+        self.matched_rules = matched_rules or []
+        self.error = error
+    
+    @property
+    def has_alerts(self) -> bool:
+        """Check if there are any alerts."""
+        return len(self.alerts) > 0
+    
+    @property
+    def has_errors(self) -> bool:
+        """Check if there were any errors."""
+        return self.error is not None
+    
+    def to_dict(self) -> dict:
+        """Convert to dictionary."""
+        return {
+            "content": self.content,
+            "thread_id": self.thread_id,
+            "intent": self.intent.value if self.intent else None,
+            "intent_confidence": self.intent_confidence,
+            "nodes_visited": self.nodes_visited,
+            "alerts": self.alerts,
+            "matched_rules": self.matched_rules,
+            "error": self.error,
+        }
 
 
-def create_ollama_agent(model: str = "qwen3:8b") -> YoncaAgent:
+# ============================================================
+# Singleton Agent Instance
+# ============================================================
+
+_agent: YoncaAgent | None = None
+
+
+def get_agent(use_checkpointer: bool = True) -> YoncaAgent:
+    """Get the singleton agent instance.
+    
+    Args:
+        use_checkpointer: Whether to use Redis checkpointing
+        
+    Returns:
+        YoncaAgent instance
     """
-    Create a Yonca agent using local Ollama.
-    
-    Recommended models for Azerbaijani:
-    - qwen3:8b    - Best for Azerbaijani/Turkic languages
-    - qwen2.5:7b  - Good balance of speed and quality
-    - qwen2.5:14b - Higher quality, slower
-    - aya:8b      - Cohere's multilingual model
-    """
-    return YoncaAgent(llm_provider="ollama", model_name=model)
+    global _agent
+    if _agent is None:
+        _agent = YoncaAgent(use_checkpointer=use_checkpointer)
+    return _agent

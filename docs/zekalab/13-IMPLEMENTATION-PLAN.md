@@ -765,14 +765,21 @@ rules:
 
 #### Tasks
 
-- [ ] **6.1.1** Set up Chainlit project (`demo-ui/`)
-- [ ] **6.1.2** Implement native LangGraph integration with `cl.LangchainCallbackHandler`
-- [ ] **6.1.3** Configure `thread_id` for session persistence via `cl.context.session.id`
-- [ ] **6.1.4** Add farm profile selector using `cl.ChatSettings`
-- [ ] **6.1.5** Apply Azerbaijani localization
-- [ ] **6.1.6** Create Dockerfile for demo
+- [x] **6.1.1** Set up Chainlit project (`demo-ui/`) ✅
+- [x] **6.1.2** Implement native LangGraph integration with `RunnableConfig` ✅
+- [x] **6.1.3** Configure `thread_id` for session persistence via `cl.context.session.id` ✅
+- [x] **6.1.4** Add farm profile selector using `cl.ChatSettings` ✅
+- [x] **6.1.5** Apply Azerbaijani localization ✅
+- [x] **6.1.6** Create Dockerfile for demo ✅
 
-> 📖 **Implementation Guide:** See [11-DEMO-UI-SPEC.md](11-DEMO-UI-SPEC.md) Section 4.1 for the Chainlit + LangGraph integration pattern.
+> 📁 **Implementation:** See `demo-ui/` directory
+>
+> **Features:**
+> - Chainlit 2.9.x with native LangGraph 1.x integration
+> - Farm profile selector (5 synthetic profiles)
+> - Azerbaijani UI localization
+> - Session persistence via `cl.user_session`
+> - Docker support with `demo-ui/Dockerfile`
 
 ---
 
@@ -782,12 +789,14 @@ rules:
 
 #### Tasks
 
-- [ ] **6.2.1** Finalize `docker-compose.local.yml`
-- [ ] **6.2.2** Add Ollama service with GPU support
-- [ ] **6.2.3** Add PostgreSQL service
-- [ ] **6.2.4** Add Redis service
-- [ ] **6.2.5** Create startup script
-- [ ] **6.2.6** Document local setup
+- [x] **6.2.1** Finalize `docker-compose.local.yml` ✅
+- [x] **6.2.2** Add Ollama service with GPU support ✅
+- [x] **6.2.3** Add PostgreSQL service ✅
+- [x] **6.2.4** Add Redis service ✅
+- [x] **6.2.5** Create startup script ✅
+- [x] **6.2.6** Document local setup ✅
+
+> 📁 **Implementation:** See `docker-compose.local.yml` and `QUICK-START.md`
 
 ---
 

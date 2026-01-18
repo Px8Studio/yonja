@@ -36,10 +36,12 @@ mindmap
 
 | Environment | Purpose | Data | LLM Model | Infrastructure |
 |:------------|:--------|:-----|:----------|:---------------|
-| **Local** | Developer workstation | Mock/Synthetic | Qwen3-4B Q4 | Docker Compose |
-| **Dev** | Feature development | Synthetic only | Qwen3-4B Q4 | Single node |
-| **Staging** | Pre-production testing | Synthetic + load | Qwen3-4B Q4 | Prod-like |
-| **Production** | Live service | Synthetic (prod) | Qwen3-4B Q4 | HA cluster |
+| **Local** | Developer workstation | Mock/Synthetic | Ollama (qwen3:4b / atllama) | Docker Compose |
+| **Dev** | Feature development | Synthetic only | Groq (llama-4-maverick) | Single node |
+| **Staging** | Pre-production testing | Synthetic + load | Groq (llama-4-maverick) | Prod-like |
+| **Production** | Live service | Synthetic (prod) | Groq (llama-4-maverick) | HA cluster |
+
+> 💡 **Model Strategy:** Use Ollama locally for free development, Groq cloud for deployment. See [12-DUAL-MODE-DEPLOYMENT.md](12-DUAL-MODE-DEPLOYMENT.md) for model selection guidance.
 
 ### 2.2 Environment Configuration
 

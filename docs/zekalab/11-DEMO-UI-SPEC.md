@@ -161,12 +161,14 @@ demo-ui/
 
 ```txt
 # requirements.txt
-chainlit>=1.0.0
-httpx>=0.26.0
+chainlit>=2.9.0
+httpx>=0.27.0
 pydantic>=2.5.0
 python-dotenv>=1.0.0
 jinja2>=3.1.2
 structlog>=24.1.0
+langchain-core>=1.2.0
+langgraph>=1.0.0
 ```
 
 ### 3.3 Chainlit Configuration

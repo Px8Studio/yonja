@@ -89,14 +89,6 @@ See **[12-DUAL-MODE-DEPLOYMENT.md](12-DUAL-MODE-DEPLOYMENT.md)** for full detail
 
 ---
 
-### Quick Reference
-
-| Document | Purpose |
-|:---------|:--------|
-| **[MODEL-SELECTION-QUICK-REF.md](MODEL-SELECTION-QUICK-REF.md)** | Which model for which task, testing commands |
-
----
-
 ## 📋 Document Cross-References
 
 To avoid duplication, content is organized as follows:

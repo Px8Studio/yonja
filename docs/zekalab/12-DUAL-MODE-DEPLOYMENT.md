@@ -112,6 +112,41 @@ graph TB
 
 > 💡 **Gold Standard (70B)** = Enterprise-grade reasoning. See [15-HARDWARE-JUSTIFICATION.md](15-HARDWARE-JUSTIFICATION.md) for why this matters.
 
+### 2.2 Model Selection Quick Reference
+
+> 🏆 **2026 Gold Standard:** Llama 4 Maverick is a Mixture-of-Experts (MoE) model with 17B active parameters. It replaces the previous two-model stack (Qwen + Llama) with a single, all-in-one solution.
+
+#### TL;DR - Which Model to Use?
+
+| Scenario | Recommended Model | Notes |
+|:---------|:------------------|:------|
+| **Production (2026)** | `meta-llama/llama-4-maverick-17b-128e-instruct` | ⭐ Gold Standard - single node for all tasks |
+| **Language Quality** | `llama-3.3-70b-versatile` | Best Azerbaijani, no Turkish leakage |
+| **Math/Logic Only** | `qwen3-32b` | Fast calculations (Turkish leakage risk for chat) |
+| **Fallback Only** | `gemini-2.0-flash-exp` | ⚠️ Proprietary, vendor lock-in |
+
+#### Model Comparison (January 2026)
+
+| Model | Speed | Azerbaijani | Math | Vision | Context |
+|:------|:------|:------------|:-----|:-------|:--------|
+| **llama-4-maverick** | ⚡⚡⚡⚡⚡ (~300 tps) | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ✅ | 128k |
+| llama-3.3-70b-versatile | ⚡⚡⚡ (~200 tps) | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ❌ | 128k |
+| qwen3-32b | ⚡⚡⚡⚡⚡ (~280 tps) | ⭐⭐ ⚠️ | ⭐⭐⭐⭐⭐ | ❌ | 32k |
+
+⚠️ = Turkish leakage risk in Azerbaijani output
+
+#### Configuration Examples
+
+```bash
+# 2026 Gold Standard: Maverick Mode
+YONCA_LLM_PROVIDER=groq
+YONCA_GROQ_MODEL=meta-llama/llama-4-maverick-17b-128e-instruct
+YONCA_GROQ_API_KEY=gsk_your_key_here
+
+# Legacy Mode (still supported)
+YONCA_GROQ_MODEL=llama-3.3-70b-versatile
+```
+
 ---
 
 ## 2.3 Hardware Deployment Options

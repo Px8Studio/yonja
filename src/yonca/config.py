@@ -63,14 +63,19 @@ class Settings(BaseSettings):
     ollama_model: str = "qwen3:4b"
 
     # ===== Open-Source Models (via Groq) =====
+    # 2026 Gold Standard: Llama 4 Maverick - single model replaces entire stack
     # Demonstrates enterprise-ready performance with proper infrastructure
     # Can be self-hosted with appropriate hardware (LPU, GPU clusters)
     # Get free API key at: https://console.groq.com/
     groq_api_key: str | None = None
-    groq_model: str = "llama-3.3-70b-versatile"  # Best for Azerbaijani language quality
+    groq_model: str = "meta-llama/llama-4-maverick-17b-128e-instruct"  # 2026 Gold Standard
     
-    # Alternative Groq models:
-    # - "qwen3-32b": Best for math/logic, calculations
+    # Maverick Configuration:
+    # - "meta-llama/llama-4-maverick-17b-128e-instruct": 2026 Gold Standard (ALL tasks)
+    # 
+    # Legacy Models (still supported):
+    # - "llama-3.3-70b-versatile": Best for Azerbaijani language quality
+    # - "qwen3-32b": Best for math/logic, calculations (Turkish leakage risk)
     # - "llama-3.1-8b-instant": Fastest open-source option
     # - "mixtral-8x7b-32768": Large context, good for complex queries
 

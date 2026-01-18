@@ -43,22 +43,25 @@ class GroqProvider(LLMProvider):
         ```
     """
 
-    # Available models on Groq (as of 2024)
+    # Available models on Groq (as of January 2026)
     MODELS = {
-        # Meta Llama models
-        "llama-3.3-70b-versatile": "Best quality, still very fast",
-        "llama-3.1-8b-instant": "Fast and capable (default)",
+        # Meta Llama 4 models (NEW 2026 GOLD STANDARD)
+        "meta-llama/llama-4-maverick-17b-128e-instruct": "⭐ NEW: All-in-one MoE model, replaces Qwen+Llama stack",
+        # Meta Llama 3 models (Legacy)
+        "llama-3.3-70b-versatile": "Legacy: Best Azerbaijani quality",
+        "llama-3.1-8b-instant": "Legacy: Fast and capable",
         "llama3-8b-8192": "Llama 3 8B, good balance",
         "llama3-70b-8192": "Llama 3 70B, highest quality",
         # Alibaba Qwen models
-        "qwen/qwen3-32b": "Qwen3 32B, excellent multilingual (Azerbaijani)",
+        "qwen/qwen3-32b": "Qwen3 32B, excellent math/logic (Turkish leakage risk)",
         # Mistral/Mixtral
         "mixtral-8x7b-32768": "Mixtral MoE, large context",
         # Google Gemma
         "gemma2-9b-it": "Google Gemma 2 9B",
     }
 
-    DEFAULT_MODEL = "llama-3.1-8b-instant"
+    # 2026 Gold Standard: Maverick replaces the two-model stack
+    DEFAULT_MODEL = "meta-llama/llama-4-maverick-17b-128e-instruct"
 
     def __init__(
         self,

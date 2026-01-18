@@ -2,6 +2,7 @@
 """Chat endpoints for Yonca AI."""
 
 import uuid
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -41,10 +42,32 @@ class ChatResponse(BaseModel):
 
 
 # ============================================================
-# System Prompt
+# System Prompt Management
 # ============================================================
 
-SYSTEM_PROMPT_AZ = """Sən Yonca AI - Azərbaycan fermerlərinin süni intellekt köməkçisisən.
+def load_system_prompt(prompt_name: str = "master_v1.0.0_az_strict") -> str:
+    """
+    Load system prompt from file.
+    
+    Args:
+        prompt_name: Name of the prompt file (without .txt extension)
+    
+    Returns:
+        System prompt content as string
+    """
+    # Get project root (3 levels up from this file)
+    project_root = Path(__file__).parent.parent.parent.parent
+    prompt_path = project_root / "prompts" / "system" / f"{prompt_name}.txt"
+    
+    try:
+        return prompt_path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        # Fallback to basic prompt if file not found
+        return SYSTEM_PROMPT_AZ_FALLBACK
+
+
+# Fallback prompt (used if file loading fails)
+SYSTEM_PROMPT_AZ_FALLBACK = """Sən Yonca AI - Azərbaycan fermerlərinin süni intellekt köməkçisisən.
 
 Sənin vəzifələrin:
 - Fermerlərə əkinçilik, heyvandarlıq və kənd təsərrüfatı məsləhətləri vermək
@@ -57,6 +80,9 @@ Qaydalar:
 - Qısa və konkret ol
 - Praktik məsləhətlər ver
 - Əgər bilmirsənsə, düzgün mütəxəssisə yönləndir"""
+
+# Load enhanced system prompt with linguistic anchors
+SYSTEM_PROMPT_AZ = load_system_prompt("master_v1.0.0_az_strict")
 
 
 # ============================================================

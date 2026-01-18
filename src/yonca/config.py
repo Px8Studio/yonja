@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     # Groq (Cloud) - Ultra-fast LPU hardware, FREE tier!
     # Get key at: https://console.groq.com/
     groq_api_key: str | None = None
-    groq_model: str = "llama-3.1-8b-instant"  # Fast and capable
+    groq_model: str = "llama-3.3-70b-versatile"  # Best for Azerbaijani (prev: llama-3.1-8b-instant)
 
     # Gemini (Cloud) - Google's fast cloud API
     # Get key at: https://ai.google.dev/

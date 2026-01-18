@@ -103,13 +103,74 @@ graph TB
 
 **Open-Source Models Available (via Groq or self-hosted):**
 
-| Model | License | Self-Hosting | Use Case |
-|:------|:--------|:-------------|:---------|
-| **Llama 3.3 70B** | Llama Community | 8x A100 GPUs | User-facing chat (best Azerbaijani) |
-| **Qwen 3 32B** | Apache 2.0 | 4x A100 GPUs | Internal calculations |
-| **Llama 3.1 8B** | Llama Community | 2x A100 GPUs | Fast responses |
+| Model | Class | License | Self-Hosting | Use Case |
+|:------|:------|:--------|:-------------|:---------|
+| **Llama 3.3 70B** | 🏆 Gold Standard | Llama Community | 2× RTX 5090 / H100 | User-facing chat (best Azerbaijani) |
+| **Llama 4 Maverick** | 🏆 Gold Standard | Llama Community | 2× RTX 5090 / H100 | Future upgrade path |
+| **Qwen 3 32B** | Internal | Apache 2.0 | 1× RTX 5090 / A100 | Math/logic calculations |
+| **Llama 3.1 8B** | Baseline | Llama Community | RTX 4090 | Fast responses, prototypes |
 
-### 2.2 Proprietary Cloud Mode Architecture (Fallback)
+> 💡 **Gold Standard (70B)** = Enterprise-grade reasoning. See [15-HARDWARE-JUSTIFICATION.md](15-HARDWARE-JUSTIFICATION.md) for why this matters.
+
+---
+
+## 2.3 Hardware Deployment Options
+
+### Option A: Local Workstation ("The Independent Powerhouse")
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  💻 LOCAL WORKSTATION (Gold Standard)                   │
+├─────────────────────────────────────────────────────────┤
+│  GPU:     2× NVIDIA RTX 5090 (64GB total VRAM)         │
+│  RAM:     128GB DDR5                                    │
+│  Storage: 2TB NVMe SSD                                  │
+│  Cost:    ~$6,500 (one-time investment)                │
+│  Speed:   15-20 tokens/sec                              │
+├─────────────────────────────────────────────────────────┤
+│  ✅ Complete data isolation                             │
+│  ✅ Break-even vs cloud APIs in ~5 months              │
+│  ✅ Perfect for pilot/demo phase                       │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Option B: Apple Silicon ("The Quiet Office Solution")
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  🍎 MAC STUDIO M3/M4 ULTRA                              │
+├─────────────────────────────────────────────────────────┤
+│  Memory:  128GB Unified                                 │
+│  Storage: 2TB SSD                                       │
+│  Cost:    ~$4,800                                       │
+│  Speed:   10-15 tokens/sec                              │
+├─────────────────────────────────────────────────────────┤
+│  ✅ Whisper-quiet operation                            │
+│  ✅ Excellent energy efficiency                        │
+│  ✅ 128k context window support                        │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Option C: AzInCloud ("Sovereign Scaling Path")
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  ☁️ AZINCLOUD (Baku Data Centers)                       │
+├─────────────────────────────────────────────────────────┤
+│  Hardware: NVIDIA H100 (80GB VRAM)                      │
+│  Location: Baku, Azerbaijan (data sovereignty)         │
+│  Cost:     €1.30 - €2.80/hour                          │
+│  Speed:    50-100+ tokens/sec                           │
+├─────────────────────────────────────────────────────────┤
+│  ✅ Data stays in Azerbaijan                           │
+│  ✅ Massive scaling capability                         │
+│  ✅ High concurrency (thousands of users)              │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 2.4 Proprietary Cloud Mode Architecture (Fallback)
 
 > ⚠️ **Note:** This mode uses closed-source Gemini and should only be used as a fallback when open-source options are unavailable.
 

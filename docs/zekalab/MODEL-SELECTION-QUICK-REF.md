@@ -1,14 +1,32 @@
 # Quick Reference: Model Selection for Yonca AI
 
+## 🏆 The Gold Standard: 70B Parameter Class
+
+> **For national-scale agricultural AI, 70B models are the "Goldilocks zone"**—smart enough for complex agronomic reasoning, efficient enough for high-end local hardware.
+
+### Why 70B Over 8B?
+
+| Capability | 8B Models | 70B Models (Gold Standard) |
+|:-----------|:----------|:---------------------------|
+| **Reasoning** | Single-step | Multi-step (soil pH + weather + crop stage) |
+| **Azerbaijani** | Turkish leakage risk | Strong internal filter |
+| **JSON Output** | Inconsistent | Deterministic (API-ready) |
+| **Nuanced Intent** | Misses subtle queries | Expert-level understanding |
+
+---
+
 ## TL;DR - Which Model to Use?
 
 ### Open-Source Mode (Groq - Recommended)
 ```bash
-# Chat with farmers (user-facing)
-llama-3.3-70b-versatile  # ⭐ Best Azerbaijani quality
+# Chat with farmers (user-facing) - GOLD STANDARD
+llama-3.3-70b-versatile  # ⭐ Best Azerbaijani quality, 70B class
 
 # Internal calculations (hidden)
 qwen3-32b  # ⭐ Best math/logic
+
+# Future upgrade path
+llama-4-maverick  # When available via Groq
 ```
 
 ### Proprietary Mode (Gemini - Fallback Only)
@@ -226,9 +244,24 @@ Ollama (atllama) on GPU (RTX 4060):
 
 ---
 
+## Hardware Quick Reference
+
+### For 70B Gold Standard Models
+
+| Option | Hardware | VRAM | Cost | Performance |
+|:-------|:---------|:-----|:-----|:------------|
+| **Workstation** | 2× RTX 5090 | 64GB | ~$6,500 | 15-20 tok/s |
+| **Mac Studio** | M3/M4 Ultra | 128GB Unified | ~$4,800 | 10-15 tok/s |
+| **AzInCloud** | NVIDIA H100 | 80GB | €2.80/hr | 50-100 tok/s |
+
+> 💡 **Break-even vs cloud APIs: ~5 months** — See [15-HARDWARE-JUSTIFICATION.md](15-HARDWARE-JUSTIFICATION.md) for full economics.
+
+---
+
 ## Support
 
 Questions? Check:
+- **Hardware Economics**: [15-HARDWARE-JUSTIFICATION.md](15-HARDWARE-JUSTIFICATION.md)
 - Full guide: [LANGUAGE-INTERFERENCE-GUIDE.md](LANGUAGE-INTERFERENCE-GUIDE.md)
 - Deployment: [12-DUAL-MODE-DEPLOYMENT.md](12-DUAL-MODE-DEPLOYMENT.md)
 - Model config: [src/yonca/llm/model_roles.py](../../src/yonca/llm/model_roles.py)

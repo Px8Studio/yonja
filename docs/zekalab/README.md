@@ -13,6 +13,18 @@
 ✅ **Transparent & auditable** - Open weights, open architectures  
 ✅ **Production-ready** - Enterprise performance (200-300 tok/s)  
 
+### 🏆 The Gold Standard: 70B Parameter Class
+
+For national-scale agricultural AI, **70B models are the Goldilocks zone**—smart enough for complex agronomic reasoning, efficient enough for high-end local hardware.
+
+| Capability | 8B Models (Baseline) | 70B Models (Gold Standard) |
+|:-----------|:---------------------|:---------------------------|
+| **Reasoning** | Single-step | Multi-step (soil pH + weather + crop stage) |
+| **Azerbaijani** | Turkish leakage risk | Strong internal filter |
+| **JSON Output** | Inconsistent | Deterministic (API-ready) |
+
+> 📄 See **[15-HARDWARE-JUSTIFICATION.md](15-HARDWARE-JUSTIFICATION.md)** for full economics and hardware specs.
+
 ### Deployment Modes
 
 | Mode | Models | License | Self-Host | Best For |
@@ -65,6 +77,23 @@ See **[12-DUAL-MODE-DEPLOYMENT.md](12-DUAL-MODE-DEPLOYMENT.md)** for full detail
 |:-:|:---------|:--------|:-------------|
 | 12 | **[12-DUAL-MODE-DEPLOYMENT.md](12-DUAL-MODE-DEPLOYMENT.md)** | Local vs Cloud, LLM abstraction, Docker configs | Setting up deployment |
 | 13 | **[13-IMPLEMENTATION-PLAN.md](13-IMPLEMENTATION-PLAN.md)** | Step-by-step build guide, milestones, checklist | Starting implementation |
+
+### Executive & Strategy
+
+| # | Document | Purpose | Read When... |
+|:-:|:---------|:--------|:-------------|
+| 14 | **[14-DISCOVERY-QUESTIONS.md](14-DISCOVERY-QUESTIONS.md)** | Questions for Digital Umbrella validation | Preparing handoff |
+| 15 | **[15-HARDWARE-JUSTIFICATION.md](15-HARDWARE-JUSTIFICATION.md)** | 🏆 Gold Standard (70B), hardware economics, sovereignty | **Selling the solution** |
+
+> 💡 **Key Insight:** Document 15 provides the executive-ready business case: 70B models as the Gold Standard, break-even analysis (5 months vs cloud APIs), and hardware options for data sovereignty.
+
+---
+
+### Quick Reference
+
+| Document | Purpose |
+|:---------|:--------|
+| **[MODEL-SELECTION-QUICK-REF.md](MODEL-SELECTION-QUICK-REF.md)** | Which model for which task, testing commands |
 
 ---
 

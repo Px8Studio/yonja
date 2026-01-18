@@ -161,12 +161,56 @@ INFO:     Uvicorn running on http://127.0.0.1:8000
 
 ## 🤖 LLM Configuration
 
+### Available Local Models
+
 | Provider | Model | Size | Best For |
 |----------|-------|------|----------|
-| **Ollama** | `qwen3:4b` | 2.6GB | 🇦🇿 Azerbaijani (Recommended) |
+| **Ollama** | `qwen3:4b` | 2.6GB | 🇦🇿 Multilingual (Recommended) |
 | **Ollama** | `qwen3:1.7b` | 1.2GB | Fast responses, limited RAM |
+| **Ollama** | `qwen3:8b` | 5.0GB | Higher quality reasoning |
+| **Ollama** | `atllama` | 2.5GB | 🇦🇿 Azerbaijani-tuned (GGUF) |
+| **Ollama** | `aya:8b` | 4.8GB | 100+ language support |
 | **Gemini** | `gemini-2.0-flash` | Cloud | Production, high volume |
-| **Gemini** | `gemini-1.5-pro` | Cloud | Complex reasoning |
+
+### Setting Up Local Models
+
+**Option 1: Docker (Recommended)**
+```bash
+# Start all services and setup models
+docker-compose -f docker-compose.local.yml up -d
+
+# First-time setup: pull qwen3 and import ATLLaMA
+docker-compose -f docker-compose.local.yml --profile setup up model-setup
+```
+
+**Option 2: Manual Setup**
+```powershell
+# Pull Qwen3 (primary model)
+ollama pull qwen3:4b
+
+# Import ATLLaMA from GGUF (Azerbaijani-tuned)
+python scripts/import_model.py --name atllama --path models/atllama.v3.5.Q4_K_M.gguf
+
+# Or import into Docker container
+python scripts/import_model.py --docker
+```
+
+### Switching Models
+
+Set the model via environment variable:
+```bash
+YONCA_OLLAMA_MODEL=qwen3:4b   # Qwen3 (default)
+YONCA_OLLAMA_MODEL=atllama    # ATLLaMA (Azerbaijani)
+```
+
+Or use the API:
+```bash
+# List available models
+curl http://localhost:8000/api/models
+
+# Check model status
+curl http://localhost:8000/api/models/qwen3:4b
+```
 
 ### Usage Example
 

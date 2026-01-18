@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from yonca.config import settings
-from yonca.api.routes import health, chat
+from yonca.api.routes import health, chat, models
 
 
 @asynccontextmanager
@@ -17,6 +17,7 @@ async def lifespan(app: FastAPI):
     # Startup
     print(f"🌿 Yonca AI starting in {settings.deployment_mode.value} mode")
     print(f"🤖 LLM Provider: {settings.llm_provider.value}")
+    print(f"📦 Active Model: {settings.active_llm_model}")
     
     # Show localhost for browsing, even if binding to 0.0.0.0
     display_host = "localhost" if settings.api_host == "0.0.0.0" else settings.api_host
@@ -94,6 +95,7 @@ app.add_middleware(
 
 app.include_router(health.router, tags=["Health"])
 app.include_router(chat.router, prefix="/yonca-ai", tags=["Chat"])
+app.include_router(models.router, prefix="/api", tags=["Models"])
 
 
 # ===== Root Endpoint =====

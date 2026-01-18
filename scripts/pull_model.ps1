@@ -13,13 +13,13 @@ if (-not $ollamaRunning) {
 
 Write-Host "✅ Ollama container is running" -ForegroundColor Green
 
-Write-Host "📥 Pulling Ollama model: qwen2.5:3b" -ForegroundColor Cyan
+Write-Host "📥 Pulling Ollama model: qwen3:4b" -ForegroundColor Cyan
 Write-Host "This may take a few minutes depending on your internet connection..." -ForegroundColor Yellow
 
-docker exec -it yonca-ollama ollama pull qwen2.5:3b
+docker exec -it yonca-ollama ollama pull qwen3:4b
 
 Write-Host ""
 Write-Host "✅ Model pulled successfully!" -ForegroundColor Green
 Write-Host ""
 Write-Host "You can now test the model:" -ForegroundColor Cyan
-Write-Host "  docker exec -it yonca-ollama ollama run qwen2.5:3b" -ForegroundColor White
+Write-Host "  docker exec -it yonca-ollama ollama run qwen3:4b" -ForegroundColor White

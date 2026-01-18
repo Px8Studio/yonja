@@ -32,7 +32,7 @@ services:
       # LLM Provider (use Ollama for local)
       - LLM_PROVIDER=ollama
       - OLLAMA_BASE_URL=http://ollama:11434
-      - OLLAMA_MODEL=qwen2.5:3b
+      - OLLAMA_MODEL=qwen3:4b
       
       # Database (SQLite for local development)
       - DATABASE_URL=sqlite+aiosqlite:///./data/yonca.db
@@ -76,11 +76,19 @@ services:
       - "11434:11434"
     volumes:
       - ollama-data:/root/.ollama
+      # Mount local models directory for GGUF imports
+      - ./models:/app/models:ro
     environment:
       - OLLAMA_HOST=0.0.0.0
     networks:
       - yonca-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     # Uncomment for GPU support (requires nvidia-docker)
     # deploy:
     #   resources:
@@ -89,6 +97,52 @@ services:
     #         - driver: nvidia
     #           count: 1
     #           capabilities: [gpu]
+
+  # ================================================
+  # Model Setup (One-time initialization)
+  # Pulls qwen3:4b and imports GGUF models
+  # ================================================
+  model-setup:
+    image: ollama/ollama:latest
+    container_name: yonca-model-setup
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ./models:/app/models:ro
+    environment:
+      - OLLAMA_HOST=ollama:11434
+    networks:
+      - yonca-network
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "🚀 Setting up models..."
+        
+        # Pull Qwen3 (primary model)
+        echo "📥 Pulling qwen3:4b..."
+        ollama pull qwen3:4b
+        
+        # Import ATLLaMA from GGUF if file exists
+        if [ -f /app/models/atllama.v3.5.Q4_K_M.gguf ]; then
+          echo "📦 Importing ATLLaMA from GGUF..."
+          cat > /tmp/Modelfile << 'EOF'
+        FROM /app/models/atllama.v3.5.Q4_K_M.gguf
+        SYSTEM "Sən Azərbaycan fermerlərə kömək edən süni intellekt köməkçisisən. Sualları Azərbaycan dilində cavablandır."
+        PARAMETER temperature 0.7
+        PARAMETER num_ctx 4096
+        EOF
+          ollama create atllama -f /tmp/Modelfile
+          echo "✅ ATLLaMA imported!"
+        else
+          echo "⚠️ ATLLaMA GGUF not found, skipping..."
+        fi
+        
+        echo "📋 Available models:"
+        ollama list
+        echo "✅ Model setup complete!"
+    profiles:
+      - setup  # Only runs with: docker-compose --profile setup up model-setup
 
   # ================================================
   # Redis (Caching & Session Storage)

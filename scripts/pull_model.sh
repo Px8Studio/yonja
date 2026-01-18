@@ -14,13 +14,13 @@ fi
 
 echo "✅ Ollama container is running"
 
-echo "📥 Pulling Ollama model: qwen2.5:3b"
+echo "📥 Pulling Ollama model: qwen3:4b"
 echo "This may take a few minutes depending on your internet connection..."
 
-docker exec -it yonca-ollama ollama pull qwen2.5:3b
+docker exec -it yonca-ollama ollama pull qwen3:4b
 
 echo ""
 echo "✅ Model pulled successfully!"
 echo ""
 echo "You can now test the model:"
-echo "  docker exec -it yonca-ollama ollama run qwen2.5:3b"
+echo "  docker exec -it yonca-ollama ollama run qwen3:4b"

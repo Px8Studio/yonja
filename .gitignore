@@ -29,7 +29,7 @@ ENV/
 env/
 
 # IDE
-.vscode/
+# .vscode/
 .idea/
 *.swp
 *.swo
@@ -67,7 +67,7 @@ htmlcov/
 # Data
 data/
 *.csv
-*.json
+# *.json
 !tests/**/*.json
 
 # Models

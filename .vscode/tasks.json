@@ -1,0 +1,179 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        // ================================================
+        // 🐳 Docker Stack Management
+        // ================================================
+        {
+            "label": "🐳 Docker: Start All Services",
+            "detail": "Start Ollama, Redis, and API containers",
+            "type": "shell",
+            "command": "docker-compose",
+            "args": ["-f", "docker-compose.local.yml", "up", "-d"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "🐳 Docker: Stop All Services",
+            "detail": "Stop and remove all containers",
+            "type": "shell",
+            "command": "docker-compose",
+            "args": ["-f", "docker-compose.local.yml", "down"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "🐳 Docker: Start (Ollama + Redis only)",
+            "detail": "Start just Ollama and Redis (for local Python dev)",
+            "type": "shell",
+            "command": "docker-compose",
+            "args": ["-f", "docker-compose.local.yml", "up", "-d", "ollama", "redis"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "🐳 Docker: View Logs",
+            "detail": "Follow logs from all containers",
+            "type": "shell",
+            "command": "docker-compose",
+            "args": ["-f", "docker-compose.local.yml", "logs", "-f"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "isBackground": true,
+            "presentation": { "reveal": "always", "panel": "dedicated" }
+        },
+        {
+            "label": "🐳 Docker: Container Status",
+            "detail": "Show running containers and health",
+            "type": "shell",
+            "command": "docker-compose",
+            "args": ["-f", "docker-compose.local.yml", "ps"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        // ================================================
+        // 🤖 LLM Model Management
+        // ================================================
+        {
+            "label": "🤖 Models: First-Time Setup",
+            "detail": "Pull qwen3:4b and import ATLLaMA (run once)",
+            "type": "shell",
+            "command": "docker-compose",
+            "args": ["-f", "docker-compose.local.yml", "--profile", "setup", "up", "model-setup"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "dedicated" },
+            "dependsOn": ["🐳 Docker: Start (Ollama + Redis only)"]
+        },
+        {
+            "label": "🤖 Models: List Available",
+            "detail": "Show models in Ollama",
+            "type": "shell",
+            "command": "docker",
+            "args": ["exec", "yonca-ollama", "ollama", "list"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "🤖 Models: Test qwen3:4b",
+            "detail": "Interactive chat with Qwen3",
+            "type": "shell",
+            "command": "docker",
+            "args": ["exec", "-it", "yonca-ollama", "ollama", "run", "qwen3:4b"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "dedicated", "focus": true }
+        },
+        {
+            "label": "🤖 Models: Test atllama",
+            "detail": "Interactive chat with ATLLaMA (Azerbaijani)",
+            "type": "shell",
+            "command": "docker",
+            "args": ["exec", "-it", "yonca-ollama", "ollama", "run", "atllama"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "dedicated", "focus": true }
+        },
+        // ================================================
+        // 🌿 Local Python Development
+        // ================================================
+        {
+            "label": "🌿 Yonca API: Start Development Server",
+            "detail": "Run API locally with hot reload",
+            "type": "shell",
+            "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+            "args": [
+                "-m", "uvicorn",
+                "yonca.api.main:app",
+                "--host", "localhost",
+                "--port", "8000",
+                "--reload"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": { "PYTHONPATH": "${workspaceFolder}/src" }
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "isBackground": true,
+            "group": { "kind": "build", "isDefault": true }
+        },
+        {
+            "label": "🧪 Yonca: Run Tests",
+            "type": "shell",
+            "command": "pytest",
+            "args": ["tests/", "-v", "--tb=short"],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": { "PYTHONPATH": "${workspaceFolder}/src" }
+            },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" },
+            "group": "test"
+        },
+        {
+            "label": "🔍 Yonca: Lint & Format Check",
+            "type": "shell",
+            "command": "ruff",
+            "args": ["check", "src/", "tests/"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        // ================================================
+        // 🚀 Compound Tasks (Workflows)
+        // ================================================
+        {
+            "label": "🚀 Dev: Start Everything",
+            "detail": "Start Docker services + local API server",
+            "dependsOn": [
+                "🐳 Docker: Start (Ollama + Redis only)",
+                "🌿 Yonca API: Start Development Server"
+            ],
+            "dependsOrder": "sequence",
+            "problemMatcher": []
+        },
+        {
+            "label": "🛑 Dev: Stop Everything",
+            "detail": "Stop Docker containers",
+            "type": "shell",
+            "command": "docker-compose",
+            "args": ["-f", "docker-compose.local.yml", "down"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        }
+    ]
+}

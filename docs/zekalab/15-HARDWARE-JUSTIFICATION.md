@@ -77,7 +77,7 @@ Operating cost: Electricity only (~$50/month)
 ### 2.3 Break-Even Calculation
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 xychart-beta
     title "Cost Comparison: Cloud API vs Local Hardware"
     x-axis ["Month 1", "Month 3", "Month 5", "Month 6", "Month 12", "Month 24"]
@@ -170,7 +170,7 @@ To run a **70B model at Gold Standard quality** (4-bit or 6-bit quantization), h
 ### Phase 1: Demo & Pilot (Now)
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph LR
     subgraph demo["🎯 Demo Phase"]
         groq["⚡ Groq API<br/><i>Free tier: 14,400 req/day</i><br/><i>Shows 'Future UX'</i>"]
@@ -190,7 +190,7 @@ graph LR
 ### Phase 2: Pilot Expansion (100-5,000 farmers)
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph LR
     subgraph pilot["🌱 Pilot Phase"]
         workstation["💻 Local Workstation<br/><i>Primary inference</i>"]
@@ -210,7 +210,7 @@ graph LR
 ### Phase 3: National Scale (50,000+ farmers)
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph LR
     subgraph national["🇦🇿 National Scale"]
         cluster["🏢 vLLM Cluster<br/><i>Multiple H100s</i><br/><i>AzInCloud managed</i>"]

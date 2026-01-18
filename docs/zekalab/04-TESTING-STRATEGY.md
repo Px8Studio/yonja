@@ -22,7 +22,7 @@
 ## 1. Testing Philosophy
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 mindmap
   root((🧪 Testing Strategy))
     🎯 Accuracy
@@ -61,7 +61,7 @@ mindmap
 We maintain a curated **Golden Dataset** of expert-validated question-answer pairs covering all agricultural scenarios.
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 erDiagram
     EVALUATION_DATASET {
         string eval_id PK "eval_001"
@@ -394,7 +394,7 @@ erDiagram
 ### 3.1 Unit Tests
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph unit["🔬 Unit Test Coverage"]
         rules["📏 Rule Engine<br/><i>Each rule fires correctly</i>"]
@@ -422,7 +422,7 @@ graph TB
 ### 3.2 Integration Tests
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 sequenceDiagram
     participant T as 🧪 Test Runner
     participant A as 🔌 API Gateway
@@ -608,7 +608,7 @@ class TestPIILeakage:
 ### 4.3 Evaluation Pipeline
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart TB
     subgraph input["📥 Input"]
         cases["Test Cases<br/><i>Golden Dataset</i>"]
@@ -731,7 +731,7 @@ jobs:
 ### 6.1 Experiment Structure
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     subgraph experiment["🔬 A/B Experiment"]
         control["Control Group<br/><i>Current prompts</i>"]
@@ -821,7 +821,7 @@ tests/
 ### 7.2 Expert Validation Workflow
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 sequenceDiagram
     participant D as 👨‍💻 Developer
     participant S as 📝 Staging Dataset

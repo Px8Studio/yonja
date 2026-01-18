@@ -7,7 +7,7 @@
 ## 1. Performance Requirements Overview
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 mindmap
   root((⚡ Performance))
     ⏱️ Latency
@@ -55,7 +55,7 @@ mindmap
 ### 2.2 Latency Budget Breakdown
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 pie title Latency Budget (3s P95 Target)
     "Network + Auth" : 100
     "Input Validation" : 50
@@ -99,7 +99,7 @@ Monthly Availability = (Total Minutes - Downtime Minutes) / Total Minutes × 100
 ### 3.1 Load Estimates
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph users["👥 User Estimates"]
         total["Total Users<br/><i>10,000 farmers</i>"]
@@ -169,7 +169,7 @@ graph TB
 ### 4.1 Inference Optimization
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart TB
     subgraph model["🤖 Model Optimization"]
         quant["Quantization<br/><i>Q4_K_M (4-bit)</i>"]
@@ -512,7 +512,7 @@ k6 run --vus 100 --duration 10m load-tests/scenarios/stress.js
 ### 6.1 Horizontal Scaling Architecture
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph lb["⚖️ Load Balancer"]
         nginx["NGINX / Traefik"]
@@ -615,7 +615,7 @@ spec:
 ### 7.1 Degradation Levels
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph normal["🟢 NORMAL"]
         full["Full LLM + RAG<br/><i>All features enabled</i>"]

@@ -4,6 +4,36 @@
 
 ---
 
+## � Project Vision at a Glance
+
+```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontSize': '14px' }}}%%
+mindmap
+  root((🌿 Yonca AI))
+    🔌 Headless Sidecar
+      REST API
+      Dockerized
+      Plug & Play
+    🗣️ Azerbaijani-First
+      Native language
+      Cultural context
+      Local crops
+    ✅ Rule-Validated
+      90%+ accuracy
+      Agronomy rules
+      No hallucinations
+    🔒 Zero Real Data
+      Synthetic profiles
+      PII gateway
+      Privacy by design
+    🌿 Open-Source
+      Llama/Qwen models
+      Self-hostable
+      No vendor lock-in
+```
+
+---
+
 ## 🌿 Open-Source First Architecture
 
 **Yonca AI is built on open-source models** to demonstrate enterprise-ready AI that:
@@ -15,13 +45,26 @@
 
 ### 🏆 The Gold Standard: 70B Parameter Class
 
-For national-scale agricultural AI, **70B models are the Goldilocks zone**—smart enough for complex agronomic reasoning, efficient enough for high-end local hardware.
-
-| Capability | 8B Models (Baseline) | 70B Models (Gold Standard) |
-|:-----------|:---------------------|:---------------------------|
-| **Reasoning** | Single-step | Multi-step (soil pH + weather + crop stage) |
-| **Azerbaijani** | Turkish leakage risk | Strong internal filter |
-| **JSON Output** | Inconsistent | Deterministic (API-ready) |
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+graph LR
+    subgraph baseline["📊 8B Models (Baseline)"]
+        b1["Single-step reasoning"]
+        b2["Turkish leakage risk"]
+        b3["Inconsistent JSON"]
+    end
+    
+    subgraph gold["🏆 70B Models (Gold Standard)"]
+        g1["Multi-step reasoning<br/>soil + weather + crop"]
+        g2["Strong language filter"]
+        g3["Deterministic JSON"]
+    end
+    
+    baseline -.->|"Upgrade"| gold
+    
+    style gold fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style baseline fill:#fff3e0,stroke:#ef6c00
+```
 
 > 📄 See **[15-HARDWARE-JUSTIFICATION.md](15-HARDWARE-JUSTIFICATION.md)** for full economics and hardware specs.
 
@@ -38,54 +81,83 @@ See **[12-DUAL-MODE-DEPLOYMENT.md](12-DUAL-MODE-DEPLOYMENT.md)** for full detail
 
 ## 📚 Documentation Index
 
+### Visual Navigation
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+flowchart LR
+    subgraph start["🚀 Start Here"]
+        readme["README"]
+        manifesto["01-MANIFESTO"]
+    end
+    
+    subgraph core["🏗️ Core Docs"]
+        arch["03-ARCHITECTURE"]
+        data["02-DATA-ENGINE"]
+        prompt["05-PROMPTS"]
+    end
+    
+    subgraph ops["⚙️ Operations"]
+        deploy["12-DEPLOYMENT"]
+        devops["10-DEVOPS"]
+        observe["07-OBSERVABILITY"]
+    end
+    
+    subgraph security["🔐 Security"]
+        sec["08-SECURITY"]
+        test["04-TESTING"]
+    end
+    
+    subgraph demo["🎯 Demo"]
+        ui["11-DEMO-UI"]
+        impl["13-IMPLEMENTATION"]
+    end
+    
+    start --> core --> ops
+    core --> security
+    ops --> demo
+```
+
 ### Core Documentation
 
-| # | Document | Purpose | Read When... |
-|:-:|:---------|:--------|:-------------|
-| 1 | **[01-MANIFESTO.md](01-MANIFESTO.md)** | Vision, strategy, success metrics | Starting the project |
-| 2 | **[02-SYNTHETIC-DATA-ENGINE.md](02-SYNTHETIC-DATA-ENGINE.md)** | Schema design, synthetic profiles, data contracts | Building data layer |
-| 3 | **[03-ARCHITECTURE.md](03-ARCHITECTURE.md)** | Core architecture: Auth, LangGraph, data flow, roadmap | Understanding the system |
+| # | Document | Purpose | Status |
+|:-:|:---------|:--------|:------:|
+| 🎨 | **[00-VISUAL-STYLE-GUIDE.md](00-VISUAL-STYLE-GUIDE.md)** | Diagram standards | ✅ |
+| 1 | **[01-MANIFESTO.md](01-MANIFESTO.md)** | Vision, strategy, success metrics | ✅ |
+| 2 | **[02-SYNTHETIC-DATA-ENGINE.md](02-SYNTHETIC-DATA-ENGINE.md)** | Schema design, synthetic profiles | ✅ |
+| 3 | **[03-ARCHITECTURE.md](03-ARCHITECTURE.md)** | Core architecture, data flow | ✅ |
 
 ### AI & Quality Assurance
 
-| # | Document | Purpose | Read When... |
-|:-:|:---------|:--------|:-------------|
-| 4 | **[04-TESTING-STRATEGY.md](04-TESTING-STRATEGY.md)** | Evaluation framework, golden datasets, accuracy benchmarks | Setting up testing |
-| 5 | **[05-PROMPT-ENGINEERING.md](05-PROMPT-ENGINEERING.md)** | System prompts, versioning, few-shot examples | Tuning LLM behavior |
-| 6 | **[06-CONVERSATION-DESIGN.md](06-CONVERSATION-DESIGN.md)** | Dialogue flows, intent taxonomy, edge cases | Designing UX |
+| # | Document | Purpose | Status |
+|:-:|:---------|:--------|:------:|
+| 4 | **[04-TESTING-STRATEGY.md](04-TESTING-STRATEGY.md)** | Evaluation framework, benchmarks | ✅ |
+| 5 | **[05-PROMPT-ENGINEERING.md](05-PROMPT-ENGINEERING.md)** | System prompts, versioning | ✅ |
+| 6 | **[06-CONVERSATION-DESIGN.md](06-CONVERSATION-DESIGN.md)** | Dialogue flows, intent taxonomy | ✅ |
 
 ### Operations & Infrastructure
 
-| # | Document | Purpose | Read When... |
-|:-:|:---------|:--------|:-------------|
-| 7 | **[07-OBSERVABILITY.md](07-OBSERVABILITY.md)** | Metrics, logging, tracing, alerting | Setting up monitoring |
-| 8 | **[08-SECURITY-HARDENING.md](08-SECURITY-HARDENING.md)** | Input validation, prompt injection defense, PII protection | Securing the system |
-| 9 | **[09-PERFORMANCE-SLA.md](09-PERFORMANCE-SLA.md)** | Latency targets, scaling strategy, load testing | Optimizing performance |
-| 10 | **[10-DEVOPS-RUNBOOK.md](10-DEVOPS-RUNBOOK.md)** | CI/CD, Docker, deployment, environment configs | Deploying & operating |
+| # | Document | Purpose | Status |
+|:-:|:---------|:--------|:------:|
+| 7 | **[07-OBSERVABILITY.md](07-OBSERVABILITY.md)** | Metrics, logging, tracing | ✅ |
+| 8 | **[08-SECURITY-HARDENING.md](08-SECURITY-HARDENING.md)** | Input validation, PII protection | ✅ |
+| 9 | **[09-PERFORMANCE-SLA.md](09-PERFORMANCE-SLA.md)** | Latency targets, scaling | ✅ |
+| 10 | **[10-DEVOPS-RUNBOOK.md](10-DEVOPS-RUNBOOK.md)** | CI/CD, Docker, deployment | ✅ |
 
-### Demo & Presentation
+### Demo & Implementation
 
-| # | Document | Purpose | Read When... |
-|:-:|:---------|:--------|:-------------|
-| 11 | **[11-DEMO-UI-SPEC.md](11-DEMO-UI-SPEC.md)** | Chainlit + LangGraph native integration, demo scenarios | Building the demo |
-
-> 💡 **Demo Stack:** We use Chainlit's **native LangGraph integration** (`cl.LangchainCallbackHandler`) for automatic step visualization, token streaming, and session persistence. This reduces UI development from **1-2 weeks** (custom React) to **~1 hour**.
-
-### Deployment & Implementation
-
-| # | Document | Purpose | Read When... |
-|:-:|:---------|:--------|:-------------|
-| 12 | **[12-DUAL-MODE-DEPLOYMENT.md](12-DUAL-MODE-DEPLOYMENT.md)** | Local vs Cloud, LLM abstraction, Docker configs | Setting up deployment |
-| 13 | **[13-IMPLEMENTATION-PLAN.md](13-IMPLEMENTATION-PLAN.md)** | Step-by-step build guide, milestones, checklist | Starting implementation |
+| # | Document | Purpose | Status |
+|:-:|:---------|:--------|:------:|
+| 11 | **[11-DEMO-UI-SPEC.md](11-DEMO-UI-SPEC.md)** | Chainlit demo specification | ✅ |
+| 12 | **[12-DUAL-MODE-DEPLOYMENT.md](12-DUAL-MODE-DEPLOYMENT.md)** | Local vs Cloud deployment | ✅ |
+| 13 | **[13-IMPLEMENTATION-PLAN.md](13-IMPLEMENTATION-PLAN.md)** | Step-by-step build guide | ✅ |
 
 ### Executive & Strategy
 
-| # | Document | Purpose | Read When... |
-|:-:|:---------|:--------|:-------------|
-| 14 | **[14-DISCOVERY-QUESTIONS.md](14-DISCOVERY-QUESTIONS.md)** | Questions for Digital Umbrella validation | Preparing handoff |
-| 15 | **[15-HARDWARE-JUSTIFICATION.md](15-HARDWARE-JUSTIFICATION.md)** | 🏆 Gold Standard (70B), hardware economics, sovereignty | **Selling the solution** |
-
-> 💡 **Key Insight:** Document 15 provides the executive-ready business case: 70B models as the Gold Standard, break-even analysis (5 months vs cloud APIs), and hardware options for data sovereignty.
+| # | Document | Purpose | Status |
+|:-:|:---------|:--------|:------:|
+| 14 | **[14-DISCOVERY-QUESTIONS.md](14-DISCOVERY-QUESTIONS.md)** | Questions for validation | ✅ |
+| 15 | **[15-HARDWARE-JUSTIFICATION.md](15-HARDWARE-JUSTIFICATION.md)** | 70B Gold Standard, economics | ✅ |
 
 ---
 
@@ -117,6 +189,90 @@ To avoid duplication, content is organized as follows:
 ---
 
 ## 🏗️ Architecture Overview
+
+### System Architecture Diagram
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+flowchart TB
+    subgraph clients["📱 Clients"]
+        mobile["Yonca Mobile App"]
+        demo["Chainlit Demo UI"]
+    end
+    
+    subgraph api["🔌 API Layer"]
+        fastapi["FastAPI Gateway<br/>:8000"]
+        auth["JWT Validation"]
+        rate["Rate Limiter<br/>(Redis)"]
+    end
+    
+    subgraph brain["🧠 Agent Brain"]
+        graph["LangGraph<br/>Orchestrator"]
+        sup["Supervisor Node"]
+        ctx["Context Loader"]
+        agro["Agronomist Node"]
+        val["Validator Node"]
+    end
+    
+    subgraph llm["🤖 LLM Layer"]
+        groq["⚡ Groq API<br/>(Llama/Maverick)"]
+        ollama["🏠 Ollama<br/>(Local Dev)"]
+        gemini["☁️ Gemini<br/>(Fallback)"]
+    end
+    
+    subgraph data["💾 Data Layer"]
+        pg["🐘 PostgreSQL<br/>Synthetic Profiles"]
+        redis["⚡ Redis<br/>Sessions + Cache"]
+    end
+    
+    subgraph observe["📊 Observability"]
+        langfuse["Langfuse<br/>LLM Tracing"]
+    end
+    
+    clients --> api
+    api --> brain
+    brain --> llm
+    brain <--> data
+    brain --> observe
+    
+    style brain fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style llm fill:#e3f2fd,stroke:#1565c0
+    style data fill:#fff9c4,stroke:#f9a825
+```
+
+### LangGraph Agent Flow
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+stateDiagram-v2
+    [*] --> Supervisor: User Message
+    
+    Supervisor --> ContextLoader: needs_context
+    Supervisor --> Greeting: is_greeting
+    Supervisor --> OffTopic: off_topic
+    
+    ContextLoader --> Agronomist: farming_query
+    ContextLoader --> Weather: weather_query
+    
+    Agronomist --> Validator: validate
+    Weather --> Validator: validate
+    
+    Validator --> [*]: ✅ Approved
+    Validator --> Agronomist: 🔄 Retry
+    
+    Greeting --> [*]
+    OffTopic --> [*]
+    
+    note right of Supervisor
+        Intent Classification
+        (11 intents)
+    end note
+    
+    note right of Validator
+        Rules Engine
+        YAML-based
+    end note
+```
 
 ### Open-Source Mode (Groq or Self-Hosted)
 ```
@@ -165,7 +321,55 @@ docker-compose -f docker-compose.local.yml up -d
 
 ---
 
-## 📊 Project Status
+## 📊 Project Status (January 2026)
+
+### Implementation Progress
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+pie showData
+    title Implementation Status
+    "Completed" : 85
+    "In Progress" : 10
+    "Planned" : 5
+```
+
+### Component Status Matrix
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+block-beta
+    columns 4
+    
+    block:llm["🤖 LLM Layer"]:1
+        ollama["Ollama ✅"]
+        groq["Groq ✅"]
+        gemini["Gemini ✅"]
+    end
+    
+    block:api["🔌 API Layer"]:1
+        chat["/chat ✅"]
+        health["/health ✅"]
+        models["/models ✅"]
+    end
+    
+    block:agent["🧠 Agent"]:1
+        sup2["Supervisor ✅"]
+        agro2["Agronomist ✅"]
+        rules["Rules ✅"]
+    end
+    
+    block:data2["💾 Data"]:1
+        pg2["PostgreSQL ✅"]
+        redis2["Redis ✅"]
+        cache["Cache ✅"]
+    end
+    
+    style llm fill:#c8e6c9,stroke:#2e7d32
+    style api fill:#c8e6c9,stroke:#2e7d32
+    style agent fill:#c8e6c9,stroke:#2e7d32
+    style data2 fill:#c8e6c9,stroke:#2e7d32
+```
 
 | Phase | Status | Timeline | Key Deliverables |
 |:------|:-------|:---------|:-----------------|
@@ -185,7 +389,7 @@ docker-compose -f docker-compose.local.yml up -d
 | **Rules Engine** | ✅ | YAML rules for irrigation, fertilization, pest, harvest |
 | **Demo UI** | ✅ | Chainlit with LangGraph native integration |
 | **Unit Tests** | ✅ | 6 test files, ~85% coverage |
-| **Observability** | ❌ | `src/yonca/observability/` is empty — see [07-OBSERVABILITY.md](07-OBSERVABILITY.md) |
+| **Observability** | ✅ | Langfuse integration for LLM tracing |
 | **Evaluation Tests** | ❌ | `tests/evaluation/` is empty — see [04-TESTING-STRATEGY.md](04-TESTING-STRATEGY.md) |
 | **Weather API** | ⚠️ | Synthetic only — TODO: integrate real API |
 

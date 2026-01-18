@@ -7,7 +7,7 @@
 ## 1. Conversation Philosophy
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 mindmap
   root((💬 Conversation Design))
     🎯 Goal-Oriented
@@ -46,7 +46,7 @@ mindmap
 ### 2.1 State Schema
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 stateDiagram-v2
     [*] --> Greeting: New Session
     Greeting --> ContextGathering: User sends message
@@ -121,7 +121,7 @@ class ConversationState(TypedDict):
 ### 3.1 Primary Intents
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph intents["🎯 Intent Categories"]
         irrigation["💧 irrigation<br/><i>Suvarma məsləhəti</i>"]
@@ -437,7 +437,7 @@ class MultiIntentHandler:
 ### 5.1 Edge Case Taxonomy
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph edge["⚠️ Edge Cases"]
         ambiguous["🔮 Ambiguous<br/><i>Unclear intent</i>"]
@@ -555,7 +555,7 @@ Narahat olmayın, kömək edəcəyəm.
 ### 6.1 Context-Triggered Suggestions
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart TB
     subgraph triggers["🎯 Proactive Triggers"]
         weather["🌡️ Weather Alert<br/><i>Extreme temp/rain</i>"]
@@ -640,7 +640,7 @@ Bu barədə ətraflı məlumat istəyirsiniz?
 ### 7.1 Memory Architecture
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph memory["🧠 Memory Layers"]
         short["⚡ Short-Term<br/><i>Current session</i><br/>Redis"]
@@ -871,7 +871,7 @@ class ConversationLogger:
 ### 10.1 Session Lifecycle
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 sequenceDiagram
     participant U as 👤 User
     participant A as 🤖 AI

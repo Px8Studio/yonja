@@ -4,6 +4,43 @@
 
 ---
 
+## � Architecture at a Glance
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+flowchart TB
+    subgraph external["📱 External Systems"]
+        yonca["Yonca Mobile App"]
+        mygov["mygov ID Gateway"]
+    end
+    
+    subgraph container["🐳 Yonca AI Sidecar"]
+        api["🔌 FastAPI Gateway"]
+        pii["🛡️ PII Gateway"]
+        graph["🧠 LangGraph Brain"]
+        rules["📚 Rules Engine"]
+        llm["🤖 LLM Provider"]
+    end
+    
+    subgraph data["💾 Data Layer"]
+        pg["🐘 PostgreSQL<br/>Synthetic Profiles"]
+        redis["⚡ Redis<br/>Sessions + Memory"]
+    end
+    
+    yonca -->|"JWT + Message"| api
+    mygov -.->|"Token Validation"| api
+    api --> pii --> graph
+    graph <--> rules
+    graph --> llm
+    graph <--> redis
+    graph <--> pg
+    
+    style container fill:#e8f5e9,stroke:#388e3c,stroke-width:3px
+    style data fill:#fff3e0,stroke:#f57c00
+```
+
+---
+
 ## 🏗️ Dual-Reality Data Architecture
 
 To integrate seamlessly with the **Yonca** ecosystem while respecting its government-grade security, we adopt a "dual-reality" data architecture. This ensures our AI agent operates in a safe synthetic environment during the prototype phase, while the infrastructure is technically ready to handle complex authentication methods (mygov ID, SİMA, Asan İmza) when moved to production.
@@ -11,19 +48,18 @@ To integrate seamlessly with the **Yonca** ecosystem while respecting its govern
 ### Multi-Layered Data Stack
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph docker["🐳 DOCKER CONTAINER"]
         direction TB
         subgraph services["🧠 Microservices"]
-            api["🔌 Service 1: API Gateway<br/><i>FastAPI + Token Validation</i>"]
-            brain["🧠 Service 2: Agent Brain<br/><i>LangGraph Orchestrator</i>"]
-            data["💾 Service 3: Data Engine<br/><i>PostgreSQL + Redis</i>"]
-            syngen["🧪 Service 4: Synthetic Generator<br/><i>SDV + MOSTLY AI</i>"]
+            api["🔌 API Gateway<br/><i>FastAPI + Token Validation</i>"]
+            brain["🧠 Agent Brain<br/><i>LangGraph Orchestrator</i>"]
+            data["💾 Data Engine<br/><i>SQLAlchemy + Redis</i>"]
         end
         
         subgraph storage["📊 Persistence Layer"]
-            pg["🐘 PostgreSQL<br/><i>Ground Truth: Synthetic Profiles</i>"]
+            pg["🐘 PostgreSQL<br/><i>Synthetic Profiles</i>"]
             redis["⚡ Redis<br/><i>Agent Memory + Cache</i>"]
         end
         
@@ -31,20 +67,15 @@ graph TB
         brain --> data
         brain --> redis
         data --> pg
-        syngen --> pg
     end
     
     subgraph external["🌐 External"]
         yonca["📱 Yonca App"]
-        mygov["🔐 mygov ID Gateway"]
+        mygov["🔐 mygov ID"]
     end
     
     yonca -->|"JWT Token"| api
-    mygov -.->|"Token Validation"| api
-    
-    style docker fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#0d47a1
-    style services fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    style storage fill:#fff9c4,stroke:#f9a825,color:#5d4037
+    mygov -.->|"Validation"| api
 ```
 
 ### A. PostgreSQL: The Persistence Layer
@@ -78,7 +109,7 @@ The Yonca platform uses **mygov ID** (formerly *digital.login*), the standard ga
 Our sidecar module does **NOT** directly handle Asan İmza or SİMA login. Instead, it leverages the existing security of the main Yonca app:
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 sequenceDiagram
     participant F as 🧑‍🌾 Farmer
     participant Y as 📱 Yonca App
@@ -134,37 +165,154 @@ We propose building the Yonca AI Sidecar using **LangGraph**—an enterprise-gra
 ### Agentic Architecture: The Supervisor Pattern
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph supervisor["🎯 Supervisor Agent"]
         sup["Orchestrator<br/><i>Routes tasks to specialists</i>"]
     end
     
     subgraph specialists["👥 Specialist Sub-Agents"]
-        agro["🌾 Agronomist Agent<br/><i>Sowing dates, crop cycles</i>"]
-        subsidy["💰 Subsidy Specialist<br/><i>EKTIS deadlines, applications</i>"]
-        weather["⛅ Weather Analyst<br/><i>Forecast monitoring</i>"]
+        agro["🌾 Agronomist<br/><i>Crops, sowing dates</i>"]
+        weather["⛅ Weather<br/><i>Forecasts, alerts</i>"]
+        validator["✅ Validator<br/><i>Rules engine</i>"]
     end
     
     subgraph memory["💾 Memory Layer"]
         short["Short-Term<br/><i>Current session</i>"]
-        long["Long-Term<br/><i>Farmer history via Checkpointer</i>"]
+        long["Long-Term<br/><i>Redis Checkpointer</i>"]
     end
     
     sup --> agro
-    sup --> subsidy
     sup --> weather
+    agro --> validator
+    weather --> validator
     agro --> short
-    subsidy --> short
-    weather --> short
     short <--> long
-    
-    style supervisor fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px,color:#1b5e20
-    style specialists fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
-    style memory fill:#fff9c4,stroke:#f9a825,color:#5d4037
 ```
 
 The system **remembers context**—if a farmer mentioned a pest issue three days ago, the assistant recalls it in subsequent sessions, even when using synthetic profiles.
+
+---
+
+## ✅ Actual Implementation Status (January 2026)
+
+> This section reflects what has **actually been built** vs. the original design.
+
+### Implemented LangGraph Flow
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+stateDiagram-v2
+    [*] --> supervisor: User Message
+    
+    supervisor --> context_loader: needs_context
+    supervisor --> greeting: is_greeting
+    supervisor --> off_topic: off_topic
+    
+    context_loader --> agronomist: farming_query
+    context_loader --> weather: weather_query
+    
+    agronomist --> validator: validate
+    weather --> validator: validate
+    
+    validator --> [*]: ✅ Response Ready
+    validator --> agronomist: 🔄 Retry (low confidence)
+    
+    greeting --> [*]: Direct response
+    off_topic --> [*]: Polite decline
+    
+    note right of supervisor
+        11 Intent Types:
+        irrigation, fertilization,
+        pest_control, harvest,
+        planting, crop_rotation,
+        greeting, weather,
+        general_advice, off_topic,
+        clarification
+    end note
+```
+
+### Component Implementation Matrix
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+block-beta
+    columns 3
+    
+    block:layer1["🔌 API Layer"]:1
+        space:1
+        api1["FastAPI ✅"]
+        api2["Rate Limit ✅"]
+        api3["CORS ✅"]
+    end
+    
+    block:layer2["🧠 Agent Layer"]:1
+        space:1
+        ag1["Supervisor ✅"]
+        ag2["Agronomist ✅"]
+        ag3["Validator ✅"]
+    end
+    
+    block:layer3["🤖 LLM Layer"]:1
+        space:1
+        llm1["Groq ✅"]
+        llm2["Ollama ✅"]
+        llm3["Gemini ✅"]
+    end
+```
+
+### Database Schema (Implemented)
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+erDiagram
+    USER_PROFILES ||--o{ FARM_PROFILES : owns
+    FARM_PROFILES ||--o{ PARCELS : contains
+    PARCELS ||--o{ SOWING_DECLARATIONS : has
+    PARCELS ||--o{ NDVI_READINGS : monitors
+    PARCELS ||--o{ CROP_ROTATION_LOGS : tracks
+    
+    USER_PROFILES {
+        uuid id PK
+        string display_name
+        string experience_level
+        string region_code
+        json preferences
+    }
+    
+    FARM_PROFILES {
+        uuid id PK
+        uuid user_id FK
+        string name
+        string farm_type
+        float total_area_ha
+        string region
+    }
+    
+    PARCELS {
+        uuid id PK
+        uuid farm_id FK
+        string parcel_code
+        float area_ha
+        string soil_type
+        point gps_center
+    }
+    
+    SOWING_DECLARATIONS {
+        uuid id PK
+        uuid parcel_id FK
+        string crop_name
+        date sowing_date
+        string status
+    }
+    
+    NDVI_READINGS {
+        uuid id PK
+        uuid parcel_id FK
+        date reading_date
+        float ndvi_value
+    }
+```
 
 ---
 
@@ -173,7 +321,7 @@ The system **remembers context**—if a farmer mentioned a pest issue three days
 ### The Current Landscape
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph farmer["🧑‍🌾 Farmer"]
         phone["📱 Smartphone<br/><i>Low-bandwidth</i>"]
@@ -195,10 +343,6 @@ graph TB
     app --> satellite
     ektis <--> subsidy
     ektis <--> registry
-    
-    style farmer fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    style platform fill:#e1f5fe,stroke:#01579b,color:#01579b
-    style gov fill:#fff9c4,stroke:#f9a825,color:#5d4037
 ```
 
 | Aspect | Current State |
@@ -211,7 +355,7 @@ graph TB
 ### Technical Discovery Gaps
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph LR
     subgraph gaps["❓ Questions for Digital Umbrella"]
         q1["📱 Mobile Framework?<br/><i>Flutter/React Native/Native</i>"]
@@ -288,7 +432,7 @@ The entire intelligence module is a **Dockerized Microservice** ready to deploy.
 ### Level 0: Context Diagram
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph platform["🏛️ YONCA PLATFORM"]
         restapi["EXISTING REST API<br/><code>/api/v1/farms</code><br/><code>/api/v1/recommendations</code><br/><code>/api/v1/chatbot</code>"]
@@ -364,7 +508,7 @@ sequenceDiagram
 ### 1. PII-Stripping Gateway
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     subgraph ingest["① INGEST"]
         raw["Raw Request"]
@@ -408,7 +552,7 @@ flowchart LR
 The heart of the system—a **stateful graph** that orchestrates all AI decision-making with built-in safety and memory.
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart TB
     subgraph graph["🧠 LangGraph State Machine"]
         state["📋 State<br/><i>TypedDict: farm_profile,<br/>weather, chat_history</i>"]
@@ -522,7 +666,7 @@ def scan_for_real_data(state: FarmingState) -> FarmingState:
 **Location:** `src/yonca/sidecar/rag_engine.py`
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart TB
     subgraph pipeline["🤖 RAG Pipeline"]
         step1["① Intent Detection<br/><i>Azerbaijani → category</i>"]
@@ -556,7 +700,7 @@ flowchart TB
 **Location:** `src/yonca/sidecar/lite_inference.py`
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph LR
     subgraph modes["⚡ Inference Modes"]
         standard["🖥️ STANDARD<br/><i>Full Qwen3-4B</i><br/><i>Ollama</i>"]
@@ -609,7 +753,7 @@ timeline
 ### Phase Details
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     subgraph phase1["📦 Phase 1: Prototype<br/><i>Current</i>"]
         syn["100% Synthetic<br/>• Scenario farms<br/>• Generated weather<br/>• PII Gateway"]
@@ -674,7 +818,7 @@ Our module exposes a single, secure REST endpoint that Digital Umbrella can cons
 The biggest fear for an IT team is **"Integration Debt"**—the fear that they will have to rewrite their app to fit our AI.
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph LR
     subgraph fears["😰 IT Team Fears"]
         rewrite["Rewrite app code"]
@@ -752,7 +896,7 @@ POST /v1/ai/assistant/chat
 ### Target: ≥90% Accuracy
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     subgraph pipeline["Accuracy Assurance Pipeline"]
         llm["🤖 LLM Output<br/><i>0.5 base</i>"]
@@ -780,7 +924,7 @@ flowchart LR
 ### Example Validation Flow
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart TB
     subgraph query["📝 User Query"]
         q["Torpaq nəmliyi 25%,<br/>bu gün suvarmaq lazımdır?"]
@@ -820,7 +964,7 @@ flowchart TB
 ### REST Endpoints
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph LR
     subgraph core["🔌 Core Endpoints"]
         chat["POST /yonca-ai/chat<br/><i>Main advisory endpoint</i>"]
@@ -917,7 +1061,7 @@ graph LR
 ### Five Enhancement Modules
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph enhancements["🎯 Strategic Enhancement Modules"]
         direction TB
@@ -961,7 +1105,7 @@ graph TB
 ### Validation Tiers
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     subgraph tier1["🟢 Tier 1: Automatic"]
         auto["Pre-approved<br/>Rules match<br/>>90% confidence"]

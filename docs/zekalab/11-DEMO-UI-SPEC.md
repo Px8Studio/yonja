@@ -4,7 +4,68 @@
 
 ---
 
+## ✅ Implementation Status (January 2026)
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+pie showData
+    title Demo UI Feature Completion
+    "✅ Implemented" : 80
+    "🔄 In Progress" : 15
+    "⏳ Planned" : 5
+```
+
+### What's Working Now
+
+| Feature | Status | Notes |
+|:--------|:------:|:------|
+| Chat Interface | ✅ | Full Azerbaijani support |
+| Token Streaming | ✅ | Real-time display |
+| Farm Context | ✅ | Auto-loads synthetic farms |
+| LangGraph Integration | ✅ | Native callback handler |
+| Session Persistence | ✅ | Redis-backed |
+| Quick Actions | ✅ | Weather, irrigation buttons |
+| User Authentication | ✅ | Google OAuth (optional) |
+| Langfuse Tracking | ✅ | Full observability |
+| Voice Input | ⏳ | Planned |
+| NDVI Visualization | ⏳ | Planned |
+
+---
+
 ## 1. Demo UI Overview
+
+### Architecture
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+flowchart TB
+    subgraph ui["🖥️ Chainlit Demo UI (:8501)"]
+        chat["💬 Chat Interface"]
+        sidebar["📋 Farm Selector"]
+        actions["⚡ Quick Actions"]
+    end
+    
+    subgraph backend["⚙️ Backend"]
+        api["🔌 Yonca API<br/>(:8000)"]
+        graph["🧠 LangGraph"]
+        llm["🤖 LLM Provider"]
+    end
+    
+    subgraph data["💾 Data"]
+        redis["⚡ Redis<br/>Sessions"]
+        pg["🐘 PostgreSQL<br/>Farms"]
+    end
+    
+    subgraph observe["📊 Observability"]
+        langfuse["Langfuse<br/>(:3001)"]
+    end
+    
+    ui <-->|"Stream"| api
+    api --> graph --> llm
+    graph <--> redis
+    graph <--> pg
+    graph --> langfuse
+```
 
 ### 1.1 Why Chainlit?
 
@@ -48,7 +109,7 @@ Chainlit provides a **native integration** with LangGraph via `cl.LangchainCallb
 ### 1.3 Demo Architecture
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph ui["🖥️ Demo UI (Chainlit)"]
         chat["Chat Interface"]
@@ -343,7 +404,7 @@ async def main(message: cl.Message):
 #### What Happens Automatically:
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 sequenceDiagram
     participant F as 🧑‍🌾 Farmer
     participant UI as 🖥️ Chainlit UI

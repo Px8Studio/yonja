@@ -230,107 +230,43 @@ body {
 
 /* ============================================
  * LOGIN PAGE CUSTOMIZATION
- * ============================================ */
+ * ============================================
+ * Note: The login page background image is configured via
+ * .chainlit/config.toml using login_page_image setting.
+ * CSS here only enhances specific elements.
+ */
 
-/* Login page container - agricultural gradient background */
-[data-testid="login-page"],
-.login-container,
-div[class*="login"] {
-    background: linear-gradient(
-        135deg,
-        #1b5e20 0%,      /* Dark green */
-        #2e7d32 25%,     /* Primary green */
-        #4caf50 50%,     /* Light green */
-        #81c784 75%,     /* Pale green */
-        #a5d6a7 100%     /* Very light green */
-    ) !important;
+/* Style the login form card for better visibility over the background */
+.flex.flex-col.gap-4.p-6,
+.w-full.max-w-xs {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
 }
 
-/* Login card/box styling */
-[data-testid="login-card"],
-.login-card,
-div[class*="login-card"],
-div[class*="LoginCard"] {
-    background: rgba(255, 255, 255, 0.95) !important;
-    border-radius: 16px !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
-    backdrop-filter: blur(10px) !important;
+/* Dark mode login card */
+.dark .flex.flex-col.gap-4.p-6,
+.dark .w-full.max-w-xs {
+    background: rgba(30, 30, 30, 0.95);
 }
 
-/* Login title */
-[data-testid="login-title"],
-.login-title,
-h1[class*="login"] {
-    color: var(--yonca-green-dark) !important;
-    font-weight: 700 !important;
+/* Login title styling */
+.text-2xl.font-bold {
+    color: var(--yonca-green-dark);
 }
 
-/* OAuth button styling */
-[data-testid="oauth-button"],
-button[class*="oauth"],
-.oauth-button {
-    background: var(--yonca-green-primary) !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 8px !important;
-    padding: 12px 24px !important;
-    font-weight: 600 !important;
-    transition: all 0.2s ease !important;
+.dark .text-2xl.font-bold {
+    color: var(--yonca-green-light);
 }
 
-[data-testid="oauth-button"]:hover,
-button[class*="oauth"]:hover,
-.oauth-button:hover {
-    background: var(--yonca-green-dark) !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3) !important;
+/* OAuth provider buttons - enhance with Yonca branding on hover */
+button[type="button"]:has(svg) {
+    transition: all 0.2s ease;
 }
 
-/* Google button specifically */
-button[class*="google"],
-[data-provider="google"] {
-    background: white !important;
-    color: #333 !important;
-    border: 2px solid #e0e0e0 !important;
-}
-
-button[class*="google"]:hover,
-[data-provider="google"]:hover {
-    background: #f5f5f5 !important;
+button[type="button"]:has(svg):hover {
     border-color: var(--yonca-green-primary) !important;
+    box-shadow: 0 2px 8px rgba(46, 125, 50, 0.2);
 }
-
-/* Decorative elements for login */
-[data-testid="login-page"]::before {
-    content: "🌾";
-    position: fixed;
-    top: 20%;
-    left: 10%;
-    font-size: 3rem;
-    opacity: 0.3;
-    animation: float 6s ease-in-out infinite;
-}
-
-[data-testid="login-page"]::after {
-    content: "🌻";
-    position: fixed;
-    bottom: 20%;
-    right: 10%;
-    font-size: 3rem;
-    opacity: 0.3;
-    animation: float 6s ease-in-out infinite 3s;
-}
-
-@keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-20px); }
-}
-
-/* Mobile responsive login */
-@media (max-width: 768px) {
-    [data-testid="login-page"]::before,
-    [data-testid="login-page"]::after {
-        display: none;
-    }
-}
-

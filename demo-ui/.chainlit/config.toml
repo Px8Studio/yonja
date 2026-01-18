@@ -132,13 +132,13 @@ alert_style = "classic"
 # Specify additional attributes for custom JS file
 # custom_js_attributes = "async type = \"module\""
 
-# Custom login page image - using an agricultural/nature themed gradient
-# You can replace this with your own image in /public/login-bg.jpg
-# login_page_image = "/public/login-bg.jpg"
+# Custom login page image - agricultural theme
+# Using Unsplash for a beautiful farm/agricultural background
+login_page_image = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1920&q=80"
 
-# Custom login page image filter (Tailwind internal filters, no dark/light variants)
-# login_page_image_filter = "brightness-75"
-# login_page_image_dark_filter = "brightness-50"
+# Custom login page image filter (Tailwind internal filters)
+login_page_image_filter = "brightness-75"
+login_page_image_dark_filter = "brightness-50"
 
 # Specify a custom meta URL (used for meta tags like og:url)
 # custom_meta_url = "https://github.com/Chainlit/chainlit"

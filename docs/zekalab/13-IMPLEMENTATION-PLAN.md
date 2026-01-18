@@ -60,13 +60,14 @@ yonca/
 │       │   ├── main.py              # FastAPI app
 │       │   ├── routes/
 │       │   │   ├── __init__.py
-│       │   │   ├── chat.py          # Chat endpoint
-│       │   │   ├── health.py        # Health checks
+│       │   │   ├── chat.py          # Chat endpoint + session mgmt
+│       │   │   ├── health.py        # Health checks + /scalability
+│       │   │   ├── models.py        # ✅ Model listing endpoint
 │       │   │   └── farms.py         # Farm context
 │       │   ├── middleware/
 │       │   │   ├── __init__.py
 │       │   │   ├── auth.py          # JWT validation
-│       │   │   ├── rate_limit.py    # Rate limiting
+│       │   │   ├── rate_limit.py    # ✅ Redis sliding window rate limiting
 │       │   │   └── metrics.py       # Prometheus
 │       │   └── schemas/
 │       │       ├── __init__.py
@@ -75,9 +76,13 @@ yonca/
 │       ├── llm/
 │       │   ├── __init__.py
 │       │   ├── factory.py           # Provider factory
+│       │   ├── http_pool.py         # ✅ HTTP connection pooling
+│       │   ├── model_roles.py       # Model role definitions
+│       │   ├── models.py            # Model registry
 │       │   └── providers/
 │       │       ├── __init__.py
 │       │       ├── base.py          # Abstract interface
+│       │       ├── groq.py          # ✅ Groq (open-source via cloud)
 │       │       ├── ollama.py        # Local LLM
 │       │       └── gemini.py        # Cloud LLM
 │       ├── agent/
@@ -102,6 +107,7 @@ yonca/
 │       │       └── harvest.yaml
 │       ├── data/
 │       │   ├── __init__.py
+│       │   ├── redis_client.py      # ✅ Redis session storage + pooling
 │       │   ├── database.py          # SQLAlchemy setup
 │       │   ├── models/
 │       │   │   ├── __init__.py
@@ -560,10 +566,11 @@ CMD ["uvicorn", "yonca.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 #### Tasks
 
-- [ ] **2.1.1** Create `src/yonca/llm/providers/base.py` with abstract interface
-- [ ] **2.1.2** Define `LLMMessage`, `LLMResponse` models
-- [ ] **2.1.3** Create provider factory pattern
-- [ ] **2.1.4** Write unit tests for providers
+- [x] **2.1.1** Create `src/yonca/llm/providers/base.py` with abstract interface ✅
+- [x] **2.1.2** Define `LLMMessage`, `LLMResponse` models ✅
+- [x] **2.1.3** Create provider factory pattern ✅
+- [x] **2.1.4** Add HTTP connection pooling (`src/yonca/llm/http_pool.py`) ✅
+- [ ] **2.1.5** Write unit tests for providers
 
 ---
 
@@ -573,10 +580,10 @@ CMD ["uvicorn", "yonca.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 #### Tasks
 
-- [ ] **2.2.1** Create `src/yonca/llm/providers/ollama.py`
-- [ ] **2.2.2** Implement `generate()` method
-- [ ] **2.2.3** Implement `stream()` method with async iterator
-- [ ] **2.2.4** Add health check
+- [x] **2.2.1** Create `src/yonca/llm/providers/ollama.py` ✅
+- [x] **2.2.2** Implement `generate()` method ✅
+- [x] **2.2.3** Implement `stream()` method with async iterator ✅
+- [x] **2.2.4** Add health check ✅
 - [x] **2.2.5** Test with Qwen3 model ✅ (qwen3:4b available in Docker)
 - [x] **2.2.6** Test with ATLLaMA model ✅ (atllama imported from GGUF)
 
@@ -604,24 +611,38 @@ curl http://localhost:11434/api/chat -d '{
 
 #### Tasks
 
-- [ ] **2.3.1** Create `src/yonca/llm/providers/gemini.py`
-- [ ] **2.3.2** Handle Gemini message format conversion
-- [ ] **2.3.3** Implement streaming with async
-- [ ] **2.3.4** Add API key validation
+- [x] **2.3.1** Create `src/yonca/llm/providers/gemini.py` ✅
+- [x] **2.3.2** Handle Gemini message format conversion ✅
+- [x] **2.3.3** Implement streaming with async ✅
+- [x] **2.3.4** Add API key validation ✅
 - [ ] **2.3.5** Test with Gemini Flash model
 
 ---
 
-### 2.4 Provider Factory
+### 2.4 Groq Integration (Open-Source via Cloud API)
+
+**Goal:** Implement Groq provider for open-source models with cloud speed.
+
+#### Tasks
+
+- [x] **2.4.1** Create `src/yonca/llm/providers/groq.py` ✅
+- [x] **2.4.2** Handle Groq message format (OpenAI-compatible) ✅
+- [x] **2.4.3** Implement streaming with async ✅
+- [x] **2.4.4** Integrate with HTTP connection pool ✅
+
+---
+
+### 2.5 Provider Factory
 
 **Goal:** Automatic provider selection based on configuration.
 
 #### Tasks
 
-- [ ] **2.4.1** Create `src/yonca/llm/factory.py`
-- [ ] **2.4.2** Implement `get_llm_provider()` function
-- [ ] **2.4.3** Add fallback logic
-- [ ] **2.4.4** Integration test both providers
+- [x] **2.5.1** Create `src/yonca/llm/factory.py` ✅
+- [x] **2.5.2** Implement `get_llm_provider()` function ✅
+- [x] **2.5.3** Add Groq, Gemini, Ollama provider creation ✅
+- [ ] **2.5.4** Add fallback logic
+- [ ] **2.5.5** Integration test all providers
 
 ---
 
@@ -629,16 +650,18 @@ curl http://localhost:11434/api/chat -d '{
 
 | Task | Status | Notes |
 |:-----|:------:|:------|
-| Abstract LLM interface | ⬜ | |
-| LLMMessage/LLMResponse models | ⬜ | |
-| Ollama provider | ⬜ | |
-| Ollama streaming | ⬜ | |
-| Gemini provider | ⬜ | |
-| Gemini streaming | ⬜ | |
-| Provider factory | ⬜ | |
+| Abstract LLM interface | ✅ | `providers/base.py` |
+| LLMMessage/LLMResponse models | ✅ | In `base.py` |
+| HTTP connection pooling | ✅ | `http_pool.py` - 50+ concurrent users |
+| Ollama provider | ✅ | `providers/ollama.py` |
+| Ollama streaming | ✅ | Async iterator implemented |
+| Gemini provider | ✅ | `providers/gemini.py` |
+| Gemini streaming | ✅ | Async iterator implemented |
+| Groq provider | ✅ | `providers/groq.py` - OpenAI compatible |
+| Groq streaming | ✅ | Async iterator implemented |
+| Provider factory | ✅ | `factory.py` |
 | Unit tests | ⬜ | |
-| Integration test (Ollama) | ⬜ | |
-| Integration test (Gemini) | ⬜ | |
+| Integration tests | ⬜ | |
 
 ---
 
@@ -851,20 +874,49 @@ rules:
 - [ ] **5.2.2** Implement prompt injection detection
 - [ ] **5.2.3** Implement length limits
 - [ ] **5.2.4** Implement encoding sanitization
-- [ ] **5.2.5** Add rate limiting middleware
 
 ---
 
-### 5.3 JWT Authentication
+### 5.3 Rate Limiting Middleware
+
+**Goal:** Protect API from abuse with distributed rate limiting.
+
+#### Tasks
+
+- [x] **5.3.1** Create `src/yonca/api/middleware/rate_limit.py` ✅
+- [x] **5.3.2** Implement Redis-based sliding window algorithm ✅
+- [x] **5.3.3** Add rate limit headers (`X-RateLimit-*`) ✅
+- [x] **5.3.4** Configure per-endpoint limits ✅
+- [x] **5.3.5** Add `RateLimitExceeded` exception handler ✅
+- [x] **5.3.6** Test with concurrent requests ✅
+
+---
+
+### 5.4 Session Management
+
+**Goal:** Persistent multi-turn conversations across requests.
+
+#### Tasks
+
+- [x] **5.4.1** Create `src/yonca/data/redis_client.py` ✅
+- [x] **5.4.2** Implement Redis connection pooling (50+ connections) ✅
+- [x] **5.4.3** Create `SessionStorage` class ✅
+- [x] **5.4.4** Add session CRUD endpoints (`GET/DELETE /session/{id}`) ✅
+- [x] **5.4.5** Implement message history (max 50 messages/session) ✅
+- [x] **5.4.6** Add 1-hour TTL for session expiry ✅
+
+---
+
+### 5.5 JWT Authentication
 
 **Goal:** Validate API tokens.
 
 #### Tasks
 
-- [ ] **5.3.1** Create `src/yonca/api/middleware/auth.py`
-- [ ] **5.3.2** Implement JWT validation
-- [ ] **5.3.3** Create mock auth for development
-- [ ] **5.3.4** Document auth flow
+- [ ] **5.5.1** Create `src/yonca/api/middleware/auth.py`
+- [ ] **5.5.2** Implement JWT validation
+- [ ] **5.5.3** Create mock auth for development
+- [ ] **5.5.4** Document auth flow
 
 ---
 
@@ -878,7 +930,12 @@ rules:
 | FIN masking | ⬜ | |
 | Input validator | ⬜ | |
 | Injection detection | ⬜ | |
-| Rate limiting | ⬜ | |
+| Rate limiting middleware | ✅ | Redis sliding window |
+| Rate limit headers | ✅ | `X-RateLimit-Limit/Remaining/Reset` |
+| Redis session storage | ✅ | `redis_client.py` |
+| Session connection pooling | ✅ | 50 max connections |
+| Multi-turn conversation | ✅ | History stored in Redis |
+| Session CRUD endpoints | ✅ | GET/DELETE /session/{id} |
 | JWT validation | ⬜ | |
 | Auth middleware | ⬜ | |
 

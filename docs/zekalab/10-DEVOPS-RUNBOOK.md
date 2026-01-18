@@ -76,6 +76,8 @@ graph LR
 
 ### 2.3 Environment Variables
 
+> **Note:** All environment variables use `YONCA_` prefix for namespace isolation.
+
 ```bash
 # .env.example
 # =====================================================
@@ -83,58 +85,62 @@ graph LR
 # =====================================================
 
 # Environment
-ENVIRONMENT=development  # development | staging | production
+YONCA_ENVIRONMENT=development  # development | staging | production
+YONCA_DEPLOYMENT_MODE=local    # local | cloud | open_source
 
 # API Configuration
-API_HOST=0.0.0.0
-API_PORT=8000
-API_WORKERS=4
-CORS_ORIGINS=["http://localhost:3000"]
+YONCA_API_HOST=0.0.0.0
+YONCA_API_PORT=8000
+YONCA_API_WORKERS=4
+YONCA_CORS_ORIGINS=["http://localhost:3000"]
 
 # Database
-DATABASE_URL=postgresql://yonca:password@localhost:5432/yonca_dev
-DATABASE_POOL_SIZE=10
-DATABASE_MAX_OVERFLOW=20
+YONCA_DATABASE_URL=postgresql://yonca:password@localhost:5432/yonca_dev
+YONCA_DATABASE_POOL_SIZE=10
+YONCA_DATABASE_MAX_OVERFLOW=20
 
-# Redis
-REDIS_URL=redis://localhost:6379/0
-REDIS_MAX_CONNECTIONS=50
+# Redis (✅ Implemented - Session Storage + Rate Limiting)
+YONCA_REDIS_URL=redis://localhost:6379/0
+YONCA_REDIS_MAX_CONNECTIONS=50  # Connection pool size for 100+ users
 
-# LLM Configuration
-LLM_MODEL_PATH=/models/qwen3-4b-instruct-q4_k_m.gguf
-LLM_CONTEXT_SIZE=4096
-LLM_MAX_TOKENS=1000
-LLM_TEMPERATURE=0.7
+# LLM Provider Selection
+YONCA_LLM_PROVIDER=groq  # groq | gemini | ollama
 
-# llama.cpp server
-LLAMA_SERVER_URL=http://localhost:8080
-LLAMA_N_GPU_LAYERS=35
+# Groq Configuration (Open-Source Models via Cloud API) ✅
+YONCA_GROQ_API_KEY=gsk_your_key_here
+YONCA_GROQ_MODEL=llama-3.3-70b-versatile  # or qwen3-32b
+
+# Gemini Configuration (Fallback)
+YONCA_GEMINI_API_KEY=your-gemini-key
+YONCA_GEMINI_MODEL=gemini-2.0-flash-exp
+
+# Ollama Configuration (Local)
+YONCA_OLLAMA_BASE_URL=http://localhost:11434
+YONCA_OLLAMA_MODEL=qwen3:4b
 
 # Authentication
-AUTH_ENABLED=true
-JWT_SECRET=your-secret-key-here
-JWT_ALGORITHM=HS256
-JWT_EXPIRY_HOURS=24
-MYGOV_PUBLIC_KEY_URL=https://mygov.az/.well-known/jwks.json
+YONCA_AUTH_ENABLED=true
+YONCA_JWT_SECRET=your-secret-key-here
+YONCA_JWT_ALGORITHM=HS256
+YONCA_JWT_EXPIRY_HOURS=24
 
 # Observability
-LOG_LEVEL=INFO
-LOG_FORMAT=json
-OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
-PROMETHEUS_ENABLED=true
+YONCA_LOG_LEVEL=INFO
+YONCA_LOG_FORMAT=json
+YONCA_PROMETHEUS_ENABLED=true
 
 # Feature Flags
-FEATURE_RAG_ENABLED=true
-FEATURE_WEATHER_INTEGRATION=false
-FEATURE_PROACTIVE_ALERTS=false
+YONCA_FEATURE_RAG_ENABLED=true
+YONCA_FEATURE_WEATHER_INTEGRATION=false
+YONCA_FEATURE_PROACTIVE_ALERTS=false
 
-# Rate Limiting
-RATE_LIMIT_REQUESTS_PER_MINUTE=30
-RATE_LIMIT_BURST=50
+# Rate Limiting (✅ Implemented - Redis Sliding Window)
+YONCA_RATE_LIMIT_REQUESTS_PER_MINUTE=30
+YONCA_RATE_LIMIT_BURST=50
 
 # Synthetic Data
-SYNTHETIC_DATA_SEED=42
-SYNTHETIC_FARMS_COUNT=1000
+YONCA_SYNTHETIC_DATA_SEED=42
+YONCA_SYNTHETIC_FARMS_COUNT=1000
 ```
 
 ### 2.4 Python Tooling Stack

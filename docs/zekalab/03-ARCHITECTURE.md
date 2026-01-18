@@ -56,7 +56,7 @@ graph TB
 | **Isolation** | Entirely isolated; prototype contains ONLY synthetic engine data |
 | **Tools** | Populated via **SDV** or **MOSTLY AI** |
 
-### B. Redis: The Context & Speed Layer
+### B. Redis: The Context & Speed Layer ✅ IMPLEMENTED
 
 | Aspect | Description |
 |:-------|:------------|
@@ -64,6 +64,24 @@ graph TB
 | **Agent State** | Stores conversation Checkpoints—if farmer closes app mid-conversation, Redis remembers the exact state |
 | **Real-time Data** | Caches simulated live feeds (synthetic weather, market prices) for instant AI responses |
 | **Session Management** | Manages thread IDs and conversation history |
+| **Connection Pooling** | ✅ 50 max connections via `redis.asyncio` (`redis_client.py`) |
+| **Rate Limiting** | ✅ Redis-backed sliding window algorithm (`rate_limit.py`) |
+
+#### Current Implementation Details
+
+```python
+# src/yonca/data/redis_client.py — Key components
+class RedisClient:
+    """Async Redis with connection pooling for 100+ concurrent users."""
+    _pool: ConnectionPool  # Singleton pool with max_connections=50
+
+class SessionStorage:
+    """Conversation history per session."""
+    - get_or_create(session_id)  # Create if not exists
+    - add_message(role, content)  # Store up to 50 messages
+    - get_messages()              # Retrieve history for context
+    # TTL: 1 hour auto-expiry
+```
 
 ---
 

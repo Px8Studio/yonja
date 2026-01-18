@@ -201,6 +201,9 @@ class YoncaAgent:
             }
         }
         
+        # Add metadata for farm ID and user region
+        config["metadata"] = {"farm_id": "your_farm_id", "user_region": "Baku"}
+        
         final_state = await graph.ainvoke(initial_state, config=config)
         
         # Extract response

@@ -153,7 +153,7 @@ app.add_middleware(
 # ===== Routes =====
 
 app.include_router(health.router, tags=["Health"])
-app.include_router(chat.router, prefix="/yonca-ai", tags=["Chat"])
+app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
 app.include_router(models.router, prefix="/api", tags=["Models"])
 
 

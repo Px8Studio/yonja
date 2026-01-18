@@ -59,6 +59,17 @@ class DemoSettings:
     default_language: str = "az"
     session_timeout_seconds: int = 3600
     
+    # Integration mode: "direct" (LangGraph) or "api" (FastAPI bridge)
+    # Use "api" mode to demo the exact API contract Digital Umbrella will use
+    integration_mode: str = field(
+        default_factory=lambda: os.getenv("INTEGRATION_MODE", "direct")
+    )
+    
+    @property
+    def use_api_bridge(self) -> bool:
+        """Check if using API bridge mode."""
+        return self.integration_mode.lower() == "api"
+    
     # Feature flags
     enable_feedback: bool = True
     enable_farm_selector: bool = True

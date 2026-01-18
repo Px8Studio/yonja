@@ -20,7 +20,7 @@ from yonca.llm.models import (
     get_model_info,
 )
 
-router = APIRouter(prefix="/models", tags=["models"])
+router = APIRouter(prefix="/models")
 
 
 # ============================================================

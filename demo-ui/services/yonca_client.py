@@ -3,13 +3,26 @@
 
 Used for the API client pattern when the demo UI talks to the
 backend via REST instead of direct LangGraph integration.
+
+This is the EXACT client Digital Umbrella will use in their mobile app.
 """
 
 import httpx
 from typing import Any, AsyncIterator
 import structlog
+from dataclasses import dataclass
 
 logger = structlog.get_logger(__name__)
+
+
+@dataclass
+class ChatResult:
+    """Structured response from the Yonca API."""
+    content: str
+    session_id: str
+    model: str
+    tokens_used: int = 0
+    message_count: int = 0
 
 
 class YoncaClientError(Exception):
@@ -85,17 +98,18 @@ class YoncaClient:
         message: str,
         session_id: str | None = None,
         farm_id: str | None = None,
-    ) -> dict[str, Any]:
+        user_id: str | None = None,
+    ) -> ChatResult:
         """Send a chat message.
         
         Args:
             message: User message in Azerbaijani.
             session_id: Session ID for conversation continuity.
             farm_id: Optional farm context ID.
-            stream: Whether to stream the response.
+            user_id: Optional user identifier for tracking.
             
         Returns:
-            Response dictionary with 'content' and metadata.
+            ChatResult with response content and metadata.
         """
         payload = {
             "message": message,
@@ -106,6 +120,8 @@ class YoncaClient:
             payload["session_id"] = session_id
         if farm_id:
             payload["farm_id"] = farm_id
+        if user_id:
+            payload["user_id"] = user_id
         
         try:
             response = await self.client.post(
@@ -113,7 +129,15 @@ class YoncaClient:
                 json=payload,
             )
             response.raise_for_status()
-            return response.json()
+            data = response.json()
+            
+            return ChatResult(
+                content=data.get("response", ""),
+                session_id=data.get("session_id", session_id or ""),
+                model=data.get("model", "unknown"),
+                tokens_used=data.get("tokens_used", 0),
+                message_count=data.get("message_count", 0),
+            )
             
         except httpx.HTTPStatusError as e:
             logger.error(

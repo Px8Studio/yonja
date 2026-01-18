@@ -229,6 +229,75 @@
             "options": { "cwd": "${workspaceFolder}" },
             "problemMatcher": [],
             "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        // ================================================
+        // 🖥️ Demo UI (Chainlit)
+        // ================================================
+        {
+            "label": "🖥️ Demo UI: Start Local (Python)",
+            "detail": "Run Chainlit demo locally with hot reload",
+            "type": "shell",
+            "command": "${workspaceFolder}\\.venv\\Scripts\\chainlit.exe",
+            "args": ["run", "app.py", "-w", "--port", "8501"],
+            "options": {
+                "cwd": "${workspaceFolder}/demo-ui",
+                "env": { 
+                    "PYTHONPATH": "${workspaceFolder}/src;${workspaceFolder}/demo-ui",
+                    "LLM_PROVIDER": "ollama",
+                    "OLLAMA_BASE_URL": "http://localhost:11434",
+                    "REDIS_URL": "redis://localhost:6379/0"
+                }
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "isBackground": true
+        },
+        {
+            "label": "🖥️ Demo UI: Start Docker",
+            "detail": "Run Chainlit demo in Docker container",
+            "type": "shell",
+            "command": "docker-compose",
+            "args": ["-f", "docker-compose.local.yml", "--profile", "demo", "up", "-d", "demo-ui"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "🖥️ Demo UI: Stop Docker",
+            "detail": "Stop Demo UI container",
+            "type": "shell",
+            "command": "docker-compose",
+            "args": ["-f", "docker-compose.local.yml", "--profile", "demo", "stop", "demo-ui"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "🖥️ Demo UI: View Logs",
+            "detail": "Follow demo-ui container logs",
+            "type": "shell",
+            "command": "docker",
+            "args": ["logs", "-f", "yonca-demo-ui"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "isBackground": true,
+            "presentation": { "reveal": "always", "panel": "dedicated" }
+        },
+        {
+            "label": "🚀 Dev: Full Stack with Demo UI",
+            "detail": "Start Docker + API + Demo UI",
+            "dependsOn": [
+                "🐳 Docker: Start (Ollama + Redis only)",
+                "🌿 Yonca API: Start Development Server",
+                "🖥️ Demo UI: Start Local (Python)"
+            ],
+            "dependsOrder": "sequence",
+            "problemMatcher": []
         }
     ],
     "inputs": [

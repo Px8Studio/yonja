@@ -825,19 +825,23 @@ rules:
 
 | Task | Status | Notes |
 |:-----|:------:|:------|
-| Chainlit setup | ⬜ | Native LangGraph integration |
-| `cl.LangchainCallbackHandler` | ⬜ | Automatic step visualization |
-| Session persistence (`thread_id`) | ⬜ | Via `cl.context.session.id` |
-| Farm selector | ⬜ | `cl.ChatSettings` widget |
-| Azerbaijani UI | ⬜ | Localization strings |
-| Docker Compose finalized | ⬜ | |
-| Ollama service | ⬜ | |
-| PostgreSQL service | ⬜ | |
-| Redis service | ⬜ | |
-| render.yaml | ⬜ | |
-| Render deployment | ⬜ | |
-| GitHub Actions | ⬜ | |
+| Chainlit setup | ✅ | Native LangGraph integration |
+| `cl.LangchainCallbackHandler` | ✅ | Automatic step visualization |
+| Session persistence (`thread_id`) | ✅ | Via `cl.context.session.id` |
+| Farm selector | ✅ | `cl.ChatSettings` widget |
+| Azerbaijani UI | ✅ | Localization in `locales/az.json` |
+| Docker Compose finalized | ✅ | `demo-ui` service added |
+| Ollama service | ✅ | Already in docker-compose |
+| PostgreSQL service | ⬜ | Optional (SQLite default) |
+| Redis service | ✅ | Already in docker-compose |
+| render.yaml | ✅ | Cloud deployment blueprint |
+| Render deployment | ⬜ | Manual step required |
+| GitHub Actions | ✅ | `.github/workflows/ci.yml` |
 
+> ✅ **Phase 6 Core Complete!** Demo UI built with Chainlit + LangGraph native integration. Deployment configs ready.
+>
+> 📁 **Implementation:** See `demo-ui/` directory
+>
 > 💡 **Time Savings:** Using native Chainlit + LangGraph integration reduces UI development from ~2 weeks to ~1 hour. The callback handler provides automatic step visualization, token streaming, and intermediate state display—no custom React required.
 
 ---
@@ -846,12 +850,12 @@ rules:
 
 | Milestone | Week | Deliverable | Success Criteria |
 |:----------|:----:|:------------|:-----------------|
-| **M1: Foundation** | 2 | Basic API running in Docker | `/health` returns 200 |
-| **M2: LLM Layer** | 4 | Both providers working | Can chat with Ollama & Gemini |
-| **M3: Data Layer** | 6 | Synthetic farms in DB | 5 user personas, 10+ farms |
-| **M4: Agent Brain** | 8 | LangGraph orchestration | Multi-turn conversations work |
-| **M5: Security** | 10 | PII protection active | No PII in LLM calls |
-| **M6: Deployed** | 12 | Demo available online | Render URL accessible |
+| **M1: Foundation** | 2 | Basic API running in Docker | `/health` returns 200 ✅ |
+| **M2: LLM Layer** | 4 | Both providers working | Can chat with Ollama & Gemini ✅ |
+| **M3: Data Layer** | 6 | Synthetic farms in DB | 5 user personas, 10+ farms ✅ |
+| **M4: Agent Brain** | 8 | LangGraph orchestration | Multi-turn conversations work ✅ |
+| **M5: Security** | 10 | PII protection active | No PII in LLM calls ✅ |
+| **M6: Deployed** | 12 | Demo available online | Render URL accessible ⬜ |
 
 ---
 

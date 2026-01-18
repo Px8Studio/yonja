@@ -188,6 +188,49 @@ services:
   #     timeout: 5s
   #     retries: 5
 
+  # ================================================
+  # Chainlit Demo UI
+  # ================================================
+  demo-ui:
+    build:
+      context: .
+      dockerfile: demo-ui/Dockerfile
+      target: development
+    container_name: yonca-demo-ui
+    ports:
+      - "8501:8501"
+    volumes:
+      # Mount source code for hot reload
+      - ./src:/app/src
+      - ./demo-ui:/app/demo-ui
+      - ./prompts:/app/prompts
+      - ./data:/app/data
+    environment:
+      # LLM settings
+      - LLM_PROVIDER=ollama
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=qwen3:4b
+      
+      # Redis for checkpointing
+      - REDIS_URL=redis://redis:6379/0
+      
+      # Database
+      - DATABASE_URL=sqlite+aiosqlite:///./data/yonca.db
+      
+      # Yonca API (optional, for API client pattern)
+      - YONCA_API_URL=http://api:8000
+      
+      # Python path
+      - PYTHONPATH=/app/src:/app/demo-ui
+    depends_on:
+      - redis
+      - ollama
+    networks:
+      - yonca-network
+    restart: unless-stopped
+    profiles:
+      - demo  # Only runs with: docker-compose --profile demo up
+
 # ================================================
 # Networks
 # ================================================

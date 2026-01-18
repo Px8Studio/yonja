@@ -72,3 +72,6 @@ data/
 
 # Models
 models/
+
+# Chainlit
+.chainlit/

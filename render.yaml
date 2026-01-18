@@ -1,0 +1,150 @@
+# Render.com Blueprint for Yonca AI
+# https://render.com/docs/blueprint-spec
+#
+# Deploy with: render blueprint apply
+# Or connect GitHub repo to Render Dashboard
+
+services:
+  # ============================================
+  # Yonca API (FastAPI Backend)
+  # ============================================
+  - type: web
+    name: yonca-api
+    runtime: python
+    plan: starter  # $7/month, can upgrade for production
+    region: frankfurt  # Closest to Azerbaijan
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn yonca.api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      # Deployment mode
+      - key: DEPLOYMENT_MODE
+        value: cloud
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: false
+      
+      # Python path
+      - key: PYTHONPATH
+        value: /opt/render/project/src/src
+      
+      # LLM Provider (Gemini for cloud)
+      - key: LLM_PROVIDER
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash
+      
+      # Groq as fallback
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      
+      # Database
+      - key: DATABASE_URL
+        fromDatabase:
+          name: yonca-db
+          property: connectionString
+      
+      # Redis
+      - key: REDIS_URL
+        fromService:
+          name: yonca-redis
+          type: redis
+          property: connectionString
+      
+      # Security (generate with: openssl rand -hex 32)
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_EXPIRY_HOURS
+        value: 24
+      
+      # Rate limiting
+      - key: RATE_LIMIT_REQUESTS_PER_MINUTE
+        value: 30
+      - key: RATE_LIMIT_BURST
+        value: 50
+      
+      # CORS (add your frontend domains)
+      - key: CORS_ORIGINS
+        value: https://yonca-demo.onrender.com,https://yonca.az
+      
+      # Observability
+      - key: LOG_LEVEL
+        value: INFO
+      - key: LOG_FORMAT
+        value: json
+
+  # ============================================
+  # Chainlit Demo UI
+  # ============================================
+  - type: web
+    name: yonca-demo
+    runtime: python
+    plan: starter
+    region: frankfurt
+    buildCommand: pip install -r requirements.txt && pip install -r demo-ui/requirements.txt
+    startCommand: cd demo-ui && chainlit run app.py --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    envVars:
+      # Python path
+      - key: PYTHONPATH
+        value: /opt/render/project/src/src:/opt/render/project/src/demo-ui
+      
+      # LLM Provider
+      - key: LLM_PROVIDER
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash
+      
+      # Groq fallback
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      
+      # Redis for checkpointing
+      - key: REDIS_URL
+        fromService:
+          name: yonca-redis
+          type: redis
+          property: connectionString
+      
+      # Database
+      - key: DATABASE_URL
+        fromDatabase:
+          name: yonca-db
+          property: connectionString
+      
+      # API URL (for API client pattern)
+      - key: YONCA_API_URL
+        value: https://yonca-api.onrender.com
+
+# ============================================
+# Database (PostgreSQL)
+# ============================================
+databases:
+  - name: yonca-db
+    plan: starter  # $7/month, 1GB storage
+    region: frankfurt
+    databaseName: yonca
+    user: yonca
+    postgresMajorVersion: 15
+
+# ============================================
+# Redis (for caching & session)
+# ============================================
+# Note: Render Redis requires a paid plan
+# Alternative: Use Upstash Redis (free tier available)
+# - type: redis
+#   name: yonca-redis
+#   plan: starter
+#   region: frankfurt
+#   maxmemoryPolicy: allkeys-lru

@@ -11,6 +11,7 @@ from typing import AsyncIterator
 import httpx
 
 from .base import LLMMessage, LLMProvider, LLMResponse, MessageRole
+from yonca.llm.http_pool import HTTPClientPool
 
 
 class GeminiProvider(LLMProvider):
@@ -57,7 +58,6 @@ class GeminiProvider(LLMProvider):
         self.api_key = api_key
         self.model = model
         self.timeout = timeout
-        self._client: httpx.AsyncClient | None = None
         
         # Gemini API base URL
         self.base_url = "https://generativelanguage.googleapis.com/v1beta"
@@ -71,26 +71,29 @@ class GeminiProvider(LLMProvider):
         return self.model
 
     async def _get_client(self) -> httpx.AsyncClient:
-        """Get or create the HTTP client."""
-        if self._client is None:
-            self._client = httpx.AsyncClient(
-                timeout=httpx.Timeout(self.timeout),
-            )
-        return self._client
+        """Get HTTP client from the shared connection pool.
+        
+        Uses HTTPClientPool for proper connection management across
+        multiple concurrent users.
+        """
+        return await HTTPClientPool.get_pool(
+            provider="gemini",
+            headers={
+                "Content-Type": "application/json",
+            },
+        )
 
     async def __aenter__(self) -> "GeminiProvider":
         """Async context manager entry."""
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        """Close the HTTP client on exit."""
-        if self._client is not None:
-            await self._client.aclose()
-            self._client = None
+        """Connection pool cleanup is handled by HTTPClientPool.close_all()."""
+        pass
 
     async def close(self) -> None:
-        """Close the HTTP client."""
-        await self.__aexit__(None, None, None)
+        """Connection pool cleanup is handled by HTTPClientPool.close_all()."""
+        pass
 
     def _format_messages(self, messages: list[LLMMessage]) -> tuple[str | None, list[dict]]:
         """Convert LLMMessage list to Gemini format.

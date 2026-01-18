@@ -11,6 +11,7 @@ from typing import AsyncIterator
 import httpx
 
 from .base import LLMMessage, LLMProvider, LLMResponse
+from yonca.llm.http_pool import HTTPClientPool
 
 
 class OllamaProvider(LLMProvider):
@@ -43,7 +44,6 @@ class OllamaProvider(LLMProvider):
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.timeout = timeout
-        self._client: httpx.AsyncClient | None = None
 
     @property
     def provider_name(self) -> str:
@@ -54,19 +54,24 @@ class OllamaProvider(LLMProvider):
         return self.model
 
     async def _get_client(self) -> httpx.AsyncClient:
-        """Get or create the HTTP client."""
-        if self._client is None:
-            self._client = httpx.AsyncClient(
-                base_url=self.base_url,
-                timeout=httpx.Timeout(self.timeout),
-            )
-        return self._client
+        """Get HTTP client from the shared connection pool."""
+        return await HTTPClientPool.get_pool(
+            provider="ollama",
+            base_url=self.base_url,
+            headers={"Content-Type": "application/json"},
+        )
+
+    async def __aenter__(self) -> "OllamaProvider":
+        """Async context manager entry."""
+        return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        """Close the HTTP client on exit."""
-        if self._client is not None:
-            await self._client.aclose()
-            self._client = None
+        """Connection pool cleanup is handled by HTTPClientPool.close_all()."""
+        pass
+
+    async def close(self) -> None:
+        """Connection pool cleanup is handled by HTTPClientPool.close_all()."""
+        pass
 
     def _format_messages(self, messages: list[LLMMessage]) -> list[dict]:
         """Convert LLMMessage list to Ollama format."""

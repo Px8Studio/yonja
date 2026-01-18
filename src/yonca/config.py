@@ -10,10 +10,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class DeploymentMode(str, Enum):
     """Deployment mode enum.
     
+    LOCAL: Local development with Ollama or Groq
     OPEN_SOURCE: Open-source models (Llama, Qwen, Mistral) via Groq or self-hosted
     CLOUD: Proprietary cloud models (Gemini, etc.)
     """
 
+    LOCAL = "local"  # Local development mode
     OPEN_SOURCE = "open_source"  # Open-source models (fast with proper hardware)
     CLOUD = "cloud"  # Proprietary cloud models
 
@@ -21,10 +23,12 @@ class DeploymentMode(str, Enum):
 class LLMProvider(str, Enum):
     """LLM provider enum.
     
+    OLLAMA: Local LLM server (for offline/development)
     GROQ: Open-source models (Llama, Qwen, Mistral) with enterprise-grade performance
     GEMINI: Google's proprietary cloud models
     """
 
+    OLLAMA = "ollama"  # Local LLM server
     GROQ = "groq"  # Open-source models, production-ready infrastructure
     GEMINI = "gemini"  # Proprietary cloud models
 
@@ -37,6 +41,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         env_prefix="YONCA_",
+        extra="ignore",  # Ignore extra fields in .env
     )
 
     # ===== Deployment =====
@@ -52,6 +57,10 @@ class Settings(BaseSettings):
 
     # ===== LLM Provider =====
     llm_provider: LLMProvider = LLMProvider.GROQ
+
+    # ===== Ollama (Local) =====
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "qwen3:4b"
 
     # ===== Open-Source Models (via Groq) =====
     # Demonstrates enterprise-ready performance with proper infrastructure
@@ -102,9 +111,14 @@ class Settings(BaseSettings):
     default_language: str = "az"
 
     @property
+    def is_local(self) -> bool:
+        """Check if running in local development mode."""
+        return self.deployment_mode == DeploymentMode.LOCAL
+
+    @property
     def is_open_source(self) -> bool:
         """Check if using open-source models."""
-        return self.deployment_mode == DeploymentMode.OPEN_SOURCE
+        return self.deployment_mode in (DeploymentMode.OPEN_SOURCE, DeploymentMode.LOCAL)
 
     @property
     def is_cloud(self) -> bool:
@@ -114,6 +128,8 @@ class Settings(BaseSettings):
     @property
     def active_llm_model(self) -> str:
         """Get the active LLM model name based on provider."""
+        if self.llm_provider == LLMProvider.OLLAMA:
+            return self.ollama_model
         if self.llm_provider == LLMProvider.GROQ:
             return self.groq_model
         return self.gemini_model

@@ -105,6 +105,30 @@ def create_gemini_provider(
     )
 
 
+def create_ollama_provider(
+    base_url: str | None = None,
+    model: str | None = None,
+    timeout: float = 120.0,
+) -> LLMProvider:
+    """Create an Ollama provider for local LLM inference.
+    
+    Args:
+        base_url: Ollama server URL (uses config if None)
+        model: Model name (uses config if None)
+        timeout: Request timeout in seconds
+        
+    Returns:
+        Configured OllamaProvider instance.
+    """
+    from .providers.ollama import OllamaProvider
+    
+    return OllamaProvider(
+        base_url=base_url or settings.ollama_base_url,
+        model=model or settings.ollama_model,
+        timeout=timeout,
+    )
+
+
 def create_llm_provider(
     provider_type: LLMProviderEnum | None = None,
     **kwargs,
@@ -123,7 +147,9 @@ def create_llm_provider(
     """
     provider = provider_type or settings.llm_provider
 
-    if provider == LLMProviderEnum.GROQ:
+    if provider == LLMProviderEnum.OLLAMA:
+        return create_ollama_provider(**kwargs)
+    elif provider == LLMProviderEnum.GROQ:
         return create_groq_provider(**kwargs)
     elif provider == LLMProviderEnum.GEMINI:
         return create_gemini_provider(**kwargs)

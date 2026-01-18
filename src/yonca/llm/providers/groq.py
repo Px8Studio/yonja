@@ -14,6 +14,7 @@ from typing import AsyncIterator
 import httpx
 
 from .base import LLMMessage, LLMProvider, LLMResponse
+from yonca.llm.http_pool import HTTPClientPool
 
 
 # Qwen3 models have a "thinking mode" that outputs <think>...</think> tags.
@@ -81,7 +82,8 @@ class GroqProvider(LLMProvider):
         self.model = model
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
-        self._client: httpx.AsyncClient | None = None
+        # Connection pool is now managed by HTTPClientPool (shared across instances)
+        self._pool_key = f"groq:{self.base_url}"
 
     @property
     def provider_name(self) -> str:
@@ -92,31 +94,33 @@ class GroqProvider(LLMProvider):
         return self.model
 
     async def _get_client(self) -> httpx.AsyncClient:
-        """Get or create the HTTP client."""
-        if self._client is None:
-            self._client = httpx.AsyncClient(
-                base_url=self.base_url,
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json",
-                },
-                timeout=httpx.Timeout(self.timeout),
-            )
-        return self._client
+        """Get HTTP client from the shared connection pool.
+        
+        Uses HTTPClientPool for proper connection management across
+        multiple concurrent users.
+        """
+        return await HTTPClientPool.get_pool(
+            provider="groq",
+            base_url=self.base_url,
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            },
+        )
 
     async def __aenter__(self) -> "GroqProvider":
         """Async context manager entry."""
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        """Close the HTTP client on exit."""
-        if self._client is not None:
-            await self._client.aclose()
-            self._client = None
+        """Connection pool cleanup is handled by HTTPClientPool.close_all()."""
+        # Pool is shared, don't close individual client
+        pass
 
     async def close(self) -> None:
-        """Close the HTTP client."""
-        await self.__aexit__(None, None, None)
+        """Connection pool cleanup is handled by HTTPClientPool.close_all()."""
+        # Pool is shared across all provider instances
+        pass
 
     def _format_messages(self, messages: list[LLMMessage]) -> list[dict]:
         """Convert LLMMessage list to OpenAI format (Groq uses OpenAI-compatible API)."""

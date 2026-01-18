@@ -1,5 +1,5 @@
 # src/yonca/api/routes/health.py
-"""Health check endpoints."""
+"""Health check endpoints with scalability metrics."""
 
 from datetime import datetime, timezone
 
@@ -7,6 +7,8 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from yonca.config import settings
+from yonca.data.redis_client import RedisClient
+from yonca.llm.http_pool import HTTPClientPool
 
 
 router = APIRouter()
@@ -53,7 +55,7 @@ async def readiness_check():
     Readiness check endpoint.
     
     Checks if the application is ready to serve traffic.
-    Can be extended to check database, redis, LLM provider connectivity.
+    Verifies LLM provider, Redis, and other critical services.
     """
     from yonca.llm.factory import check_llm_health
     
@@ -64,18 +66,23 @@ async def readiness_check():
     except Exception:
         llm_ready = False
     
+    # Check Redis health
+    try:
+        redis_ready = await RedisClient.health_check()
+    except Exception:
+        redis_ready = False
+    
     checks = {
         "config_loaded": True,
         "llm_provider": llm_ready,
-        # TODO: Add more checks as services are implemented
-        # "database": await check_database_connection(),
-        # "redis": await check_redis_connection(),
+        "redis": redis_ready,
     }
     
-    all_ready = all(checks.values())
+    # Core readiness requires LLM, Redis is optional (graceful degradation)
+    core_ready = checks["config_loaded"] and checks["llm_provider"]
     
     return ReadinessResponse(
-        ready=all_ready,
+        ready=core_ready,
         checks=checks,
     )
 
@@ -102,3 +109,42 @@ async def liveness_check():
     Used by Kubernetes for liveness probes.
     """
     return {"alive": True}
+
+
+@router.get("/scalability")
+async def scalability_status():
+    """
+    Scalability and resource status endpoint.
+    
+    Returns information about connection pools, rate limits,
+    and multi-user capacity for monitoring.
+    """
+    # Redis connection status
+    try:
+        redis_healthy = await RedisClient.health_check()
+    except Exception:
+        redis_healthy = False
+    
+    # HTTP pool stats
+    pool_stats = HTTPClientPool.get_pool_stats()
+    
+    return {
+        "redis": {
+            "healthy": redis_healthy,
+            "url": settings.redis_url,
+            "max_connections": settings.redis_max_connections,
+        },
+        "http_pools": pool_stats,
+        "rate_limiting": {
+            "enabled": True,
+            "requests_per_minute": settings.rate_limit_requests_per_minute,
+            "burst_limit": settings.rate_limit_burst,
+        },
+        "capacity": {
+            "estimated_concurrent_users": min(
+                settings.redis_max_connections,
+                100,  # Conservative estimate based on connection pool
+            ),
+            "session_ttl_seconds": 3600,  # 1 hour default
+        },
+    }

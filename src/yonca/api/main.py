@@ -1,5 +1,5 @@
 # src/yonca/api/main.py
-"""FastAPI application entry point."""
+"""FastAPI application entry point with multi-user scalability support."""
 
 from contextlib import asynccontextmanager
 
@@ -9,11 +9,14 @@ from fastapi.responses import JSONResponse
 
 from yonca.config import settings
 from yonca.api.routes import health, chat, models
+from yonca.api.middleware.rate_limit import RateLimitMiddleware, RateLimiter, RateLimitExceeded
+from yonca.data.redis_client import RedisClient
+from yonca.llm.http_pool import HTTPClientPool
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan events."""
+    """Application lifespan events with proper resource management."""
     # Startup
     mode_display = "Open-Source" if settings.deployment_mode.value == "open_source" else "Proprietary Cloud"
     provider_display = "Groq (Open-Source)" if settings.llm_provider.value == "groq" else "Gemini (Proprietary)"
@@ -26,13 +29,38 @@ async def lifespan(app: FastAPI):
         print(f"✨ Using open-source models that can be self-hosted")
         print(f"🚀 Performance: Enterprise-grade with proper infrastructure")
     
+    # Check Redis connectivity
+    try:
+        redis_ok = await RedisClient.health_check()
+        if redis_ok:
+            print(f"🗄️  Redis: Connected ({settings.redis_url})")
+        else:
+            print(f"⚠️  Redis: Not available (sessions will be stateless)")
+    except Exception as e:
+        print(f"⚠️  Redis: Connection failed - {e}")
+    
+    # Rate limiting info
+    print(f"🚦 Rate Limit: {settings.rate_limit_requests_per_minute} req/min")
+    
     # Show localhost for browsing, even if binding to 0.0.0.0
     display_host = "localhost" if settings.api_host == "0.0.0.0" else settings.api_host
     print(f"📍 API: http://{display_host}:{settings.api_port}")
     print(f"📚 Docs: http://{display_host}:{settings.api_port}/docs")
+    
     yield
-    # Shutdown
-    print("🌿 Yonca AI shutting down")
+    
+    # Shutdown - cleanup resources
+    print("🌿 Yonca AI shutting down...")
+    
+    # Close HTTP connection pools
+    await HTTPClientPool.close_all()
+    print("   ✓ HTTP connection pools closed")
+    
+    # Close Redis connections
+    await RedisClient.close()
+    print("   ✓ Redis connections closed")
+    
+    print("🌿 Shutdown complete")
 
 
 app = FastAPI(
@@ -58,6 +86,18 @@ async def value_error_handler(request: Request, exc: ValueError):
             "detail": str(exc),
             "path": str(request.url),
         },
+    )
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):  # noqa: ARG001
+    """Handle rate limit exceeded exceptions."""
+    detail = exc.detail if isinstance(exc.detail, dict) else {"error": str(exc.detail)}
+    retry_after = detail.get("retry_after", 60) if isinstance(detail, dict) else 60
+    return JSONResponse(
+        status_code=429,
+        content=detail,
+        headers={"Retry-After": str(retry_after)},
     )
 
 
@@ -95,6 +135,18 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+
+# ===== Rate Limiting Middleware =====
+# Applied after CORS so preflight requests aren't rate limited
+
+app.add_middleware(
+    RateLimitMiddleware,
+    limiter=RateLimiter(
+        requests_per_minute=settings.rate_limit_requests_per_minute,
+        burst_limit=settings.rate_limit_burst,
+    ),
 )
 
 

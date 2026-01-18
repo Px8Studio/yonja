@@ -90,7 +90,7 @@ class LLMProvider(ABC):
         ...
 
     @abstractmethod
-    def stream(
+    async def stream(
         self,
         messages: list[LLMMessage],
         temperature: float = 0.7,
@@ -106,6 +106,8 @@ class LLMProvider(ABC):
         Yields:
             String chunks of the generated response.
         """
+        # Make this a proper async generator
+        yield ""  # pragma: no cover
         raise NotImplementedError
 
     @abstractmethod

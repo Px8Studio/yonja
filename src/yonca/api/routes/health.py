@@ -55,12 +55,21 @@ async def readiness_check():
     Checks if the application is ready to serve traffic.
     Can be extended to check database, redis, LLM provider connectivity.
     """
+    from yonca.llm.factory import check_llm_health
+    
+    # Check LLM provider health
+    try:
+        llm_health = await check_llm_health()
+        llm_ready = llm_health.get("healthy", False)
+    except Exception:
+        llm_ready = False
+    
     checks = {
         "config_loaded": True,
+        "llm_provider": llm_ready,
         # TODO: Add more checks as services are implemented
         # "database": await check_database_connection(),
         # "redis": await check_redis_connection(),
-        # "llm_provider": await check_llm_provider(),
     }
     
     all_ready = all(checks.values())
@@ -69,6 +78,19 @@ async def readiness_check():
         ready=all_ready,
         checks=checks,
     )
+
+
+@router.get("/providers")
+async def check_providers():
+    """
+    Check health of all configured LLM providers.
+    
+    Returns status for each provider (Ollama, Groq, Gemini).
+    Useful for debugging and selecting the fastest available provider.
+    """
+    from yonca.llm.factory import check_all_providers_health
+    
+    return await check_all_providers_health()
 
 
 @router.get("/live")

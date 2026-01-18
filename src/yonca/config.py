@@ -19,6 +19,7 @@ class LLMProvider(str, Enum):
 
     OLLAMA = "ollama"
     GEMINI = "gemini"
+    GROQ = "groq"  # Ultra-fast cloud inference
 
 
 class Settings(BaseSettings):
@@ -45,11 +46,17 @@ class Settings(BaseSettings):
     # ===== LLM Provider =====
     llm_provider: LLMProvider = LLMProvider.OLLAMA
 
-    # Ollama (Local)
+    # Ollama (Local) - Slow on CPU, fast with GPU
     ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "qwen3:4b"  # Can also use: qwen3:1.7b, llama3.2, mistral, etc.
+    ollama_model: str = "qwen3:4b"  # Can also use: atllama, qwen3:1.7b
 
-    # Gemini (Cloud)
+    # Groq (Cloud) - Ultra-fast LPU hardware, FREE tier!
+    # Get key at: https://console.groq.com/
+    groq_api_key: str | None = None
+    groq_model: str = "llama-3.1-8b-instant"  # Fast and capable
+
+    # Gemini (Cloud) - Google's fast cloud API
+    # Get key at: https://ai.google.dev/
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-2.0-flash-exp"
 

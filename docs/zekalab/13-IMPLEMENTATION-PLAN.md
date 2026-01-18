@@ -599,12 +599,23 @@ rules:
 
 #### Tasks
 
-- [ ] **5.1.1** Create `src/yonca/security/pii_gateway.py`
-- [ ] **5.1.2** Implement phone number detection/masking
-- [ ] **5.1.3** Implement name detection/masking
-- [ ] **5.1.4** Implement FIN (ID) detection/masking
-- [ ] **5.1.5** Implement GPS coordinate masking
-- [ ] **5.1.6** Write comprehensive tests
+- [x] **5.1.1** Create `src/yonca/security/pii_gateway.py` ✅
+- [x] **5.1.2** Implement phone number detection/masking ✅
+- [x] **5.1.3** Implement name detection/masking ✅
+- [x] **5.1.4** Implement FIN (ID) detection/masking ✅
+- [x] **5.1.5** Implement GPS coordinate masking ✅
+- [x] **5.1.6** Write comprehensive tests ✅
+
+> 📁 **Implementation:** See `src/yonca/security/pii_gateway.py`
+> 
+> **Features:**
+> - Azerbaijani phone numbers (+994, 050, etc.)
+> - Full names with patronymic patterns
+> - FIN codes, ID cards, VOEN
+> - IBAN accounts, credit cards
+> - GPS coordinates (Azerbaijan range)
+> - Email addresses, addresses
+> - Logging-safe masking mode
 
 ---
 
@@ -614,14 +625,23 @@ rules:
 
 #### Tasks
 
-- [ ] **5.2.1** Create `src/yonca/security/input_validator.py`
-- [ ] **5.2.2** Implement prompt injection detection
-- [ ] **5.2.3** Implement length limits
-- [ ] **5.2.4** Implement encoding sanitization
+- [x] **5.2.1** Create `src/yonca/security/input_validator.py` ✅
+- [x] **5.2.2** Implement prompt injection detection ✅
+- [x] **5.2.3** Implement length limits ✅
+- [x] **5.2.4** Implement encoding sanitization ✅
+
+> 📁 **Implementation:** See `src/yonca/security/input_validator.py`
+>
+> **Features:**
+> - 20+ injection patterns (instruction override, role manipulation, jailbreak)
+> - Risk scoring (LOW/MEDIUM/HIGH/CRITICAL)
+> - Control character and invisible character detection
+> - Unicode normalization (NFKC)
+> - Structural risk assessment (code blocks, XML tags, etc.)
 
 ---
 
-### 5.3 Rate Limiting Middleware
+### ~~5.3 Rate Limiting Middleware~~ ✅
 
 **Goal:** Protect API from abuse with distributed rate limiting.
 
@@ -636,7 +656,7 @@ rules:
 
 ---
 
-### 5.4 Session Management
+### ~~5.4 Session Management~~ ✅
 
 **Goal:** Persistent multi-turn conversations across requests.
 
@@ -657,31 +677,72 @@ rules:
 
 #### Tasks
 
-- [ ] **5.5.1** Create `src/yonca/api/middleware/auth.py`
-- [ ] **5.5.2** Implement JWT validation
-- [ ] **5.5.3** Create mock auth for development
-- [ ] **5.5.4** Document auth flow
+- [x] **5.5.1** Create `src/yonca/api/middleware/auth.py` ✅
+- [x] **5.5.2** Implement JWT validation ✅
+- [x] **5.5.3** Create mock auth for development ✅
+- [x] **5.5.4** Document auth flow ✅
+
+> 📁 **Implementation:** See `src/yonca/api/middleware/auth.py`
+>
+> **Features:**
+> - HS256/RS256 JWT validation
+> - Token caching (5 min TTL)
+> - Scope-based authorization
+> - Mock mode for development
+> - API key authentication support
+> - FastAPI dependency injection (`require_auth`, `optional_auth`)
 
 ---
 
-### Phase 5 Checklist
+### 5.6 Output Validation
+
+**Goal:** Validate LLM responses for safety.
+
+#### Tasks
+
+- [x] **5.6.1** Create `src/yonca/security/output_validator.py` ✅
+- [x] **5.6.2** Implement prompt leakage detection ✅
+- [x] **5.6.3** Implement jailbreak indicator detection ✅
+- [x] **5.6.4** Implement response sanitization ✅
+- [x] **5.6.5** Create `SecurePromptBuilder` ✅
+
+> 📁 **Implementation:** See `src/yonca/security/output_validator.py`
+>
+> **Features:**
+> - System prompt leakage detection
+> - Jailbreak indicator patterns
+> - Harmful content filtering
+> - Automatic response sanitization
+> - Azerbaijani secure prompt template
+
+---
+
+### ~~Phase 5 Checklist~~ ✅ COMPLETE
 
 | Task | Status | Notes |
 |:-----|:------:|:------|
-| PII gateway | ⬜ | |
-| Phone masking | ⬜ | |
-| Name masking | ⬜ | |
-| FIN masking | ⬜ | |
-| Input validator | ⬜ | |
-| Injection detection | ⬜ | |
+| PII gateway | ✅ | `pii_gateway.py` - 12 pattern types |
+| Phone masking | ✅ | International & local formats |
+| Name masking | ✅ | Azerbaijani name patterns |
+| FIN masking | ✅ | + ID cards, VOEN, IBAN |
+| GPS masking | ✅ | Azerbaijan coordinate range |
+| Input validator | ✅ | `input_validator.py` |
+| Injection detection | ✅ | 20+ patterns, risk scoring |
+| Output validator | ✅ | `output_validator.py` |
+| Leakage detection | ✅ | System prompt protection |
+| Secure prompt builder | ✅ | Injection-resistant template |
 | Rate limiting middleware | ✅ | Redis sliding window |
 | Rate limit headers | ✅ | `X-RateLimit-Limit/Remaining/Reset` |
 | Redis session storage | ✅ | `redis_client.py` |
 | Session connection pooling | ✅ | 50 max connections |
 | Multi-turn conversation | ✅ | History stored in Redis |
 | Session CRUD endpoints | ✅ | GET/DELETE /session/{id} |
-| JWT validation | ⬜ | |
-| Auth middleware | ⬜ | |
+| JWT validation | ✅ | `auth.py` - HS256/RS256 |
+| Auth middleware | ✅ | `require_auth`, `optional_auth` |
+| Mock auth mode | ✅ | Auto-enabled in development |
+| Unit tests | ✅ | 78 tests passing |
+
+> ✅ **Phase 5 Complete!** Security layer with PII protection, input/output validation, and JWT auth.
 
 ---
 

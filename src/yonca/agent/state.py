@@ -1,0 +1,348 @@
+# src/yonca/agent/state.py
+"""LangGraph state schema for the Yonca AI agent.
+
+Defines the typed state that flows through the agent graph,
+including conversation history, farm context, and routing decisions.
+"""
+
+from datetime import datetime
+from enum import Enum
+from typing import Annotated, Literal
+
+from pydantic import BaseModel, Field
+from typing_extensions import TypedDict
+
+
+# ============================================================
+# Intent Classification
+# ============================================================
+
+class UserIntent(str, Enum):
+    """Classified intent of the user's message.
+    
+    The supervisor node classifies each message into one of these intents
+    to route to the appropriate specialist node.
+    """
+    
+    # Farming advice intents
+    IRRIGATION = "irrigation"           # Suvarma - watering questions
+    FERTILIZATION = "fertilization"     # Gübrələmə - fertilizer questions
+    PEST_CONTROL = "pest_control"       # Zərərverici - pest/disease questions
+    HARVEST = "harvest"                 # Məhsul yığımı - harvest timing
+    PLANTING = "planting"               # Əkin - planting/sowing questions
+    CROP_ROTATION = "crop_rotation"     # Növbəli əkin - rotation planning
+    
+    # Weather-related
+    WEATHER = "weather"                 # Hava - weather questions
+    
+    # General
+    GREETING = "greeting"               # Salam - greetings
+    GENERAL_ADVICE = "general_advice"   # Ümumi - general farming advice
+    OFF_TOPIC = "off_topic"             # Mövzudan kənar
+    
+    # Clarification
+    CLARIFICATION = "clarification"     # Dəqiqləşdirmə - need more info
+
+
+class Severity(str, Enum):
+    """Severity level for alerts and recommendations."""
+    
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+# ============================================================
+# Message Types
+# ============================================================
+
+class Message(BaseModel):
+    """A single message in the conversation.
+    
+    Includes metadata for observability and audit trails.
+    """
+    
+    model_config = {"use_enum_values": True}
+    
+    role: Literal["user", "assistant", "system"]
+    content: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Metadata
+    intent: UserIntent | None = None
+    confidence: float | None = None
+    node_source: str | None = None  # Which node generated this
+
+
+class Alert(BaseModel):
+    """An alert requiring user attention.
+    
+    Generated from NDVI readings, weather, or rule engine.
+    """
+    
+    alert_type: str
+    parcel_id: str | None = None
+    severity: Severity = Severity.MEDIUM
+    message_az: str
+    message_en: str | None = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+# ============================================================
+# Context Types
+# ============================================================
+
+class UserContext(BaseModel):
+    """User profile context for personalization.
+    
+    Loaded from database via UserRepository.get_context_for_ai()
+    """
+    
+    user_id: str
+    display_name: str
+    experience_level: str  # "novice", "intermediate", "expert"
+    preferred_language: str = "az"
+    farm_count: int = 0
+    total_area_ha: float = 0.0
+    primary_activities: list[str] = Field(default_factory=list)
+
+
+class FarmContext(BaseModel):
+    """Farm context for recommendations.
+    
+    Loaded from database via FarmRepository.get_context_for_ai()
+    """
+    
+    farm_id: str
+    farm_name: str
+    farm_type: str
+    region: str
+    total_area_ha: float
+    parcel_count: int = 0
+    parcels: list[dict] = Field(default_factory=list)
+    active_crops: list[dict] = Field(default_factory=list)
+    alerts: list[dict] = Field(default_factory=list)
+    center_coordinates: dict | None = None
+
+
+class WeatherContext(BaseModel):
+    """Weather data for recommendations.
+    
+    Will be populated from weather API or synthetic data.
+    """
+    
+    temperature_c: float | None = None
+    humidity_percent: float | None = None
+    precipitation_mm: float | None = None
+    wind_speed_kmh: float | None = None
+    forecast_summary: str | None = None
+    last_updated: datetime | None = None
+
+
+# ============================================================
+# Routing State
+# ============================================================
+
+class RoutingDecision(BaseModel):
+    """Supervisor's routing decision.
+    
+    Determines which specialist node handles the request.
+    """
+    
+    target_node: str  # "agronomist", "weather", "validator", "end"
+    intent: UserIntent
+    confidence: float
+    reasoning: str | None = None
+    requires_context: list[str] = Field(default_factory=list)  # ["farm", "weather", "user"]
+
+
+# ============================================================
+# Rule Engine Results
+# ============================================================
+
+class RuleMatch(BaseModel):
+    """A matched rule from the agronomy rules engine."""
+    
+    rule_id: str
+    rule_name: str
+    category: str  # "irrigation", "fertilization", etc.
+    priority: str  # "low", "medium", "high", "critical"
+    confidence: float
+    recommendation_az: str
+    recommendation_en: str | None = None
+    data: dict = Field(default_factory=dict)
+
+
+# ============================================================
+# Main Agent State (TypedDict for LangGraph)
+# ============================================================
+
+def _merge_messages(
+    existing: list[dict],
+    new: list[dict],
+) -> list[dict]:
+    """Reducer function to merge message lists."""
+    return existing + new
+
+
+def _merge_alerts(
+    existing: list[dict],
+    new: list[dict],
+) -> list[dict]:
+    """Reducer function to merge alert lists, avoiding duplicates."""
+    existing_ids = {(a.get("alert_type"), a.get("parcel_id")) for a in existing}
+    unique_new = [a for a in new if (a.get("alert_type"), a.get("parcel_id")) not in existing_ids]
+    return existing + unique_new
+
+
+def _merge_rules(
+    existing: list[dict],
+    new: list[dict],
+) -> list[dict]:
+    """Reducer function to merge matched rules."""
+    existing_ids = {r.get("rule_id") for r in existing}
+    unique_new = [r for r in new if r.get("rule_id") not in existing_ids]
+    return existing + unique_new
+
+
+class AgentState(TypedDict, total=False):
+    """Main state that flows through the LangGraph agent.
+    
+    This TypedDict defines all state that can be accessed and modified
+    by agent nodes. Uses LangGraph's Annotated type for reducers.
+    
+    State Flow:
+    1. User sends message -> messages updated
+    2. Supervisor classifies intent -> routing set
+    3. Context loaded if needed -> user_context, farm_context, weather
+    4. Specialist processes -> generates response
+    5. Validator checks rules -> matched_rules populated
+    6. Response sent -> messages updated with assistant reply
+    
+    Thread-Based Memory:
+    - Each conversation has a unique thread_id
+    - State is checkpointed to Redis after each step
+    - Farmer can resume conversation even after app close
+    """
+    
+    # ===== Session Identity =====
+    thread_id: str                          # Unique conversation ID
+    user_id: str | None                     # Authenticated user ID (if available)
+    session_id: str | None                  # Session ID from API
+    
+    # ===== Conversation =====
+    messages: Annotated[list[dict], _merge_messages]  # Full conversation history
+    current_input: str                      # Latest user input
+    current_response: str | None            # Generated response (before sending)
+    
+    # ===== Intent & Routing =====
+    routing: RoutingDecision | None         # Supervisor's routing decision
+    intent: UserIntent | None               # Classified intent
+    intent_confidence: float                # Intent classification confidence
+    
+    # ===== Context (Loaded on Demand) =====
+    user_context: UserContext | None        # User profile
+    farm_context: FarmContext | None        # Active farm data
+    weather: WeatherContext | None          # Current weather
+    
+    # ===== Rule Engine =====
+    matched_rules: Annotated[list[dict], _merge_rules]  # Matched agronomy rules
+    
+    # ===== Alerts =====
+    alerts: Annotated[list[dict], _merge_alerts]  # Active alerts
+    
+    # ===== Processing Metadata =====
+    processing_start: datetime | None       # When processing started
+    nodes_visited: list[str]                # Audit trail of nodes
+    error: str | None                       # Error message if any
+    
+    # ===== Output Control =====
+    should_stream: bool                     # Whether to stream response
+    language: str                           # Response language (default: "az")
+
+
+# ============================================================
+# State Helpers
+# ============================================================
+
+def create_initial_state(
+    thread_id: str,
+    user_input: str,
+    user_id: str | None = None,
+    session_id: str | None = None,
+    language: str = "az",
+) -> AgentState:
+    """Create initial state for a new conversation turn.
+    
+    Args:
+        thread_id: Unique conversation identifier
+        user_input: The user's message
+        user_id: Authenticated user ID (optional)
+        session_id: API session ID (optional)
+        language: Response language (default Azerbaijani)
+        
+    Returns:
+        Initialized AgentState ready for graph execution.
+    """
+    return AgentState(
+        thread_id=thread_id,
+        user_id=user_id,
+        session_id=session_id,
+        messages=[{
+            "role": "user",
+            "content": user_input,
+            "timestamp": datetime.utcnow().isoformat(),
+        }],
+        current_input=user_input,
+        current_response=None,
+        routing=None,
+        intent=None,
+        intent_confidence=0.0,
+        user_context=None,
+        farm_context=None,
+        weather=None,
+        matched_rules=[],
+        alerts=[],
+        processing_start=datetime.utcnow(),
+        nodes_visited=[],
+        error=None,
+        should_stream=False,
+        language=language,
+    )
+
+
+def add_assistant_message(
+    state: AgentState,
+    content: str,
+    node_source: str,
+    intent: UserIntent | None = None,
+) -> dict:
+    """Create an assistant message to add to state.
+    
+    Returns a dict that can be used with state["messages"].append()
+    or returned from a node for the reducer.
+    """
+    return {
+        "role": "assistant",
+        "content": content,
+        "timestamp": datetime.utcnow().isoformat(),
+        "node_source": node_source,
+        "intent": intent.value if intent else None,
+    }
+
+
+def get_conversation_summary(state: AgentState, max_messages: int = 10) -> str:
+    """Get a summary of recent conversation for context.
+    
+    Useful for providing context to LLM without overwhelming token limit.
+    """
+    messages = state.get("messages", [])[-max_messages:]
+    
+    lines = []
+    for msg in messages:
+        role = msg.get("role", "unknown")
+        content = msg.get("content", "")[:200]  # Truncate long messages
+        lines.append(f"{role}: {content}")
+    
+    return "\n".join(lines)

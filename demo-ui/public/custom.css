@@ -227,3 +227,110 @@ body {
         animation: none;
     }
 }
+
+/* ============================================
+ * LOGIN PAGE CUSTOMIZATION
+ * ============================================ */
+
+/* Login page container - agricultural gradient background */
+[data-testid="login-page"],
+.login-container,
+div[class*="login"] {
+    background: linear-gradient(
+        135deg,
+        #1b5e20 0%,      /* Dark green */
+        #2e7d32 25%,     /* Primary green */
+        #4caf50 50%,     /* Light green */
+        #81c784 75%,     /* Pale green */
+        #a5d6a7 100%     /* Very light green */
+    ) !important;
+}
+
+/* Login card/box styling */
+[data-testid="login-card"],
+.login-card,
+div[class*="login-card"],
+div[class*="LoginCard"] {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+/* Login title */
+[data-testid="login-title"],
+.login-title,
+h1[class*="login"] {
+    color: var(--yonca-green-dark) !important;
+    font-weight: 700 !important;
+}
+
+/* OAuth button styling */
+[data-testid="oauth-button"],
+button[class*="oauth"],
+.oauth-button {
+    background: var(--yonca-green-primary) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 12px 24px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+}
+
+[data-testid="oauth-button"]:hover,
+button[class*="oauth"]:hover,
+.oauth-button:hover {
+    background: var(--yonca-green-dark) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3) !important;
+}
+
+/* Google button specifically */
+button[class*="google"],
+[data-provider="google"] {
+    background: white !important;
+    color: #333 !important;
+    border: 2px solid #e0e0e0 !important;
+}
+
+button[class*="google"]:hover,
+[data-provider="google"]:hover {
+    background: #f5f5f5 !important;
+    border-color: var(--yonca-green-primary) !important;
+}
+
+/* Decorative elements for login */
+[data-testid="login-page"]::before {
+    content: "🌾";
+    position: fixed;
+    top: 20%;
+    left: 10%;
+    font-size: 3rem;
+    opacity: 0.3;
+    animation: float 6s ease-in-out infinite;
+}
+
+[data-testid="login-page"]::after {
+    content: "🌻";
+    position: fixed;
+    bottom: 20%;
+    right: 10%;
+    font-size: 3rem;
+    opacity: 0.3;
+    animation: float 6s ease-in-out infinite 3s;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+}
+
+/* Mobile responsive login */
+@media (max-width: 768px) {
+    [data-testid="login-page"]::before,
+    [data-testid="login-page"]::after {
+        display: none;
+    }
+}
+

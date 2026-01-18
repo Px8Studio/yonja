@@ -5,10 +5,11 @@ Defines the conversation flow as a state machine with nodes
 for routing, context loading, specialist processing, and validation.
 """
 
-from typing import Any, Literal
+from typing import Any
 
 from langgraph.graph import END, StateGraph
 from langgraph.checkpoint.base import BaseCheckpointSaver
+from langchain_core.runnables import RunnableConfig
 
 from yonca.agent.memory import get_checkpointer
 from yonca.agent.nodes.agronomist import agronomist_node
@@ -17,6 +18,7 @@ from yonca.agent.nodes.supervisor import route_from_supervisor, supervisor_node
 from yonca.agent.nodes.validator import validator_node
 from yonca.agent.nodes.weather import weather_node
 from yonca.agent.state import AgentState, create_initial_state
+from yonca.observability.langfuse import create_langfuse_handler
 
 
 # ============================================================
@@ -195,11 +197,27 @@ class YoncaAgent:
         # Run the graph
         graph = await self._get_graph()
         
-        config = {
+        config: RunnableConfig = {
             "configurable": {
                 "thread_id": thread_id,
             }
         }
+        
+        # Add Langfuse callback for self-hosted observability
+        # Traces appear at: http://localhost:3001 (Langfuse dashboard)
+        langfuse_handler = create_langfuse_handler(
+            session_id=thread_id,
+            user_id=user_id,
+            tags=["yonca", "chat", language],
+            metadata={
+                "session_id": session_id,
+                "language": language,
+            },
+            trace_name=f"yonca_chat_{thread_id[:8]}",
+        )
+        
+        if langfuse_handler:
+            config["callbacks"] = [langfuse_handler]
         
         final_state = await graph.ainvoke(initial_state, config=config)
         
@@ -254,11 +272,23 @@ class YoncaAgent:
         
         graph = await self._get_graph()
         
-        config = {
+        config: RunnableConfig = {
             "configurable": {
                 "thread_id": thread_id,
             }
         }
+        
+        # Add Langfuse callback for streaming observability
+        langfuse_handler = create_langfuse_handler(
+            session_id=thread_id,
+            user_id=user_id,
+            tags=["yonca", "stream", language],
+            metadata={"session_id": session_id, "language": language},
+            trace_name=f"yonca_stream_{thread_id[:8]}",
+        )
+        
+        if langfuse_handler:
+            config["callbacks"] = [langfuse_handler]
         
         # Stream execution
         async for event in graph.astream(initial_state, config=config):
@@ -318,7 +348,7 @@ class YoncaAgent:
         
         try:
             # Use LangGraph's standard interface
-            config = {"configurable": {"thread_id": thread_id}}
+            config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
             checkpoint_tuple = await self._checkpointer.aget_tuple(config)
             if checkpoint_tuple and checkpoint_tuple.checkpoint:
                 return checkpoint_tuple.checkpoint.get("channel_values", {}).get("messages", [])

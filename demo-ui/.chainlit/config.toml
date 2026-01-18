@@ -27,7 +27,8 @@ enable_telemetry = false
 
 [features]
 # Process and display HTML in messages. This can be a security risk (see https://stackoverflow.com/questions/19603097/why-is-it-dangerous-to-render-user-generated-html-or-javascript)
-unsafe_allow_html = false
+# ENABLED for Yonca dashboard cards — only AI-generated HTML, not user input
+unsafe_allow_html = true
 
 # Process and display mathematical expressions. This can clash with "$" characters in messages.
 latex = false
@@ -97,7 +98,7 @@ reaction_on_message_received = false
 
 [UI]
 # Name of the assistant.
-name = "Yonca AI"
+name = "Yonca AI Sidecar"
 
 # default_theme = "dark"
 
@@ -110,14 +111,14 @@ name = "Yonca AI"
 # default_sidebar_state = "open"
 
 # Description of the assistant. This is used for HTML tags.
-# description = ""
+description = "Sizin ağıllı kənd təsərrüfatı köməkçiniz — Your intelligent agricultural companion"
 
 # Chain of Thought (CoT) display mode. Can be "hidden", "tool_call" or "full".
 cot = "full"
 
 # Specify a CSS file that can be used to customize the user interface.
 # The CSS file can be served from the public directory or via an external link.
-# custom_css = "/public/test.css"
+custom_css = "/public/custom.css"
 
 # Specify additional attributes for a custom CSS file
 # custom_css_attributes = "media=\"print\""
@@ -132,12 +133,13 @@ alert_style = "classic"
 # Specify additional attributes for custom JS file
 # custom_js_attributes = "async type = \"module\""
 
-# Custom login page image, relative to public directory or external URL
-# login_page_image = "/public/custom-background.jpg"
+# Custom login page image - agricultural theme
+# Using Unsplash for a beautiful farm/agricultural background
+login_page_image = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1920&q=80"
 
-# Custom login page image filter (Tailwind internal filters, no dark/light variants)
-# login_page_image_filter = "brightness-50 grayscale"
-# login_page_image_dark_filter = "contrast-200 blur-sm"
+# Custom login page image filter (Tailwind internal filters)
+login_page_image_filter = "brightness-75"
+login_page_image_dark_filter = "brightness-50"
 
 # Specify a custom meta URL (used for meta tags like og:url)
 # custom_meta_url = "https://github.com/Chainlit/chainlit"

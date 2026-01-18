@@ -4,6 +4,21 @@
 
 ---
 
+> [!NOTE]
+> ## 📋 Implementation Status (January 2026)
+> 
+> | Test Category | Status | Location |
+> |:--------------|:-------|:---------|
+> | Unit Tests | ✅ Implemented | `tests/unit/` — 6 test files, ~1700 lines |
+> | Integration Tests | ✅ Implemented | `tests/integration/test_llm_integration.py` |
+> | Evaluation Tests | ❌ Not implemented | `tests/evaluation/` — folder empty |
+> | Golden Dataset | ❌ Not created | Schema defined below, data needed |
+> | Load Testing | ❌ Not implemented | Locust scripts planned |
+> 
+> **Priority:** Evaluation tests are HIGH priority for production readiness.
+
+---
+
 ## 1. Testing Philosophy
 
 ```mermaid

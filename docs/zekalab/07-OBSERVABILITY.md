@@ -4,6 +4,55 @@
 
 ---
 
+> [!TIP]
+> ## ✅ Langfuse Integration: IMPLEMENTED
+> 
+> **Self-hosted LLM observability** is now available via Langfuse (open-source LangSmith alternative).
+> This provides 100% data residency - all traces stay within your infrastructure.
+> 
+> | Component | Status | Location |
+> |:----------|:-------|:---------|
+> | Langfuse Integration | ✅ Implemented | `src/yonca/observability/langfuse.py` |
+> | Docker Compose | ✅ Configured | `docker-compose.local.yml` |
+> | Config Settings | ✅ Added | `src/yonca/config.py` |
+> | Agent Callbacks | ✅ Wired | `src/yonca/agent/graph.py` |
+> 
+> **Quick Start:**
+> ```bash
+> # 1. Start Langfuse
+> docker-compose -f docker-compose.local.yml up langfuse-server langfuse-db -d
+> 
+> # 2. Open http://localhost:3001, create account, get API keys
+> 
+> # 3. Add to .env:
+> YONCA_LANGFUSE_SECRET_KEY=sk-lf-...
+> YONCA_LANGFUSE_PUBLIC_KEY=pk-lf-...
+> ```
+>
+> **Dashboard Features:**
+> - 🔍 Full LangGraph node tracing with timing
+> - 💰 Token/cost tracking per model
+> - 📊 Session grouping by thread_id
+> - 👥 Per-user analytics
+> - 📝 Prompt versioning
+> - ⚡ Evaluation datasets
+
+---
+
+> [!NOTE]
+> ## 📈 Additional Observability (Future)
+> 
+> The Prometheus/Grafana stack below describes **additional** infrastructure monitoring.
+> This is **optional** and can be implemented after core features stabilize.
+> 
+> | Component | Status | Priority |
+> |:----------|:-------|:---------|
+> | Prometheus Metrics | ❌ Not implemented | Medium |
+> | Structured Logging | ❌ Not implemented | Medium |
+> | OpenTelemetry Tracing | ❌ Not implemented | Low (Langfuse covers LLM tracing) |
+
+---
+
 ## 1. Observability Philosophy
 
 ```mermaid

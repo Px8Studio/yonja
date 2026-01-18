@@ -27,7 +27,8 @@ enable_telemetry = false
 
 [features]
 # Process and display HTML in messages. This can be a security risk (see https://stackoverflow.com/questions/19603097/why-is-it-dangerous-to-render-user-generated-html-or-javascript)
-unsafe_allow_html = false
+# ENABLED for Yonca dashboard cards — only AI-generated HTML, not user input
+unsafe_allow_html = true
 
 # Process and display mathematical expressions. This can clash with "$" characters in messages.
 latex = false
@@ -97,7 +98,7 @@ reaction_on_message_received = false
 
 [UI]
 # Name of the assistant.
-name = "Yonca AI"
+name = "Yonca AI Sidecar"
 
 # default_theme = "dark"
 
@@ -110,7 +111,7 @@ name = "Yonca AI"
 # default_sidebar_state = "open"
 
 # Description of the assistant. This is used for HTML tags.
-# description = ""
+description = "Sizin ağıllı kənd təsərrüfatı köməkçiniz — Your intelligent agricultural companion"
 
 # Chain of Thought (CoT) display mode. Can be "hidden", "tool_call" or "full".
 cot = "full"

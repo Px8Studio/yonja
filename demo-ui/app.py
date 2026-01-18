@@ -144,14 +144,144 @@ AZ_STRINGS = {
     "thinking": "Düşünürəm...",
     "error": "❌ Xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.",
     "select_farm": "Təsərrüfat seçin",
+    # Dashboard strings
+    "farm_status": "Təsərrüfat vəziyyəti",
+    "status_normal": "Normal",
+    "status_attention": "Diqqət tələb edir",
+    "weather": "🌤️ Hava proqnozu",
+    "subsidy": "💰 Subsidiya yoxla",
+    "irrigation": "💧 Suvarma vaxtı",
+    "sima_auth": "✓ SİMA ilə doğrulanmışdır",
+    "quick_actions": "Sürətli əməliyyatlar",
 }
+
+
+# ============================================
+# DASHBOARD WELCOME (Agricultural Command Center)
+# ============================================
+async def send_dashboard_welcome(user: Optional[cl.User] = None):
+    """Send enhanced dashboard welcome with farm status and quick actions.
+    
+    Creates a "Warm Handshake" experience that transforms the chat from
+    a generic interface into an agricultural command center.
+    
+    Args:
+        user: Optional authenticated user for personalization
+    """
+    # Personalized greeting
+    if user and user.metadata:
+        user_name = user.metadata.get("name", "").split()[0]  # First name
+        greeting = f"Salam, **{user_name}**! 👋"
+    else:
+        greeting = "Xoş gəlmisiniz! 👋"
+    
+    # Build the dashboard message with Liquid Glass card styling
+    # The CSS classes reference styles defined in custom.css
+    dashboard_content = f"""
+## 🌾 Yonca AI Sidecar
+
+{greeting}
+
+---
+
+### 📊 {AZ_STRINGS["farm_status"]}
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: linear-gradient(135deg, rgba(45, 90, 39, 0.08) 0%, rgba(168, 230, 207, 0.15) 100%); border-radius: 12px; border-left: 4px solid #2D5A27; margin: 8px 0;">
+    <span style="font-size: 1.5em;">✅</span>
+    <div>
+        <strong style="color: #2D5A27;">{AZ_STRINGS["status_normal"]}</strong>
+        <div style="font-size: 0.85em; color: #666; margin-top: 2px;">Son yoxlama: Bu gün, 09:45</div>
+    </div>
+</div>
+
+<div style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, rgba(45, 90, 39, 0.1) 0%, rgba(168, 230, 207, 0.2) 100%); border: 1px solid rgba(45, 90, 39, 0.2); border-radius: 999px; padding: 6px 14px; font-size: 0.85em; color: #2D5A27; font-weight: 500; margin-top: 8px;">
+    <span style="color: #2D5A27;">✓</span> SİMA inteqrasiyası üçün hazırlanmışdır
+</div>
+
+---
+
+Mən sizin virtual aqronomam. Əkin, suvarma, gübrələmə və digər kənd təsərrüfatı məsələlərində kömək edə bilərəm.
+
+**{AZ_STRINGS["quick_actions"]}** — aşağıdakı düymələrdən birini seçin:
+"""
+
+    # Create quick action buttons using Chainlit Actions
+    actions = [
+        cl.Action(
+            name="weather",
+            payload={"action": "weather"},
+            label=AZ_STRINGS["weather"],
+        ),
+        cl.Action(
+            name="subsidy",
+            payload={"action": "subsidy"},
+            label=AZ_STRINGS["subsidy"],
+        ),
+        cl.Action(
+            name="irrigation",
+            payload={"action": "irrigation"},
+            label=AZ_STRINGS["irrigation"],
+        ),
+    ]
+    
+    # Send the dashboard welcome message
+    await cl.Message(
+        content=dashboard_content,
+        author="Yonca",
+        actions=actions,
+    ).send()
+
+
+@cl.action_callback("weather")
+async def on_weather_action(action: cl.Action):
+    """Handle weather quick action button click."""
+    # Remove the action buttons after click
+    await action.remove()
+    
+    # Simulate user asking about weather
+    await cl.Message(
+        content="Bu günkü hava proqnozu necədir?",
+        author="user",
+    ).send()
+    
+    # Trigger the agent to respond
+    msg = cl.Message(content="Bu günkü hava proqnozu necədir?")
+    await on_message(msg)
+
+
+@cl.action_callback("subsidy")
+async def on_subsidy_action(action: cl.Action):
+    """Handle subsidy check quick action button click."""
+    await action.remove()
+    
+    await cl.Message(
+        content="Hansı subsidiyalardan yararlana bilərəm?",
+        author="user",
+    ).send()
+    
+    msg = cl.Message(content="Hansı subsidiyalardan yararlana bilərəm?")
+    await on_message(msg)
+
+
+@cl.action_callback("irrigation")
+async def on_irrigation_action(action: cl.Action):
+    """Handle irrigation time quick action button click."""
+    await action.remove()
+    
+    await cl.Message(
+        content="Bu gün sahəmi suvarmağı tövsiyə edirsiniz?",
+        author="user",
+    ).send()
+    
+    msg = cl.Message(content="Bu gün sahəmi suvarmağı tövsiyə edirsiniz?")
+    await on_message(msg)
 
 # ============================================
 # SESSION MANAGEMENT
 # ============================================
 @cl.on_chat_start
 async def on_chat_start():
-    """Initialize chat session with farm context and user tracking."""
+    """Initialize chat session with farm context, user tracking, and dashboard welcome."""
     session_id = cl.user_session.get("id")
     
     # Get authenticated user (if OAuth enabled)
@@ -185,18 +315,8 @@ async def on_chat_start():
         oauth_enabled=is_oauth_enabled(),
     )
     
-    # Personalized welcome for authenticated users
-    if user and user.metadata:
-        user_name = user.metadata.get("name", "").split()[0]  # First name
-        welcome = f"🌾 **Salam, {user_name}!** Yonca AI Köməkçisinə xoş gəlmisiniz!\n\nMən sizin virtual aqronomam. Əkin, suvarma, gübrələmə və digər kənd təsərrüfatı məsələlərində kömək edə bilərəm."
-    else:
-        welcome = AZ_STRINGS["welcome"]
-    
-    # Send welcome message
-    await cl.Message(
-        content=welcome,
-        author="Yonca"
-    ).send()
+    # Build the enhanced dashboard welcome message
+    await send_dashboard_welcome(user)
 
 
 @cl.on_message

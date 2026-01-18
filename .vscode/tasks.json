@@ -153,6 +153,61 @@
             "presentation": { "reveal": "always", "panel": "shared" }
         },
         // ================================================
+        // 🗄️ Database Management
+        // ================================================
+        {
+            "label": "🗄️ Database: Run Migrations",
+            "detail": "Apply pending Alembic migrations",
+            "type": "shell",
+            "command": "${workspaceFolder}\\.venv\\Scripts\\alembic.exe",
+            "args": ["upgrade", "head"],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": { "PYTHONPATH": "${workspaceFolder}/src" }
+            },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "🗄️ Database: Seed Synthetic Data",
+            "detail": "Populate database with 5 synthetic farmer profiles",
+            "type": "shell",
+            "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+            "args": ["scripts/seed_database.py"],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": { "PYTHONPATH": "${workspaceFolder}/src" }
+            },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "🗄️ Database: Reset & Seed",
+            "detail": "Drop all tables and reseed with fresh data",
+            "type": "shell",
+            "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+            "args": ["scripts/seed_database.py", "--reset"],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": { "PYTHONPATH": "${workspaceFolder}/src" }
+            },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "🗄️ Database: Create Migration",
+            "detail": "Generate new Alembic migration from model changes",
+            "type": "shell",
+            "command": "${workspaceFolder}\\.venv\\Scripts\\alembic.exe",
+            "args": ["revision", "--autogenerate", "-m", "${input:migrationMessage}"],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": { "PYTHONPATH": "${workspaceFolder}/src" }
+            },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        // ================================================
         // 🚀 Compound Tasks (Workflows)
         // ================================================
         {
@@ -174,6 +229,13 @@
             "options": { "cwd": "${workspaceFolder}" },
             "problemMatcher": [],
             "presentation": { "reveal": "always", "panel": "shared" }
+        }
+    ],
+    "inputs": [
+        {
+            "id": "migrationMessage",
+            "type": "promptString",
+            "description": "Enter migration message (e.g., 'Add user settings table')"
         }
     ]
 }

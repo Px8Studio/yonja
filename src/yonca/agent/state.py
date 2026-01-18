@@ -9,6 +9,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Annotated, Literal
 
+from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
+from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
@@ -178,14 +180,6 @@ class RuleMatch(BaseModel):
 # Main Agent State (TypedDict for LangGraph)
 # ============================================================
 
-def _merge_messages(
-    existing: list[dict],
-    new: list[dict],
-) -> list[dict]:
-    """Reducer function to merge message lists."""
-    return existing + new
-
-
 def _merge_alerts(
     existing: list[dict],
     new: list[dict],
@@ -232,7 +226,7 @@ class AgentState(TypedDict, total=False):
     session_id: str | None                  # Session ID from API
     
     # ===== Conversation =====
-    messages: Annotated[list[dict], _merge_messages]  # Full conversation history
+    messages: Annotated[list, add_messages]  # Full conversation history (HumanMessage/AIMessage)
     current_input: str                      # Latest user input
     current_response: str | None            # Generated response (before sending)
     
@@ -289,11 +283,7 @@ def create_initial_state(
         thread_id=thread_id,
         user_id=user_id,
         session_id=session_id,
-        messages=[{
-            "role": "user",
-            "content": user_input,
-            "timestamp": datetime.utcnow().isoformat(),
-        }],
+        messages=[HumanMessage(content=user_input)],
         current_input=user_input,
         current_response=None,
         routing=None,
@@ -313,23 +303,30 @@ def create_initial_state(
 
 
 def add_assistant_message(
-    state: AgentState,
+    state: AgentState,  # noqa: ARG001 - kept for API compatibility
     content: str,
     node_source: str,
     intent: UserIntent | None = None,
-) -> dict:
+) -> AIMessage:
     """Create an assistant message to add to state.
     
-    Returns a dict that can be used with state["messages"].append()
-    or returned from a node for the reducer.
+    Returns an AIMessage that will be merged by langgraph's add_messages reducer.
+    Metadata is stored in the message's additional_kwargs.
+    
+    Args:
+        state: Current agent state (unused, kept for API compatibility)
+        content: Response text
+        node_source: Which node generated this response
+        intent: Detected user intent
     """
-    return {
-        "role": "assistant",
-        "content": content,
-        "timestamp": datetime.utcnow().isoformat(),
-        "node_source": node_source,
-        "intent": intent.value if intent else None,
-    }
+    return AIMessage(
+        content=content,
+        additional_kwargs={
+            "timestamp": datetime.utcnow().isoformat(),
+            "node_source": node_source,
+            "intent": intent.value if intent else None,
+        },
+    )
 
 
 def get_conversation_summary(state: AgentState, max_messages: int = 10) -> str:
@@ -341,8 +338,13 @@ def get_conversation_summary(state: AgentState, max_messages: int = 10) -> str:
     
     lines = []
     for msg in messages:
-        role = msg.get("role", "unknown")
-        content = msg.get("content", "")[:200]  # Truncate long messages
+        if isinstance(msg, HumanMessage):
+            role = "user"
+        elif isinstance(msg, AIMessage):
+            role = "assistant"
+        else:
+            role = "unknown"
+        content = (msg.content if isinstance(msg, BaseMessage) else str(msg))[:200]
         lines.append(f"{role}: {content}")
     
     return "\n".join(lines)

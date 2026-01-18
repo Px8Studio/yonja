@@ -8,6 +8,8 @@ for irrigation, fertilization, pest control, planting, and harvesting.
 from pathlib import Path
 from typing import Any
 
+from langchain_core.messages import HumanMessage, AIMessage
+
 from yonca.agent.state import AgentState, UserIntent, add_assistant_message
 from yonca.config import settings
 from yonca.llm.factory import get_llm_provider
@@ -170,12 +172,10 @@ async def agronomist_node(state: AgentState) -> dict[str, Any]:
     # Add recent conversation for context
     conversation = state.get("messages", [])
     for msg in conversation[-6:]:  # Last 3 turns
-        role = msg.get("role", "user")
-        content = msg.get("content", "")
-        if role == "user":
-            messages.append(LLMMessage.user(content))
-        elif role == "assistant":
-            messages.append(LLMMessage.assistant(content))
+        if isinstance(msg, HumanMessage):
+            messages.append(LLMMessage.user(msg.content))
+        elif isinstance(msg, AIMessage):
+            messages.append(LLMMessage.assistant(msg.content))
     
     # Generate response
     provider = get_llm_provider()
@@ -246,12 +246,10 @@ async def agronomist_node_streaming(state: AgentState):
     
     conversation = state.get("messages", [])
     for msg in conversation[-6:]:
-        role = msg.get("role", "user")
-        content = msg.get("content", "")
-        if role == "user":
-            messages.append(LLMMessage.user(content))
-        elif role == "assistant":
-            messages.append(LLMMessage.assistant(content))
+        if isinstance(msg, HumanMessage):
+            messages.append(LLMMessage.user(msg.content))
+        elif isinstance(msg, AIMessage):
+            messages.append(LLMMessage.assistant(msg.content))
     
     provider = get_llm_provider()
     

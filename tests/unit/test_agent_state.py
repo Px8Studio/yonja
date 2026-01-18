@@ -4,6 +4,7 @@
 from datetime import datetime
 
 import pytest
+from langchain_core.messages import HumanMessage, AIMessage
 
 from yonca.agent.state import (
     AgentState,
@@ -192,8 +193,8 @@ class TestCreateInitialState:
         assert state["thread_id"] == "thread_123"
         assert state["current_input"] == "Salam"
         assert len(state["messages"]) == 1
-        assert state["messages"][0]["content"] == "Salam"
-        assert state["messages"][0]["role"] == "user"
+        assert isinstance(state["messages"][0], HumanMessage)
+        assert state["messages"][0].content == "Salam"
     
     def test_state_with_user_id(self):
         """Test state with user context."""
@@ -236,10 +237,10 @@ class TestAddAssistantMessage:
             intent=UserIntent.GREETING,
         )
         
-        assert msg["role"] == "assistant"
-        assert msg["content"] == "Salam, sizə kömək edim"
-        assert msg["node_source"] == "agronomist"
-        assert msg["intent"] == "greeting"
+        assert isinstance(msg, AIMessage)
+        assert msg.content == "Salam, sizə kömək edim"
+        assert msg.additional_kwargs["node_source"] == "agronomist"
+        assert msg.additional_kwargs["intent"] == "greeting"
 
 
 class TestGetConversationSummary:
@@ -248,14 +249,8 @@ class TestGetConversationSummary:
     def test_summary_with_messages(self):
         """Test getting conversation summary."""
         state = create_initial_state("t1", "Salam")
-        state["messages"].append({
-            "role": "assistant",
-            "content": "Xoş gördük! Sizə necə kömək edə bilərəm?",
-        })
-        state["messages"].append({
-            "role": "user",
-            "content": "Pomidor əkmək istəyirəm",
-        })
+        state["messages"].append(AIMessage(content="Xoş gördük! Sizə necə kömək edə bilərəm?"))
+        state["messages"].append(HumanMessage(content="Pomidor əkmək istəyirəm"))
         
         summary = get_conversation_summary(state)
         

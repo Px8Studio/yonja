@@ -1,5 +1,25 @@
 {
     "version": "2.0.0",
+    // ════════════════════════════════════════════════════════════════════════
+    // BRANDING & NAMING GUIDELINES (ZekaLab IP Protection)
+    // ════════════════════════════════════════════════════════════════════════
+    // 
+    // Product Name: YONCA AI — Kənd Təsərrüfatı Köməkçisi
+    //               (YONCA AI — Agricultural Assistant)
+    //
+    // AVOID in user-facing UI:
+    //   - "Sidecar" — This is internal architecture terminology
+    //   - "DigiRella" / "Digital Umbrella" — Client name, not product name
+    //   - "ZekaLab" — Our company, but product should stand alone
+    //
+    // USE in user-facing UI:
+    //   - "Yonca" or "Yonca AI" — The product/agent name
+    //   - "Sizin ağıllı kənd təsərrüfatı köməkçiniz" — Tagline
+    //
+    // Context: Developed by ZekaLab for DigiRella's Yonca mobile app.
+    // ZekaLab retains IP ownership. This solution is designed to be
+    // white-labeled and integrated into DigiRella's ecosystem via API.
+    // ════════════════════════════════════════════════════════════════════════
     "tasks": [
         // ================================================
         // 🐳 Docker Stack Management
@@ -378,6 +398,54 @@
             ],
             "dependsOrder": "sequence",
             "problemMatcher": []
+        },
+        // ================================================
+        // 🔥 ALMIGHTY TASKS (One-Click Everything)
+        // ================================================
+        {
+            "label": "🩺 Health: Check All Services",
+            "detail": "Verify Docker, Ollama, Redis, API, and UI health",
+            "type": "shell",
+            "command": "powershell",
+            "args": ["-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/health_check.ps1"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "🔥 Yonca: Start Everything (Smart)",
+            "detail": "Starts Docker → API → UI with health checks",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-ExecutionPolicy", "Bypass", "-Command",
+                "Write-Host '🌿 YONCA AI — Starting All Services' -ForegroundColor Green; Write-Host ''; docker-compose -f docker-compose.local.yml up -d ollama redis; Write-Host '⏳ Waiting for Docker services...'; Start-Sleep -Seconds 5; $attempt = 0; while ($attempt -lt 12) { try { $r = Invoke-RestMethod 'http://localhost:11434/api/tags' -TimeoutSec 2; Write-Host '✅ Ollama ready'; break } catch { $attempt++; Start-Sleep 5 } }; Write-Host '🚀 Starting FastAPI...'; Start-Process -FilePath '${workspaceFolder}\\.venv\\Scripts\\python.exe' -ArgumentList '-m', 'uvicorn', 'yonca.api.main:app', '--host', 'localhost', '--port', '8000', '--reload' -WorkingDirectory '${workspaceFolder}' -WindowStyle Hidden; Start-Sleep 3; Write-Host '🖥️ Starting Chainlit UI...'; Start-Process -FilePath '${workspaceFolder}\\.venv\\Scripts\\chainlit.exe' -ArgumentList 'run', 'app.py', '-w', '--port', '8501' -WorkingDirectory '${workspaceFolder}\\demo-ui' -WindowStyle Hidden; Start-Sleep 3; Write-Host ''; Write-Host '════════════════════════════════════════' -ForegroundColor Cyan; Write-Host '✅ YONCA AI is running!' -ForegroundColor Green; Write-Host '   📍 API:  http://localhost:8000/docs' -ForegroundColor White; Write-Host '   🖥️ UI:   http://localhost:8501' -ForegroundColor White; Write-Host '════════════════════════════════════════' -ForegroundColor Cyan; Start-Process 'http://localhost:8501'"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/src;${workspaceFolder}/demo-ui",
+                    "INTEGRATION_MODE": "direct",
+                    "LLM_PROVIDER": "ollama",
+                    "OLLAMA_BASE_URL": "http://localhost:11434",
+                    "REDIS_URL": "redis://localhost:6379/0"
+                }
+            },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
+        },
+        {
+            "label": "🛑 Yonca: Stop Everything",
+            "detail": "Stop all services (Docker, API, UI)",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-ExecutionPolicy", "Bypass", "-Command",
+                "Write-Host '🛑 Stopping Yonca AI services...' -ForegroundColor Yellow; Get-Process -Name python -ErrorAction SilentlyContinue | Where-Object { $_.Path -like '*yonja*' } | Stop-Process -Force -ErrorAction SilentlyContinue; Get-Process -Name chainlit -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue; docker-compose -f docker-compose.local.yml down; Write-Host '✅ All services stopped' -ForegroundColor Green"
+            ],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
         }
     ],
     "inputs": [

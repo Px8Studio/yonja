@@ -1,3 +1,20 @@
+# ════════════════════════════════════════════════════════════════════════════
+# YONCA AI — Chainlit Configuration
+# ════════════════════════════════════════════════════════════════════════════
+#
+# BRANDING GUIDELINES (ZekaLab IP):
+# ────────────────────────────────────────────────────────────────────────────
+# Product Name: "Yonca" or "Yonca AI"
+# Tagline (AZ): "Sizin ağıllı kənd təsərrüfatı köməkçiniz"
+# Tagline (EN): "Your intelligent agricultural assistant"
+#
+# AVOID in UI: "Sidecar", "DigiRella", "Digital Umbrella", "ZekaLab"
+# These are internal/client terms, not user-facing product names.
+#
+# Developed by: ZekaLab (IP owner)
+# Client: DigiRella — integrating via API into their Yonca mobile app
+# ════════════════════════════════════════════════════════════════════════════
+
 [project]
 # List of environment variables to be provided by each user to use the app.
 user_env = []
@@ -22,6 +39,7 @@ mask_user_env = false
 # Authorized origins
 allow_origins = ["*"]
 
+# Product name shown in UI header
 name = "Yonca AI"
 enable_telemetry = false
 
@@ -97,21 +115,22 @@ reaction_on_message_received = false
     allowed_executables = [ "npx", "uvx" ]
 
 [UI]
-# Name of the assistant.
-name = "Yonca AI Sidecar"
+# Name of the assistant shown in chat messages.
+# NOTE: Do NOT use "Sidecar" — that's internal architecture terminology.
+name = "Yonca"
 
 # default_theme = "dark"
 
-# Force a specific language for all users (e.g., "en-US", "he-IL", "fr-FR")
-# If not set, the browser's language will be used
-# language = "en-US"
+# Force Azerbaijani for all users (primary market)
+language = "az-AZ"
 
 # layout = "wide"
 
-# default_sidebar_state = "open"
+# Sidebar open by default for settings access
+default_sidebar_state = "open"
 
-# Description of the assistant. This is used for HTML tags.
-description = "Sizin ağıllı kənd təsərrüfatı köməkçiniz — Your intelligent agricultural companion"
+# Description of the assistant. This is used for HTML tags and SEO.
+description = "Yonca AI — Sizin ağıllı kənd təsərrüfatı köməkçiniz"
 
 # Chain of Thought (CoT) display mode. Can be "hidden", "tool_call" or "full".
 cot = "full"

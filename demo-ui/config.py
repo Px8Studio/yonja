@@ -30,13 +30,33 @@ class DemoSettings:
         default_factory=lambda: os.getenv("REDIS_URL", "redis://localhost:6379/0")
     )
     
-    # Database (for farm context)
+    # Database for Chainlit data persistence (users, threads, settings)
+    # Uses the SAME database as the main Yonca API
+    # For Postgres: postgresql+asyncpg://user:pass@host:5432/yonca
+    # For SQLite (dev only, no persistence): sqlite+aiosqlite:///./data/yonca.db
     database_url: str = field(
         default_factory=lambda: os.getenv(
             "DATABASE_URL", 
             "sqlite+aiosqlite:///./data/yonca.db"
         )
     )
+    
+    # Chainlit-specific database URL (optional, defaults to DATABASE_URL)
+    # Use this if Chainlit needs a separate connection string
+    chainlit_database_url: str = field(
+        default_factory=lambda: os.getenv("CHAINLIT_DATABASE_URL", "")
+    )
+    
+    @property
+    def effective_database_url(self) -> str:
+        """Get the database URL for Chainlit data layer."""
+        return self.chainlit_database_url or self.database_url
+    
+    @property
+    def data_persistence_enabled(self) -> bool:
+        """Check if data persistence is available (requires Postgres)."""
+        db_url = self.effective_database_url
+        return "postgresql" in db_url or "postgres" in db_url
     
     # OAuth settings (optional - for tracking real users in Langfuse)
     # Set these to enable Google login:
@@ -75,6 +95,7 @@ class DemoSettings:
     enable_farm_selector: bool = True
     enable_weather_widget: bool = True
     enable_thinking_steps: bool = True
+    enable_data_persistence: bool = True  # Enable Chainlit data layer
 
 
 # Global settings instance

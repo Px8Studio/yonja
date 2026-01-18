@@ -33,7 +33,7 @@ sys.path.insert(0, str(project_root / "src"))
 
 # Now safe to import chainlit
 import chainlit as cl
-from chainlit.input_widget import Select
+from chainlit.input_widget import Select, Switch, Slider
 from langchain_core.runnables import RunnableConfig
 from langchain_core.messages import HumanMessage, AIMessage
 import structlog
@@ -174,11 +174,95 @@ AZ_STRINGS = {
     "irrigation": "💧 Suvarma vaxtı",
     "sima_auth": "✓ SİMA ilə doğrulanmışdır",
     "quick_actions": "Sürətli əməliyyatlar",
+    # Settings strings
+    "settings_language": "Dil / Language",
+    "settings_notifications": "Bildirişlər",
+    "settings_detail_level": "Cavab təfərrüatı",
+    "settings_units": "Ölçü vahidləri",
 }
 
 
 # ============================================
+# CHAT SETTINGS (User Preferences Sidebar)
+# ============================================
+# This is the native Chainlit way to handle per-user settings.
+# Settings appear in the sidebar and persist per session.
+# Use @cl.on_settings_update to react to changes.
+# ============================================
+async def setup_chat_settings():
+    """Initialize chat settings panel for user preferences.
+    
+    These settings appear in Chainlit's sidebar when the user clicks
+    the settings icon. Values are stored in cl.user_session["chat_settings"].
+    """
+    settings = await cl.ChatSettings(
+        [
+            Select(
+                id="language",
+                label=AZ_STRINGS["settings_language"],
+                values=["Azərbaycanca", "English", "Русский"],
+                initial_index=0,
+                description="Yonca cavablarının dili",
+            ),
+            Select(
+                id="detail_level",
+                label=AZ_STRINGS["settings_detail_level"],
+                values=["Qısa", "Orta", "Ətraflı"],
+                initial_index=1,
+                description="Cavabların nə qədər ətraflı olacağı",
+            ),
+            Select(
+                id="units",
+                label=AZ_STRINGS["settings_units"],
+                values=["Metrik (ha, kg)", "Yerli (sotka, pud)"],
+                initial_index=0,
+                description="Sahə və çəki ölçü vahidləri",
+            ),
+            Switch(
+                id="notifications",
+                label=AZ_STRINGS["settings_notifications"],
+                initial=True,
+                description="Suvarma və hava xəbərdarlıqları",
+            ),
+            Switch(
+                id="show_sources",
+                label="Mənbələri göstər",
+                initial=False,
+                description="Tövsiyələrin mənbəyini göstər",
+            ),
+        ]
+    ).send()
+    return settings
+
+
+@cl.on_settings_update
+async def on_settings_update(settings: dict):
+    """Handle user settings changes.
+    
+    Called when user modifies any setting in the sidebar.
+    Settings are automatically stored in cl.user_session["chat_settings"].
+    """
+    logger.info(
+        "settings_updated",
+        session_id=cl.user_session.get("id"),
+        settings=settings,
+    )
+    
+    # Acknowledge the change to user
+    language = settings.get("language", "Azərbaycanca")
+    if language == "English":
+        await cl.Message(content="✅ Settings updated. I'll respond in English now.").send()
+    elif language == "Русский":
+        await cl.Message(content="✅ Настройки обновлены. Теперь я буду отвечать на русском.").send()
+    else:
+        await cl.Message(content="✅ Parametrlər yeniləndi.").send()
+
+
+# ============================================
 # DASHBOARD WELCOME (Agricultural Command Center)
+# ============================================
+# BRANDING NOTE: Use "Yonca" or "Yonca AI" in user-facing content.
+# AVOID: "Sidecar" (internal term), "DigiRella", "ZekaLab" (business names)
 # ============================================
 async def send_dashboard_welcome(user: Optional[cl.User] = None):
     """Send enhanced dashboard welcome with farm status and quick actions.
@@ -199,7 +283,7 @@ async def send_dashboard_welcome(user: Optional[cl.User] = None):
     # Build the dashboard message with Liquid Glass card styling
     # The CSS classes reference styles defined in custom.css
     dashboard_content = f"""
-## 🌾 Yonca AI Sidecar
+## 🌾 Yonca AI — Kənd Təsərrüfatı Köməkçisi
 
 {greeting}
 
@@ -321,6 +405,11 @@ async def on_chat_start():
     
     # Store thread_id for LangGraph (use session_id for continuity)
     cl.user_session.set("thread_id", session_id)
+    
+    # Initialize Chat Settings (sidebar preferences panel)
+    # This is the native Chainlit way to handle per-user preferences
+    user_settings = await setup_chat_settings()
+    cl.user_session.set("user_preferences", user_settings)
     
     # Initialize based on integration mode
     if demo_settings.use_api_bridge:

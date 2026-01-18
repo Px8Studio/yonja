@@ -5,10 +5,10 @@
     // ════════════════════════════════════════════════════════════════════════
     // 
     // QUICK REFERENCE:
-    //   🚀 Start:  "🚀 Start All" — Docker + API + Demo UI (one click)
-    //   🛑 Stop:   "🛑 Stop All" — Stops everything cleanly
-    //   🧪 Test:   "🧪 Test: All"
-    //   🗄️ DB:     "🗄️ DB: Migrate" — Apply schema changes
+    //   🚀 Start:  "Yonca AI: 🚀 Start All" — Docker + API + Demo UI + Swagger (one click)
+    //   🛑 Stop:   "Yonca AI: 🛑 Stop All" — Stops everything cleanly
+    //   🧪 Test:   "Yonca AI: 🧪 Test All"
+    //   🗄️ DB:     "Yonca AI: 🗄️ DB Migrate" — Apply schema changes
     //
     // ARCHITECTURE:
     //   Local Dev:  Postgres (5433) + Ollama + Redis → Python API + Chainlit
@@ -23,7 +23,7 @@
         // 🐳 INFRASTRUCTURE (Docker Services)
         // ════════════════════════════════════════════════════════════════════
         {
-            "label": "🐳 Docker: Up",
+            "label": "Yonca AI: 🐳 Docker Start",
             "detail": "Start Postgres + Ollama + Redis",
             "type": "shell",
             "command": "docker-compose",
@@ -33,7 +33,7 @@
             "presentation": { "reveal": "always", "panel": "shared" }
         },
         {
-            "label": "🐳 Docker: Down",
+            "label": "Yonca AI: 🐳 Docker Stop",
             "detail": "Stop all Docker containers",
             "type": "shell",
             "command": "docker-compose",
@@ -43,7 +43,7 @@
             "presentation": { "reveal": "always", "panel": "shared" }
         },
         {
-            "label": "🐳 Docker: Status",
+            "label": "Yonca AI: 🐳 Docker Status",
             "detail": "Show container health",
             "type": "shell",
             "command": "docker-compose",
@@ -53,7 +53,7 @@
             "presentation": { "reveal": "always", "panel": "shared" }
         },
         {
-            "label": "🐳 Docker: Logs",
+            "label": "Yonca AI: 🐳 Docker Logs",
             "detail": "Stream all container logs",
             "type": "shell",
             "command": "docker-compose",
@@ -67,7 +67,7 @@
         // 🌿 APPLICATION (Python Services)
         // ════════════════════════════════════════════════════════════════════
         {
-            "label": "🌿 API: Start",
+            "label": "Yonca AI: 🌿 API Start",
             "detail": "FastAPI with hot reload (localhost:8000)",
             "type": "shell",
             "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
@@ -85,7 +85,7 @@
             "group": { "kind": "build", "isDefault": true }
         },
         {
-            "label": "🖥️ UI: Start",
+            "label": "Yonca AI: 🖥️ UI Start",
             "detail": "Chainlit Demo (localhost:8501)",
             "type": "shell",
             "command": "${workspaceFolder}\\.venv\\Scripts\\chainlit.exe",
@@ -106,11 +106,29 @@
             "problemMatcher": [],
             "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
         },
+        {
+            "label": "Yonca AI: 📖 Open Swagger",
+            "detail": "Open FastAPI docs in browser (localhost:8000/docs)",
+            "type": "shell",
+            "command": "Start-Process",
+            "args": ["http://localhost:8000/docs"],
+            "problemMatcher": [],
+            "presentation": { "reveal": "silent" }
+        },
+        {
+            "label": "Yonca AI: 💬 Open Chat UI",
+            "detail": "Open Chainlit UI in browser (localhost:8501)",
+            "type": "shell",
+            "command": "Start-Process",
+            "args": ["http://localhost:8501"],
+            "problemMatcher": [],
+            "presentation": { "reveal": "silent" }
+        },
         // ════════════════════════════════════════════════════════════════════
         // 🗄️ DATABASE
         // ════════════════════════════════════════════════════════════════════
         {
-            "label": "🗄️ DB: Migrate",
+            "label": "Yonca AI: 🗄️ DB Migrate",
             "detail": "Apply pending Alembic migrations",
             "type": "shell",
             "command": "${workspaceFolder}\\.venv\\Scripts\\alembic.exe",
@@ -126,7 +144,7 @@
             "presentation": { "reveal": "always", "panel": "shared" }
         },
         {
-            "label": "🗄️ DB: Seed",
+            "label": "Yonca AI: 🗄️ DB Seed",
             "detail": "Populate with synthetic farmer data",
             "type": "shell",
             "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
@@ -142,7 +160,7 @@
             "presentation": { "reveal": "always", "panel": "shared" }
         },
         {
-            "label": "🗄️ DB: New Migration",
+            "label": "Yonca AI: 🗄️ DB New Migration",
             "detail": "Generate migration from model changes",
             "type": "shell",
             "command": "${workspaceFolder}\\.venv\\Scripts\\alembic.exe",
@@ -161,7 +179,7 @@
         // 🧪 QUALITY (Tests & Linting)
         // ════════════════════════════════════════════════════════════════════
         {
-            "label": "🧪 Test: All",
+            "label": "Yonca AI: 🧪 Test All",
             "detail": "Run pytest with verbose output",
             "type": "shell",
             "command": "pytest",
@@ -175,7 +193,7 @@
             "group": "test"
         },
         {
-            "label": "🔍 Lint",
+            "label": "Yonca AI: 🔍 Lint",
             "detail": "Run ruff check",
             "type": "shell",
             "command": "ruff",
@@ -188,8 +206,8 @@
         // 🤖 MODELS (One-time setup)
         // ════════════════════════════════════════════════════════════════════
         {
-            "label": "🤖 Models: Setup",
-            "detail": "Pull qwen3:4b + import ATLLaMA (run once after Docker: Up)",
+            "label": "Yonca AI: 🤖 Models Setup",
+            "detail": "Pull qwen3:4b + import ATLLaMA (run once after Docker Start)",
             "type": "shell",
             "command": "docker-compose",
             "args": ["-f", "docker-compose.local.yml", "--profile", "setup", "up", "model-setup"],
@@ -198,7 +216,7 @@
             "presentation": { "reveal": "always", "panel": "dedicated" }
         },
         {
-            "label": "🤖 Models: List",
+            "label": "Yonca AI: 🤖 Models List",
             "detail": "Show available Ollama models",
             "type": "shell",
             "command": "docker",
@@ -211,7 +229,7 @@
         // 📊 OBSERVABILITY (Optional - Langfuse)
         // ════════════════════════════════════════════════════════════════════
         {
-            "label": "📊 Langfuse: Start",
+            "label": "Yonca AI: 📊 Langfuse Start",
             "detail": "Start self-hosted observability (localhost:3001)",
             "type": "shell",
             "command": "docker-compose",
@@ -221,7 +239,7 @@
             "presentation": { "reveal": "always", "panel": "shared" }
         },
         {
-            "label": "📊 Langfuse: Open",
+            "label": "Yonca AI: 📊 Langfuse Open",
             "detail": "Open Langfuse dashboard in browser",
             "type": "shell",
             "command": "Start-Process",
@@ -233,36 +251,48 @@
         // 🚀 WORKFLOWS (Compound Tasks)
         // ════════════════════════════════════════════════════════════════════
         {
-            "label": "🚀 Start All",
-            "detail": "Docker → then API + UI in parallel",
-            "dependsOn": ["🐳 Docker: Up", "🚀 Start Apps"],
+            "label": "Yonca AI: 🚀 Start All",
+            "detail": "Docker → API + UI → Open Swagger & Chat",
+            "dependsOn": ["Yonca AI: 🐳 Docker Start", "Yonca AI: 🚀 Start Apps", "Yonca AI: 🌐 Open All UIs"],
             "dependsOrder": "sequence",
             "problemMatcher": []
         },
         {
-            "label": "🚀 Start Apps",
+            "label": "Yonca AI: 🚀 Start Apps",
             "detail": "API + UI (parallel) - internal task",
-            "dependsOn": ["🌿 API: Start", "🖥️ UI: Start"],
+            "dependsOn": ["Yonca AI: 🌿 API Start", "Yonca AI: 🖥️ UI Start"],
             "dependsOrder": "parallel",
             "problemMatcher": []
         },
         {
-            "label": "🛑 Stop All",
-            "detail": "Stop Docker + kill Python processes",
+            "label": "Yonca AI: 🌐 Open All UIs",
+            "detail": "Wait for startup then open Swagger + Chat UI",
             "type": "shell",
             "command": "powershell",
             "args": [
                 "-Command",
-                "Write-Host '🛑 Stopping services...' -ForegroundColor Yellow; Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue; docker-compose -f docker-compose.local.yml down; Write-Host '✅ Stopped' -ForegroundColor Green"
+                "Write-Host '⏳ Waiting for services to start...' -ForegroundColor Cyan; Start-Sleep -Seconds 3; Start-Process 'http://localhost:8000/docs'; Start-Process 'http://localhost:8501'; Write-Host '✅ Swagger + Chat UI opened' -ForegroundColor Green"
+            ],
+            "problemMatcher": [],
+            "presentation": { "reveal": "silent" }
+        },
+        {
+            "label": "Yonca AI: 🛑 Stop All",
+            "detail": "Stop Docker + kill Python/Chainlit processes",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-Command",
+                "$ErrorActionPreference = 'SilentlyContinue'; Write-Host ''; Write-Host '═══════════════════════════════════════════════════════' -ForegroundColor Magenta; Write-Host '  🛑 YONCA AI - Stopping All Services' -ForegroundColor Magenta; Write-Host '═══════════════════════════════════════════════════════' -ForegroundColor Magenta; Write-Host ''; Write-Host '🌿 [1/4] Stopping FastAPI (uvicorn)...' -ForegroundColor Yellow; $uvicorn = Get-Process -Name 'python' -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like '*uvicorn*' }; if ($uvicorn) { $uvicorn | Stop-Process -Force; Write-Host '   ✅ FastAPI stopped' -ForegroundColor Green } else { Write-Host '   ⚪ FastAPI was not running' -ForegroundColor DarkGray }; Write-Host ''; Write-Host '🖥️ [2/4] Stopping Chainlit UI...' -ForegroundColor Yellow; $chainlit = Get-Process -Name 'python','chainlit' -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like '*chainlit*' -or $_.ProcessName -eq 'chainlit' }; if ($chainlit) { $chainlit | Stop-Process -Force; Write-Host '   ✅ Chainlit stopped' -ForegroundColor Green } else { Write-Host '   ⚪ Chainlit was not running' -ForegroundColor DarkGray }; Write-Host ''; Write-Host '🐍 [3/4] Stopping remaining Python processes...' -ForegroundColor Yellow; $remaining = Get-Process -Name 'python' -ErrorAction SilentlyContinue; if ($remaining) { $count = $remaining.Count; $remaining | Stop-Process -Force; Write-Host \"   ✅ Stopped $count Python process(es)\" -ForegroundColor Green } else { Write-Host '   ⚪ No other Python processes' -ForegroundColor DarkGray }; Write-Host ''; Write-Host '🐳 [4/4] Stopping Docker containers...' -ForegroundColor Yellow; $containers = docker-compose -f docker-compose.local.yml ps -q 2>$null; if ($containers) { docker-compose -f docker-compose.local.yml down 2>$null; Write-Host '   ✅ Docker containers stopped' -ForegroundColor Green } else { Write-Host '   ⚪ No Docker containers running' -ForegroundColor DarkGray }; Write-Host ''; Write-Host '═══════════════════════════════════════════════════════' -ForegroundColor Green; Write-Host '  ✅ ALL SERVICES STOPPED' -ForegroundColor Green; Write-Host '═══════════════════════════════════════════════════════' -ForegroundColor Green; Write-Host ''"
             ],
             "options": { "cwd": "${workspaceFolder}" },
             "problemMatcher": [],
             "presentation": { "reveal": "always", "panel": "shared" }
         },
         {
-            "label": "🔄 Restart All",
+            "label": "Yonca AI: 🔄 Restart All",
             "detail": "Stop → Start (clean restart)",
-            "dependsOn": ["🛑 Stop All", "🚀 Start All"],
+            "dependsOn": ["Yonca AI: 🛑 Stop All", "Yonca AI: 🚀 Start All"],
             "dependsOrder": "sequence",
             "problemMatcher": []
         }

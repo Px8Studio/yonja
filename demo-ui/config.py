@@ -38,6 +38,23 @@ class DemoSettings:
         )
     )
     
+    # OAuth settings (optional - for tracking real users in Langfuse)
+    # Set these to enable Google login:
+    #   OAUTH_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+    #   OAUTH_GOOGLE_CLIENT_SECRET=your-client-secret
+    #   CHAINLIT_AUTH_SECRET=any-random-secret-string
+    oauth_google_client_id: str = field(
+        default_factory=lambda: os.getenv("OAUTH_GOOGLE_CLIENT_ID", "")
+    )
+    oauth_google_client_secret: str = field(
+        default_factory=lambda: os.getenv("OAUTH_GOOGLE_CLIENT_SECRET", "")
+    )
+    
+    @property
+    def oauth_enabled(self) -> bool:
+        """Check if OAuth is configured."""
+        return bool(self.oauth_google_client_id and self.oauth_google_client_secret)
+    
     # Demo settings
     default_language: str = "az"
     session_timeout_seconds: int = 3600

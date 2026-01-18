@@ -11,14 +11,21 @@ The app uses Chainlit's native LangGraph callback handler for:
 - Automatic step visualization (shows which node is executing)
 - Token streaming (real-time response display)
 - Session persistence (conversation survives refresh)
+
+Authentication (Optional):
+- Supports Google OAuth for tracking real users in Langfuse
+- Set OAUTH_GOOGLE_CLIENT_ID and OAUTH_GOOGLE_CLIENT_SECRET to enable
+- Real user identity is separate from synthetic farmer profiles
 """
 
 # MUST be first - fix engineio packet limit before ANY chainlit imports
 import engineio
 engineio.payload.Payload.max_decode_packets = 500
 
+import os
 import sys
 from pathlib import Path
+from typing import Optional
 
 # Add project root to path for imports
 project_root = Path(__file__).parent.parent
@@ -34,6 +41,7 @@ import structlog
 # Import from main yonca package
 from yonca.agent.graph import compile_agent_graph
 from yonca.agent.memory import get_checkpointer_async
+from yonca.observability import create_langfuse_handler
 
 # Import demo-ui config for Redis URL
 from config import settings as demo_settings
@@ -51,6 +59,82 @@ async def get_app_checkpointer():
         _checkpointer = await get_checkpointer_async(redis_url=demo_settings.redis_url)
     return _checkpointer
 
+
+# ============================================
+# AUTHENTICATION (Optional Google OAuth)
+# ============================================
+# This allows real users (developers) to be tracked in Langfuse
+# while still using synthetic farmer profiles for testing.
+#
+# To enable:
+# 1. Create OAuth app at https://console.developers.google.com/apis/credentials
+# 2. Set redirect URI: http://localhost:8501/auth/oauth/google/callback
+# 3. Set environment variables:
+#    - OAUTH_GOOGLE_CLIENT_ID
+#    - OAUTH_GOOGLE_CLIENT_SECRET
+#    - CHAINLIT_AUTH_SECRET (any random string)
+
+def is_oauth_enabled() -> bool:
+    """Check if OAuth is configured."""
+    return bool(
+        os.getenv("OAUTH_GOOGLE_CLIENT_ID") and 
+        os.getenv("OAUTH_GOOGLE_CLIENT_SECRET")
+    )
+
+
+# Only register OAuth callback if credentials are configured
+# This prevents Chainlit from requiring OAuth env vars at startup
+if is_oauth_enabled():
+    @cl.oauth_callback
+    async def oauth_callback(
+        provider_id: str,
+        _token: str,
+        raw_user_data: dict[str, str],
+        default_user: cl.User,
+        _id_token: Optional[str] = None,
+    ) -> Optional[cl.User]:
+        """Handle OAuth callback from Google.
+        
+        This allows any authenticated Google user to access the demo.
+        The user's email is stored and passed to Langfuse for tracking.
+        
+        Args:
+            provider_id: OAuth provider (e.g., "google")
+            _token: OAuth access token (unused but required by signature)
+            raw_user_data: User info from provider
+            default_user: Chainlit's default user object
+            _id_token: Optional ID token (unused but required by signature)
+            
+        Returns:
+            cl.User if allowed, None to deny access.
+        """
+        if provider_id == "google":
+            # Extract user info
+            email = raw_user_data.get("email", "unknown")
+            name = raw_user_data.get("name", email)
+            picture = raw_user_data.get("picture")
+            
+            logger.info(
+                "oauth_login",
+                provider=provider_id,
+                email=email,
+                name=name,
+            )
+            
+            # Return user with metadata for Langfuse
+            return cl.User(
+                identifier=email,
+                metadata={
+                    "name": name,
+                    "email": email,
+                    "picture": picture,
+                    "provider": provider_id,
+                }
+            )
+        
+        # Allow other providers with default user
+        return default_user
+
 # ============================================
 # LOCALIZATION
 # ============================================
@@ -67,10 +151,20 @@ AZ_STRINGS = {
 # ============================================
 @cl.on_chat_start
 async def on_chat_start():
-    """Initialize chat session with farm context."""
+    """Initialize chat session with farm context and user tracking."""
     session_id = cl.user_session.get("id")
     
-    # Default farm for demo
+    # Get authenticated user (if OAuth enabled)
+    # This is the REAL user (developer/tester), separate from farmer profile
+    user: Optional[cl.User] = cl.user_session.get("user")
+    user_id = user.identifier if user else "anonymous"
+    user_email = user.metadata.get("email") if user and user.metadata else None
+    
+    # Store user info for Langfuse tracking
+    cl.user_session.set("user_id", user_id)
+    cl.user_session.set("user_email", user_email)
+    
+    # Default farm for demo (synthetic farmer profile - NOT the real user)
     farm_id = "demo_farm_001"
     cl.user_session.set("farm_id", farm_id)
     
@@ -82,22 +176,40 @@ async def on_chat_start():
     # Store thread_id for LangGraph (use session_id for continuity)
     cl.user_session.set("thread_id", session_id)
     
-    logger.info("session_started", session_id=session_id, farm_id=farm_id)
+    logger.info(
+        "session_started",
+        session_id=session_id,
+        user_id=user_id,
+        user_email=user_email,
+        farm_id=farm_id,
+        oauth_enabled=is_oauth_enabled(),
+    )
+    
+    # Personalized welcome for authenticated users
+    if user and user.metadata:
+        user_name = user.metadata.get("name", "").split()[0]  # First name
+        welcome = f"🌾 **Salam, {user_name}!** Yonca AI Köməkçisinə xoş gəlmisiniz!\n\nMən sizin virtual aqronomam. Əkin, suvarma, gübrələmə və digər kənd təsərrüfatı məsələlərində kömək edə bilərəm."
+    else:
+        welcome = AZ_STRINGS["welcome"]
     
     # Send welcome message
     await cl.Message(
-        content=AZ_STRINGS["welcome"],
+        content=welcome,
         author="Yonca"
     ).send()
 
 
 @cl.on_message
 async def on_message(message: cl.Message):
-    """Handle incoming user messages."""
+    """Handle incoming user messages with Langfuse tracking."""
     session_id = cl.user_session.get("id")
     farm_id = cl.user_session.get("farm_id", "demo_farm_001")
     thread_id = cl.user_session.get("thread_id", session_id)
     agent = cl.user_session.get("agent")
+    
+    # Get real user identity (for Langfuse tracking)
+    user_id = cl.user_session.get("user_id", "anonymous")
+    user_email = cl.user_session.get("user_email")
     
     if not agent:
         # Re-initialize if agent is missing (shouldn't happen)
@@ -114,13 +226,32 @@ async def on_message(message: cl.Message):
         "messages": [HumanMessage(content=message.content)]
     }
     
+    # Create Langfuse handler for observability
+    # This tracks: real user (developer) + synthetic farmer profile
+    langfuse_handler = create_langfuse_handler(
+        session_id=thread_id,
+        user_id=user_id,  # Real user's email/identity
+        tags=["demo-ui", "development"],
+        metadata={
+            "farm_id": farm_id,  # Synthetic farmer profile being tested
+            "user_email": user_email,
+            "source": "chainlit",
+        },
+        trace_name="demo_chat",
+    )
+    
+    # Build callbacks list (type: ignore needed for mixed callback types)
+    callbacks: list = [cl.LangchainCallbackHandler()]  # type: ignore[type-arg]
+    if langfuse_handler:
+        callbacks.append(langfuse_handler)
+    
     # LangGraph config with thread_id for memory
     config = RunnableConfig(
         configurable={
             "thread_id": thread_id,
             "farm_id": farm_id,
         },
-        callbacks=[cl.LangchainCallbackHandler()],
+        callbacks=callbacks,  # type: ignore[arg-type]
     )
     
     full_response = ""

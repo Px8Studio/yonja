@@ -8,8 +8,9 @@ for routing, context loading, specialist processing, and validation.
 from typing import Any, Literal
 
 from langgraph.graph import END, StateGraph
+from langgraph.checkpoint.base import BaseCheckpointSaver
 
-from yonca.agent.memory import RedisCheckpointer, get_checkpointer
+from yonca.agent.memory import get_checkpointer
 from yonca.agent.nodes.agronomist import agronomist_node
 from yonca.agent.nodes.context_loader import context_loader_node, route_after_context
 from yonca.agent.nodes.supervisor import route_from_supervisor, supervisor_node
@@ -88,11 +89,12 @@ def create_agent_graph() -> StateGraph:
     return graph
 
 
-def compile_agent_graph(checkpointer: RedisCheckpointer | None = None):
+def compile_agent_graph(checkpointer: BaseCheckpointSaver | None = None):
     """Compile the agent graph with optional checkpointing.
     
     Args:
-        checkpointer: Redis checkpointer for state persistence
+        checkpointer: LangGraph checkpointer for state persistence
+                     (RedisSaver, MemorySaver, or any BaseCheckpointSaver)
         
     Returns:
         Compiled graph ready for invocation.
@@ -303,6 +305,8 @@ class YoncaAgent:
     ) -> list[dict]:
         """Get conversation history for a thread.
         
+        Uses LangGraph's checkpointer to retrieve the latest state.
+        
         Args:
             thread_id: Thread ID
             
@@ -312,14 +316,21 @@ class YoncaAgent:
         if not self._checkpointer:
             return []
         
-        checkpoint = await self._checkpointer.get_latest(thread_id)
-        if checkpoint:
-            return checkpoint.state.get("messages", [])
+        try:
+            # Use LangGraph's standard interface
+            config = {"configurable": {"thread_id": thread_id}}
+            checkpoint_tuple = await self._checkpointer.aget_tuple(config)
+            if checkpoint_tuple and checkpoint_tuple.checkpoint:
+                return checkpoint_tuple.checkpoint.get("channel_values", {}).get("messages", [])
+        except Exception:
+            pass
         
         return []
     
     async def delete_conversation(self, thread_id: str) -> bool:
         """Delete a conversation and its history.
+        
+        Uses LangGraph's checkpointer to delete thread data.
         
         Args:
             thread_id: Thread ID to delete
@@ -330,8 +341,12 @@ class YoncaAgent:
         if not self._checkpointer:
             return False
         
-        deleted = await self._checkpointer.delete_thread(thread_id)
-        return deleted > 0
+        try:
+            # Use LangGraph's standard interface - adelete_thread takes thread_id directly
+            await self._checkpointer.adelete_thread(thread_id)
+            return True
+        except Exception:
+            return False
 
 
 class AgentResponse:

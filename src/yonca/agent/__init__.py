@@ -4,7 +4,7 @@
 This module provides the core AI agent functionality:
 - State management for conversations
 - Multi-node graph execution
-- Redis-based memory persistence
+- Redis-based memory persistence (via langgraph-checkpoint-redis)
 - Intent classification and routing
 
 Example:
@@ -21,12 +21,7 @@ Example:
 """
 
 from yonca.agent.graph import AgentResponse, YoncaAgent, get_agent
-from yonca.agent.memory import (
-    RedisCheckpointer,
-    ThreadManager,
-    get_checkpointer,
-    get_thread_manager,
-)
+from yonca.agent.memory import get_checkpointer, get_checkpointer_async
 from yonca.agent.state import (
     AgentState,
     Alert,
@@ -57,8 +52,6 @@ __all__ = [
     "RoutingDecision",
     "create_initial_state",
     # Memory
-    "RedisCheckpointer",
-    "ThreadManager",
     "get_checkpointer",
-    "get_thread_manager",
+    "get_checkpointer_async",
 ]

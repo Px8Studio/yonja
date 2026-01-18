@@ -145,16 +145,16 @@ services:
       - setup  # Only runs with: docker-compose --profile setup up model-setup
 
   # ================================================
-  # Redis (Caching & Session Storage)
+  # Redis Stack (Caching, Session Storage & LangGraph Checkpointing)
+  # Includes: RedisJSON, RediSearch (required for langgraph-checkpoint-redis)
   # ================================================
   redis:
-    image: redis:7-alpine
+    image: redis/redis-stack-server:latest
     container_name: yonca-redis
     ports:
       - "6379:6379"
     volumes:
       - redis-data:/data
-    command: redis-server --appendonly yes
     networks:
       - yonca-network
     restart: unless-stopped

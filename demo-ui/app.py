@@ -13,6 +13,10 @@ The app uses Chainlit's native LangGraph callback handler for:
 - Session persistence (conversation survives refresh)
 """
 
+# MUST be first - fix engineio packet limit before ANY chainlit imports
+import engineio
+engineio.payload.Payload.max_decode_packets = 500
+
 import sys
 from pathlib import Path
 
@@ -20,10 +24,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
-# Fix engineio packet limit before chainlit imports
-import engineio
-engineio.payload.Payload.max_decode_packets = 500
-
+# Now safe to import chainlit
 import chainlit as cl
 from chainlit.input_widget import Select
 from langchain_core.runnables import RunnableConfig
@@ -32,9 +33,23 @@ import structlog
 
 # Import from main yonca package
 from yonca.agent.graph import compile_agent_graph
-from yonca.agent.memory import get_checkpointer
+from yonca.agent.memory import get_checkpointer_async
+
+# Import demo-ui config for Redis URL
+from config import settings as demo_settings
 
 logger = structlog.get_logger()
+
+# Global checkpointer (initialized once in async context)
+_checkpointer = None
+
+
+async def get_app_checkpointer():
+    """Get or create the checkpointer singleton (async)."""
+    global _checkpointer
+    if _checkpointer is None:
+        _checkpointer = await get_checkpointer_async(redis_url=demo_settings.redis_url)
+    return _checkpointer
 
 # ============================================
 # LOCALIZATION
@@ -59,8 +74,8 @@ async def on_chat_start():
     farm_id = "demo_farm_001"
     cl.user_session.set("farm_id", farm_id)
     
-    # Initialize the agent graph with checkpointer
-    checkpointer = get_checkpointer()
+    # Initialize the agent graph with shared checkpointer
+    checkpointer = await get_app_checkpointer()
     agent = compile_agent_graph(checkpointer=checkpointer)
     cl.user_session.set("agent", agent)
     
@@ -86,7 +101,7 @@ async def on_message(message: cl.Message):
     
     if not agent:
         # Re-initialize if agent is missing (shouldn't happen)
-        checkpointer = get_checkpointer()
+        checkpointer = await get_app_checkpointer()
         agent = compile_agent_graph(checkpointer=checkpointer)
         cl.user_session.set("agent", agent)
     

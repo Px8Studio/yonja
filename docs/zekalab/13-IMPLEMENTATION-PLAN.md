@@ -458,6 +458,8 @@ async def health_check():
 - [x] **1.4.2** Create `docker-compose.local.yml`
 - [x] **1.4.3** Test full stack locally
 - [x] **1.4.4** Document startup commands
+- [x] **1.4.5** Add multi-model support (qwen3 + atllama GGUF import)
+- [x] **1.4.6** Create VS Code tasks for Docker management
 
 #### Implementation
 
@@ -540,10 +542,13 @@ CMD ["uvicorn", "yonca.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 | FastAPI basic setup | ✅ | main.py + routes |
 | Health endpoint | ✅ | /health + /health/ready |
 | Chat endpoint stub | ✅ | /yonca-ai/chat |
-| VS Code Tasks | ✅ | Dev server task |
+| Models API | ✅ | /api/models endpoint |
+| VS Code Tasks | ✅ | Docker + Dev + Model tasks |
 | Dockerfile | ✅ | Multi-stage build (dev + prod) |
-| docker-compose.local.yml | ✅ | API + Ollama + Redis |
+| docker-compose.local.yml | ✅ | API + Ollama + Redis + model-setup |
 | Local stack test | ✅ | All containers healthy |
+| Multi-model support | ✅ | qwen3:4b + atllama (GGUF) |
+| Model registry | ✅ | src/yonca/llm/models.py |
 
 ---
 
@@ -572,7 +577,8 @@ CMD ["uvicorn", "yonca.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 - [ ] **2.2.2** Implement `generate()` method
 - [ ] **2.2.3** Implement `stream()` method with async iterator
 - [ ] **2.2.4** Add health check
-- [ ] **2.2.5** Test with Qwen3 model
+- [x] **2.2.5** Test with Qwen3 model ✅ (qwen3:4b available in Docker)
+- [x] **2.2.6** Test with ATLLaMA model ✅ (atllama imported from GGUF)
 
 #### Test Command
 
@@ -1061,18 +1067,30 @@ pip install -e ".[dev]"
 # 4. Copy environment file
 copy .env.example .env.local
 
-# 5. Start services
-docker-compose -f docker-compose.local.yml up -d
+# 5. Start services (Ollama + Redis)
+docker-compose -f docker-compose.local.yml up -d ollama redis
 
-# 6. Pull Ollama model
-docker exec -it yonca-ollama ollama pull qwen3:4b
+# 6. Setup models (pulls qwen3:4b + imports atllama from GGUF)
+docker-compose -f docker-compose.local.yml --profile setup up model-setup
 
-# 7. Seed database
-python scripts/seed_database.py
+# 7. Verify models
+docker exec yonca-ollama ollama list
+# Expected output:
+# NAME              SIZE
+# atllama:latest    4.9 GB
+# qwen3:4b          2.5 GB
 
-# 8. Run API
+# 8. Seed database (when implemented)
+# python scripts/seed_database.py
+
+# 9. Run API (or use VS Code Task: 🚀 Dev: Start Everything)
 uvicorn yonca.api.main:app --reload
 ```
+
+> 💡 **VS Code Tasks:** Use `Ctrl+Shift+P` → "Tasks: Run Task" for convenient commands:
+> - `🚀 Dev: Start Everything` - Start Docker + API
+> - `🛑 Dev: Stop Everything` - Stop all services
+> - `🤖 Models: First-Time Setup` - Pull/import all models
 
 ---
 

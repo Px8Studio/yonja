@@ -6,12 +6,12 @@ Free tier available at: https://ai.google.dev/
 """
 
 import json
-from typing import AsyncIterator
+from typing import AsyncIterator, Any
 
-import httpx
-
-from .base import LLMMessage, LLMProvider, LLMResponse, MessageRole
+from .base import LLMMessage, LLMProvider, LLMResponse, LLMProviderError
 from yonca.llm.http_pool import HTTPClientPool
+
+genai: Any = None
 
 
 class GeminiProvider(LLMProvider):
@@ -52,15 +52,20 @@ class GeminiProvider(LLMProvider):
             model: Model name (default: gemini-2.0-flash-exp)
             timeout: Request timeout in seconds
         """
-        if not api_key:
-            raise ValueError("Gemini API key is required. Get one at https://ai.google.dev/")
-        
-        self.api_key = api_key
-        self.model = model
-        self.timeout = timeout
-        
-        # Gemini API base URL
-        self.base_url = "https://generativelanguage.googleapis.com/v1beta"
+        global genai
+        if genai is None:
+            try:
+                import google.generativeai as _genai  # type: ignore
+            except ImportError as exc:
+                raise LLMProviderError(
+                    "Gemini provider requires optional dependency 'google-generativeai' "
+                    "(kept out of default deps to avoid protobuf<6 conflicts). "
+                    "Install it manually in an isolated env if you need Gemini."
+                ) from exc
+            genai = _genai
+        genai.configure(api_key=api_key)
+        self.model_name = model
+        self._client = genai.GenerativeModel(model=model)
 
     @property
     def provider_name(self) -> str:

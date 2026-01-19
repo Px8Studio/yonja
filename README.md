@@ -48,8 +48,6 @@ yonca-ai/
 
 ## 🚀 Quick Start
 
-> 📚 **For detailed model switching and architecture guide, see [MODEL-SWITCHING-GUIDE.md](docs/MODEL-SWITCHING-GUIDE.md)**
-
 ### Prerequisites
 
 #### Option A: Local LLM with Ollama (Recommended for Azerbaijani 🇦🇿)
@@ -77,7 +75,14 @@ curl -fsSL https://ollama.com/install.sh | sh
 
 The Yonca startup manager will **automatically download the model** if it's not present!
 
-#### Option B: Google Gemini (Cloud)
+#### Option B: Google Gemini (Cloud) [OPTIONAL]
+
+> ⚠️ **Note:** Gemini is an optional fallback provider. Install only if you need it:
+> ```bash
+> poetry install --extras gemini
+> # OR with pip:
+> pip install -e ".[gemini]"
+> ```
 
 Get a free API key from [Google AI Studio](https://aistudio.google.com/apikey) and set it in `.env`:
 
@@ -97,14 +102,16 @@ git clone https://github.com/ZekaLab/yonja.git
 cd yonja
 
 # Option A: Poetry (Recommended)
-poetry install              # Creates .venv and installs all deps
+poetry install              # Core dependencies only (Groq, Ollama)
+poetry install --extras gemini  # Add Gemini support if needed
 poetry shell                # Activates the environment
 
 # Option B: pip + venv
 python -m venv .venv
 .venv\Scripts\activate      # Windows
 source .venv/bin/activate   # Linux/Mac
-pip install -e ".[dev]"     # Install in editable mode
+pip install -e ".[dev]"     # Install in editable mode (core only)
+pip install -e ".[dev,gemini]"  # Add Gemini if needed
 ```
 
 ### 🎮 Start Yonca AI

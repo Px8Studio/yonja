@@ -44,8 +44,8 @@ sys.path.insert(0, str(project_root / "src"))
 import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from chainlit.data.chainlit_data_layer import ChainlitDataLayer
-from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
+from chainlit.data.chainlit_data_layer import ChainlitDataLayer  # noqa: E402
+from chainlit.data.sql_alchemy import SQLAlchemyDataLayer  # noqa: E402
 import logging
 
 logger = logging.getLogger(__name__)

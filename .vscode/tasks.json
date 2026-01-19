@@ -93,21 +93,10 @@
         },
         {
             "label": "🌿 Yonca AI: 🐳 Docker Logs",
-            "detail": "Stream all container logs",
+            "detail": "Stream all container logs (Postgres, Redis, Ollama, Langfuse)",
             "type": "shell",
             "command": "docker-compose",
             "args": ["-f", "docker-compose.local.yml", "logs", "-f", "--tail=50"],
-            "options": { "cwd": "${workspaceFolder}" },
-            "isBackground": true,
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "dedicated" }
-        },
-        {
-            "label": "🌿 Yonca AI: 📊 Langfuse Logs",
-            "detail": "Stream Langfuse container logs",
-            "type": "shell",
-            "command": "docker",
-            "args": ["logs", "yonca-langfuse", "-f", "--tail=100"],
             "options": { "cwd": "${workspaceFolder}" },
             "isBackground": true,
             "problemMatcher": [],

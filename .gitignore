@@ -59,6 +59,9 @@ Thumbs.db
 htmlcov/
 .tox/
 
+# LangGraph (local dev checkpoints)
+.langgraph_api/
+
 # Docker
 *.pid
 *.seed

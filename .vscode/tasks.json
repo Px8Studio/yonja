@@ -93,10 +93,21 @@
         },
         {
             "label": "🌿 Yonca AI: 🐳 Docker Logs",
-            "detail": "Stream container logs",
+            "detail": "Stream all container logs",
             "type": "shell",
             "command": "docker-compose",
             "args": ["-f", "docker-compose.local.yml", "logs", "-f", "--tail=50"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "isBackground": true,
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "dedicated" }
+        },
+        {
+            "label": "🌿 Yonca AI: 📊 Langfuse Logs",
+            "detail": "Stream Langfuse container logs",
+            "type": "shell",
+            "command": "docker",
+            "args": ["logs", "yonca-langfuse", "-f", "--tail=100"],
             "options": { "cwd": "${workspaceFolder}" },
             "isBackground": true,
             "problemMatcher": [],
@@ -128,7 +139,7 @@
                     "endsPattern": "Application startup complete"
                 }
             },
-            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true, "group": "services" }
+            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
         },
         {
             "label": "🌿 Yonca AI: 🖥️ UI Start",
@@ -158,7 +169,7 @@
                     "endsPattern": "Your app is available"
                 }
             },
-            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true, "group": "services" }
+            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
         },
         {
             "label": "🌿 Yonca AI: 🎨 LangGraph Start",
@@ -180,7 +191,7 @@
                     "endsPattern": "Ready"
                 }
             },
-            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true, "group": "services" }
+            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
         },
         // ════════════════════════════════════════════════════════════════════
         // 🌐 BROWSER SHORTCUTS

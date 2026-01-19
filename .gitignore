@@ -75,4 +75,4 @@ models/
 
 # Chainlit
 .chainlit/translations
-demo-ui/.chainlit/translations/
+# demo-ui/.chainlit/translations/

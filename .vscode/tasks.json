@@ -1,53 +1,75 @@
 {
     "version": "2.0.0",
     // ════════════════════════════════════════════════════════════════════════
-    // 🌿 YONCA AI — Task Configuration
+    // 🌿 YONCA AI — Task Configuration (Simplified)
     // ════════════════════════════════════════════════════════════════════════
     // 
-    // QUICK REFERENCE:
-    //   🚀 Start:  "🌿 Yonca AI: 🚀 Start All" — Docker + LangGraph + API + UI + browsers (one click)
-    //   🛑 Stop:   "🌿 Yonca AI: 🛑 Stop All" — Stops everything cleanly
-    //   🧪 Test:   "🌿 Yonca AI: 🧪 Test All"
-    //   🗄️ DB:     "🌿 Yonca AI: 🗄️ DB Migrate" — Apply schema changes
+    // QUICK START:
+    //   🚀 "🌿 Yonca AI: 🚀 Start All"  → Docker + all services with LIVE LOGS
+    //   🛑 "🌿 Yonca AI: 🛑 Stop All"   → Stop everything
     //
-    // WEB INTERFACES (auto-opened after 60s wait):
-    //   📘 Swagger:       http://localhost:8000/docs   — Interactive API testing
-    //   📕 ReDoc:         http://localhost:8000/redoc  — Clean API reference  
-    //   📊 Langfuse:      http://localhost:3001        — Self-hosted LLM observability
-    //   💬 Chat UI:       http://localhost:8501        — Chainlit demo interface
-    //   🎨 LangGraph:     http://localhost:2024        — Agent server API
-    //   🎨 LangGraph Studio: smith.langchain.com       — Visual agent debugging (cloud UI)
+    // Each service runs in its own terminal panel with live output:
+    //   🎨 LangGraph panel  → Agent server logs
+    //   🌿 FastAPI panel    → API request/response logs  
+    //   🖥️ Chainlit panel   → Chat UI logs
     //
-    // SERVICE EMOJIS:
-    //   🌿 Yonca AI (main app)
-    //   🐳 Docker infrastructure
-    //   🔴 Redis checkpointing
-    //   🐘 PostgreSQL database
-    //   📊 Langfuse observability
-    //   🦙 Ollama LLM
-    //   🎨 LangGraph Studio
+    // WEB INTERFACES:
+    //   📘 Swagger:   http://localhost:8000/docs
+    //   📕 ReDoc:     http://localhost:8000/redoc
+    //   📊 Langfuse:  http://localhost:3001
+    //   💬 Chat UI:   http://localhost:8501
+    //   🎨 LangGraph: http://localhost:2024
     //
-    // ARCHITECTURE:
-    //   Local Dev:  🐘 Postgres (5433) + 🦙 Ollama + 🔴 Redis → Python API + Chainlit
-    //   Production: Render.com (see render.yaml)
-    //
-    // DATABASE (Local):
-    //   Host: localhost:5433 | User: yonca | Pass: yonca_dev_password
-    //   Connection: postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca
     // ════════════════════════════════════════════════════════════════════════
     "tasks": [
         // ════════════════════════════════════════════════════════════════════
-        // 🐳 INFRASTRUCTURE (Docker Services)
+        // 🚀 MAIN WORKFLOWS
+        // ════════════════════════════════════════════════════════════════════
+        {
+            "label": "🌿 Yonca AI: 🚀 Start All",
+            "detail": "Stop existing → Docker → API + UI + LangGraph (live logs)",
+            "dependsOn": [
+                "yonca:cleanup",
+                "🌿 Yonca AI: 🐳 Docker Start",
+                "🌿 Yonca AI: 🌿 API Start",
+                "🌿 Yonca AI: 🖥️ UI Start",
+                "🌿 Yonca AI: 🎨 LangGraph Start"
+            ],
+            "dependsOrder": "sequence",
+            "problemMatcher": [],
+            "runOptions": { "runOn": "default" }
+        },
+        {
+            "label": "yonca:cleanup",
+            "detail": "Kill existing processes to free ports",
+            "type": "shell",
+            "command": "pwsh",
+            "args": ["-Command", "Get-Process python,chainlit,langgraph -ErrorAction SilentlyContinue | Stop-Process -Force; Write-Host '🧹 Ports cleared' -ForegroundColor Green"],
+            "problemMatcher": [],
+            "presentation": { "reveal": "silent", "panel": "shared" }
+        },
+        {
+            "label": "🌿 Yonca AI: 🛑 Stop All",
+            "detail": "Stop all services + Docker containers",
+            "type": "shell",
+            "command": "pwsh",
+            "args": ["-Command", "Write-Host '🛑 Stopping services...' -ForegroundColor Yellow; Get-Process -Name python,chainlit,langgraph -ErrorAction SilentlyContinue | Stop-Process -Force; docker-compose -f docker-compose.local.yml down; Write-Host '✅ All stopped' -ForegroundColor Green"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        // ════════════════════════════════════════════════════════════════════
+        // 🐳 DOCKER INFRASTRUCTURE
         // ════════════════════════════════════════════════════════════════════
         {
             "label": "🌿 Yonca AI: 🐳 Docker Start",
-            "detail": "Start 🐘 Postgres + 🦙 Ollama + 🔴 Redis + 📊 Langfuse",
+            "detail": "🐘 Postgres + 🦙 Ollama + 🔴 Redis + 📊 Langfuse",
             "type": "shell",
             "command": "docker-compose",
             "args": ["-f", "docker-compose.local.yml", "up", "-d", "postgres", "ollama", "redis", "langfuse-db", "langfuse-server"],
             "options": { "cwd": "${workspaceFolder}" },
             "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "shared" }
+            "presentation": { "reveal": "always", "panel": "shared", "clear": true }
         },
         {
             "label": "🌿 Yonca AI: 🐳 Docker Stop",
@@ -71,41 +93,24 @@
         },
         {
             "label": "🌿 Yonca AI: 🐳 Docker Logs",
-            "detail": "Stream all container logs",
+            "detail": "Stream container logs",
             "type": "shell",
             "command": "docker-compose",
-            "args": ["-f", "docker-compose.local.yml", "logs", "-f", "--tail=100"],
+            "args": ["-f", "docker-compose.local.yml", "logs", "-f", "--tail=50"],
             "options": { "cwd": "${workspaceFolder}" },
             "isBackground": true,
             "problemMatcher": [],
             "presentation": { "reveal": "always", "panel": "dedicated" }
         },
         // ════════════════════════════════════════════════════════════════════
-        // 🧹 CACHE (Prevent stale bytecode issues)
-        // ════════════════════════════════════════════════════════════════════
-        {
-            "label": "🌿 Yonca AI: 🧹 Clear Cache",
-            "detail": "Remove __pycache__ folders (prevents stale .pyc issues)",
-            "type": "shell",
-            "command": "powershell",
-            "args": [
-                "-Command",
-                "Get-ChildItem -Path '${workspaceFolder}' -Recurse -Directory -Filter '__pycache__' | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue; Write-Host '🧹 Python cache cleared' -ForegroundColor Green"
-            ],
-            "options": { "cwd": "${workspaceFolder}" },
-            "problemMatcher": [],
-            "presentation": { "reveal": "silent" }
-        },
-        // ════════════════════════════════════════════════════════════════════
-        // 🌿 APPLICATION (Python Services)
+        // 🌿 APPLICATION SERVICES (each in dedicated panel with live logs)
         // ════════════════════════════════════════════════════════════════════
         {
             "label": "🌿 Yonca AI: 🌿 API Start",
-            "detail": "FastAPI with hot reload (localhost:8000)",
-            "dependsOn": ["🌿 Yonca AI: 🧹 Clear Cache"],
+            "detail": "FastAPI localhost:8000 (live logs)",
             "type": "shell",
             "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
-            "args": ["-m", "uvicorn", "yonca.api.main:app", "--host", "localhost", "--port", "8000", "--reload"],
+            "args": ["-m", "uvicorn", "yonca.api.main:app", "--host", "localhost", "--port", "8000", "--reload", "--log-level", "info"],
             "options": {
                 "cwd": "${workspaceFolder}",
                 "env": {
@@ -119,17 +124,15 @@
                 "pattern": { "regexp": "^$" },
                 "background": {
                     "activeOnStart": true,
-                    "beginsPattern": "Uvicorn running on",
+                    "beginsPattern": "Started reloader",
                     "endsPattern": "Application startup complete"
                 }
             },
-            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
-            "group": { "kind": "build", "isDefault": true }
+            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true, "group": "services" }
         },
         {
             "label": "🌿 Yonca AI: 🖥️ UI Start",
-            "detail": "Chainlit Demo (localhost:8501)",
-            "dependsOn": ["🌿 Yonca AI: 🧹 Clear Cache"],
+            "detail": "Chainlit localhost:8501 (live logs)",
             "type": "shell",
             "command": "${workspaceFolder}\\.venv\\Scripts\\chainlit.exe",
             "args": ["run", "app.py", "-w", "--port", "8501", "--headless"],
@@ -151,15 +154,48 @@
                 "pattern": { "regexp": "^$" },
                 "background": {
                     "activeOnStart": true,
-                    "beginsPattern": "Chainlit Demo",
-                    "endsPattern": "Your app is available at"
+                    "beginsPattern": "Your app is available",
+                    "endsPattern": "Your app is available"
                 }
             },
-            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
+            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true, "group": "services" }
+        },
+        {
+            "label": "🌿 Yonca AI: 🎨 LangGraph Start",
+            "detail": "LangGraph localhost:2024 (live logs)",
+            "type": "shell",
+            "command": "${workspaceFolder}\\.venv\\Scripts\\langgraph.exe",
+            "args": ["dev"],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": { "PYTHONPATH": "${workspaceFolder}/src" }
+            },
+            "isBackground": true,
+            "problemMatcher": {
+                "owner": "langgraph",
+                "pattern": { "regexp": "^$" },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "Starting",
+                    "endsPattern": "Ready"
+                }
+            },
+            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true, "group": "services" }
+        },
+        // ════════════════════════════════════════════════════════════════════
+        // 🌐 BROWSER SHORTCUTS
+        // ════════════════════════════════════════════════════════════════════
+        {
+            "label": "🌿 Yonca AI: 🌐 Open All UIs",
+            "detail": "Open Swagger + Langfuse + Chat UI",
+            "type": "shell",
+            "command": "pwsh",
+            "args": ["-Command", "Start-Process 'http://localhost:8000/docs'; Start-Process 'http://localhost:3001'; Start-Process 'http://localhost:8501'"],
+            "problemMatcher": [],
+            "presentation": { "reveal": "silent" }
         },
         {
             "label": "🌿 Yonca AI: 📖 Open Swagger",
-            "detail": "Open FastAPI docs in browser (localhost:8000/docs)",
             "type": "shell",
             "command": "Start-Process",
             "args": ["http://localhost:8000/docs"],
@@ -168,10 +204,17 @@
         },
         {
             "label": "🌿 Yonca AI: 💬 Open Chat UI",
-            "detail": "Open Chainlit UI in browser (localhost:8501)",
             "type": "shell",
             "command": "Start-Process",
             "args": ["http://localhost:8501"],
+            "problemMatcher": [],
+            "presentation": { "reveal": "silent" }
+        },
+        {
+            "label": "🌿 Yonca AI: 📊 Open Langfuse",
+            "type": "shell",
+            "command": "Start-Process",
+            "args": ["http://localhost:3001"],
             "problemMatcher": [],
             "presentation": { "reveal": "silent" }
         },
@@ -180,7 +223,7 @@
         // ════════════════════════════════════════════════════════════════════
         {
             "label": "🌿 Yonca AI: 🗄️ DB Migrate",
-            "detail": "Apply pending Alembic migrations",
+            "detail": "Apply Alembic migrations",
             "type": "shell",
             "command": "${workspaceFolder}\\.venv\\Scripts\\alembic.exe",
             "args": ["upgrade", "head"],
@@ -196,7 +239,7 @@
         },
         {
             "label": "🌿 Yonca AI: 🗄️ DB Seed",
-            "detail": "Populate with synthetic farmer data",
+            "detail": "Populate with test data",
             "type": "shell",
             "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
             "args": ["scripts/seed_database.py"],
@@ -227,11 +270,11 @@
             "presentation": { "reveal": "always", "panel": "shared" }
         },
         // ════════════════════════════════════════════════════════════════════
-        // 🧪 QUALITY (Tests & Linting)
+        // 🧪 QUALITY
         // ════════════════════════════════════════════════════════════════════
         {
             "label": "🌿 Yonca AI: 🧪 Test All",
-            "detail": "Run pytest with verbose output",
+            "detail": "Run pytest",
             "type": "shell",
             "command": "pytest",
             "args": ["tests/", "-v", "--tb=short"],
@@ -253,12 +296,22 @@
             "problemMatcher": [],
             "presentation": { "reveal": "always", "panel": "shared" }
         },
+        {
+            "label": "🌿 Yonca AI: 🧹 Clear Cache",
+            "detail": "Remove __pycache__ folders",
+            "type": "shell",
+            "command": "pwsh",
+            "args": ["-Command", "Get-ChildItem -Path . -Recurse -Directory -Filter '__pycache__' | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue; Write-Host '🧹 Cache cleared' -ForegroundColor Green"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "presentation": { "reveal": "silent" }
+        },
         // ════════════════════════════════════════════════════════════════════
         // 🤖 MODELS (One-time setup)
         // ════════════════════════════════════════════════════════════════════
         {
             "label": "🌿 Yonca AI: 🤖 Models Setup",
-            "detail": "Pull qwen3:4b + import ATLLaMA (run once after Docker Start)",
+            "detail": "Pull models (run once after Docker Start)",
             "type": "shell",
             "command": "docker-compose",
             "args": ["-f", "docker-compose.local.yml", "--profile", "setup", "up", "model-setup"],
@@ -268,117 +321,12 @@
         },
         {
             "label": "🌿 Yonca AI: 🤖 Models List",
-            "detail": "Show available Ollama models",
+            "detail": "Show Ollama models",
             "type": "shell",
             "command": "docker",
             "args": ["exec", "yonca-ollama", "ollama", "list"],
-            "options": { "cwd": "${workspaceFolder}" },
             "problemMatcher": [],
             "presentation": { "reveal": "always", "panel": "shared" }
-        },
-        // ════════════════════════════════════════════════════════════════════
-        // 🎨 LANGGRAPH STUDIO (Agent Flow Debugging)
-        // Runs local server on port 2024, Studio UI via smith.langchain.com
-        // ════════════════════════════════════════════════════════════════════
-        {
-            "label": "🌿 Yonca AI: 🎨 LangGraph Dev Server",
-            "detail": "Start LangGraph local server (port 2024) + open Studio UI with tracing",
-            "type": "shell",
-            "command": "powershell",
-            "args": [
-                "-Command",
-                "Write-Host ''; Write-Host '🎨 Starting LangGraph Development Server...' -ForegroundColor Cyan; Write-Host '   📂 Graph: yonca_agent - src/yonca/agent/graph.py' -ForegroundColor DarkGray; Write-Host '   🔗 API: http://localhost:2024' -ForegroundColor DarkGray; Write-Host '   📖 Docs: http://localhost:2024/docs' -ForegroundColor DarkGray; Write-Host '   📊 Traces: smith.langchain.com - yonca-demo project' -ForegroundColor DarkGray; Write-Host ''; Write-Host '⏳ Starting server, Studio will open automatically...' -ForegroundColor Yellow; & '${workspaceFolder}\\.venv\\Scripts\\langgraph.exe' dev"
-            ],
-            "options": { 
-                "cwd": "${workspaceFolder}",
-                "env": {
-                    "PYTHONPATH": "${workspaceFolder}/src"
-                }
-            },
-            "isBackground": true,
-            "problemMatcher": {
-                "owner": "langgraph",
-                "pattern": {
-                    "regexp": "^$"
-                },
-                "background": {
-                    "activeOnStart": true,
-                    "beginsPattern": "Starting LangGraph Development Server",
-                    "endsPattern": "Server started in"
-                }
-            },
-            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
-        },
-        // ════════════════════════════════════════════════════════════════════
-        // 📊 OBSERVABILITY (Langfuse — LLM Tracing & Analytics)
-        // ════════════════════════════════════════════════════════════════════
-        {
-            "label": "🌿 Yonca AI: 📊 Langfuse Start",
-            "detail": "Start observability standalone (already in Docker Start)",
-            "type": "shell",
-            "command": "docker-compose",
-            "args": ["-f", "docker-compose.local.yml", "up", "-d", "langfuse-server", "langfuse-db"],
-            "options": { "cwd": "${workspaceFolder}" },
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "shared" }
-        },
-        {
-            "label": "🌿 Yonca AI: 📊 Langfuse Open",
-            "detail": "Open Langfuse dashboard in browser",
-            "type": "shell",
-            "command": "Start-Process",
-            "args": ["http://localhost:3001"],
-            "problemMatcher": [],
-            "presentation": { "reveal": "silent" }
-        },
-        // ════════════════════════════════════════════════════════════════════
-        // 🚀 WORKFLOWS (Compound Tasks)
-        // ════════════════════════════════════════════════════════════════════
-        {
-            "label": "🌿 Yonca AI: 🚀 Start All",
-            "detail": "Stop → Docker → LangGraph Studio → API + UI → Open all dashboards",
-            "dependsOn": ["🌿 Yonca AI: 🛑 Stop All", "🌿 Yonca AI: 🐳 Docker Start", "🌿 Yonca AI: 🎨 LangGraph Dev Server", "🌿 Yonca AI: 🚀 Start Apps", "🌿 Yonca AI: 🌐 Open All UIs"],
-            "dependsOrder": "sequence",
-            "problemMatcher": []
-        },
-        {
-            "label": "🌿 Yonca AI: 🚀 Start Apps",
-            "detail": "API + UI (parallel) - internal task",
-            "dependsOn": ["🌿 Yonca AI: 🌿 API Start", "🌿 Yonca AI: 🖥️ UI Start"],
-            "dependsOrder": "parallel",
-            "problemMatcher": []
-        },
-        {
-            "label": "🌿 Yonca AI: 🌐 Open All UIs",
-            "detail": "Wait 60s for services, then open Swagger → ReDoc → Langfuse → Chat UI",
-            "type": "shell",
-            "command": "powershell",
-            "args": [
-                "-Command",
-                "Write-Host ''; Write-Host '⏳ Waiting 60 seconds for services to fully initialize...' -ForegroundColor Cyan; Write-Host '   🐳 Docker containers starting up' -ForegroundColor DarkGray; Write-Host '   🦙 Ollama loading model weights' -ForegroundColor DarkGray; Write-Host '   🐘 PostgreSQL accepting connections' -ForegroundColor DarkGray; Write-Host '   🔴 Redis ready for checkpointing' -ForegroundColor DarkGray; Write-Host '   🌿 FastAPI + Chainlit starting' -ForegroundColor DarkGray; Write-Host ''; for ($i = 60; $i -gt 0; $i--) { Write-Host \"   ⏱️  $i seconds remaining...\" -ForegroundColor Yellow; Start-Sleep -Seconds 1 }; Write-Host ''; Write-Host '🌐 Opening browser tabs...' -ForegroundColor Cyan; Start-Process 'http://localhost:8000/docs'; Start-Sleep -Milliseconds 500; Start-Process 'http://localhost:8000/redoc'; Start-Sleep -Milliseconds 500; Start-Process 'http://localhost:3001'; Start-Sleep -Milliseconds 500; Start-Process 'http://localhost:8501'; Write-Host ''; Write-Host '✅ All UIs opened:' -ForegroundColor Green; Write-Host '   📘 Swagger:  http://localhost:8000/docs' -ForegroundColor White; Write-Host '   📕 ReDoc:    http://localhost:8000/redoc' -ForegroundColor White; Write-Host '   📊 Langfuse: http://localhost:3001' -ForegroundColor White; Write-Host '   💬 Chat UI:  http://localhost:8501' -ForegroundColor White"
-            ],
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "shared" }
-        },
-        {
-            "label": "🌿 Yonca AI: 🛑 Stop All",
-            "detail": "Stop Docker + kill Python/Chainlit processes",
-            "type": "shell",
-            "command": "pwsh",
-            "args": [
-                "-ExecutionPolicy", "Bypass",
-                "-File", "${workspaceFolder}/scripts/stop_all.ps1"
-            ],
-            "options": { "cwd": "${workspaceFolder}" },
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "shared" }
-        },
-        {
-            "label": "🌿 Yonca AI: 🔄 Restart All",
-            "detail": "Stop → Start (clean restart)",
-            "dependsOn": ["🌿 Yonca AI: 🛑 Stop All", "🌿 Yonca AI: 🚀 Start All"],
-            "dependsOrder": "sequence",
-            "problemMatcher": []
         }
     ],
     "inputs": [

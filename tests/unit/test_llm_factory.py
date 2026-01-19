@@ -8,7 +8,6 @@ import pytest
 from yonca.config import LLMProvider as LLMProviderEnum
 from yonca.llm.factory import (
     create_groq_provider,
-    create_gemini_provider,
     create_ollama_provider,
     create_llm_provider,
     LLMProviderError,
@@ -37,29 +36,6 @@ class TestCreateGroqProvider:
         provider = create_groq_provider(api_key="explicit-key")
         # Should use the explicit key, not the one from settings
         assert provider.api_key == "explicit-key"
-
-
-class TestCreateGeminiProvider:
-    """Test Gemini provider creation."""
-
-    def test_create_with_explicit_key(self):
-        """Test creating provider with explicit API key."""
-        provider = create_gemini_provider(api_key="test-key")
-        assert provider.provider_name == "gemini"
-        assert provider.api_key == "test-key"
-
-    def test_create_with_custom_model(self):
-        """Test creating provider with custom model."""
-        provider = create_gemini_provider(
-            api_key="test-key",
-            model="gemini-1.5-pro",
-        )
-        assert provider.model_name == "gemini-1.5-pro"
-
-    def test_requires_api_key(self, clean_env):
-        """Test that missing API key raises error."""
-        with pytest.raises(LLMProviderError, match="Gemini API key is required"):
-            create_gemini_provider()
 
 
 class TestCreateOllamaProvider:
@@ -99,14 +75,6 @@ class TestCreateLLMProvider:
             api_key="test-key",
         )
         assert provider.provider_name == "groq"
-
-    def test_create_gemini_provider(self):
-        """Test creating Gemini provider via factory."""
-        provider = create_llm_provider(
-            provider_type=LLMProviderEnum.GEMINI,
-            api_key="test-key",
-        )
-        assert provider.provider_name == "gemini"
 
     def test_invalid_provider_type(self):
         """Test that invalid provider type raises error."""

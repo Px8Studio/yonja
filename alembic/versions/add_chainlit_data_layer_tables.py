@@ -85,6 +85,7 @@ def upgrade() -> None:
         sa.Column('generation', sa.Text(), nullable=True, comment='JSON generation metadata (tokens, model, etc)'),
         sa.Column('showInput', sa.String(length=10), nullable=True, comment='Whether to show input'),
         sa.Column('language', sa.String(length=50), nullable=True, comment='Code language for code steps'),
+        sa.Column('defaultOpen', sa.Boolean(), nullable=True, server_default='false', comment='Whether step is expanded by default (Chainlit 2.9+)'),
         sa.PrimaryKeyConstraint('id'),
     )
     op.create_index('ix_steps_threadId', 'steps', ['threadId'], unique=False)

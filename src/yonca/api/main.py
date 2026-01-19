@@ -12,55 +12,206 @@ from yonca.api.routes import health, chat, models
 from yonca.api.middleware.rate_limit import RateLimitMiddleware, RateLimiter, RateLimitExceeded
 from yonca.data.redis_client import RedisClient
 from yonca.llm.http_pool import HTTPClientPool
+from yonca.observability import (
+    print_startup_banner,
+    print_section_header,
+    print_status_line,
+    print_endpoints,
+    print_quick_links,
+    print_shutdown_message,
+    print_startup_complete,
+    print_llm_info,
+    print_database_info,
+    print_infrastructure_summary,
+    print_model_capabilities,
+    print_security_info,
+    print_observability_info,
+    print_infrastructure_tier,
+    is_langfuse_healthy,
+)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events with proper resource management."""
-    # Startup
-    mode_display = "Open-Source" if settings.deployment_mode.value == "open_source" else "Proprietary Cloud"
-    provider_display = "Groq (Open-Source)" if settings.llm_provider.value == "groq" else "Gemini (Proprietary)"
+    # ═══════════════════════════════════════════════════════════════
+    # STARTUP
+    # ═══════════════════════════════════════════════════════════════
     
-    print(f"🌿 Yonca AI starting in {mode_display} mode")
-    print(f"🤖 LLM Provider: {provider_display}")
-    print(f"📦 Active Model: {settings.active_llm_model}")
+    # Main banner
+    print_startup_banner("api", settings.app_version, settings.environment)
     
-    if settings.llm_provider.value == "groq":
-        print(f"✨ Using open-source models that can be self-hosted")
-        print(f"🚀 Performance: Enterprise-grade with proper infrastructure")
+    # ─────────────────────────────────────────────────────────────
+    # LLM Configuration (with detailed info)
+    # ─────────────────────────────────────────────────────────────
+    provider_names = {
+        "groq": "Groq (LPU Cloud)",
+        "ollama": "Ollama (Local)",
+        "gemini": "Google Gemini",
+    }
+    provider_display = provider_names.get(settings.llm_provider.value, settings.llm_provider.value)
     
-    # Check Redis connectivity
+    # Determine mode and API key status
+    mode = "local" if settings.llm_provider.value == "ollama" else "open_source" if settings.llm_provider.value == "groq" else "cloud"
+    api_key_set = bool(
+        (settings.llm_provider.value == "groq" and settings.groq_api_key) or
+        (settings.llm_provider.value == "gemini" and settings.gemini_api_key) or
+        settings.llm_provider.value == "ollama"
+    )
+    
+    # Get base URL for the provider
+    base_urls = {
+        "ollama": settings.ollama_base_url,
+        "groq": "https://api.groq.com/openai/v1",
+        "gemini": "https://generativelanguage.googleapis.com",
+    }
+    
+    print_llm_info(
+        provider=provider_display,
+        model=settings.active_llm_model,
+        mode=mode,
+        base_url=base_urls.get(settings.llm_provider.value),
+        api_key_set=api_key_set,
+    )
+    
+    # Show model-specific capabilities
+    print_model_capabilities(settings.active_llm_model)
+    
+    # ─────────────────────────────────────────────────────────────
+    # ALEM Infrastructure Tier
+    # ─────────────────────────────────────────────────────────────
+    print_infrastructure_tier(settings.inference_tier_spec)
+    
+    # ─────────────────────────────────────────────────────────────
+    # Infrastructure Status
+    # ─────────────────────────────────────────────────────────────
+    print_section_header("🔌 Infrastructure")
+    
+    # Redis connectivity
+    redis_ok = False
     try:
         redis_ok = await RedisClient.health_check()
-        if redis_ok:
-            print(f"🗄️  Redis: Connected ({settings.redis_url})")
+    except Exception:
+        pass
+    
+    # Build services list
+    services = []
+    
+    # Database info
+    if "postgresql" in settings.database_url:
+        try:
+            db_host = settings.database_url.split("@")[-1].split("/")[0]
+        except Exception:
+            db_host = "configured"
+        services.append({
+            "name": "PostgreSQL",
+            "status": "Connected",
+            "style": "success",
+            "port": db_host.split(":")[-1] if ":" in db_host else "5432",
+            "detail": "user data & sessions",
+        })
+    
+    # Redis
+    if redis_ok:
+        services.append({
+            "name": "Redis",
+            "status": "Connected",
+            "style": "success",
+            "port": "6379",
+            "detail": "LangGraph checkpointing",
+        })
+    else:
+        services.append({
+            "name": "Redis",
+            "status": "Not Available",
+            "style": "warning",
+            "detail": "sessions will be stateless",
+        })
+    
+    # Ollama (if local mode)
+    if settings.llm_provider.value == "ollama":
+        services.append({
+            "name": "Ollama",
+            "status": "Configured",
+            "style": "info",
+            "port": "11434",
+            "detail": f"model: {settings.ollama_model}",
+        })
+    
+    for svc in services:
+        port_info = f":{svc.get('port')}" if svc.get('port') else ""
+        detail = svc.get('detail', '')
+        if port_info and detail:
+            full_detail = f"localhost{port_info} — {detail}"
+        elif port_info:
+            full_detail = f"localhost{port_info}"
         else:
-            print(f"⚠️  Redis: Not available (sessions will be stateless)")
-    except Exception as e:
-        print(f"⚠️  Redis: Connection failed - {e}")
+            full_detail = detail
+            
+        print_status_line(svc['name'], svc['status'], svc.get('style', 'info'), full_detail)
     
-    # Rate limiting info
-    print(f"🚦 Rate Limit: {settings.rate_limit_requests_per_minute} req/min")
+    # ─────────────────────────────────────────────────────────────
+    # Security Configuration
+    # ─────────────────────────────────────────────────────────────
+    jwt_configured = settings.jwt_secret != "dev-secret-change-in-production"
+    print_security_info(
+        rate_limit=settings.rate_limit_requests_per_minute,
+        burst_limit=settings.rate_limit_burst,
+        jwt_configured=jwt_configured,
+        cors_origins=settings.cors_origins,
+    )
     
-    # Show localhost for browsing, even if binding to 0.0.0.0
+    # ─────────────────────────────────────────────────────────────
+    # Observability
+    # ─────────────────────────────────────────────────────────────
+    langfuse_ok = settings.langfuse_enabled and bool(settings.langfuse_secret_key)
+    print_observability_info(
+        langfuse_enabled=langfuse_ok,
+        langfuse_url=settings.langfuse_host,
+        prometheus_enabled=settings.prometheus_enabled,
+        log_level=settings.log_level,
+    )
+    
+    # ─────────────────────────────────────────────────────────────
+    # Endpoints with clickable links
+    # ─────────────────────────────────────────────────────────────
     display_host = "localhost" if settings.api_host == "0.0.0.0" else settings.api_host
-    print(f"📍 API: http://{display_host}:{settings.api_port}")
-    print(f"📚 Docs: http://{display_host}:{settings.api_port}/docs")
+    base_url = f"http://{display_host}:{settings.api_port}"
+    
+    print_endpoints([
+        ("API", base_url, "REST API base"),
+        ("Swagger", f"{base_url}/docs", "Interactive API documentation"),
+        ("ReDoc", f"{base_url}/redoc", "Alternative API docs"),
+        ("Health", f"{base_url}/health", "Readiness & liveness probes"),
+    ])
+    
+    print_quick_links([
+        ("Swagger", f"{base_url}/docs"),
+        ("Chat", f"{base_url}/api/v1/chat"),
+        ("Langfuse", settings.langfuse_host),
+    ])
+    
+    print_startup_complete("Yonca AI API")
     
     yield
     
-    # Shutdown - cleanup resources
-    print("🌿 Yonca AI shutting down...")
+    # ═══════════════════════════════════════════════════════════════
+    # SHUTDOWN
+    # ═══════════════════════════════════════════════════════════════
+    
+    print_shutdown_message()
     
     # Close HTTP connection pools
     await HTTPClientPool.close_all()
-    print("   ✓ HTTP connection pools closed")
+    print_status_line("HTTP Pools", "Closed", "success")
     
     # Close Redis connections
     await RedisClient.close()
-    print("   ✓ Redis connections closed")
+    print_status_line("Redis", "Closed", "success")
     
-    print("🌿 Shutdown complete")
+    print()
+    print_status_line("Yonca AI", "Shutdown complete", "success")
+    print()
 
 
 app = FastAPI(
@@ -167,6 +318,20 @@ async def root():
         "name": settings.app_name,
         "version": settings.app_version,
         "description": "AI Farming Assistant for Azerbaijani Farmers",
-        "docs": "/docs",
-        "health": "/health",
+        "endpoints": {
+            "docs": "/docs",
+            "redoc": "/redoc",
+            "health": "/health",
+            "chat": "/api/v1/chat",
+            "models": "/api/models"
+        },
+        "methods": {
+            "/api/v1/chat": {
+                "GET": "Get chat endpoint information",
+                "POST": "Send messages to AI assistant"
+            },
+            "/api/models": {
+                "GET": "List available models"
+            }
+        }
     }

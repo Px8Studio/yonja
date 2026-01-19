@@ -1,0 +1,3 @@
+{
+  "google": {
+        "scopes": ["openid", "email", "profile"]

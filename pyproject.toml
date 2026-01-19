@@ -2,9 +2,6 @@
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-# Poetry manages dependencies in [tool.poetry.dependencies] below
-# PEP 621 [project] section is not needed when using Poetry as the build backend
-
 [tool.poetry]
 name = "yonca"
 version = "0.1.0"
@@ -20,23 +17,21 @@ uvicorn = {extras = ["standard"], version = "^0.35.0"}
 pydantic = "^2.5.0"
 pydantic-settings = "^2.1.0"
 httpx = "^0.27.0"
-google-generativeai = "^0.8.0"
 langgraph = "^1.0.0"
 langgraph-checkpoint-redis = "^0.3.2"
+langgraph-checkpoint-postgres = "^3.0.0"
+langgraph-cli = "^0.2.0"
 langchain-core = "^0.3.0"
 langchain = "^0.3.0"
-langfuse = "^2.0.0"  # Self-hosted observability (LangSmith alternative)
+langfuse = "^2.0.0"
 sqlalchemy = "^2.0.0"
 alembic = "^1.13.0"
 redis = "^5.0.0"
 faker = "^22.0.0"
 jinja2 = "^3.1.0"
 structlog = "^24.1.0"
-prometheus-client = "^0.19.0"
-python-jose = {extras = ["cryptography"], version = "^3.3.0"}
-passlib = "^1.7.4"
-aiosqlite = "^0.19.0"
-chainlit = "^2.9.0"
+protobuf = ">=6.31.1,<7.0.0"
+aiosqlite = "^0.22.1"
 asyncpg = "^0.31.0"
 
 [tool.poetry.group.dev.dependencies]
@@ -45,6 +40,26 @@ pytest-asyncio = "^0.23.0"
 pytest-cov = "^4.1.0"
 ruff = "^0.1.0"
 mypy = "^1.8.0"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 🚀 Poetry Scripts - Run commands without manually activating venv
+# ═══════════════════════════════════════════════════════════════════════════
+# Usage:
+#   poetry run dev        # Start FastAPI server with auto-reload
+#   poetry run migrate    # Run database migrations  
+#   poetry run seed       # Seed database with test data
+#   poetry run test       # Run pytest
+#   poetry run lint       # Run ruff linter
+#
+# Or activate shell once and use commands directly:
+#   poetry shell
+#   uvicorn yonca.api.main:app --reload
+#   alembic upgrade head
+# ═══════════════════════════════════════════════════════════════════════════
+[tool.poetry.scripts]
+dev = "scripts.dev:main"
+migrate = "scripts.migrate:main"
+seed = "scripts.seed:main"
 
 [tool.ruff]
 line-length = 100
@@ -64,7 +79,7 @@ asyncio_mode = "auto"
 markers = [
     "integration: Integration tests requiring external services",
     "ollama: Tests requiring local Ollama server",
-    "cloud: Tests requiring cloud API keys (Groq, Gemini)",
+    "cloud: Tests requiring cloud API keys (Groq)",
 ]
 
 [tool.mypy]

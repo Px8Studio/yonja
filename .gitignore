@@ -59,6 +59,9 @@ Thumbs.db
 htmlcov/
 .tox/
 
+# LangGraph (local dev checkpoints)
+.langgraph_api/
+
 # Docker
 *.pid
 *.seed
@@ -80,6 +83,8 @@ models/
 # ═══════════════════════════════════════════════════════════════════════════
 # .chainlit/translations/
 # demo-ui/.chainlit/translations/
+demo-ui/.files/
+demo-ui/.venv/
 
 # Keep custom translations (create these manually if needed):
 # !demo-ui/.chainlit/translations/az-AZ.json

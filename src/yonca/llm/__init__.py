@@ -1,7 +1,7 @@
 # src/yonca/llm/__init__.py
 """LLM module for Yonca AI.
 
-Provides abstracted access to multiple LLM backends (Ollama, Gemini).
+Provides abstracted access to multiple LLM backends (Ollama, Groq).
 
 Usage:
     ```python

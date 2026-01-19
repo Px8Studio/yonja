@@ -146,7 +146,6 @@ async def mock_httpx_client():
 def clean_env(monkeypatch):
     """Clear LLM-related environment variables."""
     monkeypatch.delenv("YONCA_GROQ_API_KEY", raising=False)
-    monkeypatch.delenv("YONCA_GEMINI_API_KEY", raising=False)
     monkeypatch.delenv("YONCA_OLLAMA_BASE_URL", raising=False)
 
 
@@ -155,13 +154,6 @@ def mock_groq_env(monkeypatch):
     """Set up mock Groq environment."""
     monkeypatch.setenv("YONCA_GROQ_API_KEY", "test-groq-api-key")
     monkeypatch.setenv("YONCA_LLM_PROVIDER", "groq")
-
-
-@pytest.fixture
-def mock_gemini_env(monkeypatch):
-    """Set up mock Gemini environment."""
-    monkeypatch.setenv("YONCA_GEMINI_API_KEY", "test-gemini-api-key")
-    monkeypatch.setenv("YONCA_LLM_PROVIDER", "gemini")
 
 
 @pytest.fixture

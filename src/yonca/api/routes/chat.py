@@ -335,3 +335,145 @@ async def delete_session(session_id: str):
         raise HTTPException(status_code=404, detail="Session not found")
     
     return {"status": "deleted", "session_id": session_id}
+
+
+@router.get("/chat")
+async def get_chat_info(
+    request: Request,
+    settings: Annotated[Settings, Depends(get_settings)],
+):
+    """Get chat endpoint information and usage instructions.
+    
+    This endpoint provides API discovery and documentation for external clients.
+    Authenticated applications can use this to understand available methods,
+    request/response formats, and current service configuration.
+    
+    Returns:
+        API contract information including:
+        - Available HTTP methods
+        - Request/response schema examples
+        - Current model configuration
+        - Rate limit information
+        - Documentation links
+    """
+    base_url = str(request.base_url).rstrip("/")
+    
+    return {
+        "service": "yonca-chat",
+        "version": settings.app_version,
+        "endpoint": "/api/v1/chat",
+        "methods": {
+            "GET": "Get API information (this endpoint)",
+            "POST": "Send a chat message to the AI assistant",
+        },
+        "description": "Yonca AI - Azerbaijani farming assistant chat API",
+        "request_schema": {
+            "message": {
+                "type": "string",
+                "required": True,
+                "min_length": 1,
+                "max_length": 4000,
+                "description": "User message in Azerbaijani",
+            },
+            "session_id": {
+                "type": "string",
+                "required": False,
+                "description": "Session ID for conversation continuity. Auto-generated if not provided.",
+            },
+            "user_id": {
+                "type": "string",
+                "required": False,
+                "description": "User identifier for multi-user tracking.",
+            },
+            "farm_id": {
+                "type": "string",
+                "required": False,
+                "description": "Farm context for personalized advice.",
+            },
+            "language": {
+                "type": "string",
+                "required": False,
+                "default": "az",
+                "description": "Response language code.",
+            },
+            "stream": {
+                "type": "boolean",
+                "required": False,
+                "default": False,
+                "description": "Enable streaming response (use /chat/stream endpoint instead).",
+            },
+        },
+        "response_schema": {
+            "response": "string - AI assistant response",
+            "session_id": "string - Session identifier",
+            "model": "string - Model used for generation",
+            "tokens_used": "integer - Token count",
+            "message_count": "integer - Messages in session history",
+        },
+        "example": {
+            "request": {
+                "method": "POST",
+                "url": f"{base_url}/api/v1/chat",
+                "headers": {
+                    "Content-Type": "application/json",
+                },
+                "body": {
+                    "message": "Salam! Buğda əkini haqqında məlumat verə bilərsinizmi?",
+                    "session_id": "optional-uuid",
+                    "user_id": "farmer_123",
+                    "stream": False,
+                },
+            },
+            "response": {
+                "response": "Salam! Buğda əkini üçün...",
+                "session_id": "uuid-string",
+                "model": settings.active_llm_model,
+                "tokens_used": 150,
+                "message_count": 2,
+            },
+        },
+        "related_endpoints": {
+            "chat_stream": {
+                "path": "/api/v1/chat/stream",
+                "method": "POST",
+                "description": "Streaming chat with Server-Sent Events",
+            },
+            "session_get": {
+                "path": "/api/v1/session/{session_id}",
+                "method": "GET",
+                "description": "Retrieve conversation history",
+            },
+            "session_delete": {
+                "path": "/api/v1/session/{session_id}",
+                "method": "DELETE",
+                "description": "Delete session and history",
+            },
+            "status": {
+                "path": "/api/v1/status",
+                "method": "GET",
+                "description": "Chat service health status",
+            },
+        },
+        "model": {
+            "provider": settings.llm_provider.value,
+            "name": settings.active_llm_model,
+            "capabilities": [
+                "Azerbaijani language (native)",
+                "Farm planning assistance",
+                "Crop recommendations",
+                "Weather analysis",
+                "Pest management advice",
+                "Multi-turn conversation",
+            ],
+        },
+        "rate_limits": {
+            "requests_per_minute": settings.rate_limit_requests_per_minute,
+            "burst_limit": settings.rate_limit_burst,
+            "note": "Per-client rate limiting based on IP address",
+        },
+        "documentation": {
+            "swagger": f"{base_url}/docs",
+            "redoc": f"{base_url}/redoc",
+            "openapi": f"{base_url}/openapi.json",
+        },
+    }

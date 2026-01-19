@@ -48,8 +48,6 @@ yonca-ai/
 
 ## 🚀 Quick Start
 
-> 📚 **For detailed model switching and architecture guide, see [MODEL-SWITCHING-GUIDE.md](docs/MODEL-SWITCHING-GUIDE.md)**
-
 ### Prerequisites
 
 #### Option A: Local LLM with Ollama (Recommended for Azerbaijani 🇦🇿)
@@ -77,17 +75,9 @@ curl -fsSL https://ollama.com/install.sh | sh
 
 The Yonca startup manager will **automatically download the model** if it's not present!
 
-#### Option B: Google Gemini (Cloud)
-
-Get a free API key from [Google AI Studio](https://aistudio.google.com/apikey) and set it in `.env`:
-
-```bash
-GOOGLE_API_KEY=your-api-key-here
-YONCA_LLM_PROVIDER=gemini
-YONCA_LLM_MODEL=gemini-2.0-flash
-```
-
 ### Installation
+
+> **🎯 Quick Tip:** Run `.\activate.ps1` or `activate.bat` for instant setup! See [COMMANDS.md](COMMANDS.md) for all usage options.
 
 > **Tooling Note:** We use **Poetry** for dependency management (reads `pyproject.toml`, creates reproducible environments). **Uvicorn** is the ASGI server that runs FastAPI—it's installed as a dependency, not a separate tool.
 
@@ -97,15 +87,22 @@ git clone https://github.com/ZekaLab/yonja.git
 cd yonja
 
 # Option A: Poetry (Recommended)
-poetry install              # Creates .venv and installs all deps
+poetry install              # Core dependencies
 poetry shell                # Activates the environment
 
-# Option B: pip + venv
+# Option B: Quick activate script
+.\activate.ps1              # Windows PowerShell
+activate.bat                # Windows CMD
+
+# Option C: pip + venv
 python -m venv .venv
 .venv\Scripts\activate      # Windows
 source .venv/bin/activate   # Linux/Mac
 pip install -e ".[dev]"     # Install in editable mode
 ```
+
+**💡 Can't run `uvicorn` or `alembic` directly?** 
+→ See [COMMANDS.md](COMMANDS.md) for three ways to run commands without path issues.
 
 ### 🎮 Start Yonca AI
 
@@ -161,18 +158,36 @@ INFO:     Uvicorn running on http://127.0.0.1:8000
 
 ## 🤖 LLM Configuration
 
-### Available Local Models
+### Two Deployment Modes
 
-| Provider | Model | Size | Best For |
-|----------|-------|------|----------|
-| **Ollama** | `qwen3:4b` | 2.6GB | 🇦🇿 Multilingual (Recommended) |
-| **Ollama** | `qwen3:1.7b` | 1.2GB | Fast responses, limited RAM |
-| **Ollama** | `qwen3:8b` | 5.0GB | Higher quality reasoning |
-| **Ollama** | `atllama` | 2.5GB | 🇦🇿 Azerbaijani-tuned (GGUF) |
-| **Ollama** | `aya:8b` | 4.8GB | 100+ language support |
-| **Gemini** | `gemini-2.0-flash` | Cloud | Production, high volume |
+**MODE 1: Groq Cloud (Benchmark)**
+- Purpose: Proves what's possible with open-source models
+- Performance: 200-300 tok/s (enterprise-grade)
+- Cost: $0-50/mo (free tier available)
+- Use for: Development, testing, proof-of-concept
 
-### Setting Up Local Models
+**MODE 2: DigiRella Self-Hosted (Production)**
+- Purpose: Same performance as Groq, your infrastructure
+- Performance: 200-300 tok/s (matches Groq)
+- Cost: $2,600-145k one-time OR $470-7,600/mo (rented GPU)
+- Use for: Production, data sovereignty, air-gapped
+
+📚 See [PRICING-SIMPLIFIED.md](docs/PRICING-SIMPLIFIED.md) for full comparison
+
+### Available Models (All Open-Source)
+
+| Provider | Model | Deployment | Performance |
+|----------|-------|------------|-------------|
+| **Groq** | `llama-4-maverick-17b` | Cloud | 🚀 300 tok/s (benchmark) |
+| **Groq** | `llama-3.3-70b` | Cloud | 🚀 200+ tok/s |
+| **Groq** | `qwen3-32b` | Cloud | 🚀 280 tok/s |
+| **DigiRella** | Same models | Self-hosted | 🏠 200-300 tok/s |
+| **Ollama** | `qwen3:4b` | Local | 🇦🇿 Offline-capable |
+| **Ollama** | `atllama:7b` | Local | 🇦🇿 Azerbaijani-tuned |
+
+> **Key:** Groq = Cloud benchmark | DigiRella = Self-hosted equivalent | Ollama = Lightweight local
+
+### Setting Up Local Models (Ollama)
 
 **Option 1: Docker (Recommended)**
 ```bash
@@ -215,16 +230,36 @@ curl http://localhost:8000/api/models/qwen3:4b
 ### Usage Example
 
 ```python
-from yonca.agent import create_ollama_agent, create_gemini_agent
+from yonca.agent import create_ollama_agent
+from yonca.llm import create_groq_provider
 
 # Local Ollama (Azerbaijani-optimized)
 agent = create_ollama_agent(model="qwen3:4b")
 response = agent.chat("Buğda sahəsini nə vaxt suvarmaq lazımdır?")
 
-# Google Gemini (Cloud)
-agent = create_gemini_agent(api_key="your-key", model="gemini-2.0-flash")
-response = agent.chat("Torpağın pH səviyyəsi nə olmalıdır?")
+# Groq Cloud (Ultra-fast open-source models - benchmark)
+llm = create_groq_provider(api_key="your-key", model="llama-4-maverick-17b-128e-instruct")
+response = await llm.generate([
+    LLMMessage.user("Torpağın pH səviyyəsi nə olmalıdır?")
+])
 ```
+
+## 🚀 Deployment Options
+
+Yonca AI supports three deployment tiers with the same open-source models:
+
+| Tier | Infrastructure | Cost | Data Location | Performance |
+|------|----------------|------|---------------|-------------|
+| **Groq Cloud** | Cloud API (benchmark) | $0-50/mo | US | 200-300 tok/s |
+| **DigiRella Cloud** | Rented GPU (AzInTelecom) | $800-1,500/mo | 🇦🇿 Azerbaijan | 200-300 tok/s |
+| **DigiRella Owned** | Self-hosted hardware | $2,600-145k one-time | Your premises | 200-300 tok/s |
+
+**Key Principle:** Groq demonstrates the benchmark. DigiRella provides the path to replicate that performance with data sovereignty.
+
+📚 **Full Details:**
+- [PRICING-SIMPLIFIED.md](docs/PRICING-SIMPLIFIED.md) — Cost comparison & migration path
+- [17-DIGIRELLA-HOSTING-PROFILES.md](docs/zekalab/17-DIGIRELLA-HOSTING-PROFILES.md) — Hardware specs
+- [16-ALEM-INFRASTRUCTURE-TIERS.md](docs/zekalab/16-ALEM-INFRASTRUCTURE-TIERS.md) — Tier comparison
 
 ## 📡 API Endpoints
 
@@ -264,6 +299,30 @@ GET  /rulebook              → View agronomy rules (AZ- prefixes)
 
 ```bash
 pytest tests/ -v --tb=short
+```
+
+### Testing the API
+
+```bash
+# Check chat endpoint info
+curl http://localhost:8000/api/v1/chat
+
+# Send a message
+curl -X POST http://localhost:8000/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Salam! Buğda əkini haqqında məlumat verə bilərsinizmi?",
+    "user_id": "farmer_123",
+    "stream": false
+  }'
+
+# Stream responses
+curl -X POST http://localhost:8000/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Pomidor əkini üçün ən yaxşı vaxt nə vaxtdır?",
+    "stream": true
+  }'
 ```
 
 ## 📄 License

@@ -4,6 +4,28 @@
 
 ---
 
+## 🧩 Architecture Quick Reference
+
+> **📖 Full architecture details:** See [03-ARCHITECTURE.md](03-ARCHITECTURE.md) for complete component diagrams, data flow, and storage explanations.
+
+### Key Integration Points (Summary)
+
+| Component | Stores | Key File |
+|:----------|:-------|:---------|
+| **Chainlit** → PostgreSQL | `users`, `threads`, `steps` | `demo-ui/data_layer.py` |
+| **LangGraph** → Redis | `langgraph:checkpoint:{thread_id}` | `src/yonca/agent/memory.py` |
+| **LangGraph** → Langfuse | LLM traces, costs | `src/yonca/observability/langfuse.py` |
+
+### What's NOT Connected Yet (Next Steps)
+
+| Gap | Priority | Effort |
+|:----|:---------|:-------|
+| Evaluation test suite | 🔴 High | 5 days |
+| LangGraph Studio | 🟡 Medium | 2 days |
+| Prometheus metrics | 🟡 Medium | 1 day |
+
+---
+
 ## 🎯 Implementation Overview
 
 ### Overall Progress (January 2026)
@@ -98,7 +120,86 @@ block-beta
 
 ---
 
-## 📁 Target Project Structure
+## � Next Integration Steps (Prioritized)
+
+> **Senior Architect Recommendation:** Focus on these items to move from "working prototype" to "production-ready demo."
+
+### Priority 1: Run Database Migrations (Required)
+
+The Chainlit data layer tables need to exist in PostgreSQL before thread persistence works.
+
+```powershell
+# 1. Ensure Docker containers are running
+docker-compose -f docker-compose.local.yml up -d postgres redis
+
+# 2. Run Alembic migrations to create both domain + Chainlit tables
+$env:DATABASE_URL = "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
+alembic upgrade head
+
+# This creates:
+#   ✅ user_profiles, farm_profiles, parcels (domain)
+#   ✅ users, threads, steps, feedbacks (Chainlit)
+```
+
+### Priority 2: Verify Redis Checkpointing
+
+```powershell
+# Check if Redis is storing LangGraph checkpoints
+docker exec yonca-redis redis-cli KEYS "langgraph:*"
+
+# Expected: Keys like langgraph:checkpoint:<thread_id>
+# If empty: LangGraph is falling back to MemorySaver (no persistence)
+```
+
+### Priority 3: Enable Langfuse Tracing
+
+```powershell
+# 1. Start Langfuse
+docker-compose -f docker-compose.local.yml up -d langfuse-server langfuse-db
+
+# 2. Open http://localhost:3001 → Create account → Get API keys
+
+# 3. Add to demo-ui/.env:
+# YONCA_LANGFUSE_SECRET_KEY=sk-lf-...
+# YONCA_LANGFUSE_PUBLIC_KEY=pk-lf-...
+# YONCA_LANGFUSE_HOST=http://localhost:3001
+```
+
+### Priority 4: Test Full Data Flow
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+flowchart LR
+    subgraph test["🧪 Verification Checklist"]
+        t1["1. Send message in Chainlit"]
+        t2["2. Check steps table in PostgreSQL"]
+        t3["3. Check Redis for checkpoint"]
+        t4["4. View trace in Langfuse"]
+    end
+    t1 --> t2 --> t3 --> t4
+```
+
+```sql
+-- Verify Chainlit is persisting threads
+SELECT id, name, "createdAt" FROM threads ORDER BY "createdAt" DESC LIMIT 5;
+
+-- Verify messages are saved
+SELECT id, type, "threadId", LEFT(output, 50) as preview FROM steps ORDER BY "createdAt" DESC LIMIT 10;
+```
+
+### Component Quick Reference
+
+| Service | URL | Health Check |
+|:--------|:----|:-------------|
+| **Chainlit UI** | http://localhost:8501 | Visual check |
+| **PostgreSQL** | localhost:5433 | `pg_isready -h localhost -p 5433` |
+| **Redis** | localhost:6379 | `redis-cli ping` |
+| **Langfuse** | http://localhost:3001 | Dashboard loads |
+| **Ollama** | http://localhost:11434 | `curl http://localhost:11434/api/tags` |
+
+---
+
+## �📁 Target Project Structure
 
 ```
 yonca/
@@ -228,6 +329,171 @@ yonca/
 ├── .env.local                       # Local defaults
 └── README.md                        # Project README
 ```
+
+---
+
+## � Technology Deep Dive
+
+> **For developers who want to understand each component's exact role and configuration.**
+
+### Chainlit: The Conversation UI
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+flowchart LR
+    subgraph chainlit["🖥️ Chainlit Responsibilities"]
+        direction TB
+        ui["Chat UI rendering"]
+        oauth["Google OAuth login"]
+        stream["Token streaming display"]
+        sidebar["Thread history sidebar"]
+        settings["User settings panel"]
+    end
+    
+    subgraph delegates["📤 Delegates To"]
+        pg["PostgreSQL<br/>(SQLAlchemyDataLayer)"]
+        lg["LangGraph<br/>(Agent execution)"]
+    end
+    
+    oauth --> pg
+    sidebar --> pg
+    stream --> lg
+```
+
+**Key Files:**
+- [demo-ui/app.py](demo-ui/app.py) — Main Chainlit application
+- [demo-ui/data_layer.py](demo-ui/data_layer.py) — PostgreSQL data layer
+- [demo-ui/config.py](demo-ui/config.py) — Settings and environment
+
+**Chainlit does NOT store:**
+- ❌ Conversation history internally (uses PostgreSQL)
+- ❌ User state between requests (uses Redis via LangGraph)
+- ❌ LLM traces (uses Langfuse)
+
+### LangGraph: The Agent Brain
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+stateDiagram-v2
+    [*] --> Supervisor: User message
+    Supervisor --> ContextLoader: Needs farm data
+    Supervisor --> End: Greeting/Off-topic
+    ContextLoader --> Agronomist: Farming question
+    ContextLoader --> Weather: Weather question
+    Agronomist --> Validator
+    Weather --> Validator
+    Validator --> End: Validated response
+```
+
+**Key Files:**
+- [src/yonca/agent/graph.py](src/yonca/agent/graph.py) — Graph definition
+- [src/yonca/agent/memory.py](src/yonca/agent/memory.py) — Redis checkpointer factory
+- [src/yonca/agent/state.py](src/yonca/agent/state.py) — State schema
+
+**Checkpointing Explained:**
+```python
+# Each conversation turn, LangGraph saves its state to Redis:
+{
+    "thread_id": "abc-123",
+    "checkpoint": {
+        "messages": [...],          # Conversation history
+        "current_intent": "irrigation",
+        "farm_context_loaded": True,
+        "specialist_used": "agronomist"
+    }
+}
+
+# On next turn, state is restored automatically
+# This enables multi-turn memory without re-prompting the LLM
+```
+
+### Redis: The Speed Layer
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+graph TB
+    subgraph redis["🔴 Redis Stack"]
+        subgraph checkpoints["LangGraph Checkpoints"]
+            c1["langgraph:checkpoint:{thread_id}"]
+            c2["Stores: agent state, routing decisions"]
+        end
+        
+        subgraph sessions["Session Storage"]
+            s1["session:{user_id}"]
+            s2["Stores: user preferences, farm_id cache"]
+        end
+        
+        subgraph ratelimit["Rate Limiting"]
+            r1["rate_limit:{ip}:{window}"]
+            r2["Sliding window counter"]
+        end
+    end
+```
+
+**Why Redis Stack (not plain Redis):**
+- `langgraph-checkpoint-redis` requires RediSearch module
+- Enables efficient checkpoint queries and cleanup
+
+**Key Files:**
+- [src/yonca/data/redis_client.py](src/yonca/data/redis_client.py) — Connection pooling
+- [src/yonca/api/middleware/rate_limit.py](src/yonca/api/middleware/rate_limit.py) — Rate limiting
+
+### PostgreSQL: The Persistence Layer
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+erDiagram
+    user_profiles ||--o{ farm_profiles : "owns"
+    farm_profiles ||--o{ parcels : "contains"
+    parcels ||--o{ ndvi_readings : "monitored"
+    parcels ||--o{ crop_rotation_logs : "history"
+    
+    users ||--o{ threads : "created"
+    threads ||--o{ steps : "contains"
+    steps ||--o{ feedbacks : "rated"
+```
+
+**Two Table Groups in One Database:**
+
+| Group | Tables | Purpose | Managed By |
+|:------|:-------|:--------|:-----------|
+| **Domain** | `user_profiles`, `farm_profiles`, `parcels`, `ndvi_readings`, `crop_rotation_logs` | Farm data | Alembic + SQLAlchemy |
+| **Chainlit** | `users`, `threads`, `steps`, `elements`, `feedbacks` | Conversation persistence | Alembic + Chainlit DataLayer |
+
+**Key Files:**
+- [alembic/versions/3fe49b8713dd_initial_models*.py](alembic/versions/3fe49b8713dd_initial_models_users_farms_parcels_.py) — Domain tables
+- [alembic/versions/add_chainlit_data_layer_tables.py](alembic/versions/add_chainlit_data_layer_tables.py) — Chainlit tables
+
+### Langfuse: The Observability Layer
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+flowchart LR
+    subgraph app["Application"]
+        agent["LangGraph Agent"]
+        cb["CallbackHandler"]
+    end
+    
+    subgraph langfuse["Langfuse (Self-Hosted)"]
+        trace["Trace<br/>(conversation)"]
+        gen["Generation<br/>(LLM call)"]
+        span["Span<br/>(node timing)"]
+    end
+    
+    agent --> cb
+    cb --> trace --> gen --> span
+```
+
+**What Langfuse Captures:**
+- Every LLM API call (tokens, latency, cost)
+- LangGraph node execution timing
+- Conversation grouping by `thread_id`
+- User-level analytics
+
+**Key Files:**
+- [src/yonca/observability/langfuse.py](src/yonca/observability/langfuse.py) — Integration
+
+> **📐 Docker Services Map:** See [03-ARCHITECTURE.md § Docker Compose Services Map](03-ARCHITECTURE.md#d-docker-compose-services-map) for full service topology diagram.
 
 ---
 

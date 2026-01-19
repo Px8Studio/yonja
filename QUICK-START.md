@@ -145,6 +145,41 @@ Invoke-RestMethod `
 
 ---
 
+## 🧪 Testing the API
+
+### 1. Check API health
+```bash
+curl http://localhost:8000/health
+```
+
+### 2. Get chat endpoint info
+```bash
+curl http://localhost:8000/api/v1/chat
+```
+
+### 3. Send a test message
+```bash
+curl -X POST http://localhost:8000/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Salam! Buğda əkini haqqında məlumat verə bilərsinizmi?",
+    "user_id": "test_user",
+    "stream": false
+  }'
+```
+
+### 4. Test with streaming
+```bash
+curl -X POST http://localhost:8000/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Pomidor əkini üçün ən yaxşı vaxt nə vaxtdır?",
+    "stream": true
+  }'
+```
+
+---
+
 ## 📊 What to Look For
 
 ### Quality Indicators

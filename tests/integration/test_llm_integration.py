@@ -18,7 +18,6 @@ Marked with pytest markers to allow selective execution:
 
 Environment variables required:
     - YONCA_GROQ_API_KEY: For Groq tests
-    - YONCA_GEMINI_API_KEY: For Gemini tests
     - Local Ollama server at localhost:11434 for Ollama tests
 """
 
@@ -30,7 +29,6 @@ import pytest_asyncio
 from yonca.llm.providers.base import LLMMessage
 from yonca.llm.providers.ollama import OllamaProvider
 from yonca.llm.providers.groq import GroqProvider
-from yonca.llm.providers.gemini import GeminiProvider
 from yonca.llm.http_pool import HTTPClientPool
 
 
@@ -277,82 +275,6 @@ class TestGroqIntegration:
 
 
 # ============================================================
-# Gemini Integration Tests
-# ============================================================
-
-@pytest.mark.integration
-@pytest.mark.cloud
-class TestGeminiIntegration:
-    """Integration tests for Gemini provider.
-    
-    Requires YONCA_GEMINI_API_KEY environment variable.
-    Get a free key at: https://ai.google.dev/
-    """
-
-    @pytest.fixture
-    def gemini_provider(self):
-        """Create Gemini provider if API key is available."""
-        api_key = os.getenv("YONCA_GEMINI_API_KEY")
-        if not api_key:
-            pytest.skip("YONCA_GEMINI_API_KEY not set")
-        
-        return GeminiProvider(
-            api_key=api_key,
-            model="gemini-2.0-flash-exp",
-        )
-
-    @pytest.mark.asyncio
-    async def test_gemini_health_check(self, gemini_provider, cleanup_pools):
-        """Test Gemini API connectivity."""
-        is_healthy = await gemini_provider.health_check()
-        assert is_healthy is True
-
-    @pytest.mark.asyncio
-    async def test_gemini_generate(self, gemini_provider, simple_math_messages, cleanup_pools):
-        """Test generating a response from Gemini."""
-        response = await gemini_provider.generate(
-            simple_math_messages,
-            temperature=0.1,
-            max_tokens=50,
-        )
-        
-        assert response.content is not None
-        assert "4" in response.content
-
-    @pytest.mark.asyncio
-    async def test_gemini_stream(self, gemini_provider, simple_math_messages, cleanup_pools):
-        """Test streaming response from Gemini."""
-        chunks = []
-        async for chunk in gemini_provider.stream(
-            simple_math_messages,
-            temperature=0.1,
-            max_tokens=50,
-        ):
-            chunks.append(chunk)
-        
-        full_response = "".join(chunks)
-        assert "4" in full_response
-
-    @pytest.mark.asyncio
-    async def test_gemini_azerbaijani(self, gemini_provider, cleanup_pools):
-        """Test Azerbaijani language handling with Gemini."""
-        messages = [
-            LLMMessage.system("Azərbaycan dilində cavab ver."),
-            LLMMessage.user("Salam! İki üstə iki neçə edir?"),
-        ]
-        
-        response = await gemini_provider.generate(
-            messages,
-            temperature=0.1,
-            max_tokens=100,
-        )
-        
-        # Should respond with "4" in some form
-        assert response.content is not None
-        assert len(response.content) > 0
-
-
-# ============================================================
 # Provider Fallback Integration Tests
 # ============================================================
 
@@ -368,7 +290,7 @@ class TestProviderFallback:
         try:
             provider = await get_fastest_available_provider()
             assert provider is not None
-            assert provider.provider_name in ("groq", "gemini")
+            assert provider.provider_name == "groq"
         except LLMProviderError:
             pytest.skip("No cloud providers configured")
 
@@ -380,7 +302,6 @@ class TestProviderFallback:
         results = await check_all_providers_health()
         
         assert "groq" in results
-        assert "gemini" in results
         
         # Each result should have health status
         for provider, status in results.items():

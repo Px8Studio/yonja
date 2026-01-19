@@ -72,8 +72,7 @@ graph LR
 
 | Mode | Models | License | Self-Host | Best For |
 |:-----|:-------|:--------|:----------|:---------|
-| 🌿 **Open-Source** | Llama 3.3, Qwen 3 | Apache 2.0 / Llama Community | ✅ Yes | **Recommended** |
-| ☁️ **Proprietary** | Gemini | Proprietary | ❌ No | Fallback only |
+| 🌿 **Open-Source** | Llama 4 Maverick, Qwen 3 | Apache 2.0 / Llama Community | ✅ Yes | **Recommended** |
 
 See **[12-DUAL-MODE-DEPLOYMENT.md](12-DUAL-MODE-DEPLOYMENT.md)** for full details.
 
@@ -217,7 +216,6 @@ flowchart TB
     subgraph llm["🤖 LLM Layer"]
         groq["⚡ Groq API<br/>(Llama/Maverick)"]
         ollama["🏠 Ollama<br/>(Local Dev)"]
-        gemini["☁️ Gemini<br/>(Fallback)"]
     end
     
     subgraph data["💾 Data Layer"]
@@ -287,18 +285,7 @@ stateDiagram-v2
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Proprietary Fallback (Render.com + Gemini API)
-```
-┌─────────────────────────────────────────────────────────────┐
-│                   ☁️ PROPRIETARY MODE (⚠️ Fallback)          │
-├─────────────────────────────────────────────────────────────┤
-│  🔌 FastAPI Gateway  →  🧠 LangGraph Brain  →  🔮 Gemini    │
-│         ↓                      ↓                 (API)      │
-│  🔐 JWT Validation      ⚡ Redis (Managed)     ❌ Can't      │
-│                               ↓                 Self-Host   │
-│                    🐘 PostgreSQL (Managed)                  │
-└─────────────────────────────────────────────────────────────┘
-```
+---
 
 ---
 

@@ -27,15 +27,71 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-# Load .env from demo-ui folder BEFORE any other imports
-# This ensures OAuth secrets are available for Chainlit
+# Load .env files BEFORE any other imports
 from dotenv import load_dotenv
-demo_ui_dir = Path(__file__).parent
-load_dotenv(demo_ui_dir / ".env")  # Local secrets (gitignored)
 
-# Add project root to path for imports
+demo_ui_dir = Path(__file__).parent
 project_root = demo_ui_dir.parent
+load_dotenv(project_root / ".env")
+load_dotenv(demo_ui_dir / ".env")
+
 sys.path.insert(0, str(project_root / "src"))
+
+# ============================================
+# CHAINLIT DATA LAYER INITIALIZATION (CRITICAL)
+# ============================================
+# Must happen BEFORE importing chainlit to prevent "storage client not initialized" warning
+import asyncio
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
+from chainlit.data.chainlit_data_layer import ChainlitDataLayer  # noqa: E402
+from chainlit.data.sql_alchemy import SQLAlchemyDataLayer  # noqa: E402
+import logging
+
+logger = logging.getLogger(__name__)
+
+async def init_chainlit_data_layer():
+    """Initialize Chainlit's SQLAlchemy data layer with async engine."""
+    try:
+        db_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./data/yonca.db")
+        logger.info(f"Initializing Chainlit data layer with: {db_url.split('@')[-1] if '@' in db_url else db_url}")
+        
+        # Create async engine
+        engine = create_async_engine(
+            db_url,
+            echo=False,
+            pool_pre_ping=True,
+            pool_recycle=3600,
+        )
+        
+        # Create async session factory
+        async_session_maker = sessionmaker(
+            engine,
+            class_=AsyncSession,
+            expire_on_commit=False,
+        )
+        
+        # Initialize Chainlit data layer
+        data_layer = SQLAlchemyDataLayer(
+            engine=engine,
+            async_session_maker=async_session_maker,
+        )
+        
+        # Set as global data layer
+        ChainlitDataLayer._instance = data_layer
+        
+        logger.info("✅ Chainlit data layer initialized successfully")
+        return data_layer
+    except Exception as e:
+        logger.warning(f"⚠️  Chainlit data layer initialization failed: {e}")
+        logger.warning("   Threads will not be persisted (sessions will be stateless)")
+        return None
+
+# Initialize before importing chainlit
+try:
+    asyncio.run(init_chainlit_data_layer())
+except Exception as e:
+    logger.error(f"Failed to initialize data layer: {e}")
 
 # Now safe to import chainlit
 import chainlit as cl
@@ -48,13 +104,134 @@ import structlog
 from yonca.agent.graph import compile_agent_graph
 from yonca.agent.memory import get_checkpointer_async
 from yonca.observability import create_langfuse_handler
+from yonca.observability.banner import (
+    print_startup_banner,
+    print_section_header,
+    print_status_line,
+    print_endpoints,
+    print_quick_links,
+    print_startup_complete,
+    print_llm_info,
+    print_model_capabilities,
+    print_infrastructure_tier,
+)
 
 # Import demo-ui config and API client
 from config import settings as demo_settings
 from services.yonca_client import YoncaClient, YoncaClientError
 from data_layer import get_data_layer, load_user_settings, save_user_settings
+from alem_persona import ALEMPersona, PersonaProvisioner
+
+# Import insights dashboard components
+from services.langfuse_insights import (
+    get_insights_client,
+    get_response_metadata,
+    get_user_dashboard_data,
+)
+from components.insights_dashboard import (
+    format_response_metadata,
+    add_response_metadata_element,
+    render_dashboard_sidebar,
+    format_welcome_stats,
+)
 
 logger = structlog.get_logger()
+
+# ============================================
+# STARTUP BANNER
+# ============================================
+print_startup_banner("demo-ui", "1.0.0", "development")
+
+# ─────────────────────────────────────────────────────────────
+# Integration Mode
+# ─────────────────────────────────────────────────────────────
+print_section_header("⚙️  Integration Mode")
+
+mode_details = {
+    "direct": ("🔗 Direct LangGraph", "Agent runs in-process, best for development"),
+    "api": ("🌐 API Bridge", "Calls FastAPI backend, mirrors production"),
+}
+mode_name, mode_desc = mode_details.get(demo_settings.integration_mode, ("Unknown", ""))
+print_status_line("Mode", mode_name, "success")
+print_status_line("Description", mode_desc, "info")
+
+# ─────────────────────────────────────────────────────────────
+# LLM Configuration
+# ─────────────────────────────────────────────────────────────
+if demo_settings.integration_mode == "direct":
+    # Direct mode uses Ollama or configured provider
+    provider_map = {
+        "ollama": ("Ollama (Local)", demo_settings.ollama_base_url),
+        "groq": ("Groq (Cloud)", "https://api.groq.com/openai/v1"),
+    }
+    provider_name, base_url = provider_map.get(
+        demo_settings.llm_provider, 
+        (demo_settings.llm_provider, "")
+    )
+    
+    print_llm_info(
+        provider=provider_name,
+        model=demo_settings.ollama_model,
+        mode="local" if demo_settings.llm_provider == "ollama" else "open_source",
+        base_url=base_url,
+        api_key_set=demo_settings.llm_provider == "ollama",  # Ollama doesn't need key
+    )
+    print_model_capabilities(demo_settings.ollama_model)
+    
+    # Show ALEM Infrastructure Tier
+    try:
+        from yonca.config import settings as yonca_settings
+        print_infrastructure_tier(yonca_settings.inference_tier_spec)
+    except Exception:
+        pass  # Skip if config not available
+else:
+    print_section_header("🤖 LLM Configuration")
+    print_status_line("Provider", "Via API Bridge", "info")
+    print_status_line("Endpoint", demo_settings.yonca_api_url, "info")
+
+# ─────────────────────────────────────────────────────────────
+# Data Layer
+# ─────────────────────────────────────────────────────────────
+print_section_header("🗄️  Data Layer")
+
+redis_host = demo_settings.redis_url.replace("redis://", "").split("/")[0] if demo_settings.redis_url else "not configured"
+redis_db = demo_settings.redis_url.split("/")[-1] if "/" in demo_settings.redis_url else "0"
+print_status_line("Redis", f"localhost:{redis_host.split(':')[-1]}/db{redis_db}", "success", "LangGraph checkpointing")
+
+if demo_settings.data_persistence_enabled:
+    db_host = demo_settings.effective_database_url.split("@")[-1].split("/")[0] if "@" in demo_settings.effective_database_url else "local"
+    db_name = demo_settings.effective_database_url.split("/")[-1].split("?")[0] if "/" in demo_settings.effective_database_url else "yonca"
+    print_status_line("PostgreSQL", f"{db_host}/{db_name}", "success", "users, threads, settings")
+else:
+    print_status_line("PostgreSQL", "Not configured", "warning", "sessions not persisted")
+
+# ─────────────────────────────────────────────────────────────
+# Features
+# ─────────────────────────────────────────────────────────────
+print_section_header("✨ Features")
+print_status_line("OAuth", "Enabled" if demo_settings.oauth_enabled else "Disabled", "success" if demo_settings.oauth_enabled else "info", "Google login" if demo_settings.oauth_enabled else "anonymous mode")
+print_status_line("Farm Selector", "Enabled" if demo_settings.enable_farm_selector else "Disabled", "success" if demo_settings.enable_farm_selector else "info")
+print_status_line("Thinking Steps", "Enabled" if demo_settings.enable_thinking_steps else "Disabled", "success" if demo_settings.enable_thinking_steps else "info", "shows agent reasoning")
+print_status_line("Feedback", "Enabled" if demo_settings.enable_feedback else "Disabled", "success" if demo_settings.enable_feedback else "info", "👍/👎 buttons")
+
+# ─────────────────────────────────────────────────────────────
+# Endpoints
+# ─────────────────────────────────────────────────────────────
+print_endpoints([
+    ("Chat UI", "http://localhost:8501", "Interactive Chainlit demo"),
+    ("Swagger", "http://localhost:8000/docs", "Interactive API docs"),
+    ("ReDoc", "http://localhost:8000/redoc", "Clean API reference"),
+    ("Langfuse", "http://localhost:3001", "LLM tracing & analytics"),
+])
+
+print_quick_links([
+    ("Chat", "http://localhost:8501"),
+    ("Swagger", "http://localhost:8000/docs"),
+    ("ReDoc", "http://localhost:8000/redoc"),
+    ("Traces", "http://localhost:3001"),
+])
+
+print_startup_complete("🌿 Yonca Demo UI")
 
 # ============================================
 # DATA PERSISTENCE (Chainlit Data Layer)
@@ -72,23 +249,6 @@ if demo_settings.enable_data_persistence and demo_settings.data_persistence_enab
     def _get_data_layer():
         """Register Chainlit data layer for persistence."""
         return get_data_layer()
-    
-    logger.info(
-        "data_persistence_enabled",
-        database=demo_settings.effective_database_url.split("@")[-1] if "@" in demo_settings.effective_database_url else "local",
-    )
-else:
-    logger.warning(
-        "data_persistence_disabled",
-        reason="Requires Postgres database (DATABASE_URL with postgresql://)",
-    )
-
-# Log integration mode at startup
-logger.info(
-    "demo_ui_starting",
-    integration_mode=demo_settings.integration_mode,
-    api_url=demo_settings.yonca_api_url if demo_settings.use_api_bridge else "N/A (direct)",
-)
 
 # Global checkpointer (initialized once in async context) - for direct mode
 _checkpointer = None
@@ -98,10 +258,19 @@ _api_client: YoncaClient | None = None
 
 
 async def get_app_checkpointer():
-    """Get or create the checkpointer singleton (async) - for direct mode."""
+    """Get or create the checkpointer singleton (async) - for direct mode.
+    
+    Priority: PostgreSQL (persistent) > Redis (fast) > Memory (dev only)
+    """
     global _checkpointer
     if _checkpointer is None:
-        _checkpointer = await get_checkpointer_async(redis_url=demo_settings.redis_url)
+        # Prefer Postgres for persistence, fallback to Redis, then Memory
+        # This ensures conversation history survives restarts
+        _checkpointer = await get_checkpointer_async(
+            redis_url=demo_settings.redis_url,
+            postgres_url=demo_settings.database_url,
+            backend="auto",  # Will try Postgres first if available
+        )
     return _checkpointer
 
 
@@ -113,6 +282,105 @@ async def get_api_client() -> YoncaClient:
         await _api_client.__aenter__()
         logger.info("api_client_connected", base_url=demo_settings.yonca_api_url)
     return _api_client
+
+
+# ============================================
+# STARTERS (Quick Action Suggestions)
+# ============================================
+# These appear on the welcome screen to help users start conversations.
+
+# ============================================
+# CHAT PROFILES (Farmer Personas)
+# ============================================
+# Different profiles for different farming needs.
+# Each profile has specialized starters and system prompts.
+
+# Profile-specific starters
+PROFILE_STARTERS = {
+    "general": [
+        cl.Starter(label="📅 Həftəlik plan", message="Bu həftə üçün iş planı hazırla", icon="/public/elements/calendar.svg"),
+        cl.Starter(label="🌤️ Hava proqnozu", message="Bu günkü hava proqnozu necədir?", icon="/public/elements/weather.svg"),
+        cl.Starter(label="💧 Suvarma vaxtı", message="Sahəmi nə vaxt suvarmalıyam?", icon="/public/elements/water.svg"),
+        cl.Starter(label="💰 Subsidiyalar", message="Hansı subsidiyalardan yararlana bilərəm?", icon="/public/elements/money.svg"),
+    ],
+    "cotton": [
+        cl.Starter(label="🌱 Pambıq əkini", message="Pambıq əkini üçün ən yaxşı vaxt nədir?", icon="/public/elements/plant.svg"),
+        cl.Starter(label="🐛 Zərərverici", message="Pambıqda hansı zərərvericilər var?", icon="/public/elements/bug.svg"),
+        cl.Starter(label="💧 Suvarma norması", message="Pambıq üçün suvarma norması nə qədərdir?", icon="/public/elements/water.svg"),
+        cl.Starter(label="🧪 Gübrələmə", message="Pambıq üçün hansı gübrələr lazımdır?", icon="/public/elements/fertilizer.svg"),
+    ],
+    "wheat": [
+        cl.Starter(label="🌾 Buğda əkini", message="Payızlıq buğda nə vaxt əkilir?", icon="/public/elements/wheat.svg"),
+        cl.Starter(label="🌡️ Don zədəsi", message="Buğdanı dondan necə qorumaq olar?", icon="/public/elements/frost.svg"),
+        cl.Starter(label="🌿 Alaq otları", message="Buğdada alaq otlarına qarşı nə etmək olar?", icon="/public/elements/weed.svg"),
+        cl.Starter(label="📊 Məhsuldarlıq", message="Buğda məhsuldarlığını necə artırmaq olar?", icon="/public/elements/chart.svg"),
+    ],
+    "expert": [
+        cl.Starter(label="📊 Torpaq analizi", message="Torpaq analizinin nəticələrini şərh et", icon="/public/elements/soil.svg"),
+        cl.Starter(label="🔬 Xəstəlik diaqnozu", message="Bu bitkidə hansı xəstəlik var?", icon="/public/elements/microscope.svg"),
+        cl.Starter(label="📈 ROI hesablaması", message="Əkin planımın rentabelliyini hesabla", icon="/public/elements/calculator.svg"),
+        cl.Starter(label="🗺️ GIS məlumatları", message="Sahəmin peyk şəkillərini göstər", icon="/public/elements/satellite.svg"),
+    ],
+}
+
+# Profile-specific system prompt additions
+PROFILE_PROMPTS = {
+    "general": "",  # Use default system prompt
+    "cotton": """
+Sən pambıqçılıq üzrə ixtisaslaşmış aqronomiqa ekspertisən. 
+Azərbaycanda pambıq becərmə (Aran bölgəsi, Muğan düzü) haqqında dərin biliyə maliksən.
+Pambığın vegetasiya mərhələləri, suvarma rejimi, gübrələmə normaları və zərərvericilərə qarşı mübarizə haqqında ətraflı məlumat ver.
+""",
+    "wheat": """
+Sən taxılçılıq üzrə ixtisaslaşmış aqronomiqa ekspertisən.
+Azərbaycanda buğda və arpa becərmə haqqında dərin biliyə maliksən.
+Payızlıq və yazlıq taxıllar, don zədəsi, alaq otlarına qarşı mübarizə və məhsuldarlığın artırılması haqqında ətraflı məlumat ver.
+""",
+    "expert": """
+Sən kənd təsərrüfatı üzrə yüksək ixtisaslı ekspertsən.
+Cavablarını daha texniki və ətraflı ver. Torpaq analizləri, bitki fiziologiyası, iqtisadi hesablamalar və GIS məlumatları daxil et.
+Lazım gəldikdə elmi terminologiya istifadə et, lakin izah da ver.
+""",
+}
+
+
+@cl.set_chat_profiles
+async def chat_profiles(current_user: cl.User = None):
+    """Define available chat profiles (farming personas)."""
+    return [
+        cl.ChatProfile(
+            name="general",
+            markdown_description="**Ümumi kənd təsərrüfatı məsələləri** — hava, suvarma, subsidiyalar və s.",
+            icon="/public/avatars/general.svg",
+            default=True,
+            starters=PROFILE_STARTERS["general"],
+        ),
+        cl.ChatProfile(
+            name="cotton",
+            markdown_description="**Pambıqçılıq üzrə ekspert** — əkin, suvarma, zərərvericilər, gübrələmə",
+            icon="/public/avatars/cotton.svg",
+            starters=PROFILE_STARTERS["cotton"],
+        ),
+        cl.ChatProfile(
+            name="wheat",
+            markdown_description="**Taxılçılıq üzrə ekspert** — buğda, arpa, don zədəsi, alaq otları",
+            icon="/public/avatars/wheat.svg",
+            starters=PROFILE_STARTERS["wheat"],
+        ),
+        cl.ChatProfile(
+            name="expert",
+            markdown_description="**Ekspert rejimi** — texniki analiz, torpaq tədqiqatı, ROI hesablaması",
+            icon="/public/avatars/expert.svg",
+            starters=PROFILE_STARTERS["expert"],
+        ),
+    ]
+
+
+@cl.set_starters
+async def set_starters(current_user: cl.User = None, chat_profile: str = None):
+    """Return starters based on selected chat profile."""
+    profile = chat_profile or "general"
+    return PROFILE_STARTERS.get(profile, PROFILE_STARTERS["general"])
 
 
 # ============================================
@@ -128,6 +396,20 @@ async def get_api_client() -> YoncaClient:
 #    - OAUTH_GOOGLE_CLIENT_ID
 #    - OAUTH_GOOGLE_CLIENT_SECRET
 #    - CHAINLIT_AUTH_SECRET (any random string)
+#
+# AVAILABLE USER DATA (by scope):
+# ─────────────────────────────────────────────────────────────────────────
+# Standard (no extra consent):
+#   - email, name, picture, given_name, family_name, locale, google_id
+#   - hosted_domain (hd) - for Google Workspace users
+#
+# Sensitive (requires Google app verification + user consent):
+#   - birthday: scope=user.birthday.read
+#   - gender: scope=user.gender.read  
+#   - phone: scope=user.phonenumbers.read
+#   - address: scope=user.addresses.read
+#   - age_range: scope=profile.agerange.read
+# ─────────────────────────────────────────────────────────────────────────
 
 def is_oauth_enabled() -> bool:
     """Check if OAuth is configured."""
@@ -137,53 +419,206 @@ def is_oauth_enabled() -> bool:
     )
 
 
+async def fetch_google_people_api(access_token: str) -> dict:
+    """Fetch enhanced user profile from Google People API.
+    
+    This requires additional OAuth scopes configured in Google Cloud Console:
+    - https://www.googleapis.com/auth/user.birthday.read
+    - https://www.googleapis.com/auth/user.gender.read
+    - https://www.googleapis.com/auth/user.phonenumbers.read
+    - https://www.googleapis.com/auth/user.addresses.read
+    
+    Note: These are "sensitive scopes" and require Google app verification
+    before they can be used in production.
+    
+    Args:
+        access_token: OAuth access token from Google login
+        
+    Returns:
+        Dict with enhanced profile fields (birthday, gender, phone, address)
+    """
+    import httpx
+    
+    # Request specific person fields from People API
+    person_fields = "birthdays,genders,phoneNumbers,addresses,locales,ageRanges"
+    url = f"https://people.googleapis.com/v1/people/me?personFields={person_fields}"
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                url,
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=10.0
+            )
+            
+            if response.status_code != 200:
+                logger.warning(
+                    "people_api_error",
+                    status=response.status_code,
+                    detail=response.text[:200]
+                )
+                return {}
+            
+            data = response.json()
+            
+            # Extract fields from People API response
+            result = {}
+            
+            # Birthday (may have year/month/day or just month/day for privacy)
+            if birthdays := data.get("birthdays"):
+                for bday in birthdays:
+                    if date := bday.get("date"):
+                        result["birthday"] = {
+                            "year": date.get("year"),
+                            "month": date.get("month"),
+                            "day": date.get("day"),
+                        }
+                        break
+            
+            # Gender
+            if genders := data.get("genders"):
+                for gender in genders:
+                    if value := gender.get("value"):
+                        result["gender"] = value
+                        break
+            
+            # Phone number (primary)
+            if phones := data.get("phoneNumbers"):
+                for phone in phones:
+                    if value := phone.get("value"):
+                        result["phone"] = value
+                        result["phone_type"] = phone.get("type", "unknown")
+                        break
+            
+            # Address (primary)
+            if addresses := data.get("addresses"):
+                for addr in addresses:
+                    result["address"] = {
+                        "formatted": addr.get("formattedValue"),
+                        "city": addr.get("city"),
+                        "region": addr.get("region"),
+                        "country": addr.get("country"),
+                        "country_code": addr.get("countryCode"),
+                        "postal_code": addr.get("postalCode"),
+                    }
+                    break
+            
+            # Age range (less sensitive than exact birthday)
+            if age_ranges := data.get("ageRanges"):
+                for ar in age_ranges:
+                    if value := ar.get("ageRange"):
+                        result["age_range"] = value  # e.g., "TWENTY_ONE_OR_OLDER"
+                        break
+            
+            logger.info(
+                "people_api_success",
+                fields_retrieved=list(result.keys())
+            )
+            
+            return result
+            
+    except Exception as e:
+        logger.error("people_api_exception", error=str(e))
+        return {}
+
+
 # Only register OAuth callback if credentials are configured
 # This prevents Chainlit from requiring OAuth env vars at startup
 if is_oauth_enabled():
     @cl.oauth_callback
     async def oauth_callback(
         provider_id: str,
-        _token: str,
+        token: str,
         raw_user_data: dict[str, str],
         default_user: cl.User,
         _id_token: Optional[str] = None,
     ) -> Optional[cl.User]:
-        """Handle OAuth callback from Google.
+        """Handle OAuth callback from Google with enhanced user profile data.
         
-        This allows any authenticated Google user to access the demo.
-        The user's email is stored and passed to Langfuse for tracking.
+        This captures all available user info from Google OAuth:
+        - Basic: email, name, picture (always available)
+        - Profile: given_name, family_name, locale (with 'profile' scope)
+        - Domain: hd (Google Workspace hosted domain, if applicable)
+        
+        For additional data (birthday, gender, phone, address), you would need:
+        1. Add scopes to Google OAuth config (requires Google app verification)
+        2. Call People API with the access token
         
         Args:
             provider_id: OAuth provider (e.g., "google")
-            _token: OAuth access token (unused but required by signature)
-            raw_user_data: User info from provider
+            token: OAuth access token (can be used for additional API calls)
+            raw_user_data: User info from provider's userinfo endpoint
             default_user: Chainlit's default user object
-            _id_token: Optional ID token (unused but required by signature)
+            _id_token: Optional ID token
             
         Returns:
             cl.User if allowed, None to deny access.
         """
         if provider_id == "google":
-            # Extract user info
+            # ═══════════════════════════════════════════════════════════════
+            # STANDARD PROFILE DATA (available with openid + profile + email)
+            # ═══════════════════════════════════════════════════════════════
             email = raw_user_data.get("email", "unknown")
             name = raw_user_data.get("name", email)
             picture = raw_user_data.get("picture")
             
+            # Additional fields available by default from Google OAuth
+            given_name = raw_user_data.get("given_name")      # First name
+            family_name = raw_user_data.get("family_name")    # Last name  
+            locale = raw_user_data.get("locale")              # Language/region (e.g., "en", "az")
+            email_verified = raw_user_data.get("email_verified", False)
+            
+            # Google Workspace domain (only for workspace/organization accounts)
+            hosted_domain = raw_user_data.get("hd")  # e.g., "yonca.az"
+            
+            # Google user ID (unique, stable identifier)
+            google_id = raw_user_data.get("sub")
+            
             logger.info(
-                "oauth_login",
+                "oauth_login_standard",
                 provider=provider_id,
                 email=email,
                 name=name,
+                given_name=given_name,
+                family_name=family_name,
+                locale=locale,
+                hosted_domain=hosted_domain,
+                email_verified=email_verified,
             )
             
-            # Return user with metadata for Langfuse
+            # ═══════════════════════════════════════════════════════════════
+            # NOTE: People API (birthday, gender, phone, address) NOT used
+            # ═══════════════════════════════════════════════════════════════
+            # People API sensitive scopes require Google app verification
+            # which costs $15k-75k and is not practical for this demo.
+            # We use only FREE data from standard OAuth scopes.
+            # 
+            # See: https://support.google.com/cloud/answer/9110914
+            
+            # Return user with FREE metadata only (no paid APIs)
             return cl.User(
                 identifier=email,
                 metadata={
+                    # ════════════════════════════════════════════════════════
+                    # ALL FIELDS BELOW ARE 100% FREE (standard OAuth scopes)
+                    # ════════════════════════════════════════════════════════
+                    
+                    # Core identity (openid scope)
                     "name": name,
                     "email": email,
-                    "picture": picture,
+                    "email_verified": email_verified,
+                    "image": picture,      # Chainlit expects 'image' for avatar
+                    "picture": picture,    # Keep 'picture' too for compatibility
                     "provider": provider_id,
+                    "google_id": google_id,
+                    
+                    # Profile details (profile scope - FREE)
+                    "given_name": given_name,
+                    "family_name": family_name,
+                    "locale": locale,  # Language/region: "az", "en", "ru"
+                    
+                    # Organization (FREE - only for Google Workspace accounts)
+                    "hosted_domain": hosted_domain,  # e.g., "zekalab.com"
                 }
             )
         
@@ -194,7 +629,7 @@ if is_oauth_enabled():
 # LOCALIZATION
 # ============================================
 AZ_STRINGS = {
-    "welcome": "🌾 **Yonca AI Köməkçisinə xoş gəlmisiniz!**\n\nMən sizin virtual aqronomam. Əkin, suvarma, gübrələmə və digər kənd təsərrüfatı məsələlərində kömək edə bilərəm.",
+    "welcome": "**ALEM 1 — Yonca AI Köməkçisinə xoş gəlmisiniz!**\n\nMən sizin virtual aqronomam. Əkin, suvarma, gübrələmə və digər kənd təsərrüfatı məsələlərində kömək edə bilərəm.",
     "farm_loaded": "📍 Təsərrüfat məlumatları yükləndi",
     "thinking": "Düşünürəm...",
     "error": "❌ Xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.",
@@ -203,16 +638,17 @@ AZ_STRINGS = {
     "farm_status": "Təsərrüfat vəziyyəti",
     "status_normal": "Normal",
     "status_attention": "Diqqət tələb edir",
-    "weather": "🌤️ Hava proqnozu",
-    "subsidy": "💰 Subsidiya yoxla",
-    "irrigation": "💧 Suvarma vaxtı",
-    "sima_auth": "✓ SİMA ilə doğrulanmışdır",
+    "weather": "🌤️ Hava",
+    "subsidy": "📋 Subsidiya",
+    "irrigation": "💧 Suvarma",
+    "sima_auth": "SİMA inteqrasiyası hazır",
     "quick_actions": "Sürətli əməliyyatlar",
     # Settings strings
     "settings_language": "Dil / Language",
     "settings_notifications": "Bildirişlər",
     "settings_detail_level": "Cavab təfərrüatı",
     "settings_units": "Ölçü vahidləri",
+    "settings_currency": "Valyuta",
 }
 
 
@@ -243,10 +679,12 @@ async def setup_chat_settings(user: Optional[cl.User] = None):
     language_values = ["Azərbaycanca", "English", "Русский"]
     detail_values = ["Qısa", "Orta", "Ətraflı"]
     unit_values = ["Metrik (ha, kg)", "Yerli (sotka, pud)"]
+    currency_values = ["₼ AZN (Manat)", "$ USD (Dollar)", "€ EUR (Euro)"]
     
     language_idx = language_values.index(persisted.get("language", "Azərbaycanca")) if persisted.get("language") in language_values else 0
     detail_idx = detail_values.index(persisted.get("detail_level", "Orta")) if persisted.get("detail_level") in detail_values else 1
     units_idx = unit_values.index(persisted.get("units", "Metrik (ha, kg)")) if persisted.get("units") in unit_values else 0
+    currency_idx = currency_values.index(persisted.get("currency", "₼ AZN (Manat)")) if persisted.get("currency") in currency_values else 0
     
     settings = await cl.ChatSettings(
         [
@@ -256,6 +694,13 @@ async def setup_chat_settings(user: Optional[cl.User] = None):
                 values=language_values,
                 initial_index=language_idx,
                 description="Yonca cavablarının dili",
+            ),
+            Select(
+                id="currency",
+                label=AZ_STRINGS["settings_currency"],
+                values=currency_values,
+                initial_index=currency_idx,
+                description="Qiymətlər və subsidiyalar üçün valyuta",
             ),
             Select(
                 id="detail_level",
@@ -345,34 +790,20 @@ async def send_dashboard_welcome(user: Optional[cl.User] = None):
     else:
         greeting = "Xoş gəlmisiniz! 👋"
     
-    # Build the dashboard message with Liquid Glass card styling
-    # The CSS classes reference styles defined in custom.css
-    dashboard_content = f"""
-## 🌾 Yonca AI — Kənd Təsərrüfatı Köməkçisi
+    # Build compact dashboard message
+    # Avatar is now shown via Chainlit's native avatar system (public/avatars/yonca_ai.svg)
+    dashboard_content = f"""{greeting}
 
-{greeting}
-
----
-
-### 📊 {AZ_STRINGS["farm_status"]}
-
-<div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: linear-gradient(135deg, rgba(45, 90, 39, 0.08) 0%, rgba(168, 230, 207, 0.15) 100%); border-radius: 12px; border-left: 4px solid #2D5A27; margin: 8px 0;">
-    <span style="font-size: 1.5em;">✅</span>
-    <div>
-        <strong style="color: #2D5A27;">{AZ_STRINGS["status_normal"]}</strong>
-        <div style="font-size: 0.85em; color: #666; margin-top: 2px;">Son yoxlama: Bu gün, 09:45</div>
+<div style="display: flex; align-items: center; gap: 16px; padding: 12px 16px; background: linear-gradient(135deg, rgba(45, 90, 39, 0.06) 0%, rgba(168, 230, 207, 0.12) 100%); border-radius: 12px; margin: 8px 0;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="width: 10px; height: 10px; background: #4CAF50; border-radius: 50%; box-shadow: 0 0 6px rgba(76, 175, 80, 0.5);"></span>
+        <span style="color: #2D5A27; font-weight: 500;">{AZ_STRINGS["status_normal"]}</span>
     </div>
+    <span style="color: #999;">•</span>
+    <span style="color: #666; font-size: 0.9em;">✓ {AZ_STRINGS["sima_auth"]}</span>
 </div>
 
-<div style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, rgba(45, 90, 39, 0.1) 0%, rgba(168, 230, 207, 0.2) 100%); border: 1px solid rgba(45, 90, 39, 0.2); border-radius: 999px; padding: 6px 14px; font-size: 0.85em; color: #2D5A27; font-weight: 500; margin-top: 8px;">
-    <span style="color: #2D5A27;">✓</span> SİMA inteqrasiyası üçün hazırlanmışdır
-</div>
-
----
-
-Mən sizin virtual aqronomam. Əkin, suvarma, gübrələmə və digər kənd təsərrüfatı məsələlərində kömək edə bilərəm.
-
-**{AZ_STRINGS["quick_actions"]}** — aşağıdakı düymələrdən birini seçin:
+Mən sizin virtual aqronomam — əkin, suvarma və subsidiya məsələlərində kömək edirəm.
 """
 
     # Create quick action buttons using Chainlit Actions
@@ -397,61 +828,196 @@ Mən sizin virtual aqronomam. Əkin, suvarma, gübrələmə və digər kənd tə
     # Send the dashboard welcome message
     await cl.Message(
         content=dashboard_content,
-        author="Yonca AI",
+        author="ALEM 1",
         actions=actions,
     ).send()
 
 
-@cl.action_callback("weather")
-async def on_weather_action(action: cl.Action):
-    """Handle weather quick action button click."""
-    # Remove the action buttons after click
-    await action.remove()
-    
-    # Simulate user asking about weather
-    await cl.Message(
-        content="Bu günkü hava proqnozu necədir?",
-        author="user",
-    ).send()
-    
-    # Trigger the agent to respond
-    msg = cl.Message(content="Bu günkü hava proqnozu necədir?")
-    await on_message(msg)
+# ============================================
+# NATIVE CHAINLIT ARCHITECTURE NOTE
+# ============================================
+# ✅ QUICK ACTIONS: Use @cl.set_starters (profile-aware)
+# ✅ NOT: Custom @cl.action_callback (outdated pattern)
+#
+# Why? Starters are:
+# - Profile-aware (cotton specialists see different actions)
+# - Better UX (clear visual affordance)
+# - Chainlit-native (not custom UI code)
+#
+# When user clicks starter → Message sent → @on_message handles it
+# No separate action callbacks needed!
+#
+# See: CHAINLIT-NATIVE-ARCHITECTURE.md for full architecture
+# ============================================
 
 
-@cl.action_callback("subsidy")
-async def on_subsidy_action(action: cl.Action):
-    """Handle subsidy check quick action button click."""
-    await action.remove()
+# ============================================
+# AUDIO INPUT (Voice for Farmers)
+# ============================================
+# Farmers in the field can speak questions instead of typing.
+# Uses browser's MediaRecorder to capture audio, then transcribes via Whisper.
+
+@cl.on_audio_start
+async def on_audio_start():
+    """Called when user starts recording audio.
     
-    await cl.Message(
-        content="Hansı subsidiyalardan yararlana bilərəm?",
-        author="user",
-    ).send()
-    
-    msg = cl.Message(content="Hansı subsidiyalardan yararlana bilərəm?")
-    await on_message(msg)
+    Return True to allow recording, False to reject.
+    We could add checks here (e.g., rate limiting).
+    """
+    logger.info("audio_recording_started")
+    return True
 
 
-@cl.action_callback("irrigation")
-async def on_irrigation_action(action: cl.Action):
-    """Handle irrigation time quick action button click."""
-    await action.remove()
+@cl.on_audio_chunk
+async def on_audio_chunk(chunk: cl.InputAudioChunk):
+    """Process incoming audio chunks.
     
-    await cl.Message(
-        content="Bu gün sahəmi suvarmağı tövsiyə edirsiniz?",
-        author="user",
-    ).send()
+    For real-time transcription, we could accumulate chunks here.
+    Currently we wait for the full recording (on_audio_end).
+    """
+    # Buffer chunks if needed for streaming transcription
+    # For now, we do nothing - wait for complete audio in on_audio_end
+    _ = chunk  # Mark as intentionally unused
+
+
+@cl.on_audio_end
+async def on_audio_end(elements: list[cl.Audio]):
+    """Called when audio recording ends. Transcribe and process.
     
-    msg = cl.Message(content="Bu gün sahəmi suvarmağı tövsiyə edirsiniz?")
-    await on_message(msg)
+    Args:
+        elements: List of Audio elements with the recorded audio
+    """
+    if not elements:
+        logger.warning("audio_end_no_elements")
+        return
+    
+    audio = elements[0]  # Get the first (and usually only) audio element
+    
+    # Show thinking indicator
+    thinking_msg = cl.Message(content="🎤 Səsinizi eşidirəm...")
+    await thinking_msg.send()
+    
+    try:
+        # Get audio data
+        audio_data = audio.content
+        if not isinstance(audio_data, bytes):
+            logger.error("audio_data_not_bytes", type=type(audio_data).__name__)
+            await thinking_msg.remove()
+            await cl.Message(content="❌ Audio formatı dəstəklənmir.").send()
+            return
+        mime_type = audio.mime or "audio/webm"
+        
+        logger.info(
+            "audio_transcription_started",
+            size_bytes=len(audio_data) if audio_data else 0,
+            mime_type=mime_type
+        )
+        
+        # Transcribe using Whisper via Ollama or external service
+        transcription = await transcribe_audio_whisper(audio_data, mime_type)
+        
+        if transcription and transcription.strip():
+            # Remove thinking message
+            await thinking_msg.remove()
+            
+            # Show transcribed text as user message
+            await cl.Message(
+                content=transcription,
+                author="user",
+            ).send()
+            
+            logger.info("audio_transcribed", text=transcription[:100])
+            
+            # Process as regular message
+            msg = cl.Message(content=transcription)
+            await on_message(msg)
+        else:
+            # Remove thinking message and show error
+            await thinking_msg.remove()
+            await cl.Message(content="❌ Səs aydın deyildi. Zəhmət olmasa yenidən cəhd edin.").send()
+            logger.warning("audio_transcription_empty")
+            
+    except Exception as e:  # noqa: BLE001
+        logger.error("audio_transcription_error", error=str(e))
+        await thinking_msg.remove()
+        await cl.Message(content=f"❌ Xəta: {str(e)}").send()
+
+
+async def transcribe_audio_whisper(audio_data: bytes, mime_type: str) -> str:
+    """Transcribe audio using Whisper model.
+    
+    Options:
+    1. Local Whisper via Ollama (if model available)
+    2. OpenAI Whisper API (requires API key)
+    3. Azure Speech Services (requires Azure subscription)
+    
+    For now, we use a simple approach with httpx to Ollama or fallback.
+    
+    Args:
+        audio_data: Raw audio bytes
+        mime_type: MIME type (e.g., "audio/webm", "audio/wav")
+        
+    Returns:
+        Transcribed text string
+    """
+    import httpx
+    import tempfile
+    
+    # Save audio to temp file (Whisper needs file input)
+    ext = ".webm" if "webm" in mime_type else ".wav"
+    with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as f:
+        f.write(audio_data)
+        temp_path = f.name
+    
+    try:
+        # Try OpenAI-compatible Whisper endpoint (works with local or cloud)
+        whisper_url = os.getenv("WHISPER_API_URL", "http://localhost:11434/v1/audio/transcriptions")
+        whisper_key = os.getenv("WHISPER_API_KEY", "")
+        
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            # Method 1: OpenAI-compatible API (Ollama with whisper model)
+            with open(temp_path, "rb") as audio_file:
+                files = {"file": (f"audio{ext}", audio_file, mime_type)}
+                data = {"model": "whisper", "language": "az"}  # Azerbaijani
+                headers = {}
+                if whisper_key:
+                    headers["Authorization"] = f"Bearer {whisper_key}"
+                
+                response = await client.post(
+                    whisper_url,
+                    files=files,
+                    data=data,
+                    headers=headers
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    return result.get("text", "")
+                else:
+                    logger.warning(
+                        "whisper_api_error",
+                        status=response.status_code,
+                        detail=response.text[:200]
+                    )
+        
+        # Fallback: Return placeholder if no Whisper available
+        logger.warning("whisper_not_available", detail="No Whisper service configured")
+        return ""
+        
+    finally:
+        # Cleanup temp file
+        try:
+            os.unlink(temp_path)
+        except OSError:
+            pass
+
 
 # ============================================
 # SESSION MANAGEMENT
 # ============================================
 @cl.on_chat_start
 async def on_chat_start():
-    """Initialize chat session with farm context, user tracking, and dashboard welcome."""
+    """Initialize chat session with farm context, user tracking, ALEM persona, and dashboard welcome."""
     session_id = cl.user_session.get("id")
     
     # Get authenticated user (if OAuth enabled)
@@ -460,9 +1026,56 @@ async def on_chat_start():
     user_id = user.identifier if user else "anonymous"
     user_email = user.metadata.get("email") if user and user.metadata else None
     
-    # Store user info for Langfuse tracking
+    # ─────────────────────────────────────────────────────────────
+    # JIT PERSONA PROVISIONING — Generate synthetic agricultural identity
+    # ─────────────────────────────────────────────────────────────
+    # This is the magic: even though the user logged in with minimal Google claims,
+    # we auto-generate a complete ALEM persona (FIN, region, crops, farm size).
+    # This ensures the demo always has rich, personalized context.
+    alem_persona: Optional[ALEMPersona] = None
+    
+    if user and user.metadata:
+        # Extract OAuth claims from user metadata
+        oauth_claims = {
+            "name": user.metadata.get("name", "Unknown Farmer"),
+            "email": user.metadata.get("email", user_email),
+        }
+        
+        # Provision persona (generates synthetic data if not already present)
+        alem_persona = PersonaProvisioner.provision_from_oauth(
+            user_id=user_id,
+            oauth_claims=oauth_claims,
+            existing_persona=None,  # TODO: Load from database if exists
+        )
+        
+        # Store in session for later use
+        cl.user_session.set("alem_persona", alem_persona.to_dict())
+        
+        logger.info(
+            "alem_persona_provisioned",
+            user_id=user_id,
+            fin_code=alem_persona.fin_code,
+            region=alem_persona.region,
+            crop_type=alem_persona.crop_type,
+        )
+    else:
+        logger.debug("no_authenticated_user_skipping_persona")
+    
+    # Get selected chat profile (farming persona)
+    chat_profile = cl.user_session.get("chat_profile") or "general"
+    profile_prompt = PROFILE_PROMPTS.get(chat_profile, "")
+    
+    # Store session info
     cl.user_session.set("user_id", user_id)
     cl.user_session.set("user_email", user_email)
+    cl.user_session.set("profile_prompt", profile_prompt)  # For system prompt enhancement
+    
+    logger.info(
+        "chat_profile_selected",
+        profile=chat_profile,
+        user_id=user_id,
+        has_custom_prompt=bool(profile_prompt),
+    )
     
     # Default farm for demo (synthetic farmer profile - NOT the real user)
     farm_id = "demo_farm_001"
@@ -500,6 +1113,28 @@ async def on_chat_start():
             farm_id=farm_id,
         )
     
+    # ─────────────────────────────────────────────────────────────
+    # Load Activity Dashboard (from Langfuse)
+    # ─────────────────────────────────────────────────────────────
+    try:
+        insights_client = get_insights_client()
+        if insights_client.is_configured:
+            user_insights = await get_user_dashboard_data(user_id, days=90)
+            cl.user_session.set("user_insights", user_insights)
+            
+            # Render the activity dashboard in sidebar
+            await render_dashboard_sidebar(user_insights)
+            
+            logger.info(
+                "dashboard_loaded",
+                user_id=user_id,
+                total_interactions=user_insights.total_interactions,
+            )
+        else:
+            logger.debug("langfuse_not_configured_skipping_dashboard")
+    except Exception as e:
+        logger.warning("dashboard_load_failed", error=str(e))
+    
     # Build the enhanced dashboard welcome message
     await send_dashboard_welcome(user)
 
@@ -517,8 +1152,12 @@ async def on_message(message: cl.Message):
     user_id = cl.user_session.get("user_id", "anonymous")
     user_email = cl.user_session.get("user_email")
     
+    # Get chat profile for specialized responses
+    chat_profile = cl.user_session.get("chat_profile") or "general"
+    profile_prompt = cl.user_session.get("profile_prompt", "")
+    
     # Create response message for streaming
-    response_msg = cl.Message(content="", author="Yonca AI")
+    response_msg = cl.Message(content="", author="ALEM 1")
     await response_msg.send()
     
     full_response = ""
@@ -583,68 +1222,79 @@ async def on_message(message: cl.Message):
             }
             
             # Create Langfuse handler for observability
+            alem_persona_dict = cl.user_session.get("alem_persona", {})
+            
+            # Build tags with persona information
+            tags = [
+                "demo-ui",
+                "development",
+                "direct-mode",
+                f"profile:{chat_profile}",
+            ]
+            if alem_persona_dict:
+                tags.extend([
+                    f"fin:{alem_persona_dict.get('fin_code', 'unknown')}",
+                    f"region:{alem_persona_dict.get('region', 'unknown')}",
+                    f"crop:{alem_persona_dict.get('crop_type', 'unknown')}",
+                    f"experience:{alem_persona_dict.get('experience_level', 'unknown')}",
+                ])
+            
             langfuse_handler = create_langfuse_handler(
-                session_id=thread_id,
-                user_id=user_id,
-                tags=["demo-ui", "development", "direct-mode"],
+                session_id=thread_id,           # Groups all messages in conversation
+                user_id=user_id,                # Attributes costs to user
+                tags=tags,
                 metadata={
                     "farm_id": farm_id,
                     "user_email": user_email,
                     "source": "chainlit",
+                    "chat_profile": chat_profile,
+                    "alem_persona": alem_persona_dict,  # Full persona for analysis
                 },
-                trace_name="demo_chat",
             )
             
-            # Build callbacks list
-            callbacks: list = [cl.LangchainCallbackHandler()]  # type: ignore[type-arg]
+            # Combine BOTH callback handlers
+            callbacks = [cl.LangchainCallbackHandler()]  # UI step visualization
             if langfuse_handler:
-                callbacks.append(langfuse_handler)
+                callbacks.append(langfuse_handler)        # LLM tracing
             
-            # LangGraph config with thread_id for memory
+            # Pass to LangGraph
             config = RunnableConfig(
-                configurable={
-                    "thread_id": thread_id,
-                    "farm_id": farm_id,
-                },
-                callbacks=callbacks,  # type: ignore[arg-type]
+                configurable={"thread_id": thread_id},
+                callbacks=callbacks  # Both handlers receive all events
             )
             
-            # Stream events from the agent
-            async for event in agent.astream_events(input_messages, config=config, version="v2"):
-                kind = event.get("event")
-                
-                if kind == "on_chat_model_stream":
-                    chunk = event.get("data", {}).get("chunk")
-                    if chunk and hasattr(chunk, "content") and chunk.content:
-                        token = chunk.content
-                        full_response += token
-                        await response_msg.stream_token(token)
-                
-                elif kind == "on_chain_end":
-                    output = event.get("data", {}).get("output")
-                    if output and isinstance(output, dict):
-                        messages = output.get("messages", [])
-                        if messages and not full_response:
-                            last_msg = messages[-1]
-                            if isinstance(last_msg, AIMessage) and last_msg.content:
-                                full_response = last_msg.content
-                                await response_msg.stream_token(full_response)
+            # Stream the response from LangGraph
+            # astream() returns an async generator - iterate with async for
+            async for chunk in agent.astream(input_messages, config=config):
+                # Extract content from the chunk based on its structure
+                if isinstance(chunk, dict):
+                    for node_name, node_output in chunk.items():
+                        if isinstance(node_output, dict) and "messages" in node_output:
+                            for msg in node_output["messages"]:
+                                if hasattr(msg, "content") and msg.content:
+                                    # Only update if we got actual content
+                                    full_response = msg.content
             
-            # Fallback if streaming didn't produce output
-            if not full_response:
-                logger.warning("no_streaming_response", session_id=session_id)
-                result = await agent.ainvoke(input_messages, config=config)
-                if result and "messages" in result:
-                    for msg in reversed(result["messages"]):
-                        if isinstance(msg, AIMessage) and msg.content:
-                            full_response = msg.content
-                            response_msg.content = full_response
-                            await response_msg.update()
-                            break
-        
-        # Update final content
-        response_msg.content = full_response
-        await response_msg.update()
+            # Update final message with complete response
+            response_msg.content = full_response
+            await response_msg.update()
+            
+            # ─────────────────────────────────────────────────────────
+            # Add Response Metadata (expandable details)
+            # ─────────────────────────────────────────────────────────
+            if langfuse_handler:
+                try:
+                    # Get trace_id from the handler (last_trace_id in SDK v3)
+                    trace_id = getattr(langfuse_handler, 'last_trace_id', None) or \
+                               getattr(langfuse_handler, 'trace_id', None)
+                    if trace_id:
+                        # Fetch metadata from Langfuse
+                        metadata = await get_response_metadata(trace_id)
+                        if metadata:
+                            await add_response_metadata_element(response_msg, metadata)
+                            logger.debug("response_metadata_added", trace_id=trace_id)
+                except Exception as e:
+                    logger.warning("response_metadata_failed", error=str(e))
         
     except Exception as e:
         logger.error("message_error", error=str(e), session_id=session_id)

@@ -1,25 +1,14 @@
-# 🌾 Yonca AI-yə Xoş Gəlmisiniz!
+# Welcome to Chainlit! 🚀🤖
 
-Mən **Yonca AI** — Azərbaycan fermerləri üçün hazırlanmış süni intellekt köməkçisiyəm.
+Hi there, Developer! 👋 We're excited to have you on board. Chainlit is a powerful tool designed to help you prototype, debug and share applications built on top of LLMs.
 
-## 🤖 Mən sizə necə kömək edə bilərəm?
+## Useful Links 🔗
 
-- 🌱 **Əkinlər haqqında**: Nə əkmək, necə əkmək, haçan əkmək
-- 💧 **Suvarma**: Optimal suvarma cədvəli və miqdarları
-- 🧪 **Gübrələmə**: Torpaq analizi və gübrə tövsiyələri
-- 🐛 **Zərərvericilərlə mübarizə**: Xəstəliklərin tanınması və müalicəsi
-- 📅 **Yığım vaxtı**: Optimal yığım zamanı
+- **Documentation:** Get started with our comprehensive [Chainlit Documentation](https://docs.chainlit.io) 📚
+- **Discord Community:** Join our friendly [Chainlit Discord](https://discord.gg/k73SQ3FyUh) to ask questions, share your projects, and connect with other developers! 💬
 
-## 💬 Necə istifadə etmək olar?
+We can't wait to see what you create with Chainlit! Happy coding! 💻😊
 
-Sadəcə Azərbaycan dilində sualınızı yazın. Məsələn:
+## Welcome screen
 
-> "Pomidorları nə vaxt suvarmaq lazımdır?"
-
-> "Torpağımın pH səviyyəsi aşağıdır, nə etməliyəm?"
-
-> "Tərəvəzlərdə unlu şeh xəstəliyi var, necə müalicə edim?"
-
----
-
-*Yonca AI — Digital Umbrella Initiative tərəfindən hazırlanmışdır* 🇦🇿
+To modify the welcome screen, edit the `chainlit.md` file at the root of your project. If you do not want a welcome screen, just leave this file empty.

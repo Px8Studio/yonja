@@ -9,7 +9,7 @@
 Since the **Yonca** app is already deeply integrated with **EKTİS** (Electronic Agriculture Information System) and collects specific data points like satellite-based crop tracking, sowing declarations, and precise location data, our approach must shift from "generic farming AI" to a **Mirror-Image Synthetic Engine**.
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph LR
     subgraph current["📋 CURRENT STATE<br/><i>Generic Synthetic</i>"]
         fake["Random fake data"]
@@ -42,7 +42,7 @@ Because Yonca tracks real-world variables like "NDVI (Vegetation Index)" and "So
 We model **two distinct but linked entities**: the **User Profile** (WHO is asking) and **Farm Profiles** (WHAT they own). This separation enables personalized AI responses.
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 erDiagram
     USER_PROFILE {
         string user_id PK "syn_user_001"
@@ -113,7 +113,7 @@ erDiagram
 ### 2.1.1 User Profile vs Farm Profile
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph user["👤 USER PROFILE<br/><i>WHO is asking?</i>"]
         persona["Experience: Intermediate<br/>Years: 12<br/>Language: Azerbaijani<br/>Subsidies: Yes"]
@@ -159,7 +159,7 @@ For every **Synthetic User**, we generate:
 Since Yonca uses GPS coordinates, our synthetic profiles include **Virtual Coordinates** mapped to diverse Azerbaijani regions.
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph regions["🗺️ Regional Mapping"]
         quba["🍎 Quba-Qusar<br/><i>Orchards, Apples</i><br/>41.36°N, 48.51°E"]
@@ -183,7 +183,7 @@ This ensures the AI's weather-based reasoning is **geographically sound**—a dr
 We generate **Synthetic Satellite Feeds** (pseudo-NDVI values) so the AI agent can practice identifying when a crop is under stress—without seeing a single real field.
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 xychart-beta
     title "Synthetic NDVI Time Series - Wheat Field syn_parcel_001"
     x-axis [Oct, Nov, Dec, Jan, Feb, Mar, Apr, May, Jun, Jul]
@@ -208,7 +208,7 @@ To build this "Mirror-Image" engine, we use a specific set of Python-based tools
 ### 3.1 Core Generation Tools
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph tools["🛠️ Synthetic Data Stack"]
         sdv["<b>SDV</b><br/><i>Synthetic Data Vault</i><br/>Copulas & GANs"]
@@ -276,7 +276,7 @@ We generate **5+ distinct user profiles**, each owning **1-5 farm profiles** rep
 ### 4.1 User Persona Archetypes
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph users["👤 Synthetic User Personas"]
         novice["🌱 <b>Novice Farmer</b><br/>syn_user_001<br/><i>2 years exp, 1 farm</i><br/>Needs detailed guidance"]
@@ -296,7 +296,7 @@ graph TB
 ### 4.2 Farm Profile Types
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph farms["🌾 Farm Profile Types"]
         wheat["🌾 <b>Wheat Farm</b><br/>5ha, Pivot Irrigation<br/>Aran Region"]
@@ -316,7 +316,7 @@ graph TB
 ### 4.3 Example: User with Multiple Farms
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph user["👤 syn_user_003 (Commercial Operator)"]
         profile["Experience: 10 years<br/>Education: University<br/>Subsidies: Yes<br/>Notification: App + SMS"]

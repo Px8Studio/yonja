@@ -7,7 +7,7 @@
 ## 1. DevOps Overview
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 mindmap
   root((🚀 DevOps))
     🔄 CI/CD
@@ -46,7 +46,7 @@ mindmap
 ### 2.2 Environment Configuration
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph LR
     subgraph local["💻 Local"]
         local_api["API<br/><i>localhost:8000</i>"]
@@ -175,7 +175,7 @@ uvicorn yonca.api.main:app --reload
 ### 3.1 Pipeline Overview
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph trigger["🎯 Triggers"]
         push["Push to branch"]
@@ -1094,7 +1094,7 @@ kubectl rollout history deployment/yonca-sidecar --revision=5
 ### 8.1 Model Registry
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph registry["📦 Model Registry"]
         v1["v1.0.0<br/><i>Qwen3-4B Q4_K_M</i>"]

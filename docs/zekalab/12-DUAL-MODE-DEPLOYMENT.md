@@ -4,6 +4,37 @@
 
 ---
 
+## ✅ Implementation Status (January 2026)
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+pie showData
+    title Provider Implementation
+    "✅ Groq (Production)" : 40
+    "✅ Ollama (Local Dev)" : 35
+    "✅ Gemini (Fallback)" : 25
+```
+
+### Provider Comparison
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+quadrantChart
+    title LLM Providers: Speed vs Self-Hosting
+    x-axis Low Speed --> High Speed
+    y-axis No Self-Host --> Full Self-Host
+    quadrant-1 Best: Fast + Self-Hostable
+    quadrant-2 Good: Self-Hostable
+    quadrant-3 Risky: Slow + Locked
+    quadrant-4 Convenient: Fast but Locked
+    Groq: [0.85, 0.75]
+    Ollama: [0.35, 0.95]
+    Gemini: [0.70, 0.15]
+    vLLM: [0.65, 0.90]
+```
+
+---
+
 ## 🎯 Open-Source First Philosophy
 
 Yonca AI is built on **open-source models** to demonstrate enterprise-ready AI that:
@@ -18,11 +49,11 @@ Yonca AI is built on **open-source models** to demonstrate enterprise-ready AI t
 ## 1. Dual-Mode Philosophy
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 mindmap
   root((🔀 Dual-Mode))
-    � Open-Source Mode
-      Groq API (demo)
+    🌿 Open-Source Mode
+      Groq API demo
       Self-hosted vLLM/TGI
       Llama 3.3 70B
       Qwen 3 32B
@@ -61,7 +92,7 @@ mindmap
 ### 2.1 Open-Source Mode Architecture
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph opensource["🌿 OPEN-SOURCE DEPLOYMENT"]
         subgraph services["🧠 Services"]
@@ -210,7 +241,7 @@ YONCA_GROQ_MODEL=llama-3.3-70b-versatile
 > ⚠️ **Note:** This mode uses closed-source Gemini and should only be used as a fallback when open-source options are unavailable.
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph render["☁️ RENDER.COM"]
         subgraph api_service["🔌 Web Service"]

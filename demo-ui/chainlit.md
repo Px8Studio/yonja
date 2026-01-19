@@ -1,6 +1,6 @@
 # 🌾 Yonca AI-yə Xoş Gəlmisiniz!
 
-Mən **Yonca** — Azərbaycan fermerləri üçün hazırlanmış süni intellekt köməkçisiyəm.
+Mən **Yonca AI** — Azərbaycan fermerləri üçün hazırlanmış süni intellekt köməkçisiyəm.
 
 ## 🤖 Mən sizə necə kömək edə bilərəm?
 

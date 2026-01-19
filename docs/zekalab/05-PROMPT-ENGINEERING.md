@@ -7,7 +7,7 @@
 ## 1. Prompt Architecture Overview
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph architecture["🏗️ Prompt Architecture"]
         system["🎭 System Prompt<br/><i>Persona + Rules + Constraints</i>"]
@@ -351,7 +351,7 @@ BİTKİYƏ GÖRƏ GÖSTƏRİCİLƏR:
 ### 4.2 Example Selection Strategy
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart TB
     subgraph selection["🎯 Example Selection"]
         intent["Detect Intent<br/><i>irrigation, pest, etc.</i>"]
@@ -436,7 +436,7 @@ PATCH: Bug fixes, minor wording changes
 ### 5.2 Version Control Workflow
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 gitGraph
     commit id: "v1.0.0" tag: "initial"
     branch develop
@@ -820,7 +820,7 @@ class PromptLinter:
 ### 10.1 Complete Assembly Flow
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart TB
     subgraph input["📥 Inputs"]
         query["User Query"]

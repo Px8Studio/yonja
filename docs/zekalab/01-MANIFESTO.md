@@ -92,7 +92,7 @@ The AI Assistant integrates as a **new navigation tab** positioned between "Mən
 ### AI Assistant Tab Behavior
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#1a1a1a', 'lineColor': '#424242'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     subgraph data["🔄 Auto-Loaded Context"]
         direction TB

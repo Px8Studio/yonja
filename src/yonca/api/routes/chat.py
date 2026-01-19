@@ -29,6 +29,7 @@ class ChatMessage(BaseModel):
     message: str = Field(..., min_length=1, max_length=4000)
     session_id: str | None = None
     user_id: str | None = None  # Optional user identifier for multi-user support
+    farm_id: str | None = None  # Farm context for personalized advice
     language: str = "az"
     model: str | None = None  # Override model if specified
     stream: bool = False  # Enable streaming response

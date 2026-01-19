@@ -27,11 +27,12 @@
         // ════════════════════════════════════════════════════════════════════
         {
             "label": "🌿 Yonca AI: 🚀 Start All",
-            "detail": "Stop existing → Docker → API + UI + LangGraph (live logs)",
+            "detail": "Stop existing → Clear browser cache → Docker → API + UI + LangGraph (live logs)",
             "dependsOn": [
                 "yonca:cleanup",
+                "🌿 Yonca AI: 🧹 Clear Browser Cache",
                 "🌿 Yonca AI: 🐳 Docker Start",
-                "🌿 Yonca AI: 🌿 API Start",
+                "🌿 Yonca AI: ⚡ FastAPI Start",
                 "🌿 Yonca AI: 🖥️ UI Start",
                 "🌿 Yonca AI: 🎨 LangGraph Start"
             ],
@@ -63,7 +64,7 @@
         // ════════════════════════════════════════════════════════════════════
         {
             "label": "🌿 Yonca AI: 🐳 Docker Start",
-            "detail": "🐘 Postgres + 🦙 Ollama + 🔴 Redis + 📊 Langfuse",
+            "detail": "Running 🐘 PostgreSQL + 🦙 Ollama + 🔴 Redis + 📊 Langfuse infrastructure",
             "type": "shell",
             "command": "docker-compose",
             "args": ["-f", "docker-compose.local.yml", "up", "-d", "postgres", "ollama", "redis", "langfuse-db", "langfuse-server"],
@@ -106,8 +107,8 @@
         // 🌿 APPLICATION SERVICES (each in dedicated panel with live logs)
         // ════════════════════════════════════════════════════════════════════
         {
-            "label": "🌿 Yonca AI: 🌿 API Start",
-            "detail": "FastAPI localhost:8000 (live logs)",
+            "label": "🌿 Yonca AI: ⚡ FastAPI Start",
+            "detail": "Running ⚡ FastAPI Backend + Swagger/ReDoc docs (http://localhost:8000)",
             "type": "shell",
             "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
             "args": ["-m", "uvicorn", "yonca.api.main:app", "--host", "localhost", "--port", "8000", "--reload", "--log-level", "info"],
@@ -132,7 +133,7 @@
         },
         {
             "label": "🌿 Yonca AI: 🖥️ UI Start",
-            "detail": "Chainlit localhost:8501 (live logs)",
+            "detail": "Running 💬 Chainlit Chat + 📊 Langfuse + 📖 Swagger + 📕 ReDoc (all UIs)",
             "type": "shell",
             "command": "${workspaceFolder}\\.venv\\Scripts\\chainlit.exe",
             "args": ["run", "app.py", "-w", "--port", "8501", "--headless"],
@@ -162,7 +163,7 @@
         },
         {
             "label": "🌿 Yonca AI: 🎨 LangGraph Start",
-            "detail": "LangGraph localhost:2024 (live logs)",
+            "detail": "Running 🤖 LangGraph Agent + orchestration (http://localhost:2024)",
             "type": "shell",
             "command": "${workspaceFolder}\\.venv\\Scripts\\langgraph.exe",
             "args": ["dev"],
@@ -305,6 +306,33 @@
             "options": { "cwd": "${workspaceFolder}" },
             "problemMatcher": [],
             "presentation": { "reveal": "silent" }
+        },
+        {
+            "label": "🌿 Yonca AI: 🧹 Clear Browser Cache",
+            "detail": "Clear Chrome/Edge/Firefox cache (LocalStorage, SessionStorage, IndexedDB)",
+            "type": "shell",
+            "command": "pwsh",
+            "args": [
+                "-File",
+                "${workspaceFolder}/scripts/clear_browser_cache.ps1"
+            ],
+            "problemMatcher": [],
+            "presentation": { "reveal": "silent" }
+        },
+        {
+            "label": "🧹 Clear Cache & Ports",
+            "type": "shell",
+            "command": "pwsh",
+            "args": [
+                "-File",
+                "${workspaceFolder}/scripts/clear_browser_cache.ps1"
+            ],
+            "presentation": {
+                "reveal": "silent"
+            },
+            "runOptions": {
+                "runOn": "default"
+            }
         },
         // ════════════════════════════════════════════════════════════════════
         // 🤖 MODELS (One-time setup)

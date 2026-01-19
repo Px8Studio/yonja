@@ -28,15 +28,70 @@ from pathlib import Path
 from typing import Optional
 
 # Load .env files BEFORE any other imports
-# Parent .env has shared secrets (Langfuse, etc.), demo-ui/.env has local secrets (OAuth)
 from dotenv import load_dotenv
+
 demo_ui_dir = Path(__file__).parent
 project_root = demo_ui_dir.parent
-load_dotenv(project_root / ".env")       # Shared secrets (Langfuse keys, etc.)
-load_dotenv(demo_ui_dir / ".env")        # Local secrets (OAuth) - can override
+load_dotenv(project_root / ".env")
+load_dotenv(demo_ui_dir / ".env")
 
-# Add project root to path for imports
 sys.path.insert(0, str(project_root / "src"))
+
+# ============================================
+# CHAINLIT DATA LAYER INITIALIZATION (CRITICAL)
+# ============================================
+# Must happen BEFORE importing chainlit to prevent "storage client not initialized" warning
+import asyncio
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
+from chainlit.data.chainlit_data_layer import ChainlitDataLayer
+from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
+import logging
+
+logger = logging.getLogger(__name__)
+
+async def init_chainlit_data_layer():
+    """Initialize Chainlit's SQLAlchemy data layer with async engine."""
+    try:
+        db_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./data/yonca.db")
+        logger.info(f"Initializing Chainlit data layer with: {db_url.split('@')[-1] if '@' in db_url else db_url}")
+        
+        # Create async engine
+        engine = create_async_engine(
+            db_url,
+            echo=False,
+            pool_pre_ping=True,
+            pool_recycle=3600,
+        )
+        
+        # Create async session factory
+        async_session_maker = sessionmaker(
+            engine,
+            class_=AsyncSession,
+            expire_on_commit=False,
+        )
+        
+        # Initialize Chainlit data layer
+        data_layer = SQLAlchemyDataLayer(
+            engine=engine,
+            async_session_maker=async_session_maker,
+        )
+        
+        # Set as global data layer
+        ChainlitDataLayer._instance = data_layer
+        
+        logger.info("✅ Chainlit data layer initialized successfully")
+        return data_layer
+    except Exception as e:
+        logger.warning(f"⚠️  Chainlit data layer initialization failed: {e}")
+        logger.warning("   Threads will not be persisted (sessions will be stateless)")
+        return None
+
+# Initialize before importing chainlit
+try:
+    asyncio.run(init_chainlit_data_layer())
+except Exception as e:
+    logger.error(f"Failed to initialize data layer: {e}")
 
 # Now safe to import chainlit
 import chainlit as cl

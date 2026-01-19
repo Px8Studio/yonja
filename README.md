@@ -77,6 +77,8 @@ The Yonca startup manager will **automatically download the model** if it's not 
 
 ### Installation
 
+> **🎯 Quick Tip:** Run `.\activate.ps1` or `activate.bat` for instant setup! See [COMMANDS.md](COMMANDS.md) for all usage options.
+
 > **Tooling Note:** We use **Poetry** for dependency management (reads `pyproject.toml`, creates reproducible environments). **Uvicorn** is the ASGI server that runs FastAPI—it's installed as a dependency, not a separate tool.
 
 ```bash
@@ -88,12 +90,19 @@ cd yonja
 poetry install              # Core dependencies
 poetry shell                # Activates the environment
 
-# Option B: pip + venv
+# Option B: Quick activate script
+.\activate.ps1              # Windows PowerShell
+activate.bat                # Windows CMD
+
+# Option C: pip + venv
 python -m venv .venv
 .venv\Scripts\activate      # Windows
 source .venv/bin/activate   # Linux/Mac
 pip install -e ".[dev]"     # Install in editable mode
 ```
+
+**💡 Can't run `uvicorn` or `alembic` directly?** 
+→ See [COMMANDS.md](COMMANDS.md) for three ways to run commands without path issues.
 
 ### 🎮 Start Yonca AI
 

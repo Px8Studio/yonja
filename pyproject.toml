@@ -41,6 +41,26 @@ pytest-cov = "^4.1.0"
 ruff = "^0.1.0"
 mypy = "^1.8.0"
 
+# ═══════════════════════════════════════════════════════════════════════════
+# 🚀 Poetry Scripts - Run commands without manually activating venv
+# ═══════════════════════════════════════════════════════════════════════════
+# Usage:
+#   poetry run dev        # Start FastAPI server with auto-reload
+#   poetry run migrate    # Run database migrations  
+#   poetry run seed       # Seed database with test data
+#   poetry run test       # Run pytest
+#   poetry run lint       # Run ruff linter
+#
+# Or activate shell once and use commands directly:
+#   poetry shell
+#   uvicorn yonca.api.main:app --reload
+#   alembic upgrade head
+# ═══════════════════════════════════════════════════════════════════════════
+[tool.poetry.scripts]
+dev = "scripts.dev:main"
+migrate = "scripts.migrate:main"
+seed = "scripts.seed:main"
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"

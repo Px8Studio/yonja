@@ -9,6 +9,9 @@ structlog>=24.1.0
 langgraph>=0.2.0
 langchain-core>=0.3.0
 
+# Visualization for dashboard
+plotly>=5.18.0
+
 # Import from main app
 # (demo-ui runs alongside main yonca package)
 

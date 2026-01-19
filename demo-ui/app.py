@@ -65,6 +65,19 @@ from config import settings as demo_settings
 from services.yonca_client import YoncaClient, YoncaClientError
 from data_layer import get_data_layer, load_user_settings, save_user_settings
 
+# Import insights dashboard components
+from services.langfuse_insights import (
+    get_insights_client,
+    get_response_metadata,
+    get_user_dashboard_data,
+)
+from components.insights_dashboard import (
+    format_response_metadata,
+    add_response_metadata_element,
+    render_dashboard_sidebar,
+    format_welcome_stats,
+)
+
 logger = structlog.get_logger()
 
 # ============================================
@@ -590,6 +603,28 @@ async def on_chat_start():
             farm_id=farm_id,
         )
     
+    # ─────────────────────────────────────────────────────────────
+    # Load Activity Dashboard (from Langfuse)
+    # ─────────────────────────────────────────────────────────────
+    try:
+        insights_client = get_insights_client()
+        if insights_client.is_configured:
+            user_insights = await get_user_dashboard_data(user_id, days=90)
+            cl.user_session.set("user_insights", user_insights)
+            
+            # Render the activity dashboard in sidebar
+            await render_dashboard_sidebar(user_insights)
+            
+            logger.info(
+                "dashboard_loaded",
+                user_id=user_id,
+                total_interactions=user_insights.total_interactions,
+            )
+        else:
+            logger.debug("langfuse_not_configured_skipping_dashboard")
+    except Exception as e:
+        logger.warning("dashboard_load_failed", error=str(e))
+    
     # Build the enhanced dashboard welcome message
     await send_dashboard_welcome(user)
 
@@ -710,6 +745,23 @@ async def on_message(message: cl.Message):
             # Update final message with complete response
             response_msg.content = full_response
             await response_msg.update()
+            
+            # ─────────────────────────────────────────────────────────
+            # Add Response Metadata (expandable details)
+            # ─────────────────────────────────────────────────────────
+            if langfuse_handler:
+                try:
+                    # Get trace_id from the handler (last_trace_id in SDK v3)
+                    trace_id = getattr(langfuse_handler, 'last_trace_id', None) or \
+                               getattr(langfuse_handler, 'trace_id', None)
+                    if trace_id:
+                        # Fetch metadata from Langfuse
+                        metadata = await get_response_metadata(trace_id)
+                        if metadata:
+                            await add_response_metadata_element(response_msg, metadata)
+                            logger.debug("response_metadata_added", trace_id=trace_id)
+                except Exception as e:
+                    logger.warning("response_metadata_failed", error=str(e))
         
     except Exception as e:
         logger.error("message_error", error=str(e), session_id=session_id)

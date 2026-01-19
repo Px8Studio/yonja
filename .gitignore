@@ -83,6 +83,7 @@ models/
 # ═══════════════════════════════════════════════════════════════════════════
 # .chainlit/translations/
 # demo-ui/.chainlit/translations/
+demo-ui/.files/
 
 # Keep custom translations (create these manually if needed):
 # !demo-ui/.chainlit/translations/az-AZ.json

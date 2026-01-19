@@ -26,6 +26,7 @@ from yonca.observability import (
     print_model_capabilities,
     print_security_info,
     print_observability_info,
+    print_infrastructure_tier,
     is_langfuse_healthy,
 )
 
@@ -75,6 +76,11 @@ async def lifespan(app: FastAPI):
     
     # Show model-specific capabilities
     print_model_capabilities(settings.active_llm_model)
+    
+    # ─────────────────────────────────────────────────────────────
+    # ALEM Infrastructure Tier
+    # ─────────────────────────────────────────────────────────────
+    print_infrastructure_tier(settings.inference_tier_spec)
     
     # ─────────────────────────────────────────────────────────────
     # Infrastructure Status

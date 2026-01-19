@@ -49,6 +49,10 @@ from yonca.observability.banner import (
     print_model_capabilities,
     print_security_info,
     print_observability_info,
+    print_infrastructure_tier,
+    print_tier_comparison,
+    format_trace_link,
+    print_trace_info,
     Colors,
 )
 
@@ -76,5 +80,9 @@ __all__ = [
     "print_model_capabilities",
     "print_security_info",
     "print_observability_info",
+    "print_infrastructure_tier",
+    "print_tier_comparison",
+    "format_trace_link",
+    "print_trace_info",
     "Colors",
 ]

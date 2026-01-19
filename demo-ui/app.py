@@ -57,6 +57,7 @@ from yonca.observability.banner import (
     print_startup_complete,
     print_llm_info,
     print_model_capabilities,
+    print_infrastructure_tier,
 )
 
 # Import demo-ui config and API client
@@ -106,6 +107,13 @@ if demo_settings.integration_mode == "direct":
         api_key_set=demo_settings.llm_provider == "ollama",  # Ollama doesn't need key
     )
     print_model_capabilities(demo_settings.ollama_model)
+    
+    # Show ALEM Infrastructure Tier
+    try:
+        from yonca.config import settings as yonca_settings
+        print_infrastructure_tier(yonca_settings.inference_tier_spec)
+    except Exception:
+        pass  # Skip if config not available
 else:
     print_section_header("🤖 LLM Configuration")
     print_status_line("Provider", "Via API Bridge", "info")
@@ -141,17 +149,19 @@ print_status_line("Feedback", "Enabled" if demo_settings.enable_feedback else "D
 # ─────────────────────────────────────────────────────────────
 print_endpoints([
     ("Chat UI", "http://localhost:8501", "Interactive Chainlit demo"),
-    ("Swagger", "http://localhost:8000/docs", "API documentation"),
+    ("Swagger", "http://localhost:8000/docs", "Interactive API docs"),
+    ("ReDoc", "http://localhost:8000/redoc", "Clean API reference"),
     ("Langfuse", "http://localhost:3001", "LLM tracing & analytics"),
 ])
 
 print_quick_links([
     ("Chat", "http://localhost:8501"),
-    ("API", "http://localhost:8000/docs"),
+    ("Swagger", "http://localhost:8000/docs"),
+    ("ReDoc", "http://localhost:8000/redoc"),
     ("Traces", "http://localhost:3001"),
 ])
 
-print_startup_complete("Yonca Demo UI")
+print_startup_complete("🌿 Yonca Demo UI")
 
 # ============================================
 # DATA PERSISTENCE (Chainlit Data Layer)
@@ -664,67 +674,42 @@ async def on_message(message: cl.Message):
             
             # Create Langfuse handler for observability
             langfuse_handler = create_langfuse_handler(
-                session_id=thread_id,
-                user_id=user_id,
+                session_id=thread_id,           # Groups all messages in conversation
+                user_id=user_id,                # Attributes costs to user
                 tags=["demo-ui", "development", "direct-mode"],
                 metadata={
                     "farm_id": farm_id,
                     "user_email": user_email,
-                    "source": "chainlit",
+                    "source": "chainlit"
                 },
-                trace_name="demo_chat",
             )
             
-            # Build callbacks list
-            callbacks: list = [cl.LangchainCallbackHandler()]  # type: ignore[type-arg]
+            # Combine BOTH callback handlers
+            callbacks = [cl.LangchainCallbackHandler()]  # UI step visualization
             if langfuse_handler:
-                callbacks.append(langfuse_handler)
+                callbacks.append(langfuse_handler)        # LLM tracing
             
-            # LangGraph config with thread_id for memory
+            # Pass to LangGraph
             config = RunnableConfig(
-                configurable={
-                    "thread_id": thread_id,
-                    "farm_id": farm_id,
-                },
-                callbacks=callbacks,  # type: ignore[arg-type]
+                configurable={"thread_id": thread_id},
+                callbacks=callbacks  # Both handlers receive all events
             )
             
-            # Stream events from the agent
-            async for event in agent.astream_events(input_messages, config=config, version="v2"):
-                kind = event.get("event")
-                
-                if kind == "on_chat_model_stream":
-                    chunk = event.get("data", {}).get("chunk")
-                    if chunk and hasattr(chunk, "content") and chunk.content:
-                        token = chunk.content
-                        full_response += token
-                        await response_msg.stream_token(token)
-                
-                elif kind == "on_chain_end":
-                    output = event.get("data", {}).get("output")
-                    if output and isinstance(output, dict):
-                        messages = output.get("messages", [])
-                        if messages and not full_response:
-                            last_msg = messages[-1]
-                            if isinstance(last_msg, AIMessage) and last_msg.content:
-                                full_response = last_msg.content
-                                await response_msg.stream_token(full_response)
+            # Stream the response from LangGraph
+            # astream() returns an async generator - iterate with async for
+            async for chunk in agent.astream(input_messages, config=config):
+                # Extract content from the chunk based on its structure
+                if isinstance(chunk, dict):
+                    for node_name, node_output in chunk.items():
+                        if isinstance(node_output, dict) and "messages" in node_output:
+                            for msg in node_output["messages"]:
+                                if hasattr(msg, "content") and msg.content:
+                                    # Only update if we got actual content
+                                    full_response = msg.content
             
-            # Fallback if streaming didn't produce output
-            if not full_response:
-                logger.warning("no_streaming_response", session_id=session_id)
-                result = await agent.ainvoke(input_messages, config=config)
-                if result and "messages" in result:
-                    for msg in reversed(result["messages"]):
-                        if isinstance(msg, AIMessage) and msg.content:
-                            full_response = msg.content
-                            response_msg.content = full_response
-                            await response_msg.update()
-                            break
-        
-        # Update final content
-        response_msg.content = full_response
-        await response_msg.update()
+            # Update final message with complete response
+            response_msg.content = full_response
+            await response_msg.update()
         
     except Exception as e:
         logger.error("message_error", error=str(e), session_id=session_id)

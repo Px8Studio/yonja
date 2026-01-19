@@ -122,7 +122,7 @@ def _link(url: str, display_text: Optional[str] = None) -> str:
 
 YONCA_ASCII = r"""
   ╭─────────────────────────────────────────────────╮
-  │  🌿 YONCA AI — Kənd Təsərrüfatı Köməkçisi 🌾    │
+  │  🌿 YONCA AI — Kənd Təsərrüfatı Köməkçisi       │
   ╰─────────────────────────────────────────────────╯
 """
 
@@ -487,11 +487,155 @@ def print_observability_info(
     print_status_line("Log Level", log_level, "info")
 
 
+def print_infrastructure_tier(
+    tier_spec: dict,
+    show_all_tiers: bool = False,
+) -> None:
+    """Print ALEM Infrastructure tier information.
+    
+    Args:
+        tier_spec: Tier specification dict from INFERENCE_TIER_SPECS
+        show_all_tiers: If True, shows comparison of all tiers
+    """
+    print_section_header("🏗️  ALEM Infrastructure Tier")
+    
+    if not tier_spec:
+        print_status_line("Tier", "Unknown", "warning", "Configure LLM provider")
+        return
+    
+    icon = tier_spec.get("icon", "⚡")
+    name = tier_spec.get("name", "Unknown")
+    tagline = tier_spec.get("tagline", "")
+    
+    # Header line with icon and name
+    print()
+    print(f"  {_c(f'{icon}  {name}', Colors.BRIGHT_CYAN + Colors.BOLD)}")
+    print(f"     {_dim(tagline)}")
+    print()
+    
+    # Specs table
+    specs = [
+        ("Provider", tier_spec.get("provider", "—")),
+        ("Latency", tier_spec.get("latency", "—")),
+        ("Throughput", tier_spec.get("throughput", "—")),
+        ("Data Residency", tier_spec.get("data_residency", "—")),
+        ("Cost Range", tier_spec.get("cost_range", "—")),
+    ]
+    
+    for label, value in specs:
+        # Highlight data residency with Azerbaijan flag
+        if "Azerbaijan" in value or "🇦🇿" in value:
+            print(f"     {_c(f'{label}:', Colors.BRIGHT_WHITE)} {_c(value, Colors.BRIGHT_GREEN)}")
+        elif "US" in value or "EU" in value:
+            print(f"     {_c(f'{label}:', Colors.BRIGHT_WHITE)} {_c(value, Colors.BRIGHT_YELLOW)}")
+        else:
+            print(f"     {_c(f'{label}:', Colors.BRIGHT_WHITE)} {value}")
+    
+    # Models available
+    models = tier_spec.get("models", [])
+    if models:
+        print()
+        print(f"     {_c('Models:', Colors.BRIGHT_WHITE)} {', '.join(models)}")
+    
+    # Use case
+    use_case = tier_spec.get("use_case", "")
+    if use_case:
+        print(f"     {_c('Best for:', Colors.BRIGHT_WHITE)} {_dim(use_case)}")
+
+
+def print_tier_comparison() -> None:
+    """Print a comparison table of all ALEM infrastructure tiers."""
+    # Import here to avoid circular import
+    from yonca.config import INFERENCE_TIER_SPECS, InferenceTier
+    
+    print_section_header("🏗️  ALEM Infrastructure Matrix — All Tiers")
+    print()
+    
+    tier_order = [
+        InferenceTier.TIER_I_GROQ,
+        InferenceTier.TIER_II_GEMINI,
+        InferenceTier.TIER_III_SOVEREIGN,
+        InferenceTier.TIER_IV_ONPREM,
+    ]
+    
+    for tier in tier_order:
+        spec = INFERENCE_TIER_SPECS.get(tier, {})
+        icon = spec.get("icon", "•")
+        name = spec.get("name", str(tier))
+        tagline = spec.get("tagline", "")
+        cost = spec.get("cost_range", "")
+        residency = spec.get("data_residency", "")
+        
+        # Color based on data residency
+        if "Azerbaijan" in residency:
+            color = Colors.BRIGHT_GREEN
+            flag = "🇦🇿"
+        elif "Customer" in residency:
+            color = Colors.BRIGHT_MAGENTA
+            flag = "🏠"
+        else:
+            color = Colors.BRIGHT_YELLOW
+            flag = "☁️"
+        
+        print(f"  {icon} {_c(name, color)}")
+        print(f"     {flag} {residency} | {_dim(cost)}")
+        print()
+
+
+# ══════════════════════════════════════════════════════════════
+# Langfuse Trace Links (for Chainlit integration)
+# ══════════════════════════════════════════════════════════════
+
+def format_trace_link(
+    trace_id: str,
+    langfuse_host: str = "http://localhost:3001",
+    project_name: str = "default",
+) -> str:
+    """Format a clickable Langfuse trace link.
+    
+    Args:
+        trace_id: The Langfuse trace ID
+        langfuse_host: Langfuse server URL
+        project_name: Langfuse project name
+        
+    Returns:
+        Formatted clickable link string
+    """
+    url = f"{langfuse_host}/project/{project_name}/traces/{trace_id}"
+    return _link(url, f"🔍 View Trace")
+
+
+def print_trace_info(
+    trace_id: str,
+    langfuse_host: str = "http://localhost:3001",
+    session_id: Optional[str] = None,
+    user_id: Optional[str] = None,
+) -> None:
+    """Print trace information with clickable link.
+    
+    Useful for displaying after LangGraph execution.
+    """
+    print()
+    print(_c("  📊 Trace Recorded:", Colors.BRIGHT_WHITE))
+    print(f"     ID: {_dim(trace_id[:16] + '...')}")
+    
+    if session_id:
+        print(f"     Session: {_dim(session_id)}")
+    if user_id:
+        print(f"     User: {_dim(user_id)}")
+    
+    url = f"{langfuse_host}/traces/{trace_id}"
+    print(f"     {_link(url, '🔗 Open in Langfuse')}")
+
+
 # ══════════════════════════════════════════════════════════════
 # Entry point for testing
 # ══════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
+    # Import config for tier info
+    from yonca.config import settings, INFERENCE_TIER_SPECS
+    
     # Demo all banner styles
     print_startup_banner("api", "1.0.0", "development")
     
@@ -504,6 +648,9 @@ if __name__ == "__main__":
         api_key_set=True,
     )
     print_model_capabilities("meta-llama/llama-4-maverick-17b-128e-instruct")
+    
+    # ALEM Infrastructure Tier
+    print_infrastructure_tier(settings.inference_tier_spec)
     
     # Infrastructure
     print_section_header("🔌 Infrastructure")
@@ -531,14 +678,22 @@ if __name__ == "__main__":
     print_endpoints([
         ("API", "http://localhost:8000", "REST endpoints"),
         ("Swagger", "http://localhost:8000/docs", "Interactive API docs"),
+        ("ReDoc", "http://localhost:8000/redoc", "Alternative API docs (clean)"),
         ("Chat UI", "http://localhost:8501", "Demo interface"),
         ("Langfuse", "http://localhost:3001", "LLM observability"),
     ])
     
     print_quick_links([
         ("Swagger", "http://localhost:8000/docs"),
+        ("ReDoc", "http://localhost:8000/redoc"),
         ("Chat", "http://localhost:8501"),
         ("Traces", "http://localhost:3001"),
     ])
     
     print_startup_complete("Yonca AI API")
+    
+    # Demo tier comparison
+    print()
+    print(_c("  ═══════════════════════════════════════════════════════", Colors.BRIGHT_MAGENTA))
+    print(_c("  DEMO: All Infrastructure Tiers", Colors.BRIGHT_MAGENTA))
+    print_tier_comparison()

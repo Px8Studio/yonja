@@ -33,6 +33,75 @@ class LLMProvider(str, Enum):
     GEMINI = "gemini"  # Proprietary cloud models
 
 
+class InferenceTier(str, Enum):
+    """ALEM Infrastructure Matrix — Inference deployment tiers.
+    
+    From ALEM (Azərbaycan LLM Ekosistem Matrisi):
+    - Tier I: Rapid prototyping with Groq LPU cloud
+    - Tier II: High reasoning with Google Gemini
+    - Tier III: Sovereign cloud via AzInTelecom
+    - Tier IV: Private on-prem hardware (ZekaLab Custom)
+    """
+    
+    TIER_I_GROQ = "tier_i_groq"           # Rapid Prototyping — Groq LPU
+    TIER_II_GEMINI = "tier_ii_gemini"     # High Reasoning — Google Gemini
+    TIER_III_SOVEREIGN = "tier_iii_sov"   # Sovereign Cloud — AzInTelecom
+    TIER_IV_ONPREM = "tier_iv_onprem"     # Private On-Prem — ZekaLab Custom
+
+
+# ALEM Infrastructure Matrix — Tier specifications
+INFERENCE_TIER_SPECS = {
+    InferenceTier.TIER_I_GROQ: {
+        "name": "Tier I: Groq LPU",
+        "tagline": "Rapid Prototyping",
+        "provider": "Groq Cloud",
+        "models": ["Llama 4 Maverick 17B", "Qwen 3 32B"],
+        "latency": "~200ms (P95)",
+        "throughput": "800 tok/s",
+        "data_residency": "US (Groq servers)",
+        "cost_range": "$0–50/mo (dev)",
+        "use_case": "Hackathons, demos, MVPs, dev/test",
+        "icon": "⚡",
+    },
+    InferenceTier.TIER_II_GEMINI: {
+        "name": "Tier II: Google Gemini",
+        "tagline": "High Reasoning",
+        "provider": "Google Cloud",
+        "models": ["Gemini 2.0 Flash", "Gemini 1.5 Pro"],
+        "latency": "~400ms (P95)",
+        "throughput": "150 tok/s",
+        "data_residency": "EU (via Vertex AI region lock)",
+        "cost_range": "$20–300/mo",
+        "use_case": "Complex reasoning, multimodal, production pilots",
+        "icon": "🧠",
+    },
+    InferenceTier.TIER_III_SOVEREIGN: {
+        "name": "Tier III: AzInTelecom",
+        "tagline": "Sovereign Cloud",
+        "provider": "AzInTelecom Government Cloud",
+        "models": ["Llama 3.3 70B", "Mistral Large"],
+        "latency": "~600ms (P95)",
+        "throughput": "80 tok/s",
+        "data_residency": "Azerbaijan 🇦🇿 (Baku DC)",
+        "cost_range": "$800–1,500/mo",
+        "use_case": "Government, regulated industries, data sovereignty",
+        "icon": "🏛️",
+    },
+    InferenceTier.TIER_IV_ONPREM: {
+        "name": "Tier IV: ZekaLab Custom",
+        "tagline": "Private On-Prem",
+        "provider": "Self-hosted (customer premises)",
+        "models": ["ATLLaMA 7B", "Qwen 3 4B", "custom fine-tunes"],
+        "latency": "~300ms (P95)",
+        "throughput": "40 tok/s (CPU) / 200 tok/s (GPU)",
+        "data_residency": "Customer premises (air-gapped option)",
+        "cost_range": "$6,500–12,000 one-time",
+        "use_case": "Offline farms, military, banks, air-gapped networks",
+        "icon": "🔒",
+    },
+}
+
+
 class Settings(BaseSettings):
     """Application settings with environment variable support."""
 
@@ -148,6 +217,22 @@ class Settings(BaseSettings):
         if self.llm_provider == LLMProvider.GROQ:
             return self.groq_model
         return self.gemini_model
+
+    @property
+    def inference_tier(self) -> "InferenceTier":
+        """Get the current ALEM infrastructure tier based on provider."""
+        if self.llm_provider == LLMProvider.OLLAMA:
+            return InferenceTier.TIER_IV_ONPREM
+        if self.llm_provider == LLMProvider.GROQ:
+            return InferenceTier.TIER_I_GROQ
+        if self.llm_provider == LLMProvider.GEMINI:
+            return InferenceTier.TIER_II_GEMINI
+        return InferenceTier.TIER_I_GROQ  # Default
+
+    @property
+    def inference_tier_spec(self) -> dict:
+        """Get the full specification for the current inference tier."""
+        return INFERENCE_TIER_SPECS.get(self.inference_tier, {})
 
 
 @lru_cache

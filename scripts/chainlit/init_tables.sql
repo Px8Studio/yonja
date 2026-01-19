@@ -1,5 +1,5 @@
 -- ============================================
--- Chainlit Data Layer Schema
+-- 🌿 Chainlit Data Layer Schema for Yonca AI
 -- ============================================
 -- This script creates/recreates all tables required by
 -- Chainlit's SQLAlchemyDataLayer for conversation persistence.
@@ -15,6 +15,7 @@
 --   psql -h localhost -p 5433 -U yonca -d yonca -f scripts/chainlit/init_tables.sql
 --
 -- Note: This is SAFE to run multiple times (uses IF NOT EXISTS / IF EXISTS)
+-- Updated for Chainlit 2.9.x (added defaultOpen column)
 -- ============================================
 
 -- Drop existing tables (cascade to remove dependencies)
@@ -70,6 +71,7 @@ COMMENT ON COLUMN threads.tags IS 'JSON array of tags';
 -- ============================================
 -- STEPS TABLE
 -- Stores individual messages/steps in conversations
+-- Updated for Chainlit 2.9.x
 -- ============================================
 CREATE TABLE IF NOT EXISTS steps (
     "id" VARCHAR(36) PRIMARY KEY,
@@ -89,7 +91,8 @@ CREATE TABLE IF NOT EXISTS steps (
     "end" VARCHAR(30),
     "generation" TEXT,
     "showInput" VARCHAR(10),
-    "language" VARCHAR(50)
+    "language" VARCHAR(50),
+    "defaultOpen" BOOLEAN DEFAULT FALSE  -- Added for Chainlit 2.9.x
 );
 
 CREATE INDEX IF NOT EXISTS ix_steps_threadId ON steps("threadId");

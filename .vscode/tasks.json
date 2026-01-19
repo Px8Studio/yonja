@@ -332,7 +332,7 @@
             "label": "🌾 Yonca AI: 🛑 Stop All",
             "detail": "Stop Docker + kill Python/Chainlit processes",
             "type": "shell",
-            "command": "powershell",
+            "command": "pwsh",
             "args": [
                 "-ExecutionPolicy", "Bypass",
                 "-File", "${workspaceFolder}/scripts/stop_all.ps1"

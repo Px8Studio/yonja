@@ -48,6 +48,14 @@ import structlog
 from yonca.agent.graph import compile_agent_graph
 from yonca.agent.memory import get_checkpointer_async
 from yonca.observability import create_langfuse_handler
+from yonca.observability.banner import (
+    print_startup_banner,
+    print_section_header,
+    print_status_line,
+    print_endpoints,
+    print_quick_links,
+    print_startup_complete,
+)
 
 # Import demo-ui config and API client
 from config import settings as demo_settings
@@ -55,6 +63,43 @@ from services.yonca_client import YoncaClient, YoncaClientError
 from data_layer import get_data_layer, load_user_settings, save_user_settings
 
 logger = structlog.get_logger()
+
+# ============================================
+# STARTUP BANNER
+# ============================================
+print_startup_banner("demo-ui", "1.0.0", "development")
+
+print_section_header("⚙️  Configuration")
+print_status_line("Mode", demo_settings.integration_mode.upper(), "info")
+print_status_line("LLM Provider", demo_settings.llm_provider, "success")
+print_status_line("Model", demo_settings.ollama_model, "success")
+
+print_section_header("🔌 Connections")
+redis_host = demo_settings.redis_url.replace("redis://", "").split("/")[0] if demo_settings.redis_url else "not configured"
+print_status_line("Redis", redis_host, "info", "checkpointing")
+
+if demo_settings.data_persistence_enabled:
+    db_host = demo_settings.effective_database_url.split("@")[-1].split("/")[0] if "@" in demo_settings.effective_database_url else "local"
+    print_status_line("PostgreSQL", db_host, "success", "data persistence")
+else:
+    print_status_line("PostgreSQL", "Not configured", "warning", "sessions not persisted")
+
+if demo_settings.use_api_bridge:
+    print_status_line("API Bridge", demo_settings.yonca_api_url, "info", url=demo_settings.yonca_api_url)
+else:
+    print_status_line("API Bridge", "Disabled (direct mode)", "skip")
+
+print_endpoints([
+    ("Chat UI", "http://localhost:8501", "Interactive demo"),
+])
+
+print_quick_links([
+    ("Chat", "http://localhost:8501"),
+    ("Swagger", "http://localhost:8000/docs"),
+    ("Langfuse", "http://localhost:3001"),
+])
+
+print_startup_complete("Yonca Demo UI")
 
 # ============================================
 # DATA PERSISTENCE (Chainlit Data Layer)
@@ -72,23 +117,6 @@ if demo_settings.enable_data_persistence and demo_settings.data_persistence_enab
     def _get_data_layer():
         """Register Chainlit data layer for persistence."""
         return get_data_layer()
-    
-    logger.info(
-        "data_persistence_enabled",
-        database=demo_settings.effective_database_url.split("@")[-1] if "@" in demo_settings.effective_database_url else "local",
-    )
-else:
-    logger.warning(
-        "data_persistence_disabled",
-        reason="Requires Postgres database (DATABASE_URL with postgresql://)",
-    )
-
-# Log integration mode at startup
-logger.info(
-    "demo_ui_starting",
-    integration_mode=demo_settings.integration_mode,
-    api_url=demo_settings.yonca_api_url if demo_settings.use_api_bridge else "N/A (direct)",
-)
 
 # Global checkpointer (initialized once in async context) - for direct mode
 _checkpointer = None

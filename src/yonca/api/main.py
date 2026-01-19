@@ -12,55 +12,96 @@ from yonca.api.routes import health, chat, models
 from yonca.api.middleware.rate_limit import RateLimitMiddleware, RateLimiter, RateLimitExceeded
 from yonca.data.redis_client import RedisClient
 from yonca.llm.http_pool import HTTPClientPool
+from yonca.observability import (
+    print_startup_banner,
+    print_section_header,
+    print_status_line,
+    print_endpoints,
+    print_quick_links,
+    print_shutdown_message,
+    print_startup_complete,
+)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events with proper resource management."""
-    # Startup
-    mode_display = "Open-Source" if settings.deployment_mode.value == "open_source" else "Proprietary Cloud"
-    provider_display = "Groq (Open-Source)" if settings.llm_provider.value == "groq" else "Gemini (Proprietary)"
+    # ═══════════════════════════════════════════════════════════════
+    # STARTUP
+    # ═══════════════════════════════════════════════════════════════
     
-    print(f"🌿 Yonca AI starting in {mode_display} mode")
-    print(f"🤖 LLM Provider: {provider_display}")
-    print(f"📦 Active Model: {settings.active_llm_model}")
+    # Main banner
+    print_startup_banner("api", settings.app_version, "development")
+    
+    # LLM Configuration
+    print_section_header("🤖 LLM Configuration")
+    
+    mode_display = "Open-Source" if settings.deployment_mode.value == "open_source" else "Proprietary Cloud"
+    provider_display = "Groq" if settings.llm_provider.value == "groq" else "Gemini"
+    
+    print_status_line("Mode", mode_display, "info")
+    print_status_line("Provider", provider_display, "success")
+    print_status_line("Model", settings.active_llm_model, "success")
     
     if settings.llm_provider.value == "groq":
-        print(f"✨ Using open-source models that can be self-hosted")
-        print(f"🚀 Performance: Enterprise-grade with proper infrastructure")
+        print_status_line("Self-Host", "Ready (open-source models)", "info")
     
-    # Check Redis connectivity
+    # Infrastructure Status
+    print_section_header("🔌 Infrastructure")
+    
+    # Redis connectivity
+    redis_ok = False
     try:
         redis_ok = await RedisClient.health_check()
         if redis_ok:
-            print(f"🗄️  Redis: Connected ({settings.redis_url})")
+            redis_host = settings.redis_url.replace("redis://", "").split("/")[0]
+            print_status_line("Redis", "Connected", "success", f"{redis_host} (checkpointing)")
         else:
-            print(f"⚠️  Redis: Not available (sessions will be stateless)")
+            print_status_line("Redis", "Not Available", "warning", "sessions will be stateless")
     except Exception as e:
-        print(f"⚠️  Redis: Connection failed - {e}")
+        print_status_line("Redis", "Connection Failed", "error", str(e)[:40])
     
-    # Rate limiting info
-    print(f"🚦 Rate Limit: {settings.rate_limit_requests_per_minute} req/min")
+    # Rate limiting
+    print_status_line("Rate Limit", f"{settings.rate_limit_requests_per_minute} req/min", "info", f"burst: {settings.rate_limit_burst}")
     
-    # Show localhost for browsing, even if binding to 0.0.0.0
+    # Endpoints with clickable links
     display_host = "localhost" if settings.api_host == "0.0.0.0" else settings.api_host
-    print(f"📍 API: http://{display_host}:{settings.api_port}")
-    print(f"📚 Docs: http://{display_host}:{settings.api_port}/docs")
+    base_url = f"http://{display_host}:{settings.api_port}"
+    
+    print_endpoints([
+        ("API", base_url, "REST API base"),
+        ("Swagger", f"{base_url}/docs", "Interactive documentation"),
+        ("ReDoc", f"{base_url}/redoc", "Alternative docs"),
+        ("Health", f"{base_url}/health", "Service health check"),
+    ])
+    
+    print_quick_links([
+        ("Swagger", f"{base_url}/docs"),
+        ("Chat API", f"{base_url}/api/v1/chat"),
+        ("Models", f"{base_url}/api/models"),
+    ])
+    
+    print_startup_complete("Yonca AI API")
     
     yield
     
-    # Shutdown - cleanup resources
-    print("🌿 Yonca AI shutting down...")
+    # ═══════════════════════════════════════════════════════════════
+    # SHUTDOWN
+    # ═══════════════════════════════════════════════════════════════
+    
+    print_shutdown_message()
     
     # Close HTTP connection pools
     await HTTPClientPool.close_all()
-    print("   ✓ HTTP connection pools closed")
+    print_status_line("HTTP Pools", "Closed", "success")
     
     # Close Redis connections
     await RedisClient.close()
-    print("   ✓ Redis connections closed")
+    print_status_line("Redis", "Closed", "success")
     
-    print("🌿 Shutdown complete")
+    print()
+    print_status_line("Yonca AI", "Shutdown complete", "success")
+    print()
 
 
 app = FastAPI(

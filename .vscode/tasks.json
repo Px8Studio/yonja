@@ -64,11 +64,28 @@
             "presentation": { "reveal": "always", "panel": "dedicated" }
         },
         // ════════════════════════════════════════════════════════════════════
+        // 🧹 CACHE (Prevent stale bytecode issues)
+        // ════════════════════════════════════════════════════════════════════
+        {
+            "label": "Yonca AI: 🧹 Clear Cache",
+            "detail": "Remove __pycache__ folders (prevents stale .pyc issues)",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-Command",
+                "Get-ChildItem -Path '${workspaceFolder}' -Recurse -Directory -Filter '__pycache__' | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue; Write-Host '🧹 Python cache cleared' -ForegroundColor Green"
+            ],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": [],
+            "presentation": { "reveal": "silent" }
+        },
+        // ════════════════════════════════════════════════════════════════════
         // 🌿 APPLICATION (Python Services)
         // ════════════════════════════════════════════════════════════════════
         {
             "label": "Yonca AI: 🌿 API Start",
             "detail": "FastAPI with hot reload (localhost:8000)",
+            "dependsOn": ["Yonca AI: 🧹 Clear Cache"],
             "type": "shell",
             "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
             "args": ["-m", "uvicorn", "yonca.api.main:app", "--host", "localhost", "--port", "8000", "--reload"],
@@ -87,6 +104,7 @@
         {
             "label": "Yonca AI: 🖥️ UI Start",
             "detail": "Chainlit Demo (localhost:8501)",
+            "dependsOn": ["Yonca AI: 🧹 Clear Cache"],
             "type": "shell",
             "command": "${workspaceFolder}\\.venv\\Scripts\\chainlit.exe",
             "args": ["run", "app.py", "-w", "--port", "8501"],

@@ -305,14 +305,14 @@
         {
             "label": "🌾 Yonca AI: 🚀 Start All",
             "detail": "Stop → Docker (incl. Langfuse) → API + UI → Open all dashboards",
-            "dependsOn": ["🌾 Yonca AI: 🛑 Stop All", "🌾 Yonca AI: 🐳 Docker Start", "🌾 Yonca AI: 🚀 Start Apps", "🌾 Yonca AI: 🌐 Open All UIs"],
+            "dependsOn": ["🌾 Yonca AI: 🛑 Stop All", "🌾 Yonca AI: 🐳 Docker Start", "🌾 Yonca AI: 🚀 Start Apps"],
             "dependsOrder": "sequence",
             "problemMatcher": []
         },
         {
             "label": "🌾 Yonca AI: 🚀 Start Apps",
             "detail": "API + UI (parallel) - internal task",
-            "dependsOn": ["🌾 Yonca AI: 🌿 API Start", "🌾 Yonca AI: 🖥️ UI Start"],
+            "dependsOn": ["🌾 Yonca AI: 🌿 API Start", "🌾 Yonca AI: 🖥️ UI Start", "🌾 Yonca AI: 🌐 Open All UIs"],
             "dependsOrder": "parallel",
             "problemMatcher": []
         },
@@ -323,10 +323,10 @@
             "command": "powershell",
             "args": [
                 "-Command",
-                "Write-Host '⏳ Waiting for services to start...' -ForegroundColor Cyan; Start-Sleep -Seconds 3; Start-Process 'http://localhost:8000/docs'; Start-Process 'http://localhost:8501'; Start-Process 'http://localhost:3001'; Write-Host '✅ Swagger + Chat UI + Langfuse opened' -ForegroundColor Green"
+                "Write-Host '⏳ Waiting for services to start...' -ForegroundColor Cyan; Start-Sleep -Seconds 8; Start-Process 'http://localhost:8000/docs'; Start-Process 'http://localhost:8501'; Start-Process 'http://localhost:3001'; Write-Host '✅ Swagger + Chat UI + Langfuse opened' -ForegroundColor Green"
             ],
             "problemMatcher": [],
-            "presentation": { "reveal": "silent" }
+            "presentation": { "reveal": "always", "panel": "shared" }
         },
         {
             "label": "🌾 Yonca AI: 🛑 Stop All",

@@ -138,7 +138,7 @@ from typing import Optional
 import structlog
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from yonca.data.database import get_async_session
+from yonca.data.database import get_db_session
 
 logger = structlog.get_logger(__name__)
 
@@ -147,8 +147,7 @@ async def load_alem_persona_from_db(
 ) -> Optional[dict]:
     """Load persona from database by email."""
     try:
-        async_session = await get_async_session()
-        async with async_session() as session:
+        async with get_db_session() as session:
             result = await session.execute(
                 text("""
                     SELECT alem_persona_id, email, full_name, fin_code, phone, 
@@ -195,8 +194,7 @@ async def save_alem_persona_to_db(
 ) -> bool:
     """Save generated persona to database for persistence."""
     try:
-        async_session = await get_async_session()
-        async with async_session() as session:
+        async with get_db_session() as session:
             persona_id = str(uuid.uuid4())
             
             await session.execute(
@@ -232,7 +230,6 @@ async def save_alem_persona_to_db(
                     'login': datetime.utcnow(),
                 }
             )
-            await session.commit()
             logger.info("persona_saved_to_db", email=email, persona_id=persona_id)
             return True
             

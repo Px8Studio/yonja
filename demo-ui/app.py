@@ -95,7 +95,7 @@ except Exception as e:
 
 # Now safe to import chainlit
 import chainlit as cl
-from chainlit.input_widget import Select, Switch, Slider
+from chainlit.input_widget import Select, Switch, Slider, MultiSelect
 from langchain_core.runnables import RunnableConfig
 from langchain_core.messages import HumanMessage, AIMessage
 import structlog
@@ -306,6 +306,104 @@ async def get_api_client() -> YoncaClient:
 # Different profiles for different farming needs.
 # Each profile has specialized starters and system prompts.
 
+# ============================================
+# EXPERTISE AREAS — Smart Multi-Select System
+# ============================================
+# Maps user's crop types to relevant expertise areas.
+# Used to auto-configure chat settings based on ALEM persona.
+
+# Expertise area definitions with Azerbaijani labels
+EXPERTISE_AREAS = {
+    "general": "Ümumi kənd təsərrüfatı",
+    "cotton": "Pambıqçılıq",
+    "wheat": "Taxılçılıq (buğda, arpa)",
+    "orchard": "Meyvəçilik (alma, üzüm)",
+    "vegetable": "Tərəvəzçilik",
+    "livestock": "Heyvandarlıq",
+    "advanced": "Qabaqcıl texnologiyalar",
+}
+
+# Map crop types (from ALEM persona) to expertise areas
+CROP_TO_EXPERTISE = {
+    # Industrial crops
+    "Pambıq": ["cotton"],
+    "Cotton": ["cotton"],
+    # Grains
+    "Buğda": ["wheat"],
+    "Wheat": ["wheat"],
+    "Arpa": ["wheat"],
+    "Barley": ["wheat"],
+    "Qarğıdalı": ["wheat"],  # Corn grouped with grains
+    "Corn": ["wheat"],
+    # Fruits/Orchards
+    "Alma": ["orchard"],
+    "Apple": ["orchard"],
+    "Üzüm": ["orchard"],
+    "Grape": ["orchard"],
+    "Fındıq": ["orchard"],
+    "Hazelnut": ["orchard"],
+    "Nar": ["orchard"],
+    "Pomegranate": ["orchard"],
+    "Şaftalı": ["orchard"],
+    "Peach": ["orchard"],
+    # Vegetables
+    "Pomidor": ["vegetable"],
+    "Tomato": ["vegetable"],
+    "Xıyar": ["vegetable"],
+    "Cucumber": ["vegetable"],
+    "Bibər": ["vegetable"],
+    "Pepper": ["vegetable"],
+    "Kartof": ["vegetable"],
+    "Potato": ["vegetable"],
+    # Specialty
+    "Çay": ["vegetable"],  # Tea grouped with vegetables for now
+    "Tea": ["vegetable"],
+    "Sitrus": ["orchard"],
+    "Citrus": ["orchard"],
+}
+
+# Map experience level to add advanced expertise
+EXPERIENCE_TO_EXPERTISE = {
+    "expert": ["advanced"],
+    "intermediate": [],
+    "novice": [],
+}
+
+
+def detect_expertise_from_persona(persona_dict: dict | None) -> list[str]:
+    """Detect relevant expertise areas from ALEM persona.
+    
+    Uses crop type and experience level to determine smart defaults.
+    
+    Args:
+        persona_dict: ALEM persona dictionary with crop_type, experience_level
+        
+    Returns:
+        List of expertise area IDs (e.g., ["cotton", "advanced"])
+    """
+    if not persona_dict:
+        return ["general"]
+    
+    expertise = set()
+    
+    # Add expertise based on crop type
+    crop_type = persona_dict.get("crop_type", "")
+    if crop_type in CROP_TO_EXPERTISE:
+        expertise.update(CROP_TO_EXPERTISE[crop_type])
+    
+    # Add expertise based on experience level
+    experience = persona_dict.get("experience_level", "intermediate")
+    if experience in EXPERIENCE_TO_EXPERTISE:
+        expertise.update(EXPERIENCE_TO_EXPERTISE[experience])
+    
+    # Always include general if nothing specific detected
+    if not expertise:
+        expertise.add("general")
+    
+    # Sort for consistent ordering
+    return sorted(list(expertise))
+
+
 # Profile-specific starters
 PROFILE_STARTERS = {
     "general": [
@@ -316,21 +414,39 @@ PROFILE_STARTERS = {
     ],
     "cotton": [
         cl.Starter(label="🌱 Pambıq əkini", message="Pambıq əkini üçün ən yaxşı vaxt nədir?", icon="/public/elements/plant.svg"),
-        cl.Starter(label="🐛 Zərərverici", message="Pambıqda hansı zərərvericilər var?", icon="/public/elements/bug.svg"),
-        cl.Starter(label="💧 Suvarma norması", message="Pambıq üçün suvarma norması nə qədərdir?", icon="/public/elements/water.svg"),
-        cl.Starter(label="🧪 Gübrələmə", message="Pambıq üçün hansı gübrələr lazımdır?", icon="/public/elements/fertilizer.svg"),
+        cl.Starter(label="🐛 Pambıq zərərvericisi", message="Pambıqda hansı zərərvericilər var?", icon="/public/elements/bug.svg"),
+        cl.Starter(label="💧 Pambıq suvarması", message="Pambıq üçün suvarma norması nə qədərdir?", icon="/public/elements/water.svg"),
+        cl.Starter(label="🧪 Pambıq gübrəsi", message="Pambıq üçün hansı gübrələr lazımdır?", icon="/public/elements/fertilizer.svg"),
     ],
     "wheat": [
         cl.Starter(label="🌾 Buğda əkini", message="Payızlıq buğda nə vaxt əkilir?", icon="/public/elements/wheat.svg"),
         cl.Starter(label="🌡️ Don zədəsi", message="Buğdanı dondan necə qorumaq olar?", icon="/public/elements/frost.svg"),
         cl.Starter(label="🌿 Alaq otları", message="Buğdada alaq otlarına qarşı nə etmək olar?", icon="/public/elements/weed.svg"),
-        cl.Starter(label="📊 Məhsuldarlıq", message="Buğda məhsuldarlığını necə artırmaq olar?", icon="/public/elements/chart.svg"),
+        cl.Starter(label="📊 Buğda məhsuldarlığı", message="Buğda məhsuldarlığını necə artırmaq olar?", icon="/public/elements/chart.svg"),
     ],
-    "expert": [
+    "orchard": [
+        cl.Starter(label="🍎 Alma bağı", message="Alma ağaclarının qulluğu necə olmalıdır?", icon="/public/elements/apple.svg"),
+        cl.Starter(label="🍇 Üzüm bağı", message="Üzüm bağının budaması nə vaxt olmalıdır?", icon="/public/elements/grape.svg"),
+        cl.Starter(label="🌸 Çiçəklənmə", message="Meyvə ağaclarının çiçəklənmə dövrü nə vaxtdır?", icon="/public/elements/flower.svg"),
+        cl.Starter(label="🪲 Meyvə zərərvericisi", message="Meyvə ağaclarında hansı zərərvericilər var?", icon="/public/elements/bug.svg"),
+    ],
+    "vegetable": [
+        cl.Starter(label="🍅 Pomidor əkini", message="Pomidor əkini üçün torpaq necə hazırlanır?", icon="/public/elements/tomato.svg"),
+        cl.Starter(label="🥒 Xıyar becərilməsi", message="Xıyar becərilməsinin sirləri nədir?", icon="/public/elements/cucumber.svg"),
+        cl.Starter(label="🌶️ İstixana", message="İstixanada tərəvəz yetişdirmək necə olur?", icon="/public/elements/greenhouse.svg"),
+        cl.Starter(label="🥔 Kartof əkini", message="Kartof əkini üçün ən yaxşı vaxt nə vaxtdır?", icon="/public/elements/potato.svg"),
+    ],
+    "livestock": [
+        cl.Starter(label="🐄 Mal-qara", message="Mal-qaranın yemləmə rejimi necə olmalıdır?", icon="/public/elements/cow.svg"),
+        cl.Starter(label="🐑 Qoyun", message="Qoyunların sağlamlığı üçün nə etmək lazımdır?", icon="/public/elements/sheep.svg"),
+        cl.Starter(label="🐝 Arıçılıq", message="Arı ailələrinin qışlaması necə təşkil olunur?", icon="/public/elements/bee.svg"),
+        cl.Starter(label="🏥 Baytarlıq", message="Heyvanların peyvəndləmə cədvəli necədir?", icon="/public/elements/vet.svg"),
+    ],
+    "advanced": [
         cl.Starter(label="📊 Torpaq analizi", message="Torpaq analizinin nəticələrini şərh et", icon="/public/elements/soil.svg"),
         cl.Starter(label="🔬 Xəstəlik diaqnozu", message="Bu bitkidə hansı xəstəlik var?", icon="/public/elements/microscope.svg"),
         cl.Starter(label="📈 ROI hesablaması", message="Əkin planımın rentabelliyini hesabla", icon="/public/elements/calculator.svg"),
-        cl.Starter(label="🗺️ GIS məlumatları", message="Sahəmin peyk şəkillərini göstər", icon="/public/elements/satellite.svg"),
+        cl.Starter(label="🗺️ Peyk məlumatları", message="Sahəmin NDVI peyk şəkillərini göstər", icon="/public/elements/satellite.svg"),
     ],
 }
 
@@ -347,7 +463,22 @@ Sən taxılçılıq üzrə ixtisaslaşmış aqronomiqa ekspertisən.
 Azərbaycanda buğda və arpa becərmə haqqında dərin biliyə maliksən.
 Payızlıq və yazlıq taxıllar, don zədəsi, alaq otlarına qarşı mübarizə və məhsuldarlığın artırılması haqqında ətraflı məlumat ver.
 """,
-    "expert": """
+    "orchard": """
+Sən meyvəçilik üzrə ixtisaslaşmış aqronomiqa ekspertisən.
+Azərbaycanda alma, üzüm, fındıq və digər meyvə bağlarının becərilməsi haqqında dərin biliyə maliksən.
+Budama, çiçəklənmə, zərərvericilərə qarşı mübarizə və məhsul yığımı haqqında ətraflı məlumat ver.
+""",
+    "vegetable": """
+Sən tərəvəzçilik üzrə ixtisaslaşmış aqronomiqa ekspertisən.
+Azərbaycanda pomidor, xıyar, bibər və digər tərəvəzlərin becərilməsi haqqında dərin biliyə maliksən.
+İstixana və açıq sahədə tərəvəz yetişdirilməsi, suvarma və gübrələmə haqqında ətraflı məlumat ver.
+""",
+    "livestock": """
+Sən heyvandarlıq üzrə ixtisaslaşmış mütəxəssissən.
+Azərbaycanda mal-qara, qoyun, keçi və quşçuluq haqqında dərin biliyə maliksən.
+Yemləmə, sağlamlıq, peyvəndləmə və məhsuldarlıq haqqında ətraflı məlumat ver.
+""",
+    "advanced": """
 Sən kənd təsərrüfatı üzrə yüksək ixtisaslı ekspertsən.
 Cavablarını daha texniki və ətraflı ver. Torpaq analizləri, bitki fiziologiyası, iqtisadi hesablamalar və GIS məlumatları daxil et.
 Lazım gəldikdə elmi terminologiya istifadə et, lakin izah da ver.
@@ -355,9 +486,42 @@ Lazım gəldikdə elmi terminologiya istifadə et, lakin izah da ver.
 }
 
 
+def build_combined_system_prompt(expertise_areas: list[str]) -> str:
+    """Build combined system prompt from multiple expertise areas.
+    
+    Args:
+        expertise_areas: List of selected expertise area IDs
+        
+    Returns:
+        Combined system prompt string
+    """
+    if not expertise_areas:
+        return ""
+    
+    prompts = []
+    for area in expertise_areas:
+        if area in PROFILE_PROMPTS and PROFILE_PROMPTS[area]:
+            prompts.append(PROFILE_PROMPTS[area].strip())
+    
+    if not prompts:
+        return ""
+    
+    # Combine with header
+    combined = """
+Sən çoxsahəli kənd təsərrüfatı ekspertisən. Aşağıdakı sahələrdə ixtisaslaşmısan:
+
+""" + "\n\n".join(prompts)
+    
+    return combined
+
+
 @cl.set_chat_profiles
 async def chat_profiles(current_user: cl.User = None):
-    """Define available chat profiles (farming personas)."""
+    """Define available chat profiles (farming personas).
+    
+    NOTE: These are kept for backward compatibility but expertise
+    selection now happens via Chat Settings multi-select.
+    """
     return [
         cl.ChatProfile(
             name="general",
@@ -382,15 +546,43 @@ async def chat_profiles(current_user: cl.User = None):
             name="expert",
             markdown_description="**Ekspert rejimi** — texniki analiz, torpaq tədqiqatı, ROI hesablaması",
             icon="/public/avatars/expert.svg",
-            starters=PROFILE_STARTERS["expert"],
+            starters=PROFILE_STARTERS["advanced"],
         ),
     ]
 
 
 @cl.set_starters
 async def set_starters(current_user: cl.User = None, chat_profile: str = None):
-    """Return starters based on selected chat profile."""
+    """Return starters based on expertise areas from settings.
+    
+    Combines starters from all selected expertise areas.
+    Falls back to chat_profile if no settings found.
+    """
+    # Try to get expertise areas from user session settings
+    settings = cl.user_session.get("chat_settings", {})
+    expertise_areas = settings.get("expertise_areas", [])
+    
+    if expertise_areas:
+        # Combine starters from all selected expertise areas
+        starters = []
+        seen_labels = set()
+        
+        for area in expertise_areas:
+            if area in PROFILE_STARTERS:
+                for starter in PROFILE_STARTERS[area]:
+                    # Avoid duplicates by label
+                    if starter.label not in seen_labels:
+                        starters.append(starter)
+                        seen_labels.add(starter.label)
+        
+        # Return up to 6 most relevant starters
+        return starters[:6] if starters else PROFILE_STARTERS["general"]
+    
+    # Fallback to chat_profile (backward compatibility)
     profile = chat_profile or "general"
+    # Map "expert" to "advanced" for consistency
+    if profile == "expert":
+        profile = "advanced"
     return PROFILE_STARTERS.get(profile, PROFILE_STARTERS["general"])
 
 
@@ -680,17 +872,51 @@ async def setup_chat_settings(user: Optional[cl.User] = None):
     If data persistence is enabled and user is authenticated,
     settings are loaded from database (persisted across sessions).
     
+    SMART DEFAULTS:
+    - Expertise areas are auto-detected from ALEM persona (crop type + experience)
+    - User can override by selecting different areas
+    - Selections persist across sessions
+    
     Args:
         user: Authenticated user (from OAuth) for loading persisted settings
     """
     # Load persisted settings if user is authenticated
     persisted = await load_user_settings(user)
     
+    # ─────────────────────────────────────────────────────────────
+    # SMART DEFAULTS: Detect expertise from ALEM persona
+    # ─────────────────────────────────────────────────────────────
+    alem_persona = cl.user_session.get("alem_persona")
+    default_expertise = detect_expertise_from_persona(alem_persona)
+    
+    # Use persisted expertise if available, otherwise use smart defaults
+    expertise_areas = persisted.get("expertise_areas", default_expertise)
+    
+    # Log what we're using
+    logger.info(
+        "chat_settings_expertise",
+        default_expertise=default_expertise,
+        persisted_expertise=persisted.get("expertise_areas"),
+        using_expertise=expertise_areas,
+        persona_crop=alem_persona.get("crop_type") if alem_persona else None,
+    )
+    
     # Map persisted values to initial indices
     language_values = ["Azərbaycanca", "English", "Русский"]
     detail_values = ["Qısa", "Orta", "Ətraflı"]
     unit_values = ["Metrik (ha, kg)", "Yerli (sotka, pud)"]
     currency_values = ["₼ AZN (Manat)", "$ USD (Dollar)", "€ EUR (Euro)"]
+    
+    # Expertise area values with Azerbaijani labels
+    expertise_values = [
+        ("general", "🌾 Ümumi kənd təsərrüfatı"),
+        ("cotton", "🧵 Pambıqçılıq"),
+        ("wheat", "🌾 Taxılçılıq (buğda, arpa)"),
+        ("orchard", "🍎 Meyvəçilik (alma, üzüm)"),
+        ("vegetable", "🥬 Tərəvəzçilik"),
+        ("livestock", "🐄 Heyvandarlıq"),
+        ("advanced", "🔬 Qabaqcıl texnologiyalar"),
+    ]
     
     language_idx = language_values.index(persisted.get("language", "Azərbaycanca")) if persisted.get("language") in language_values else 0
     detail_idx = detail_values.index(persisted.get("detail_level", "Orta")) if persisted.get("detail_level") in detail_values else 1
@@ -699,6 +925,19 @@ async def setup_chat_settings(user: Optional[cl.User] = None):
     
     settings = await cl.ChatSettings(
         [
+            # ─────────────────────────────────────────────────────────────
+            # EXPERTISE AREAS — Multi-select with smart defaults
+            # ─────────────────────────────────────────────────────────────
+            MultiSelect(
+                id="expertise_areas",
+                label="🧠 Ekspertiza sahələri",
+                values=[label for _, label in expertise_values],
+                initial_value=[
+                    label for area_id, label in expertise_values
+                    if area_id in expertise_areas
+                ],
+                description="Hansı sahələrdə məsləhət almaq istəyirsiniz? (Birdən çox seçə bilərsiniz)",
+            ),
             Select(
                 id="language",
                 label=AZ_STRINGS["settings_language"],
@@ -741,7 +980,26 @@ async def setup_chat_settings(user: Optional[cl.User] = None):
             ),
         ]
     ).send()
+    
+    # Store expertise areas in session for starters and prompts
+    cl.user_session.set("chat_settings", {
+        **persisted,
+        "expertise_areas": expertise_areas,
+    })
+    
     return settings
+
+
+# Map expertise labels back to IDs (for processing settings)
+EXPERTISE_LABEL_TO_ID = {
+    "🌾 Ümumi kənd təsərrüfatı": "general",
+    "🧵 Pambıqçılıq": "cotton",
+    "🌾 Taxılçılıq (buğda, arpa)": "wheat",
+    "🍎 Meyvəçilik (alma, üzüm)": "orchard",
+    "🥬 Tərəvəzçilik": "vegetable",
+    "🐄 Heyvandarlıq": "livestock",
+    "🔬 Qabaqcıl texnologiyalar": "advanced",
+}
 
 
 @cl.on_settings_update
@@ -753,30 +1011,75 @@ async def on_settings_update(settings: dict):
     
     If data persistence is enabled, settings are ALSO saved to database
     so they persist across sessions.
+    
+    Special handling for expertise_areas:
+    - Converts labels back to IDs for internal use
+    - Updates system prompt based on selected areas
     """
     user: Optional[cl.User] = cl.user_session.get("user")
+    
+    # ─────────────────────────────────────────────────────────────
+    # PROCESS EXPERTISE AREAS — Convert labels to IDs
+    # ─────────────────────────────────────────────────────────────
+    raw_expertise = settings.get("expertise_areas", [])
+    
+    # Convert labels to IDs
+    expertise_ids = []
+    for label in raw_expertise:
+        if label in EXPERTISE_LABEL_TO_ID:
+            expertise_ids.append(EXPERTISE_LABEL_TO_ID[label])
+        elif label in EXPERTISE_AREAS:  # Already an ID
+            expertise_ids.append(label)
+    
+    # Store normalized settings with IDs
+    normalized_settings = {
+        **settings,
+        "expertise_areas": expertise_ids,
+    }
     
     logger.info(
         "settings_updated",
         session_id=cl.user_session.get("id"),
         user=user.identifier if user else "anonymous",
-        settings=settings,
+        raw_expertise=raw_expertise,
+        expertise_ids=expertise_ids,
+        settings={k: v for k, v in normalized_settings.items() if k != "expertise_areas"},
     )
+    
+    # Update session with normalized settings
+    cl.user_session.set("chat_settings", normalized_settings)
+    
+    # Build combined system prompt based on expertise areas
+    combined_prompt = build_combined_system_prompt(expertise_ids)
+    cl.user_session.set("profile_prompt", combined_prompt)
     
     # Persist settings to database if user is authenticated
     if user:
-        saved = await save_user_settings(user, settings)
+        saved = await save_user_settings(user, normalized_settings)
         if saved:
             logger.info("settings_persisted", user=user.identifier)
     
-    # Acknowledge the change to user
+    # Acknowledge the change to user with expertise summary
     language = settings.get("language", "Azərbaycanca")
-    if language == "English":
-        await cl.Message(content="✅ Settings updated. I'll respond in English now.").send()
-    elif language == "Русский":
-        await cl.Message(content="✅ Настройки обновлены. Теперь я буду отвечать на русском.").send()
+    
+    if expertise_ids:
+        expertise_names = [EXPERTISE_AREAS.get(e, e) for e in expertise_ids]
+        expertise_summary = ", ".join(expertise_names)
     else:
-        await cl.Message(content="✅ Parametrlər yeniləndi.").send()
+        expertise_summary = "Ümumi"
+    
+    if language == "English":
+        await cl.Message(
+            content=f"✅ Settings updated. Expertise areas: {expertise_summary}"
+        ).send()
+    elif language == "Русский":
+        await cl.Message(
+            content=f"✅ Настройки обновлены. Области экспертизы: {expertise_summary}"
+        ).send()
+    else:
+        await cl.Message(
+            content=f"✅ Parametrlər yeniləndi. Ekspertiza sahələri: {expertise_summary}"
+        ).send()
 
 
 # ============================================
@@ -1152,9 +1455,24 @@ async def on_chat_start():
     else:
         logger.debug("no_authenticated_user_skipping_persona")
     
-    # Get selected chat profile (farming persona)
+    # Get selected chat profile (farming persona) — legacy support
     chat_profile = cl.user_session.get("chat_profile") or "general"
-    profile_prompt = PROFILE_PROMPTS.get(chat_profile, "")
+    
+    # ─────────────────────────────────────────────────────────────
+    # SMART PROFILE PROMPT — Use expertise areas if available
+    # ─────────────────────────────────────────────────────────────
+    # Priority: expertise_areas from settings > chat_profile dropdown
+    alem_persona_dict = cl.user_session.get("alem_persona")
+    default_expertise = detect_expertise_from_persona(alem_persona_dict)
+    
+    # Build combined prompt from detected expertise
+    profile_prompt = build_combined_system_prompt(default_expertise)
+    
+    logger.info(
+        "expertise_detected",
+        default_expertise=default_expertise,
+        has_prompt=bool(profile_prompt),
+    )
     
     # Store session info
     cl.user_session.set("user_id", user_id)
@@ -1164,6 +1482,7 @@ async def on_chat_start():
     logger.info(
         "chat_profile_selected",
         profile=chat_profile,
+        expertise=default_expertise,
         user_id=user_id,
         has_custom_prompt=bool(profile_prompt),
     )

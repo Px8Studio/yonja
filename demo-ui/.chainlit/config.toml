@@ -40,7 +40,7 @@ mask_user_env = false
 allow_origins = ["*"]
 
 # Product name shown in UI header
-name = "Yonca AI"
+name = "ALEM 1"
 enable_telemetry = false
 
 [features]
@@ -141,7 +141,7 @@ name = "Yonca AI"
 default_sidebar_state = "open"
 
 # Description of the assistant. This is used for HTML tags and SEO.
-description = "Yonca AI — Sizin ağıllı kənd təsərrüfatı köməkçiniz"
+description = "ALEM 1 — Yonca AI Assistant | Sizin ağıllı kənd təsərrüfatı köməkçiniz"
 
 # Chain of Thought (CoT) display mode. Can be "hidden", "tool_call" or "full".
 cot = "full"

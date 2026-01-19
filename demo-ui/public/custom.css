@@ -57,6 +57,47 @@
  * Messages (Liquid Glass Design)
  * ============================================ */
 
+/* ============================================
+ * Avatars — ALEM 1 & User Profile Display
+ * ============================================ */
+
+/* Enlarge all avatars for better visibility */
+.cl-avatar {
+    width: 56px !important;
+    height: 56px !important;
+    min-width: 56px !important;
+    min-height: 56px !important;
+}
+
+/* ALEM 1 avatar styling */
+.cl-avatar[data-author="ALEM 1"] {
+    border: 2px solid var(--yonca-green-primary);
+    box-shadow: 0 4px 12px rgba(45, 90, 39, 0.2);
+}
+
+/* User avatar styling (from Google OAuth) */
+.cl-avatar[data-author="user"] {
+    border: 2px solid var(--yonca-sky-blue);
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
+}
+
+/* ============================================
+ * Message Container with Avatar
+ * ============================================ */
+.cl-message-container {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+.cl-message-container[data-author="ALEM 1"] .cl-avatar {
+    background: linear-gradient(135deg, #2D5A27 0%, #4CAF50 100%);
+}
+
+.cl-message-container[data-author="user"] .cl-avatar {
+    background: linear-gradient(135deg, var(--yonca-sky-blue) 0%, #1565c0 100%);
+}
+
 /* User messages */
 .cl-message[data-author="user"] {
     background: linear-gradient(135deg, var(--yonca-sky-blue) 0%, #1565c0 100%) !important;
@@ -65,7 +106,7 @@
 }
 
 /* Bot messages — Liquid Glass */
-.cl-message[data-author="Yonca AI"] {
+.cl-message[data-author="ALEM 1"] {
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
@@ -75,7 +116,7 @@
     box-shadow: var(--glass-shadow);
 }
 
-.dark .cl-message[data-author="Yonca AI"] {
+.dark .cl-message[data-author="ALEM 1"] {
     background: var(--glass-bg-dark);
     border: 1px solid var(--glass-border-dark);
     border-left: 4px solid var(--yonca-green-light);
@@ -91,7 +132,7 @@
 }
 
 /* Welcome/Dashboard card — Premium Liquid Glass */
-.cl-message[data-author="Yonca AI"]:first-of-type {
+.cl-message[data-author="ALEM 1"]:first-of-type {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(168, 230, 207, 0.4) 100%);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -100,7 +141,7 @@
     box-shadow: 0 12px 40px rgba(45, 90, 39, 0.12);
 }
 
-.dark .cl-message[data-author="Yonca AI"]:first-of-type {
+.dark .cl-message[data-author="ALEM 1"]:first-of-type {
     background: linear-gradient(135deg, rgba(31, 41, 55, 0.9) 0%, rgba(45, 90, 39, 0.3) 100%);
 }
 
@@ -387,7 +428,7 @@ body {
 
 /* High contrast mode */
 @media (prefers-contrast: high) {
-    .cl-message[data-author="Yonca AI"] {
+    .cl-message[data-author="ALEM 1"] {
         border-left-width: 6px;
     }
     

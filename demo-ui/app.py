@@ -65,6 +65,7 @@ from yonca.observability.banner import (
 from config import settings as demo_settings
 from services.yonca_client import YoncaClient, YoncaClientError
 from data_layer import get_data_layer, load_user_settings, save_user_settings
+from alem_persona import ALEMPersona, PersonaProvisioner
 
 # Import insights dashboard components
 from services.langfuse_insights import (
@@ -573,7 +574,7 @@ if is_oauth_enabled():
 # LOCALIZATION
 # ============================================
 AZ_STRINGS = {
-    "welcome": "🌾 **Yonca AI Köməkçisinə xoş gəlmisiniz!**\n\nMən sizin virtual aqronomam. Əkin, suvarma, gübrələmə və digər kənd təsərrüfatı məsələlərində kömək edə bilərəm.",
+    "welcome": "**ALEM 1 — Yonca AI Köməkçisinə xoş gəlmisiniz!**\n\nMən sizin virtual aqronomam. Əkin, suvarma, gübrələmə və digər kənd təsərrüfatı məsələlərində kömək edə bilərəm.",
     "farm_loaded": "📍 Təsərrüfat məlumatları yükləndi",
     "thinking": "Düşünürəm...",
     "error": "❌ Xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.",
@@ -582,16 +583,17 @@ AZ_STRINGS = {
     "farm_status": "Təsərrüfat vəziyyəti",
     "status_normal": "Normal",
     "status_attention": "Diqqət tələb edir",
-    "weather": "🌤️ Hava proqnozu",
-    "subsidy": "💰 Subsidiya yoxla",
-    "irrigation": "💧 Suvarma vaxtı",
-    "sima_auth": "✓ SİMA ilə doğrulanmışdır",
+    "weather": "🌤️ Hava",
+    "subsidy": "📋 Subsidiya",
+    "irrigation": "💧 Suvarma",
+    "sima_auth": "SİMA inteqrasiyası hazır",
     "quick_actions": "Sürətli əməliyyatlar",
     # Settings strings
     "settings_language": "Dil / Language",
     "settings_notifications": "Bildirişlər",
     "settings_detail_level": "Cavab təfərrüatı",
     "settings_units": "Ölçü vahidləri",
+    "settings_currency": "Valyuta",
 }
 
 
@@ -622,10 +624,12 @@ async def setup_chat_settings(user: Optional[cl.User] = None):
     language_values = ["Azərbaycanca", "English", "Русский"]
     detail_values = ["Qısa", "Orta", "Ətraflı"]
     unit_values = ["Metrik (ha, kg)", "Yerli (sotka, pud)"]
+    currency_values = ["₼ AZN (Manat)", "$ USD (Dollar)", "€ EUR (Euro)"]
     
     language_idx = language_values.index(persisted.get("language", "Azərbaycanca")) if persisted.get("language") in language_values else 0
     detail_idx = detail_values.index(persisted.get("detail_level", "Orta")) if persisted.get("detail_level") in detail_values else 1
     units_idx = unit_values.index(persisted.get("units", "Metrik (ha, kg)")) if persisted.get("units") in unit_values else 0
+    currency_idx = currency_values.index(persisted.get("currency", "₼ AZN (Manat)")) if persisted.get("currency") in currency_values else 0
     
     settings = await cl.ChatSettings(
         [
@@ -635,6 +639,13 @@ async def setup_chat_settings(user: Optional[cl.User] = None):
                 values=language_values,
                 initial_index=language_idx,
                 description="Yonca cavablarının dili",
+            ),
+            Select(
+                id="currency",
+                label=AZ_STRINGS["settings_currency"],
+                values=currency_values,
+                initial_index=currency_idx,
+                description="Qiymətlər və subsidiyalar üçün valyuta",
             ),
             Select(
                 id="detail_level",
@@ -724,34 +735,20 @@ async def send_dashboard_welcome(user: Optional[cl.User] = None):
     else:
         greeting = "Xoş gəlmisiniz! 👋"
     
-    # Build the dashboard message with Liquid Glass card styling
-    # The CSS classes reference styles defined in custom.css
-    dashboard_content = f"""
-## 🌾 Yonca AI — Kənd Təsərrüfatı Köməkçisi
+    # Build compact dashboard message
+    # Avatar is now shown via Chainlit's native avatar system (public/avatars/yonca_ai.svg)
+    dashboard_content = f"""{greeting}
 
-{greeting}
-
----
-
-### 📊 {AZ_STRINGS["farm_status"]}
-
-<div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: linear-gradient(135deg, rgba(45, 90, 39, 0.08) 0%, rgba(168, 230, 207, 0.15) 100%); border-radius: 12px; border-left: 4px solid #2D5A27; margin: 8px 0;">
-    <span style="font-size: 1.5em;">✅</span>
-    <div>
-        <strong style="color: #2D5A27;">{AZ_STRINGS["status_normal"]}</strong>
-        <div style="font-size: 0.85em; color: #666; margin-top: 2px;">Son yoxlama: Bu gün, 09:45</div>
+<div style="display: flex; align-items: center; gap: 16px; padding: 12px 16px; background: linear-gradient(135deg, rgba(45, 90, 39, 0.06) 0%, rgba(168, 230, 207, 0.12) 100%); border-radius: 12px; margin: 8px 0;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="width: 10px; height: 10px; background: #4CAF50; border-radius: 50%; box-shadow: 0 0 6px rgba(76, 175, 80, 0.5);"></span>
+        <span style="color: #2D5A27; font-weight: 500;">{AZ_STRINGS["status_normal"]}</span>
     </div>
+    <span style="color: #999;">•</span>
+    <span style="color: #666; font-size: 0.9em;">✓ {AZ_STRINGS["sima_auth"]}</span>
 </div>
 
-<div style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, rgba(45, 90, 39, 0.1) 0%, rgba(168, 230, 207, 0.2) 100%); border: 1px solid rgba(45, 90, 39, 0.2); border-radius: 999px; padding: 6px 14px; font-size: 0.85em; color: #2D5A27; font-weight: 500; margin-top: 8px;">
-    <span style="color: #2D5A27;">✓</span> SİMA inteqrasiyası üçün hazırlanmışdır
-</div>
-
----
-
-Mən sizin virtual aqronomam. Əkin, suvarma, gübrələmə və digər kənd təsərrüfatı məsələlərində kömək edə bilərəm.
-
-**{AZ_STRINGS["quick_actions"]}** — aşağıdakı düymələrdən birini seçin:
+Mən sizin virtual aqronomam — əkin, suvarma və subsidiya məsələlərində kömək edirəm.
 """
 
     # Create quick action buttons using Chainlit Actions
@@ -776,54 +773,27 @@ Mən sizin virtual aqronomam. Əkin, suvarma, gübrələmə və digər kənd tə
     # Send the dashboard welcome message
     await cl.Message(
         content=dashboard_content,
-        author="Yonca AI",
+        author="ALEM 1",
         actions=actions,
     ).send()
 
 
-@cl.action_callback("weather")
-async def on_weather_action(action: cl.Action):
-    """Handle weather quick action button click."""
-    # Remove the action buttons after click
-    await action.remove()
-    
-    # Simulate user asking about weather
-    await cl.Message(
-        content="Bu günkü hava proqnozu necədir?",
-        author="user",
-    ).send()
-    
-    # Trigger the agent to respond
-    msg = cl.Message(content="Bu günkü hava proqnozu necədir?")
-    await on_message(msg)
-
-
-@cl.action_callback("subsidy")
-async def on_subsidy_action(action: cl.Action):
-    """Handle subsidy check quick action button click."""
-    await action.remove()
-    
-    await cl.Message(
-        content="Hansı subsidiyalardan yararlana bilərəm?",
-        author="user",
-    ).send()
-    
-    msg = cl.Message(content="Hansı subsidiyalardan yararlana bilərəm?")
-    await on_message(msg)
-
-
-@cl.action_callback("irrigation")
-async def on_irrigation_action(action: cl.Action):
-    """Handle irrigation time quick action button click."""
-    await action.remove()
-    
-    await cl.Message(
-        content="Bu gün sahəmi suvarmağı tövsiyə edirsiniz?",
-        author="user",
-    ).send()
-    
-    msg = cl.Message(content="Bu gün sahəmi suvarmağı tövsiyə edirsiniz?")
-    await on_message(msg)
+# ============================================
+# NATIVE CHAINLIT ARCHITECTURE NOTE
+# ============================================
+# ✅ QUICK ACTIONS: Use @cl.set_starters (profile-aware)
+# ✅ NOT: Custom @cl.action_callback (outdated pattern)
+#
+# Why? Starters are:
+# - Profile-aware (cotton specialists see different actions)
+# - Better UX (clear visual affordance)
+# - Chainlit-native (not custom UI code)
+#
+# When user clicks starter → Message sent → @on_message handles it
+# No separate action callbacks needed!
+#
+# See: CHAINLIT-NATIVE-ARCHITECTURE.md for full architecture
+# ============================================
 
 
 # ============================================
@@ -992,7 +962,7 @@ async def transcribe_audio_whisper(audio_data: bytes, mime_type: str) -> str:
 # ============================================
 @cl.on_chat_start
 async def on_chat_start():
-    """Initialize chat session with farm context, user tracking, and dashboard welcome."""
+    """Initialize chat session with farm context, user tracking, ALEM persona, and dashboard welcome."""
     session_id = cl.user_session.get("id")
     
     # Get authenticated user (if OAuth enabled)
@@ -1000,6 +970,41 @@ async def on_chat_start():
     user: Optional[cl.User] = cl.user_session.get("user")
     user_id = user.identifier if user else "anonymous"
     user_email = user.metadata.get("email") if user and user.metadata else None
+    
+    # ─────────────────────────────────────────────────────────────
+    # JIT PERSONA PROVISIONING — Generate synthetic agricultural identity
+    # ─────────────────────────────────────────────────────────────
+    # This is the magic: even though the user logged in with minimal Google claims,
+    # we auto-generate a complete ALEM persona (FIN, region, crops, farm size).
+    # This ensures the demo always has rich, personalized context.
+    alem_persona: Optional[ALEMPersona] = None
+    
+    if user and user.metadata:
+        # Extract OAuth claims from user metadata
+        oauth_claims = {
+            "name": user.metadata.get("name", "Unknown Farmer"),
+            "email": user.metadata.get("email", user_email),
+        }
+        
+        # Provision persona (generates synthetic data if not already present)
+        alem_persona = PersonaProvisioner.provision_from_oauth(
+            user_id=user_id,
+            oauth_claims=oauth_claims,
+            existing_persona=None,  # TODO: Load from database if exists
+        )
+        
+        # Store in session for later use
+        cl.user_session.set("alem_persona", alem_persona.to_dict())
+        
+        logger.info(
+            "alem_persona_provisioned",
+            user_id=user_id,
+            fin_code=alem_persona.fin_code,
+            region=alem_persona.region,
+            crop_type=alem_persona.crop_type,
+        )
+    else:
+        logger.debug("no_authenticated_user_skipping_persona")
     
     # Get selected chat profile (farming persona)
     chat_profile = cl.user_session.get("chat_profile") or "general"
@@ -1097,7 +1102,7 @@ async def on_message(message: cl.Message):
     profile_prompt = cl.user_session.get("profile_prompt", "")
     
     # Create response message for streaming
-    response_msg = cl.Message(content="", author="Yonca AI")
+    response_msg = cl.Message(content="", author="ALEM 1")
     await response_msg.send()
     
     full_response = ""
@@ -1162,15 +1167,33 @@ async def on_message(message: cl.Message):
             }
             
             # Create Langfuse handler for observability
+            alem_persona_dict = cl.user_session.get("alem_persona", {})
+            
+            # Build tags with persona information
+            tags = [
+                "demo-ui",
+                "development",
+                "direct-mode",
+                f"profile:{chat_profile}",
+            ]
+            if alem_persona_dict:
+                tags.extend([
+                    f"fin:{alem_persona_dict.get('fin_code', 'unknown')}",
+                    f"region:{alem_persona_dict.get('region', 'unknown')}",
+                    f"crop:{alem_persona_dict.get('crop_type', 'unknown')}",
+                    f"experience:{alem_persona_dict.get('experience_level', 'unknown')}",
+                ])
+            
             langfuse_handler = create_langfuse_handler(
                 session_id=thread_id,           # Groups all messages in conversation
                 user_id=user_id,                # Attributes costs to user
-                tags=["demo-ui", "development", "direct-mode", f"profile:{chat_profile}"],
+                tags=tags,
                 metadata={
                     "farm_id": farm_id,
                     "user_email": user_email,
                     "source": "chainlit",
                     "chat_profile": chat_profile,
+                    "alem_persona": alem_persona_dict,  # Full persona for analysis
                 },
             )
             

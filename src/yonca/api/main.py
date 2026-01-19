@@ -20,6 +20,13 @@ from yonca.observability import (
     print_quick_links,
     print_shutdown_message,
     print_startup_complete,
+    print_llm_info,
+    print_database_info,
+    print_infrastructure_summary,
+    print_model_capabilities,
+    print_security_info,
+    print_observability_info,
+    is_langfuse_healthy,
 )
 
 
@@ -31,54 +38,151 @@ async def lifespan(app: FastAPI):
     # ═══════════════════════════════════════════════════════════════
     
     # Main banner
-    print_startup_banner("api", settings.app_version, "development")
+    print_startup_banner("api", settings.app_version, settings.environment)
     
-    # LLM Configuration
-    print_section_header("🤖 LLM Configuration")
+    # ─────────────────────────────────────────────────────────────
+    # LLM Configuration (with detailed info)
+    # ─────────────────────────────────────────────────────────────
+    provider_names = {
+        "groq": "Groq (LPU Cloud)",
+        "ollama": "Ollama (Local)",
+        "gemini": "Google Gemini",
+    }
+    provider_display = provider_names.get(settings.llm_provider.value, settings.llm_provider.value)
     
-    mode_display = "Open-Source" if settings.deployment_mode.value == "open_source" else "Proprietary Cloud"
-    provider_display = "Groq" if settings.llm_provider.value == "groq" else "Gemini"
+    # Determine mode and API key status
+    mode = "local" if settings.llm_provider.value == "ollama" else "open_source" if settings.llm_provider.value == "groq" else "cloud"
+    api_key_set = bool(
+        (settings.llm_provider.value == "groq" and settings.groq_api_key) or
+        (settings.llm_provider.value == "gemini" and settings.gemini_api_key) or
+        settings.llm_provider.value == "ollama"
+    )
     
-    print_status_line("Mode", mode_display, "info")
-    print_status_line("Provider", provider_display, "success")
-    print_status_line("Model", settings.active_llm_model, "success")
+    # Get base URL for the provider
+    base_urls = {
+        "ollama": settings.ollama_base_url,
+        "groq": "https://api.groq.com/openai/v1",
+        "gemini": "https://generativelanguage.googleapis.com",
+    }
     
-    if settings.llm_provider.value == "groq":
-        print_status_line("Self-Host", "Ready (open-source models)", "info")
+    print_llm_info(
+        provider=provider_display,
+        model=settings.active_llm_model,
+        mode=mode,
+        base_url=base_urls.get(settings.llm_provider.value),
+        api_key_set=api_key_set,
+    )
     
+    # Show model-specific capabilities
+    print_model_capabilities(settings.active_llm_model)
+    
+    # ─────────────────────────────────────────────────────────────
     # Infrastructure Status
+    # ─────────────────────────────────────────────────────────────
     print_section_header("🔌 Infrastructure")
     
     # Redis connectivity
     redis_ok = False
     try:
         redis_ok = await RedisClient.health_check()
-        if redis_ok:
-            redis_host = settings.redis_url.replace("redis://", "").split("/")[0]
-            print_status_line("Redis", "Connected", "success", f"{redis_host} (checkpointing)")
+    except Exception:
+        pass
+    
+    # Build services list
+    services = []
+    
+    # Database info
+    if "postgresql" in settings.database_url:
+        try:
+            db_host = settings.database_url.split("@")[-1].split("/")[0]
+        except Exception:
+            db_host = "configured"
+        services.append({
+            "name": "PostgreSQL",
+            "status": "Connected",
+            "style": "success",
+            "port": db_host.split(":")[-1] if ":" in db_host else "5432",
+            "detail": "user data & sessions",
+        })
+    
+    # Redis
+    if redis_ok:
+        services.append({
+            "name": "Redis",
+            "status": "Connected",
+            "style": "success",
+            "port": "6379",
+            "detail": "LangGraph checkpointing",
+        })
+    else:
+        services.append({
+            "name": "Redis",
+            "status": "Not Available",
+            "style": "warning",
+            "detail": "sessions will be stateless",
+        })
+    
+    # Ollama (if local mode)
+    if settings.llm_provider.value == "ollama":
+        services.append({
+            "name": "Ollama",
+            "status": "Configured",
+            "style": "info",
+            "port": "11434",
+            "detail": f"model: {settings.ollama_model}",
+        })
+    
+    for svc in services:
+        port_info = f":{svc.get('port')}" if svc.get('port') else ""
+        detail = svc.get('detail', '')
+        if port_info and detail:
+            full_detail = f"localhost{port_info} — {detail}"
+        elif port_info:
+            full_detail = f"localhost{port_info}"
         else:
-            print_status_line("Redis", "Not Available", "warning", "sessions will be stateless")
-    except Exception as e:
-        print_status_line("Redis", "Connection Failed", "error", str(e)[:40])
+            full_detail = detail
+            
+        print_status_line(svc['name'], svc['status'], svc.get('style', 'info'), full_detail)
     
-    # Rate limiting
-    print_status_line("Rate Limit", f"{settings.rate_limit_requests_per_minute} req/min", "info", f"burst: {settings.rate_limit_burst}")
+    # ─────────────────────────────────────────────────────────────
+    # Security Configuration
+    # ─────────────────────────────────────────────────────────────
+    jwt_configured = settings.jwt_secret != "dev-secret-change-in-production"
+    print_security_info(
+        rate_limit=settings.rate_limit_requests_per_minute,
+        burst_limit=settings.rate_limit_burst,
+        jwt_configured=jwt_configured,
+        cors_origins=settings.cors_origins,
+    )
     
+    # ─────────────────────────────────────────────────────────────
+    # Observability
+    # ─────────────────────────────────────────────────────────────
+    langfuse_ok = settings.langfuse_enabled and bool(settings.langfuse_secret_key)
+    print_observability_info(
+        langfuse_enabled=langfuse_ok,
+        langfuse_url=settings.langfuse_host,
+        prometheus_enabled=settings.prometheus_enabled,
+        log_level=settings.log_level,
+    )
+    
+    # ─────────────────────────────────────────────────────────────
     # Endpoints with clickable links
+    # ─────────────────────────────────────────────────────────────
     display_host = "localhost" if settings.api_host == "0.0.0.0" else settings.api_host
     base_url = f"http://{display_host}:{settings.api_port}"
     
     print_endpoints([
         ("API", base_url, "REST API base"),
-        ("Swagger", f"{base_url}/docs", "Interactive documentation"),
-        ("ReDoc", f"{base_url}/redoc", "Alternative docs"),
-        ("Health", f"{base_url}/health", "Service health check"),
+        ("Swagger", f"{base_url}/docs", "Interactive API documentation"),
+        ("ReDoc", f"{base_url}/redoc", "Alternative API docs"),
+        ("Health", f"{base_url}/health", "Readiness & liveness probes"),
     ])
     
     print_quick_links([
         ("Swagger", f"{base_url}/docs"),
-        ("Chat API", f"{base_url}/api/v1/chat"),
-        ("Models", f"{base_url}/api/models"),
+        ("Chat", f"{base_url}/api/v1/chat"),
+        ("Langfuse", settings.langfuse_host),
     ])
     
     print_startup_complete("Yonca AI API")

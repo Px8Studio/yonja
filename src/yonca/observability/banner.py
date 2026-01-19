@@ -277,6 +277,8 @@ def print_llm_info(
     model: str,
     mode: str = "cloud",
     base_url: Optional[str] = None,
+    api_key_set: bool = False,
+    features: Optional[list[str]] = None,
 ) -> None:
     """Print LLM configuration information.
     
@@ -285,26 +287,37 @@ def print_llm_info(
         model: Model identifier
         mode: "cloud", "local", or "hybrid"
         base_url: Optional API base URL
+        api_key_set: Whether API key is configured
+        features: Optional list of model features/capabilities
     """
     print_section_header("🤖 LLM Configuration")
     
-    mode_colors = {
-        "cloud": Colors.BRIGHT_CYAN,
-        "local": Colors.BRIGHT_GREEN,
-        "hybrid": Colors.BRIGHT_MAGENTA,
-    }
     mode_labels = {
         "cloud": "☁️  Cloud API",
-        "local": "🏠 Local (Self-hosted)",
+        "local": "🏠 Self-Hosted",
         "hybrid": "🔄 Hybrid",
+        "open_source": "🌐 Open-Source (via Cloud)",
     }
     
-    print_status_line("Provider", provider, "info")
-    print_status_line("Model", model, "success")
+    print_status_line("Provider", provider, "success")
+    print_status_line("Model", model, "info")
     print_status_line("Mode", mode_labels.get(mode, mode), "info")
     
+    if api_key_set:
+        print_status_line("API Key", "Configured ✓", "success")
+    elif mode == "local":
+        print_status_line("API Key", "Not required (local)", "info")
+    else:
+        print_status_line("API Key", "Missing!", "warning")
+    
     if base_url:
-        print_status_line("Endpoint", base_url, "info", url=base_url)
+        print_status_line("Endpoint", base_url, "info")
+    
+    if features:
+        print()
+        print(_c("  📋 Model Capabilities:", Colors.BRIGHT_WHITE))
+        for feature in features:
+            print(f"     {_c('•', Colors.BRIGHT_GREEN)} {feature}")
 
 
 def print_database_info(
@@ -312,6 +325,8 @@ def print_database_info(
     redis_url: Optional[str] = None,
     postgres_ok: bool = True,
     redis_ok: bool = True,
+    langfuse_url: Optional[str] = None,
+    langfuse_ok: bool = False,
 ) -> None:
     """Print database connection status.
     
@@ -320,6 +335,8 @@ def print_database_info(
         redis_url: Redis connection URL
         postgres_ok: Whether PostgreSQL is connected
         redis_ok: Whether Redis is connected
+        langfuse_url: Langfuse observability URL
+        langfuse_ok: Whether Langfuse is configured
     """
     print_section_header("🗄️  Data Layer")
     
@@ -327,28 +344,147 @@ def print_database_info(
         # Extract host:port from URL, mask password
         try:
             host_part = postgres_url.split("@")[-1].split("/")[0]
+            db_name = postgres_url.split("/")[-1].split("?")[0]
         except Exception:
             host_part = "configured"
+            db_name = "yonca"
         
         print_status_line(
             "PostgreSQL",
             "Connected" if postgres_ok else "Failed",
             "success" if postgres_ok else "error",
-            host_part,
+            f"{host_part}/{db_name}",
         )
     
     if redis_url:
         try:
             host_part = redis_url.replace("redis://", "").split("/")[0]
+            db_num = redis_url.split("/")[-1] if "/" in redis_url else "0"
         except Exception:
             host_part = "configured"
+            db_num = "0"
         
         print_status_line(
             "Redis",
             "Connected" if redis_ok else "Not Available",
             "success" if redis_ok else "warning",
-            host_part + " (checkpointing)" if redis_ok else "sessions stateless",
+            f"{host_part}/db{db_num} (checkpointing)" if redis_ok else "sessions stateless",
         )
+    
+    if langfuse_url:
+        print_status_line(
+            "Langfuse",
+            "Enabled" if langfuse_ok else "Not Configured",
+            "success" if langfuse_ok else "warning",
+            langfuse_url if langfuse_ok else "set LANGFUSE_SECRET_KEY",
+        )
+
+
+def print_infrastructure_summary(
+    services: list[dict],
+) -> None:
+    """Print infrastructure services summary.
+    
+    Args:
+        services: List of service dicts with: name, status, style, port, detail
+    """
+    print_section_header("🐳 Infrastructure Services")
+    
+    for svc in services:
+        port_info = f":{svc.get('port')}" if svc.get('port') else ""
+        detail = svc.get('detail', '')
+        if port_info and detail:
+            full_detail = f"localhost{port_info} — {detail}"
+        elif port_info:
+            full_detail = f"localhost{port_info}"
+        else:
+            full_detail = detail
+            
+        print_status_line(
+            svc['name'],
+            svc['status'],
+            svc.get('style', 'info'),
+            full_detail,
+        )
+
+
+def print_model_capabilities(model_name: str) -> None:
+    """Print model-specific capabilities based on known models."""
+    capabilities = {
+        "meta-llama/llama-4-maverick-17b-128e-instruct": [
+            "🎯 2026 Gold Standard — Single model for ALL tasks",
+            "🌍 Native Azerbaijani language support",
+            "🧮 Advanced reasoning & calculations",
+            "📝 128K context window",
+            "⚡ Enterprise-grade latency via Groq LPU",
+            "🏠 Self-hostable with appropriate hardware",
+        ],
+        "llama-3.3-70b-versatile": [
+            "🌍 Excellent multilingual support",
+            "📝 32K context window",
+            "🎯 Best for Azerbaijani quality",
+        ],
+        "qwen3:4b": [
+            "🏠 Local-first, runs on CPU",
+            "⚡ Fast inference, low latency",
+            "🧮 Good for reasoning tasks",
+            "⚠️  Turkish leakage risk",
+        ],
+        "gemini-2.0-flash-exp": [
+            "☁️  Google Cloud API",
+            "⚡ Very fast inference",
+            "🌍 Good multilingual support",
+            "🔒 Proprietary (data leaves region)",
+        ],
+    }
+    
+    caps = capabilities.get(model_name)
+    if caps:
+        print()
+        print(_c("  📋 Model Capabilities:", Colors.BRIGHT_WHITE))
+        for cap in caps:
+            print(f"     {cap}")
+
+
+def print_security_info(
+    rate_limit: int = 30,
+    burst_limit: int = 50,
+    jwt_configured: bool = False,
+    cors_origins: Optional[list[str]] = None,
+) -> None:
+    """Print security configuration summary."""
+    print_section_header("🔒 Security")
+    
+    print_status_line("Rate Limit", f"{rate_limit} req/min", "info", f"burst: {burst_limit}")
+    print_status_line("JWT Auth", "Configured" if jwt_configured else "Dev Mode", "success" if jwt_configured else "warning")
+    
+    if cors_origins:
+        origins_display = ", ".join(cors_origins[:2])
+        if len(cors_origins) > 2:
+            origins_display += f" +{len(cors_origins) - 2} more"
+        print_status_line("CORS", f"{len(cors_origins)} origins", "info", origins_display)
+
+
+def print_observability_info(
+    langfuse_enabled: bool = False,
+    langfuse_url: str = "http://localhost:3001",
+    prometheus_enabled: bool = False,
+    log_level: str = "INFO",
+) -> None:
+    """Print observability configuration."""
+    print_section_header("📊 Observability")
+    
+    print_status_line(
+        "Langfuse",
+        "Enabled" if langfuse_enabled else "Disabled",
+        "success" if langfuse_enabled else "warning",
+        langfuse_url if langfuse_enabled else "LLM tracing disabled",
+    )
+    
+    if prometheus_enabled:
+        print_status_line("Prometheus", "Enabled", "success", "/metrics endpoint")
+    
+    print_status_line("Log Level", log_level, "info")
 
 
 # ══════════════════════════════════════════════════════════════
@@ -359,15 +495,39 @@ if __name__ == "__main__":
     # Demo all banner styles
     print_startup_banner("api", "1.0.0", "development")
     
+    # LLM Configuration with full details
+    print_llm_info(
+        provider="Groq (LPU Cloud)",
+        model="meta-llama/llama-4-maverick-17b-128e-instruct",
+        mode="open_source",
+        base_url="https://api.groq.com/openai/v1",
+        api_key_set=True,
+    )
+    print_model_capabilities("meta-llama/llama-4-maverick-17b-128e-instruct")
+    
+    # Infrastructure
     print_section_header("🔌 Infrastructure")
-    print_status_line("Docker", "Running", "running", "5 containers")
-    print_status_line("PostgreSQL", "Connected", "success", "localhost:5433")
-    print_status_line("Redis", "Connected", "success", "localhost:6379")
-    print_status_line("Ollama", "Ready", "success", "qwen3:4b loaded")
-    print_status_line("Langfuse", "Connected", "success", "localhost:3001")
+    print_status_line("PostgreSQL", "Connected", "success", "localhost:5433/yonca — user data & sessions")
+    print_status_line("Redis", "Connected", "success", "localhost:6379/db0 — LangGraph checkpointing")
+    print_status_line("Ollama", "Ready", "success", "localhost:11434 — model: qwen3:4b")
     
-    print_llm_info("Groq", "llama-4-maverick-17b-128e-instruct", "cloud")
+    # Security
+    print_security_info(
+        rate_limit=30,
+        burst_limit=50,
+        jwt_configured=False,
+        cors_origins=["http://localhost:3000", "http://localhost:8501"],
+    )
     
+    # Observability
+    print_observability_info(
+        langfuse_enabled=True,
+        langfuse_url="http://localhost:3001",
+        prometheus_enabled=True,
+        log_level="INFO",
+    )
+    
+    # Endpoints
     print_endpoints([
         ("API", "http://localhost:8000", "REST endpoints"),
         ("Swagger", "http://localhost:8000/docs", "Interactive API docs"),

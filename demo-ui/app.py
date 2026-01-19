@@ -55,6 +55,8 @@ from yonca.observability.banner import (
     print_endpoints,
     print_quick_links,
     print_startup_complete,
+    print_llm_info,
+    print_model_capabilities,
 )
 
 # Import demo-ui config and API client
@@ -69,34 +71,84 @@ logger = structlog.get_logger()
 # ============================================
 print_startup_banner("demo-ui", "1.0.0", "development")
 
-print_section_header("⚙️  Configuration")
-print_status_line("Mode", demo_settings.integration_mode.upper(), "info")
-print_status_line("LLM Provider", demo_settings.llm_provider, "success")
-print_status_line("Model", demo_settings.ollama_model, "success")
+# ─────────────────────────────────────────────────────────────
+# Integration Mode
+# ─────────────────────────────────────────────────────────────
+print_section_header("⚙️  Integration Mode")
 
-print_section_header("🔌 Connections")
+mode_details = {
+    "direct": ("🔗 Direct LangGraph", "Agent runs in-process, best for development"),
+    "api": ("🌐 API Bridge", "Calls FastAPI backend, mirrors production"),
+}
+mode_name, mode_desc = mode_details.get(demo_settings.integration_mode, ("Unknown", ""))
+print_status_line("Mode", mode_name, "success")
+print_status_line("Description", mode_desc, "info")
+
+# ─────────────────────────────────────────────────────────────
+# LLM Configuration
+# ─────────────────────────────────────────────────────────────
+if demo_settings.integration_mode == "direct":
+    # Direct mode uses Ollama or configured provider
+    provider_map = {
+        "ollama": ("Ollama (Local)", demo_settings.ollama_base_url),
+        "groq": ("Groq (Cloud)", "https://api.groq.com/openai/v1"),
+    }
+    provider_name, base_url = provider_map.get(
+        demo_settings.llm_provider, 
+        (demo_settings.llm_provider, "")
+    )
+    
+    print_llm_info(
+        provider=provider_name,
+        model=demo_settings.ollama_model,
+        mode="local" if demo_settings.llm_provider == "ollama" else "open_source",
+        base_url=base_url,
+        api_key_set=demo_settings.llm_provider == "ollama",  # Ollama doesn't need key
+    )
+    print_model_capabilities(demo_settings.ollama_model)
+else:
+    print_section_header("🤖 LLM Configuration")
+    print_status_line("Provider", "Via API Bridge", "info")
+    print_status_line("Endpoint", demo_settings.yonca_api_url, "info")
+
+# ─────────────────────────────────────────────────────────────
+# Data Layer
+# ─────────────────────────────────────────────────────────────
+print_section_header("🗄️  Data Layer")
+
 redis_host = demo_settings.redis_url.replace("redis://", "").split("/")[0] if demo_settings.redis_url else "not configured"
-print_status_line("Redis", redis_host, "info", "checkpointing")
+redis_db = demo_settings.redis_url.split("/")[-1] if "/" in demo_settings.redis_url else "0"
+print_status_line("Redis", f"localhost:{redis_host.split(':')[-1]}/db{redis_db}", "success", "LangGraph checkpointing")
 
 if demo_settings.data_persistence_enabled:
     db_host = demo_settings.effective_database_url.split("@")[-1].split("/")[0] if "@" in demo_settings.effective_database_url else "local"
-    print_status_line("PostgreSQL", db_host, "success", "data persistence")
+    db_name = demo_settings.effective_database_url.split("/")[-1].split("?")[0] if "/" in demo_settings.effective_database_url else "yonca"
+    print_status_line("PostgreSQL", f"{db_host}/{db_name}", "success", "users, threads, settings")
 else:
     print_status_line("PostgreSQL", "Not configured", "warning", "sessions not persisted")
 
-if demo_settings.use_api_bridge:
-    print_status_line("API Bridge", demo_settings.yonca_api_url, "info", url=demo_settings.yonca_api_url)
-else:
-    print_status_line("API Bridge", "Disabled (direct mode)", "skip")
+# ─────────────────────────────────────────────────────────────
+# Features
+# ─────────────────────────────────────────────────────────────
+print_section_header("✨ Features")
+print_status_line("OAuth", "Enabled" if demo_settings.oauth_enabled else "Disabled", "success" if demo_settings.oauth_enabled else "info", "Google login" if demo_settings.oauth_enabled else "anonymous mode")
+print_status_line("Farm Selector", "Enabled" if demo_settings.enable_farm_selector else "Disabled", "success" if demo_settings.enable_farm_selector else "info")
+print_status_line("Thinking Steps", "Enabled" if demo_settings.enable_thinking_steps else "Disabled", "success" if demo_settings.enable_thinking_steps else "info", "shows agent reasoning")
+print_status_line("Feedback", "Enabled" if demo_settings.enable_feedback else "Disabled", "success" if demo_settings.enable_feedback else "info", "👍/👎 buttons")
 
+# ─────────────────────────────────────────────────────────────
+# Endpoints
+# ─────────────────────────────────────────────────────────────
 print_endpoints([
-    ("Chat UI", "http://localhost:8501", "Interactive demo"),
+    ("Chat UI", "http://localhost:8501", "Interactive Chainlit demo"),
+    ("Swagger", "http://localhost:8000/docs", "API documentation"),
+    ("Langfuse", "http://localhost:3001", "LLM tracing & analytics"),
 ])
 
 print_quick_links([
     ("Chat", "http://localhost:8501"),
-    ("Swagger", "http://localhost:8000/docs"),
-    ("Langfuse", "http://localhost:3001"),
+    ("API", "http://localhost:8000/docs"),
+    ("Traces", "http://localhost:3001"),
 ])
 
 print_startup_complete("Yonca Demo UI")

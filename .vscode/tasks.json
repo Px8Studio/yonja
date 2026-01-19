@@ -270,8 +270,8 @@
         // ════════════════════════════════════════════════════════════════════
         {
             "label": "Yonca AI: 🚀 Start All",
-            "detail": "Docker → API + UI → Open Swagger & Chat",
-            "dependsOn": ["Yonca AI: 🐳 Docker Start", "Yonca AI: 🚀 Start Apps", "Yonca AI: 🌐 Open All UIs"],
+            "detail": "Stop existing → Docker → API + UI → Open Swagger & Chat",
+            "dependsOn": ["Yonca AI: 🛑 Stop All", "Yonca AI: 🐳 Docker Start", "Yonca AI: 🚀 Start Apps", "Yonca AI: 🌐 Open All UIs"],
             "dependsOrder": "sequence",
             "problemMatcher": []
         },

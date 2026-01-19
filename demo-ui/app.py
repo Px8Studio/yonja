@@ -515,50 +515,20 @@ Sən çoxsahəli kənd təsərrüfatı ekspertisən. Aşağıdakı sahələrdə 
     return combined
 
 
-@cl.set_chat_profiles
-async def chat_profiles(current_user: cl.User = None):
-    """Define available chat profiles (farming personas).
-    
-    NOTE: These are kept for backward compatibility but expertise
-    selection now happens via Chat Settings multi-select.
-    """
-    return [
-        cl.ChatProfile(
-            name="general",
-            markdown_description="**Ümumi kənd təsərrüfatı məsələləri** — hava, suvarma, subsidiyalar və s.",
-            icon="/public/avatars/general.svg",
-            default=True,
-            starters=PROFILE_STARTERS["general"],
-        ),
-        cl.ChatProfile(
-            name="cotton",
-            markdown_description="**Pambıqçılıq üzrə ekspert** — əkin, suvarma, zərərvericilər, gübrələmə",
-            icon="/public/avatars/cotton.svg",
-            starters=PROFILE_STARTERS["cotton"],
-        ),
-        cl.ChatProfile(
-            name="wheat",
-            markdown_description="**Taxılçılıq üzrə ekspert** — buğda, arpa, don zədəsi, alaq otları",
-            icon="/public/avatars/wheat.svg",
-            starters=PROFILE_STARTERS["wheat"],
-        ),
-        cl.ChatProfile(
-            name="expert",
-            markdown_description="**Ekspert rejimi** — texniki analiz, torpaq tədqiqatı, ROI hesablaması",
-            icon="/public/avatars/expert.svg",
-            starters=PROFILE_STARTERS["advanced"],
-        ),
-    ]
-
+# ============================================
+# STARTERS (Context-aware conversation prompts)
+# ============================================
+# Starters are displayed based on expertise areas selected in Chat Settings.
+# No separate profile dropdown - expertise is managed in one place only.
 
 @cl.set_starters
-async def set_starters(current_user: cl.User = None, chat_profile: str = None):
+async def set_starters(current_user: cl.User = None):
     """Return starters based on expertise areas from settings.
     
     Combines starters from all selected expertise areas.
-    Falls back to chat_profile if no settings found.
+    Defaults to 'general' if no expertise selected.
     """
-    # Try to get expertise areas from user session settings
+    # Get expertise areas from user session settings
     settings = cl.user_session.get("chat_settings", {})
     expertise_areas = settings.get("expertise_areas", [])
     
@@ -578,12 +548,8 @@ async def set_starters(current_user: cl.User = None, chat_profile: str = None):
         # Return up to 6 most relevant starters
         return starters[:6] if starters else PROFILE_STARTERS["general"]
     
-    # Fallback to chat_profile (backward compatibility)
-    profile = chat_profile or "general"
-    # Map "expert" to "advanced" for consistency
-    if profile == "expert":
-        profile = "advanced"
-    return PROFILE_STARTERS.get(profile, PROFILE_STARTERS["general"])
+    # Default to general agriculture starters
+    return PROFILE_STARTERS["general"]
 
 
 # ============================================
@@ -1455,13 +1421,9 @@ async def on_chat_start():
     else:
         logger.debug("no_authenticated_user_skipping_persona")
     
-    # Get selected chat profile (farming persona) — legacy support
-    chat_profile = cl.user_session.get("chat_profile") or "general"
-    
     # ─────────────────────────────────────────────────────────────
-    # SMART PROFILE PROMPT — Use expertise areas if available
+    # SMART EXPERTISE DETECTION — Auto-detect from ALEM persona
     # ─────────────────────────────────────────────────────────────
-    # Priority: expertise_areas from settings > chat_profile dropdown
     alem_persona_dict = cl.user_session.get("alem_persona")
     default_expertise = detect_expertise_from_persona(alem_persona_dict)
     
@@ -1478,10 +1440,10 @@ async def on_chat_start():
     cl.user_session.set("user_id", user_id)
     cl.user_session.set("user_email", user_email)
     cl.user_session.set("profile_prompt", profile_prompt)  # For system prompt enhancement
+    cl.user_session.set("expertise_areas", default_expertise)  # For on_message handler
     
     logger.info(
-        "chat_profile_selected",
-        profile=chat_profile,
+        "expertise_configured",
         expertise=default_expertise,
         user_id=user_id,
         has_custom_prompt=bool(profile_prompt),
@@ -1562,8 +1524,8 @@ async def on_message(message: cl.Message):
     user_id = cl.user_session.get("user_id", "anonymous")
     user_email = cl.user_session.get("user_email")
     
-    # Get chat profile for specialized responses
-    chat_profile = cl.user_session.get("chat_profile") or "general"
+    # Get expertise-based profile prompt for specialized responses
+    expertise_areas = cl.user_session.get("expertise_areas", ["general"])
     profile_prompt = cl.user_session.get("profile_prompt", "")
     
     # Create response message for streaming
@@ -1639,7 +1601,7 @@ async def on_message(message: cl.Message):
                 "demo-ui",
                 "development",
                 "direct-mode",
-                f"profile:{chat_profile}",
+                f"expertise:{','.join(expertise_areas)}",
             ]
             if alem_persona_dict:
                 tags.extend([
@@ -1657,7 +1619,7 @@ async def on_message(message: cl.Message):
                     "farm_id": farm_id,
                     "user_email": user_email,
                     "source": "chainlit",
-                    "chat_profile": chat_profile,
+                    "expertise_areas": expertise_areas,
                     "alem_persona": alem_persona_dict,  # Full persona for analysis
                 },
             )

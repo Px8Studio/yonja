@@ -31,12 +31,6 @@ faker = "^22.0.0"
 jinja2 = "^3.1.0"
 structlog = "^24.1.0"
 protobuf = ">=6.31.1,<7.0.0"
-# Optional: Gemini support (install with: poetry install --extras gemini)
-google-generativeai = {version = ">=0.8.0,<0.9.0", optional = true}
-
-[tool.poetry.extras]
-# Optional cloud providers (install only if needed)
-gemini = ["google-generativeai"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
@@ -63,7 +57,7 @@ asyncio_mode = "auto"
 markers = [
     "integration: Integration tests requiring external services",
     "ollama: Tests requiring local Ollama server",
-    "cloud: Tests requiring cloud API keys (Groq, Gemini)",
+    "cloud: Tests requiring cloud API keys (Groq)",
 ]
 
 [tool.mypy]

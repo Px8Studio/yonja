@@ -72,9 +72,9 @@ async def init_chainlit_data_layer():
         )
         
         # Initialize Chainlit data layer
+        # Note: Newer Chainlit versions expect only conninfo string, not engine
         data_layer = SQLAlchemyDataLayer(
-            engine=engine,
-            async_session_maker=async_session_maker,
+            conninfo=db_url,
         )
         
         # Set as global data layer
@@ -529,7 +529,12 @@ async def set_starters(current_user: cl.User = None):
     Defaults to 'general' if no expertise selected.
     """
     # Get expertise areas from user session settings
-    settings = cl.user_session.get("chat_settings", {})
+    # Use try-except to handle context not available yet
+    try:
+        settings = cl.user_session.get("chat_settings", {})
+    except Exception:
+        # Context not available yet, use empty settings
+        settings = {}
     expertise_areas = settings.get("expertise_areas", [])
     
     if expertise_areas:
@@ -1047,46 +1052,6 @@ async def on_settings_update(settings: dict):
             content=f"✅ Parametrlər yeniləndi. Ekspertiza sahələri: {expertise_summary}"
         ).send()
 
-
-# ============================================
-# ALEM PERSONA SIDEBAR DISPLAY
-# ============================================
-async def render_persona_sidebar(alem_persona: ALEMPersona):
-    """Display ALEM persona in sidebar as verified agricultural profile.
-    
-    Shows the farmer's synthetic identity (FIN, region, crops) to demonstrate
-    how the system will work with real mygov ID integration.
-    """
-    persona_dict = alem_persona.to_dict()
-    
-    # Create compact persona card for sidebar
-    persona_display = f"""### 🎭 ALEM | Təsdiqlənmiş Profil
-
-**{persona_dict['full_name']}**
-
-📋 FIN: `{persona_dict['fin_code']}`  
-📍 Region: **{persona_dict['region']}**  
-🌾 Əkin: **{persona_dict['crop_type']}**  
-📏 Sahə: **{persona_dict['total_area_ha']:.1f} ha**
-
-<div style="padding: 8px; background: rgba(76, 175, 80, 0.1); border-radius: 6px; margin-top: 8px;">
-    <span style="color: #4CAF50; font-size: 0.9em;">✓ EKTİS Verified</span>
-</div>
-"""
-    
-    # Send as a sidebar element
-    await cl.Message(
-        content=persona_display,
-        author="System",
-    ).send()
-    
-    logger.info(
-        "persona_sidebar_displayed",
-        fin_code=persona_dict['fin_code'],
-        region=persona_dict['region'],
-    )
-
-
 # ============================================
 # DASHBOARD WELCOME (Agricultural Command Center)
 # ============================================
@@ -1346,6 +1311,20 @@ async def on_chat_start():
     user_email = user.metadata.get("email") if user and user.metadata else None
     
     # ─────────────────────────────────────────────────────────────
+    # ENSURE USER IS PERSISTED TO DB (CRITICAL!)
+    # ─────────────────────────────────────────────────────────────
+    # This MUST happen before creating personas or any related records
+    # to avoid foreign key constraint violations
+    if user:
+        from data_layer import ensure_user_persisted
+        user_persisted = await ensure_user_persisted(user)
+        if not user_persisted:
+            logger.warning(
+                "user_not_persisted_continuing_anyway",
+                user_id=user_id,
+            )
+    
+    # ─────────────────────────────────────────────────────────────
     # JIT PERSONA PROVISIONING — Generate synthetic agricultural identity
     # ─────────────────────────────────────────────────────────────
     # This is the magic: even though the user logged in with minimal Google claims,
@@ -1405,11 +1384,9 @@ async def on_chat_start():
                 region=alem_persona.region,
             )
         
-        # Store in session for later use
+        # Store in session for later use (context for expertise detection + prompts)
+        # NOTE: NOT displayed in UI - farm context influences responses implicitly
         cl.user_session.set("alem_persona", alem_persona.to_dict())
-        
-        # Display persona in sidebar
-        await render_persona_sidebar(alem_persona)
         
         logger.info(
             "alem_persona_provisioned",

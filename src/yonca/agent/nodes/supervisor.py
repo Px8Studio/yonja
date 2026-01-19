@@ -66,10 +66,10 @@ INTENT_TO_NODE = {
     UserIntent.PLANTING: "agronomist",
     UserIntent.CROP_ROTATION: "agronomist",
     UserIntent.WEATHER: "weather",
-    UserIntent.GREETING: "greeting_handler",
+    UserIntent.GREETING: "end",  # Handled directly in supervisor_node
     UserIntent.GENERAL_ADVICE: "agronomist",
-    UserIntent.OFF_TOPIC: "off_topic_handler",
-    UserIntent.CLARIFICATION: "clarification_handler",
+    UserIntent.OFF_TOPIC: "end",  # Handled directly in supervisor_node
+    UserIntent.CLARIFICATION: "end",  # Needs clarification, ask user to be more specific
 }
 
 INTENT_REQUIRES_CONTEXT = {
@@ -220,6 +220,25 @@ async def supervisor_node(state: AgentState) -> dict[str, Any]:
             "current_response": OFF_TOPIC_RESPONSE,
             "nodes_visited": nodes_visited,
             "messages": [add_assistant_message(state, OFF_TOPIC_RESPONSE, "supervisor", intent)],
+        }
+    
+    if intent == UserIntent.CLARIFICATION:
+        clarification_response = (
+            "Zəhmət olmasa daha konkret ola bilərsinizmi? "
+            "Məsələn, hansı məhsul haqqında soruşursunuz və ya hansı mövzuda məlumat lazımdır?"
+        )
+        return {
+            "routing": RoutingDecision(
+                target_node="end",
+                intent=intent,
+                confidence=confidence,
+                reasoning=reasoning,
+            ),
+            "intent": intent,
+            "intent_confidence": confidence,
+            "current_response": clarification_response,
+            "nodes_visited": nodes_visited,
+            "messages": [add_assistant_message(state, clarification_response, "supervisor", intent)],
         }
     
     # Route to specialist

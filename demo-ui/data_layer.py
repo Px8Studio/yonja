@@ -180,6 +180,59 @@ class YoncaDataLayer(SQLAlchemyDataLayer):
 
 
 # ============================================
+# USER PROVISIONING HELPERS
+# ============================================
+
+async def ensure_user_persisted(user: cl.User) -> bool:
+    """Ensure user from OAuth is persisted to database.
+    
+    Called after OAuth login to ensure the Chainlit user exists in DB.
+    This is CRITICAL before creating related records (personas, threads, etc)
+    to avoid foreign key constraint violations.
+    
+    Args:
+        user: Authenticated Chainlit user from OAuth
+        
+    Returns:
+        True if user exists or was created successfully
+    """
+    if not user:
+        logger.warning("ensure_user_persisted_no_user")
+        return False
+    
+    data_layer = get_data_layer()
+    if not data_layer:
+        logger.warning("ensure_user_persisted_no_datalayer")
+        return False
+    
+    try:
+        # Check if user exists
+        persisted_user = await data_layer.get_user(user.identifier)
+        
+        if persisted_user:
+            logger.debug("user_already_exists", identifier=user.identifier)
+            return True
+        
+        # Create user if not exists - CRITICAL for foreign key constraints
+        created_user = await data_layer.create_user(user)
+        
+        if created_user:
+            logger.info(
+                "user_created_successfully",
+                identifier=user.identifier,
+                has_metadata=bool(user.metadata),
+            )
+            return True
+        else:
+            logger.error("user_creation_returned_none", identifier=user.identifier)
+            return False
+    
+    except Exception as e:
+        logger.error("ensure_user_error", identifier=user.identifier, error=str(e))
+        return False
+
+
+# ============================================
 # DATA LAYER FACTORY
 # ============================================
 

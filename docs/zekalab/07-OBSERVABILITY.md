@@ -903,7 +903,7 @@ receivers:
   
   - name: 'medium-email'
     email_configs:
-      - to: 'yonca-ops@zekalab.az'
+      - to: 'contact@zekalab.info'
   
   - name: 'default'
     slack_configs:

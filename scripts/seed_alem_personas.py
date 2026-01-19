@@ -17,6 +17,9 @@ Usage:
     
     Or with database URL:
     DATABASE_URL="postgresql://..." python scripts/seed_alem_personas.py
+    
+    To persist to database:
+    python scripts/seed_alem_personas.py --to-db
 
 The script can also be run from Chainlit directly:
     - Go to demo-ui/
@@ -25,13 +28,24 @@ The script can also be run from Chainlit directly:
 
 import sys
 import json
+import asyncio
 from pathlib import Path
+import os
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root / "demo-ui"))
+sys.path.insert(0, str(project_root / "src"))
 
 from alem_persona import PersonaProvisioner
+
+# Database persistence (optional)
+DB_AVAILABLE = False
+try:
+    from alem_persona_db import save_alem_persona_to_db
+    DB_AVAILABLE = True
+except ImportError:
+    pass
 
 # ============================================
 # Gold Standard Scenarios for Video Demos
@@ -46,15 +60,23 @@ DEMO_SCENARIOS = [
 ]
 
 
-def seed_all_personas():
+def seed_all_personas(persist_to_db: bool = False):
     """Generate and print all 5 demo personas.
     
     These are intended for use in video calls where you show how ALEM
     provides different advice based on the farmer's profile.
+    
+    Args:
+        persist_to_db: If True, save personas to database
     """
     print("\n" + "=" * 70)
     print("🌾 ALEM DEMO PERSONAS — Gold Standard Scenarios")
     print("=" * 70 + "\n")
+    
+    if persist_to_db and not DB_AVAILABLE:
+        print("⚠️  Database persistence not available. Install dependencies first.")
+        print("    Run: pip install -r requirements.txt")
+        persist_to_db = False
     
     personas_data = []
     
@@ -73,6 +95,24 @@ def seed_all_personas():
             print(f"📞 Phone: {persona.phone}")
             print(f"🌍 Sahə: {persona.total_area_ha} ha")
             
+            # Save to database if requested
+            if persist_to_db:
+                try:
+                    # Generate a mock Chainlit user ID
+                    import uuid
+                    chainlit_user_id = str(uuid.uuid4())
+                    
+                    asyncio.run(
+                        save_alem_persona_to_db(
+                            alem_persona=persona_dict,
+                            chainlit_user_id=chainlit_user_id,
+                            email=persona.email,
+                        )
+                    )
+                    print(f"✅ Saved to database: {persona.email}")
+                except Exception as e:
+                    print(f"❌ Database save failed: {e}")
+            
         except Exception as e:
             print(f"❌ Error generating {scenario}: {e}")
             continue
@@ -85,6 +125,8 @@ def seed_all_personas():
     print("\n" + "=" * 70)
     print(f"✅ Seeded {len(personas_data)} personas successfully!")
     print(f"📁 Saved to: {output_file}")
+    if persist_to_db:
+        print(f"💾 Persisted to database: alem_personas table")
     print("=" * 70)
     
     # Print usage instructions
@@ -183,6 +225,11 @@ if __name__ == "__main__":
         type=str,
         help="Generate a persona for a specific user name"
     )
+    parser.add_argument(
+        "--to-db",
+        action="store_true",
+        help="Persist personas to database (requires DATABASE_URL)"
+    )
     
     args = parser.parse_args()
     
@@ -191,4 +238,4 @@ if __name__ == "__main__":
     elif args.compare:
         print_persona_comparison()
     else:
-        seed_all_personas()
+        seed_all_personas(persist_to_db=args.to_db)

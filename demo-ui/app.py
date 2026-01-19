@@ -121,6 +121,11 @@ from config import settings as demo_settings
 from services.yonca_client import YoncaClient, YoncaClientError
 from data_layer import get_data_layer, load_user_settings, save_user_settings
 from alem_persona import ALEMPersona, PersonaProvisioner
+from alem_persona_db import (
+    load_alem_persona_from_db,
+    save_alem_persona_to_db,
+    update_persona_login_time,
+)
 
 # Import insights dashboard components
 from services.langfuse_insights import (
@@ -775,6 +780,45 @@ async def on_settings_update(settings: dict):
 
 
 # ============================================
+# ALEM PERSONA SIDEBAR DISPLAY
+# ============================================
+async def render_persona_sidebar(alem_persona: ALEMPersona):
+    """Display ALEM persona in sidebar as verified agricultural profile.
+    
+    Shows the farmer's synthetic identity (FIN, region, crops) to demonstrate
+    how the system will work with real mygov ID integration.
+    """
+    persona_dict = alem_persona.to_dict()
+    
+    # Create compact persona card for sidebar
+    persona_display = f"""### 🎭 ALEM | Təsdiqlənmiş Profil
+
+**{persona_dict['full_name']}**
+
+📋 FIN: `{persona_dict['fin_code']}`  
+📍 Region: **{persona_dict['region']}**  
+🌾 Əkin: **{persona_dict['crop_type']}**  
+📏 Sahə: **{persona_dict['total_area_ha']:.1f} ha**
+
+<div style="padding: 8px; background: rgba(76, 175, 80, 0.1); border-radius: 6px; margin-top: 8px;">
+    <span style="color: #4CAF50; font-size: 0.9em;">✓ EKTİS Verified</span>
+</div>
+"""
+    
+    # Send as a sidebar element
+    await cl.Message(
+        content=persona_display,
+        author="System",
+    ).send()
+    
+    logger.info(
+        "persona_sidebar_displayed",
+        fin_code=persona_dict['fin_code'],
+        region=persona_dict['region'],
+    )
+
+
+# ============================================
 # DASHBOARD WELCOME (Agricultural Command Center)
 # ============================================
 # BRANDING NOTE: Use "Yonca" or "Yonca AI" in user-facing content.
@@ -1036,8 +1080,8 @@ async def on_chat_start():
     # JIT PERSONA PROVISIONING — Generate synthetic agricultural identity
     # ─────────────────────────────────────────────────────────────
     # This is the magic: even though the user logged in with minimal Google claims,
-    # we auto-generate a complete ALEM persona (FIN, region, crops, farm size).
-    # This ensures the demo always has rich, personalized context.
+    # we first try to load an existing persona from DB, then auto-generate if missing.
+    # This ensures the demo always has rich, personalized context that persists.
     alem_persona: Optional[ALEMPersona] = None
     
     if user and user.metadata:
@@ -1047,15 +1091,56 @@ async def on_chat_start():
             "email": user.metadata.get("email", user_email),
         }
         
-        # Provision persona (generates synthetic data if not already present)
-        alem_persona = PersonaProvisioner.provision_from_oauth(
-            user_id=user_id,
-            oauth_claims=oauth_claims,
-            existing_persona=None,  # TODO: Load from database if exists
-        )
+        # Try to load existing persona from database
+        existing_persona_dict = await load_alem_persona_from_db(email=user_email)
+        
+        if existing_persona_dict:
+            # Persona exists - reconstruct ALEMPersona object
+            alem_persona = ALEMPersona(
+                user_id=user_id,
+                full_name=existing_persona_dict['full_name'],
+                email=existing_persona_dict['email'],
+                fin_code=existing_persona_dict['fin_code'],
+                phone=existing_persona_dict['phone'],
+                region=existing_persona_dict['region'],
+                crop_type=existing_persona_dict['crop_type'],
+                total_area_ha=existing_persona_dict['total_area_ha'],
+                experience_level=existing_persona_dict['experience_level'],
+                ektis_verified=existing_persona_dict['ektis_verified'],
+            )
+            # Update last login time
+            await update_persona_login_time(email=user_email)
+            logger.info(
+                "persona_loaded_from_db",
+                user_id=user_id,
+                fin_code=alem_persona.fin_code,
+                region=alem_persona.region,
+            )
+        else:
+            # No existing persona - generate new one
+            alem_persona = PersonaProvisioner.provision_from_oauth(
+                user_id=user_id,
+                oauth_claims=oauth_claims,
+                existing_persona=None,
+            )
+            # Save to database for next time
+            await save_alem_persona_to_db(
+                alem_persona=alem_persona.to_dict(),
+                chainlit_user_id=user_id,
+                email=user_email,
+            )
+            logger.info(
+                "persona_generated_and_saved",
+                user_id=user_id,
+                fin_code=alem_persona.fin_code,
+                region=alem_persona.region,
+            )
         
         # Store in session for later use
         cl.user_session.set("alem_persona", alem_persona.to_dict())
+        
+        # Display persona in sidebar
+        await render_persona_sidebar(alem_persona)
         
         logger.info(
             "alem_persona_provisioned",

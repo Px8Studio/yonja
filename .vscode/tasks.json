@@ -118,7 +118,7 @@
             "dependsOn": ["🌾 Yonca AI: 🧹 Clear Cache"],
             "type": "shell",
             "command": "${workspaceFolder}\\.venv\\Scripts\\chainlit.exe",
-            "args": ["run", "app.py", "-w", "--port", "8501"],
+            "args": ["run", "app.py", "-w", "--port", "8501", "--headless"],
             "options": {
                 "cwd": "${workspaceFolder}/demo-ui",
                 "env": {
@@ -318,12 +318,12 @@
         },
         {
             "label": "🌾 Yonca AI: 🌐 Open All UIs",
-            "detail": "Wait for startup then open Swagger + Chat UI + Langfuse",
+            "detail": "Wait for startup then open Swagger → Langfuse → Chat UI",
             "type": "shell",
             "command": "powershell",
             "args": [
                 "-Command",
-                "Write-Host '⏳ Waiting for services to start...' -ForegroundColor Cyan; Start-Sleep -Seconds 8; Start-Process 'http://localhost:8000/docs'; Start-Process 'http://localhost:8501'; Start-Process 'http://localhost:3001'; Write-Host '✅ Swagger + Chat UI + Langfuse opened' -ForegroundColor Green"
+                "Write-Host '⏳ Waiting for services to start...' -ForegroundColor Cyan; Start-Sleep -Seconds 8; Start-Process 'http://localhost:8000/docs'; Start-Process 'http://localhost:3001'; Start-Process 'http://localhost:8501'; Write-Host '✅ Swagger → Langfuse → Chat UI opened' -ForegroundColor Green"
             ],
             "problemMatcher": [],
             "presentation": { "reveal": "always", "panel": "shared" }

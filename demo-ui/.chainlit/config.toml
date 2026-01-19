@@ -117,7 +117,7 @@ reaction_on_message_received = false
 [UI]
 # Name of the assistant shown in chat messages.
 # NOTE: Do NOT use "Sidecar" — that's internal architecture terminology.
-name = "Yonca"
+name = "Yonca AI"
 
 # default_theme = "dark"
 

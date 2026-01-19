@@ -8,7 +8,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry]
 name = "yonca"
 version = "0.1.0"
-description = "AI Farming Assistant for Azerbaijani Farmers"
+description = "Yonca AI — AI Farming Assistant for Azerbaijani Farmers"
 authors = ["Rashad Jafarov <rashad.jafaroff@gmail.com>"]
 readme = "README.md"
 packages = [{include = "yonca", from = "src"}]

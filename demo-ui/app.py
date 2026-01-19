@@ -391,7 +391,7 @@ Mən sizin virtual aqronomam. Əkin, suvarma, gübrələmə və digər kənd tə
     # Send the dashboard welcome message
     await cl.Message(
         content=dashboard_content,
-        author="Yonca",
+        author="Yonca AI",
         actions=actions,
     ).send()
 
@@ -512,7 +512,7 @@ async def on_message(message: cl.Message):
     user_email = cl.user_session.get("user_email")
     
     # Create response message for streaming
-    response_msg = cl.Message(content="", author="Yonca")
+    response_msg = cl.Message(content="", author="Yonca AI")
     await response_msg.send()
     
     full_response = ""

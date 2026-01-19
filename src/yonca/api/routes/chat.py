@@ -335,3 +335,51 @@ async def delete_session(session_id: str):
         raise HTTPException(status_code=404, detail="Session not found")
     
     return {"status": "deleted", "session_id": session_id}
+
+
+@router.get("/chat")
+async def get_chat_info(request: Request):
+    """Get chat endpoint information and available sessions.
+    
+    Returns:
+        Information about the chat endpoint and how to use it.
+    """
+    base_url = str(request.base_url).rstrip("/")
+    
+    return {
+        "endpoint": "/api/v1/chat",
+        "methods": ["POST"],
+        "description": "Send messages to Yonca AI farming assistant",
+        "example": {
+            "method": "POST",
+            "url": f"{base_url}/api/v1/chat",
+            "headers": {
+                "Content-Type": "application/json"
+            },
+            "body": {
+                "message": "Salam! Buğda əkini haqqında məlumat verə bilərsinizmi?",
+                "session_id": "optional-session-id",
+                "user_id": "optional-user-id",
+                "stream": False
+            }
+        },
+        "model": {
+            "provider": settings.llm_provider.value,
+            "model": settings.active_llm_model,
+            "capabilities": [
+                "Azerbaijani language support",
+                "Farm planning assistance",
+                "Crop recommendations",
+                "Weather analysis",
+                "Pest management"
+            ]
+        },
+        "rate_limits": {
+            "requests_per_minute": settings.rate_limit_requests_per_minute,
+            "burst_limit": settings.rate_limit_burst
+        },
+        "documentation": {
+            "swagger": f"{base_url}/docs",
+            "redoc": f"{base_url}/redoc"
+        }
+    }

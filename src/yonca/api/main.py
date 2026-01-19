@@ -318,6 +318,20 @@ async def root():
         "name": settings.app_name,
         "version": settings.app_version,
         "description": "AI Farming Assistant for Azerbaijani Farmers",
-        "docs": "/docs",
-        "health": "/health",
+        "endpoints": {
+            "docs": "/docs",
+            "redoc": "/redoc",
+            "health": "/health",
+            "chat": "/api/v1/chat",
+            "models": "/api/models"
+        },
+        "methods": {
+            "/api/v1/chat": {
+                "GET": "Get chat endpoint information",
+                "POST": "Send messages to AI assistant"
+            },
+            "/api/models": {
+                "GET": "List available models"
+            }
+        }
     }

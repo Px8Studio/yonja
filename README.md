@@ -301,6 +301,30 @@ GET  /rulebook              → View agronomy rules (AZ- prefixes)
 pytest tests/ -v --tb=short
 ```
 
+### Testing the API
+
+```bash
+# Check chat endpoint info
+curl http://localhost:8000/api/v1/chat
+
+# Send a message
+curl -X POST http://localhost:8000/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Salam! Buğda əkini haqqında məlumat verə bilərsinizmi?",
+    "user_id": "farmer_123",
+    "stream": false
+  }'
+
+# Stream responses
+curl -X POST http://localhost:8000/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Pomidor əkini üçün ən yaxşı vaxt nə vaxtdır?",
+    "stream": true
+  }'
+```
+
 ## 📄 License
 
 MIT License - ZekaLab © 2026

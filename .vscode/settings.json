@@ -13,5 +13,14 @@
   "python.envFile": "${workspaceFolder}/.env",
   
   // Optional: Auto-select Poetry's virtual environment
-  "python.poetryPath": "poetry"
+  "python.poetryPath": "poetry",
+  
+  // REST Client environment variables
+  "rest-client.environmentVariables": {
+    "$shared": {
+      "baseUrl": "http://localhost:8000",
+      "chatEndpoint": "/api/v1/chat",
+      "modelsEndpoint": "/api/models"
+    }
+  }
 }

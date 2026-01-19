@@ -1,5 +1,5 @@
 # demo-ui/data_layer.py
-"""Chainlit Data Layer for Yonca AI.
+"""Chainlit Data Layer for ALEM.
 
 This module implements Chainlit's SQLAlchemy data layer to persist:
 - Users (linked to Google OAuth identity)

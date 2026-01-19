@@ -1,8 +1,22 @@
 # demo-ui/app.py
-"""Yonca AI Demo — Chainlit Application.
+# =========================================================================
+# BRAND IDENTITY & IP PROTECTION NOTICE (ZekaLab)
+# -------------------------------------------------------------------------
+# AGENT NAME: ALEM (Agronomical Logic & Evaluation Model)
+# SUBTITLE:   ALEM | Aqronom Assistentiniz
+# DEVELOPER:  ZekaLab (Response to DigiRella Call)
+# 
+# INSTRUCTION: The term "Sidecar" is strictly prohibited in the UI, 
+# documentation, and user-facing logs. ALEM is a standalone proprietary 
+# service layer. All UI elements must reflect ALEM branding.
+#
+# USER-FACING BRAND: ALEM (not "Yonca AI")
+# INTERNAL PROJECT: Yonca (codebase/technical references only)
+# =========================================================================
+"""ALEM Demo — Chainlit Application.
 
 This is the main Chainlit application that provides a demo UI
-for the Yonca AI agricultural assistant using native LangGraph integration.
+for ALEM (Agronomical Logic & Evaluation Model) using native LangGraph integration.
 
 Usage:
     chainlit run app.py -w --port 8501
@@ -803,7 +817,7 @@ if is_oauth_enabled():
 # LOCALIZATION
 # ============================================
 AZ_STRINGS = {
-    "welcome": "**ALEM 1 — Yonca AI Köməkçisinə xoş gəlmisiniz!**\n\nMən sizin virtual aqronomam. Əkin, suvarma, gübrələmə və digər kənd təsərrüfatı məsələlərində kömək edə bilərəm.",
+    "welcome": "**ALEM | Aqronom Assistentiniz**\n\nSalam! Mən ALEM-əm, sizin virtual aqronomun. Əkin, suvarma, gübrələmə və digər kənd təsərrüfatı məsələlərində kömək edə bilərəm.",
     "farm_loaded": "📍 Təsərrüfat məlumatları yükləndi",
     "thinking": "Düşünürəm...",
     "error": "❌ Xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.",
@@ -1055,7 +1069,7 @@ async def on_settings_update(settings: dict):
 # ============================================
 # DASHBOARD WELCOME (Agricultural Command Center)
 # ============================================
-# BRANDING NOTE: Use "Yonca" or "Yonca AI" in user-facing content.
+# BRANDING NOTE: Use "ALEM" as primary agent name. "Yonca" is the internal project name.
 # AVOID: "Sidecar" (internal term), "DigiRella", "ZekaLab" (business names)
 # ============================================
 async def send_dashboard_welcome(user: Optional[cl.User] = None):
@@ -1112,7 +1126,7 @@ Mən sizin virtual aqronomam — əkin, suvarma və subsidiya məsələlərində
     # Send the dashboard welcome message
     await cl.Message(
         content=dashboard_content,
-        author="ALEM 1",
+        author="ALEM",
         actions=actions,
     ).send()
 
@@ -1506,7 +1520,7 @@ async def on_message(message: cl.Message):
     profile_prompt = cl.user_session.get("profile_prompt", "")
     
     # Create response message for streaming
-    response_msg = cl.Message(content="", author="ALEM 1")
+    response_msg = cl.Message(content="", author="ALEM")
     await response_msg.send()
     
     full_response = ""

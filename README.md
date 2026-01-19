@@ -75,23 +75,6 @@ curl -fsSL https://ollama.com/install.sh | sh
 
 The Yonca startup manager will **automatically download the model** if it's not present!
 
-#### Option B: Google Gemini (Cloud) [OPTIONAL]
-
-> ⚠️ **Note:** Gemini is an optional fallback provider. Install only if you need it:
-> ```bash
-> poetry install --extras gemini
-> # OR with pip:
-> pip install -e ".[gemini]"
-> ```
-
-Get a free API key from [Google AI Studio](https://aistudio.google.com/apikey) and set it in `.env`:
-
-```bash
-GOOGLE_API_KEY=your-api-key-here
-YONCA_LLM_PROVIDER=gemini
-YONCA_LLM_MODEL=gemini-2.0-flash
-```
-
 ### Installation
 
 > **Tooling Note:** We use **Poetry** for dependency management (reads `pyproject.toml`, creates reproducible environments). **Uvicorn** is the ASGI server that runs FastAPI—it's installed as a dependency, not a separate tool.
@@ -102,16 +85,14 @@ git clone https://github.com/ZekaLab/yonja.git
 cd yonja
 
 # Option A: Poetry (Recommended)
-poetry install              # Core dependencies only (Groq, Ollama)
-poetry install --extras gemini  # Add Gemini support if needed
+poetry install              # Core dependencies
 poetry shell                # Activates the environment
 
 # Option B: pip + venv
 python -m venv .venv
 .venv\Scripts\activate      # Windows
 source .venv/bin/activate   # Linux/Mac
-pip install -e ".[dev]"     # Install in editable mode (core only)
-pip install -e ".[dev,gemini]"  # Add Gemini if needed
+pip install -e ".[dev]"     # Install in editable mode
 ```
 
 ### 🎮 Start Yonca AI
@@ -177,7 +158,7 @@ INFO:     Uvicorn running on http://127.0.0.1:8000
 | **Ollama** | `qwen3:8b` | 5.0GB | Higher quality reasoning |
 | **Ollama** | `atllama` | 2.5GB | 🇦🇿 Azerbaijani-tuned (GGUF) |
 | **Ollama** | `aya:8b` | 4.8GB | 100+ language support |
-| **Gemini** | `gemini-2.0-flash` | Cloud | Production, high volume |
+| **Groq** | `llama-4-maverick-17b` | Cloud | 🚀 Ultra-fast (200-300 tok/s) |
 
 ### Setting Up Local Models
 
@@ -222,15 +203,18 @@ curl http://localhost:8000/api/models/qwen3:4b
 ### Usage Example
 
 ```python
-from yonca.agent import create_ollama_agent, create_gemini_agent
+from yonca.agent import create_ollama_agent
+from yonca.llm import create_groq_provider
 
 # Local Ollama (Azerbaijani-optimized)
 agent = create_ollama_agent(model="qwen3:4b")
 response = agent.chat("Buğda sahəsini nə vaxt suvarmaq lazımdır?")
 
-# Google Gemini (Cloud)
-agent = create_gemini_agent(api_key="your-key", model="gemini-2.0-flash")
-response = agent.chat("Torpağın pH səviyyəsi nə olmalıdır?")
+# Groq Cloud (Ultra-fast open-source models)
+llm = create_groq_provider(api_key="your-key", model="llama-4-maverick-17b-128e-instruct")
+response = await llm.generate([
+    LLMMessage.user("Torpağın pH səviyyəsi nə olmalıdır?")
+])
 ```
 
 ## 📡 API Endpoints

@@ -69,42 +69,6 @@ def create_groq_provider(
     )
 
 
-def create_gemini_provider(
-    api_key: str | None = None,
-    model: str | None = None,
-    timeout: float = 60.0,
-) -> LLMProvider:
-    """Create a Gemini provider for Google's proprietary cloud models.
-    
-    Gemini is a closed-source, cloud-only solution. Unlike open-source models,
-    it cannot be self-hosted or run on your own infrastructure.
-    
-    Args:
-        api_key: Gemini API key (uses config if None)
-        model: Model name (uses config if None)
-        timeout: Request timeout in seconds
-        
-    Returns:
-        Configured GeminiProvider instance.
-        
-    Raises:
-        LLMProviderError: If API key is not configured.
-    """
-    from .providers.gemini import GeminiProvider
-    
-    key = api_key or settings.gemini_api_key
-    if not key:
-        raise LLMProviderError(
-            "Gemini API key is required. Set YONCA_GEMINI_API_KEY or get one at https://ai.google.dev/"
-        )
-
-    return GeminiProvider(
-        api_key=key,
-        model=model or settings.gemini_model,
-        timeout=timeout,
-    )
-
-
 def create_ollama_provider(
     base_url: str | None = None,
     model: str | None = None,
@@ -151,8 +115,6 @@ def create_llm_provider(
         return create_ollama_provider(**kwargs)
     elif provider == LLMProviderEnum.GROQ:
         return create_groq_provider(**kwargs)
-    elif provider == LLMProviderEnum.GEMINI:
-        return create_gemini_provider(**kwargs)
     else:
         raise LLMProviderError(f"Unknown LLM provider: {provider}")
 
@@ -173,8 +135,7 @@ def get_llm_provider() -> LLMProvider:
 async def get_fastest_available_provider() -> LLMProvider:
     """Get the fastest available LLM provider with automatic fallback.
     
-    Checks providers in order: Groq (open-source) -> Gemini (proprietary)
-    Returns the first one that passes a health check.
+    Checks Groq provider availability and returns it if healthy.
     
     Returns:
         The fastest available provider.
@@ -184,7 +145,7 @@ async def get_fastest_available_provider() -> LLMProvider:
     """
     errors = []
     
-    # Try Groq first (fastest - 200-300 tokens/sec with open-source models)
+    # Try Groq (fastest - 200-300 tokens/sec with open-source models)
     if settings.groq_api_key:
         try:
             provider = create_groq_provider()
@@ -194,18 +155,8 @@ async def get_fastest_available_provider() -> LLMProvider:
         except Exception as e:
             errors.append(f"Groq: {e}")
 
-    # Then Gemini (proprietary cloud)
-    if settings.gemini_api_key:
-        try:
-            provider = create_gemini_provider()
-            if await provider.health_check():
-                print(f"☁️ Using Gemini ({provider.model_name}) - proprietary cloud")
-                return provider
-        except Exception as e:
-            errors.append(f"Gemini: {e}")
-
     raise LLMProviderError(
-        f"No LLM providers available. Configure YONCA_GROQ_API_KEY or YONCA_GEMINI_API_KEY. Errors: {'; '.join(errors)}"
+        f"No LLM providers available. Configure YONCA_GROQ_API_KEY. Errors: {'; '.join(errors)}"
     )
 
 
@@ -248,21 +199,5 @@ async def check_all_providers_health() -> dict:
             results["groq"] = {"healthy": False, "error": str(e)}
     else:
         results["groq"] = {"healthy": False, "error": "No API key configured"}
-    
-    # Check Gemini (proprietary cloud)
-    if settings.gemini_api_key:
-        try:
-            provider = create_gemini_provider()
-            results["gemini"] = {
-                "model": provider.model_name,
-                "healthy": await provider.health_check(),
-                "type": "proprietary",
-                "speed": "fast cloud",
-                "self_hostable": False,
-            }
-        except Exception as e:
-            results["gemini"] = {"healthy": False, "error": str(e)}
-    else:
-        results["gemini"] = {"healthy": False, "error": "No API key configured"}
     
     return results

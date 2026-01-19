@@ -14,7 +14,6 @@ import pytest_asyncio
 
 from yonca.llm.providers.base import LLMMessage, LLMResponse, MessageRole
 from yonca.llm.providers.ollama import OllamaProvider
-from yonca.llm.providers.gemini import GeminiProvider
 from yonca.llm.providers.groq import GroqProvider, strip_thinking_tags
 
 
@@ -255,78 +254,6 @@ Here is my response."""
         text = "<think>Düşünürəm...</think>Buğda payızda əkilir."
         result = strip_thinking_tags(text)
         assert result == "Buğda payızda əkilir."
-
-
-# ============================================================
-# Gemini Provider Tests
-# ============================================================
-
-class TestGeminiProvider:
-    """Test GeminiProvider implementation."""
-
-    def test_provider_name(self):
-        """Test provider name property."""
-        provider = GeminiProvider(api_key="test-key")
-        assert provider.provider_name == "gemini"
-
-    def test_model_name_default(self):
-        """Test default model name."""
-        provider = GeminiProvider(api_key="test-key")
-        assert "gemini" in provider.model_name.lower()
-
-    def test_requires_api_key(self):
-        """Test that API key is required."""
-        with pytest.raises(ValueError, match="API key is required"):
-            GeminiProvider(api_key="")
-
-    def test_format_messages_with_system(self, sample_messages):
-        """Test message formatting extracts system instruction."""
-        provider = GeminiProvider(api_key="test-key")
-        system_instruction, contents = provider._format_messages(sample_messages)
-        
-        assert system_instruction is not None
-        assert "Yonca AI" in system_instruction
-        assert len(contents) == 1
-        assert contents[0]["role"] == "user"
-
-    def test_format_messages_role_mapping(self, sample_multi_turn_messages):
-        """Test that assistant role maps to 'model' for Gemini."""
-        provider = GeminiProvider(api_key="test-key")
-        _, contents = provider._format_messages(sample_multi_turn_messages)
-        
-        # Should have user, model, user (system is extracted)
-        roles = [c["role"] for c in contents]
-        assert roles == ["user", "model", "user"]
-
-    @pytest.mark.asyncio
-    async def test_generate_success(self, sample_messages):
-        """Test successful generation."""
-        provider = GeminiProvider(api_key="test-key")
-        
-        mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "candidates": [{
-                "content": {
-                    "parts": [{"text": "Gemini cavabı."}]
-                },
-                "finishReason": "STOP",
-            }],
-            "usageMetadata": {
-                "promptTokenCount": 10,
-                "candidatesTokenCount": 5,
-                "totalTokenCount": 15,
-            },
-        }
-        mock_response.raise_for_status = MagicMock()
-        
-        mock_client = AsyncMock()
-        mock_client.post = AsyncMock(return_value=mock_response)
-        
-        with patch.object(provider, "_get_client", return_value=mock_client):
-            response = await provider.generate(sample_messages)
-        
-        assert response.content == "Gemini cavabı."
-        assert response.tokens_used == 15
 
 
 # ============================================================

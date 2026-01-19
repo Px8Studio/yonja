@@ -283,7 +283,7 @@ def print_llm_info(
     """Print LLM configuration information.
     
     Args:
-        provider: LLM provider name (e.g., "Groq", "Ollama", "Gemini")
+        provider: LLM provider name (e.g., "Groq", "Ollama")
         model: Model identifier
         mode: "cloud", "local", or "hybrid"
         base_url: Optional API base URL
@@ -430,12 +430,6 @@ def print_model_capabilities(model_name: str) -> None:
             "🧮 Good for reasoning tasks",
             "⚠️  Turkish leakage risk",
         ],
-        "gemini-2.0-flash-exp": [
-            "☁️  Google Cloud API",
-            "⚡ Very fast inference",
-            "🌍 Good multilingual support",
-            "🔒 Proprietary (data leaves region)",
-        ],
     }
     
     caps = capabilities.get(model_name)
@@ -553,7 +547,6 @@ def print_tier_comparison() -> None:
     
     tier_order = [
         InferenceTier.TIER_I_GROQ,
-        InferenceTier.TIER_II_GEMINI,
         InferenceTier.TIER_III_SOVEREIGN,
         InferenceTier.TIER_IV_ONPREM,
     ]

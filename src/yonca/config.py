@@ -25,12 +25,10 @@ class LLMProvider(str, Enum):
     
     OLLAMA: Local LLM server (for offline/development)
     GROQ: Open-source models (Llama, Qwen, Mistral) with enterprise-grade performance
-    GEMINI: Google's proprietary cloud models
     """
 
     OLLAMA = "ollama"  # Local LLM server
     GROQ = "groq"  # Open-source models, production-ready infrastructure
-    GEMINI = "gemini"  # Proprietary cloud models
 
 
 class InferenceTier(str, Enum):
@@ -38,13 +36,11 @@ class InferenceTier(str, Enum):
     
     From ALEM (Azərbaycan LLM Ekosistem Matrisi):
     - Tier I: Rapid prototyping with Groq LPU cloud
-    - Tier II: High reasoning with Google Gemini
     - Tier III: Sovereign cloud via AzInTelecom
     - Tier IV: Private on-prem hardware (ZekaLab Custom)
     """
     
     TIER_I_GROQ = "tier_i_groq"           # Rapid Prototyping — Groq LPU
-    TIER_II_GEMINI = "tier_ii_gemini"     # High Reasoning — Google Gemini
     TIER_III_SOVEREIGN = "tier_iii_sov"   # Sovereign Cloud — AzInTelecom
     TIER_IV_ONPREM = "tier_iv_onprem"     # Private On-Prem — ZekaLab Custom
 
@@ -62,18 +58,6 @@ INFERENCE_TIER_SPECS = {
         "cost_range": "$0–50/mo (dev)",
         "use_case": "Hackathons, demos, MVPs, dev/test",
         "icon": "⚡",
-    },
-    InferenceTier.TIER_II_GEMINI: {
-        "name": "Tier II: Google Gemini",
-        "tagline": "High Reasoning",
-        "provider": "Google Cloud",
-        "models": ["Gemini 2.0 Flash", "Gemini 1.5 Pro"],
-        "latency": "~400ms (P95)",
-        "throughput": "150 tok/s",
-        "data_residency": "EU (via Vertex AI region lock)",
-        "cost_range": "$20–300/mo",
-        "use_case": "Complex reasoning, multimodal, production pilots",
-        "icon": "🧠",
     },
     InferenceTier.TIER_III_SOVEREIGN: {
         "name": "Tier III: AzInTelecom",
@@ -148,12 +132,6 @@ class Settings(BaseSettings):
     # - "llama-3.1-8b-instant": Fastest open-source option
     # - "mixtral-8x7b-32768": Large context, good for complex queries
 
-    # ===== Proprietary Cloud Models =====
-    # Google Gemini - Closed-source cloud API
-    # Get key at: https://ai.google.dev/
-    gemini_api_key: str | None = None
-    gemini_model: str = "gemini-2.0-flash-exp"
-
     # ===== Database =====
     database_url: str = "sqlite+aiosqlite:///./data/yonca.db"
     database_pool_size: int = 10
@@ -216,7 +194,7 @@ class Settings(BaseSettings):
             return self.ollama_model
         if self.llm_provider == LLMProvider.GROQ:
             return self.groq_model
-        return self.gemini_model
+        return self.groq_model  # Default to Groq
 
     @property
     def inference_tier(self) -> "InferenceTier":
@@ -225,8 +203,6 @@ class Settings(BaseSettings):
             return InferenceTier.TIER_IV_ONPREM
         if self.llm_provider == LLMProvider.GROQ:
             return InferenceTier.TIER_I_GROQ
-        if self.llm_provider == LLMProvider.GEMINI:
-            return InferenceTier.TIER_II_GEMINI
         return InferenceTier.TIER_I_GROQ  # Default
 
     @property

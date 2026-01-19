@@ -25,11 +25,6 @@ OPEN-SOURCE MODELS (via Groq or self-hosted):
 - Groq demonstrates enterprise-grade performance these models can achieve
 - With proper infrastructure: 200-300 tokens/sec, production-ready
 
-PROPRIETARY CLOUD MODELS:
-- Gemini (Google) - closed-source, cloud-only
-- Cannot be self-hosted
-- Vendor lock-in
-
 Philosophy:
 -----------
 We prioritize open-source models to demonstrate:
@@ -195,18 +190,6 @@ LANGGRAPH_NODE_MODELS = {
         "weather_interpreter": "llama-3.3-70b-versatile",  # Language-heavy
         "response_writer": "llama-3.3-70b-versatile",  # Final farmer-facing output
         "rule_validator": "qwen3-32b",  # Logic validation
-    },
-    
-    # ===== PROPRIETARY CLOUD (Gemini) =====
-    "proprietary": {
-        "supervisor": "gemini-2.0-flash-exp",
-        "intent_classifier": "gemini-2.0-flash-exp",
-        "irrigation_calculator": "gemini-2.0-flash-exp",
-        "fertilization_calculator": "gemini-2.0-flash-exp",
-        "pest_analyzer": "gemini-2.0-flash-exp",
-        "weather_interpreter": "gemini-2.0-flash-exp",
-        "response_writer": "gemini-2.0-flash-exp",
-        "rule_validator": "gemini-2.0-flash-exp",
     },
 }
 

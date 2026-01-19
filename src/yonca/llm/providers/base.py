@@ -1,7 +1,7 @@
 # src/yonca/llm/providers/base.py
 """Abstract base class for LLM providers.
 
-Defines the interface that all LLM providers (Ollama, Gemini, etc.) must implement.
+Defines the interface that all LLM providers (Ollama, Groq, etc.) must implement.
 """
 
 from abc import ABC, abstractmethod
@@ -54,14 +54,14 @@ class LLMResponse(BaseModel):
 class LLMProvider(ABC):
     """Abstract base class for LLM providers.
     
-    All LLM providers (Ollama, Gemini, etc.) must implement this interface.
+    All LLM providers (Ollama, Groq, etc.) must implement this interface.
     This ensures consistent behavior across different backends.
     """
 
     @property
     @abstractmethod
     def provider_name(self) -> str:
-        """Return the provider name (e.g., 'ollama', 'gemini')."""
+        """Return the provider name (e.g., 'ollama', 'groq')."""
         ...
 
     @property

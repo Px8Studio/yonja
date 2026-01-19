@@ -183,12 +183,18 @@ async def lifespan(app: FastAPI):
         ("Swagger", f"{base_url}/docs", "Interactive API documentation"),
         ("ReDoc", f"{base_url}/redoc", "Alternative API docs"),
         ("Health", f"{base_url}/health", "Readiness & liveness probes"),
+        ("Langfuse UI", settings.langfuse_host, "LLM tracing & analytics dashboard"),
+        ("Langfuse API", f"{settings.langfuse_host}/api/public", "Langfuse Public API"),
+        ("LangGraph API", "http://127.0.0.1:2024", "LangGraph development server"),
+        ("LangGraph Docs", "http://127.0.0.1:2024/docs", "LangGraph API documentation"),
     ])
     
     print_quick_links([
         ("Swagger", f"{base_url}/docs"),
         ("Chat", f"{base_url}/api/v1/chat"),
-        ("Langfuse", settings.langfuse_host),
+        ("Traces", f"{settings.langfuse_host}/traces"),
+        ("LangGraph", "http://127.0.0.1:2024"),
+        ("Studio", "https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024"),
     ])
     
     print_startup_complete("Yonca AI API")

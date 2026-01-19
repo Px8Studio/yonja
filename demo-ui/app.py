@@ -221,14 +221,20 @@ print_endpoints([
     ("Chat UI", "http://localhost:8501", "Interactive Chainlit demo"),
     ("Swagger", "http://localhost:8000/docs", "Interactive API docs"),
     ("ReDoc", "http://localhost:8000/redoc", "Clean API reference"),
-    ("Langfuse", "http://localhost:3001", "LLM tracing & analytics"),
+    ("Health", "http://localhost:8000/health", "Readiness & liveness probes"),
+    ("Langfuse UI", "http://localhost:3001", "LLM tracing & analytics dashboard"),
+    ("Langfuse API", "http://localhost:3001/api/public", "Langfuse Public API"),
+    ("LangGraph API", "http://127.0.0.1:2024", "LangGraph development server"),
+    ("LangGraph Docs", "http://127.0.0.1:2024/docs", "LangGraph API documentation"),
 ])
 
 print_quick_links([
     ("Chat", "http://localhost:8501"),
     ("Swagger", "http://localhost:8000/docs"),
     ("ReDoc", "http://localhost:8000/redoc"),
-    ("Traces", "http://localhost:3001"),
+    ("Traces", "http://localhost:3001/traces"),
+    ("LangGraph", "http://127.0.0.1:2024"),
+    ("Studio", "https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024"),
 ])
 
 print_startup_complete("🌿 Yonca Demo UI")

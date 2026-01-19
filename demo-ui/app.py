@@ -832,9 +832,10 @@ AZ_STRINGS = {
     "farm_status": "Təsərrüfat vəziyyəti",
     "status_normal": "Normal",
     "status_attention": "Diqqət tələb edir",
-    "weather": "🌤️ Hava",
-    "subsidy": "📋 Subsidiya",
-    "irrigation": "💧 Suvarma",
+    # Action buttons - emoji removed (Chainlit renders visual indicators)
+    "weather": "Hava",
+    "subsidy": "Subsidiya",
+    "irrigation": "Suvarma",
     "sima_auth": "SİMA inteqrasiyası hazır",
     "quick_actions": "Sürətli əməliyyatlar",
     # Settings strings
@@ -1117,72 +1118,116 @@ async def send_dashboard_welcome(user: Optional[cl.User] = None):
     Args:
         user: Optional authenticated user for personalization
     """
-    # Personalized greeting
-    if user and user.metadata:
-        user_name = user.metadata.get("name", "").split()[0]  # First name
-        greeting = f"Salam, **{user_name}**! 👋"
-    else:
-        greeting = "Xoş gəlmisiniz! 👋"
-    
-    # Build compact dashboard message
-    # Avatar is now shown via Chainlit's native avatar system (public/avatars/yonca_ai.svg)
-    dashboard_content = f"""{greeting}
+    try:
+        # Personalized greeting
+        if user and user.metadata:
+            user_name = user.metadata.get("name", "").split()[0]  # First name
+            greeting = f"Salam, **{user_name}**! 👋"
+        else:
+            greeting = "Xoş gəlmisiniz! 👋"
+        
+        # Build dashboard message using native markdown (more compatible than inline HTML)
+        dashboard_content = f"""{greeting}
 
-<div style="display: flex; align-items: center; gap: 16px; padding: 12px 16px; background: linear-gradient(135deg, rgba(45, 90, 39, 0.06) 0%, rgba(168, 230, 207, 0.12) 100%); border-radius: 12px; margin: 8px 0;">
-    <div style="display: flex; align-items: center; gap: 8px;">
-        <span style="width: 10px; height: 10px; background: #4CAF50; border-radius: 50%; box-shadow: 0 0 6px rgba(76, 175, 80, 0.5);"></span>
-        <span style="color: #2D5A27; font-weight: 500;">{AZ_STRINGS["status_normal"]}</span>
-    </div>
-    <span style="color: #999;">•</span>
-    <span style="color: #666; font-size: 0.9em;">✓ {AZ_STRINGS["sima_auth"]}</span>
-</div>
+🌿 **ALEM | Aqronom Assistentiniz**
 
 Mən sizin virtual aqronomam — əkin, suvarma və subsidiya məsələlərində kömək edirəm.
-"""
 
-    # Create quick action buttons using Chainlit Actions
-    actions = [
-        cl.Action(
-            name="weather",
-            payload={"action": "weather"},
-            label=AZ_STRINGS["weather"],
-        ),
-        cl.Action(
-            name="subsidy",
-            payload={"action": "subsidy"},
-            label=AZ_STRINGS["subsidy"],
-        ),
-        cl.Action(
-            name="irrigation",
-            payload={"action": "irrigation"},
-            label=AZ_STRINGS["irrigation"],
-        ),
-    ]
-    
-    # Send the dashboard welcome message
-    await cl.Message(
-        content=dashboard_content,
-        author="ALEM",
-        actions=actions,
-    ).send()
+**📊 Sistem Vəziyyəti:**
+- ✓ Normal
+- ✓ SİMA inteqrasiyası hazır
+
+---
+
+**Sürətli Əməliyyatlar** — Aşağıdakı düymələrə klikləyin:
+"""
+        
+        # Create quick action buttons using Chainlit Actions (NO duplicated emojis)
+        actions = [
+            cl.Action(
+                name="weather",
+                payload={"action": "weather"},
+                label="🌤️ " + AZ_STRINGS["weather"],
+            ),
+            cl.Action(
+                name="subsidy",
+                payload={"action": "subsidy"},
+                label="📋 " + AZ_STRINGS["subsidy"],
+            ),
+            cl.Action(
+                name="irrigation",
+                payload={"action": "irrigation"},
+                label="💧 " + AZ_STRINGS["irrigation"],
+            ),
+        ]
+        
+        # Send the dashboard welcome message
+        await cl.Message(
+            content=dashboard_content,
+            author="ALEM",
+            actions=actions,
+        ).send()
+        
+        logger.info("welcome_message_sent", user_id=user.identifier if user else "anonymous")
+        
+    except Exception as e:
+        logger.error("welcome_message_failed", error=str(e), exc_info=True)
+        # Fallback simple welcome
+        await cl.Message(
+            content="👋 Xoş gəlmisiniz! Mən ALEM-əm, sizin virtual aqronomun."
+        ).send()
 
 
 # ============================================
 # NATIVE CHAINLIT ARCHITECTURE NOTE
 # ============================================
 # ✅ QUICK ACTIONS: Use @cl.set_starters (profile-aware)
-# ✅ NOT: Custom @cl.action_callback (outdated pattern)
+# ✅ ALSO NEED: @cl.action_callback for Action elements
 #
-# Why? Starters are:
-# - Profile-aware (cotton specialists see different actions)
-# - Better UX (clear visual affordance)
-# - Chainlit-native (not custom UI code)
+# Why? 
+# - @cl.set_starters are message starters (auto-handled)
+# - @cl.Action elements are buttons (need explicit callbacks)
+# - Both patterns coexist in this demo
 #
+# When user clicks Action button → @on_action fires
 # When user clicks starter → Message sent → @on_message handles it
-# No separate action callbacks needed!
 #
 # See: CHAINLIT-NATIVE-ARCHITECTURE.md for full architecture
 # ============================================
+
+
+# ============================================
+# QUICK ACTION CALLBACKS (Weather, Subsidy, Irrigation)
+# ============================================
+# These handle the quick-action buttons in the dashboard
+# Users click buttons → generates specialized context → calls @on_message
+
+@cl.action_callback("confirm_action")
+async def on_confirm_action(action: cl.Action):
+    """Handle confirm action button clicks."""
+    await cl.Message(content=f"✅ Action confirmed: {action.value}").send()
+    await action.remove()
+
+
+@cl.action_callback("cancel_action")
+async def on_cancel_action(action: cl.Action):
+    """Handle cancel action button clicks."""
+    await cl.Message(content="❌ Action cancelled").send()
+    await action.remove()
+
+
+@cl.action_callback("feedback_positive")
+async def on_feedback_positive(action: cl.Action):
+    """Handle positive feedback."""
+    await cl.Message(content="👍 Təşəkkürlər! Rəyiniz qeydə alındı.").send()
+    await action.remove()
+
+
+@cl.action_callback("feedback_negative")
+async def on_feedback_negative(action: cl.Action):
+    """Handle negative feedback."""
+    await cl.Message(content="👎 Rəyiniz qeydə alındı. Təkmilləşdirəcəyik.").send()
+    await action.remove()
 
 
 # ============================================
@@ -1526,7 +1571,16 @@ async def on_chat_start():
             cl.user_session.set("user_insights", user_insights)
             
             # PART 1: Render the activity dashboard in sidebar (non-intrusive)
-            await render_dashboard_sidebar(user_insights)
+            try:
+                await render_dashboard_sidebar(user_insights)
+                logger.info(
+                    "dashboard_sidebar_rendered",
+                    user_id=user_id,
+                    total_interactions=user_insights.total_interactions,
+                )
+            except Exception as e:
+                logger.warning("dashboard_sidebar_render_failed", error=str(e), exc_info=True)
+                # Continue anyway - sidebar failure shouldn't block chat
             
             logger.info(
                 "dashboard_loaded",
@@ -1536,9 +1590,10 @@ async def on_chat_start():
         else:
             logger.debug("langfuse_not_configured_skipping_dashboard")
     except Exception as e:
-        logger.warning("dashboard_load_failed", error=str(e))
+        logger.warning("dashboard_load_failed", error=str(e), exc_info=True)
     
-    # PART 2: Build the enhanced dashboard welcome message (main chat)
+    # PART 2: Send the enhanced dashboard welcome message (main chat)
+    # This is the PRIMARY user-facing welcome experience
     await send_dashboard_welcome(user)
 
 

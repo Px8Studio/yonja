@@ -12,7 +12,7 @@ import structlog
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from yonca.data.database import get_async_session
+from yonca.data.database import get_db_session
 
 logger = structlog.get_logger(__name__)
 
@@ -29,8 +29,7 @@ async def load_alem_persona_from_db(
         Dict with persona data if found, None otherwise
     """
     try:
-        async_session = await get_async_session()
-        async with async_session() as session:
+        async with get_db_session() as session:
             result = await session.execute(
                 text("""
                     SELECT alem_persona_id, email, full_name, fin_code, phone, 
@@ -87,8 +86,7 @@ async def save_alem_persona_to_db(
         True if saved successfully, False otherwise
     """
     try:
-        async_session = await get_async_session()
-        async with async_session() as session:
+        async with get_db_session() as session:
             persona_id = str(uuid.uuid4())
             
             await session.execute(
@@ -124,7 +122,6 @@ async def save_alem_persona_to_db(
                     'login': datetime.utcnow(),
                 }
             )
-            await session.commit()
             logger.info("persona_saved_to_db", email=email, persona_id=persona_id)
             return True
             
@@ -143,8 +140,7 @@ async def update_persona_login_time(email: str) -> bool:
         True if updated successfully
     """
     try:
-        async_session = await get_async_session()
-        async with async_session() as session:
+        async with get_db_session() as session:
             await session.execute(
                 text("""
                     UPDATE alem_personas 
@@ -157,10 +153,10 @@ async def update_persona_login_time(email: str) -> bool:
                     'login_time': datetime.utcnow(),
                 }
             )
-            await session.commit()
             logger.debug("persona_login_updated", email=email)
             return True
             
     except Exception as e:
         logger.error("update_login_failed", email=email, error=str(e))
         return False
+

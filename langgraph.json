@@ -1,0 +1,11 @@
+{
+    "$schema": "https://langchain-ai.github.io/langgraph/langgraph.json",
+    "dependencies": ["."],
+    "graphs": {
+        "yonca_agent": "./src/yonca/agent/graph.py:create_yonca_agent"
+    },
+    "env": ".env",
+    "python_version": "3.11",
+    "pip_config_file": null,
+    "dockerfile_lines": []
+}

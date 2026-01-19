@@ -1,0 +1,12 @@
+# Dockerfile.langfuse
+# Self-hosted Langfuse for Render.com deployment
+# Based on official Langfuse Docker image
+
+FROM langfuse/langfuse:2
+
+# Render.com uses PORT env variable
+ENV PORT=3000
+EXPOSE 3000
+
+# Langfuse starts on port 3000 by default
+# No additional configuration needed - uses env vars from render.yaml

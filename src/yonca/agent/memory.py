@@ -1,14 +1,16 @@
 # src/yonca/agent/memory.py
-"""LangGraph checkpointer factory for session persistence.
+"""🌾 Yonca AI — LangGraph checkpointer factory for session persistence.
 
-Uses the official langgraph-checkpoint-redis package for Redis persistence,
-with automatic fallback to in-memory storage for development.
+Supports multiple backends (NO automatic fallback - explicit selection):
+- 🔴 Redis (fastest) - via langgraph-checkpoint-redis
+- 🐘 PostgreSQL (production) - via langgraph-checkpoint-postgres  
+- 💾 In-Memory (dev only) - via MemorySaver
 
 Best Practice: Let LangGraph handle checkpointing internally.
-Don't reinvent the wheel - use the official AsyncRedisSaver.
+Don't reinvent the wheel - use the official checkpointers.
 """
 
-from typing import Optional, Union
+from typing import Optional, Union, Literal
 
 import structlog
 from langgraph.checkpoint.memory import MemorySaver
@@ -19,6 +21,17 @@ from yonca.config import settings
 
 log = structlog.get_logger()
 
+# Service emoji constants for consistent branding
+EMOJI_YONCA = "🌾"
+EMOJI_REDIS = "🔴"
+EMOJI_POSTGRES = "🐘"
+EMOJI_MEMORY = "💾"
+EMOJI_ERROR = "❌"
+EMOJI_SUCCESS = "✅"
+
+# Type for checkpointer backend preference
+CheckpointerBackend = Literal["redis", "postgres", "memory"]
+
 # Try to import Redis checkpointer from official package
 try:
     from langgraph.checkpoint.redis.aio import AsyncRedisSaver
@@ -26,30 +39,47 @@ try:
 except ImportError:
     REDIS_CHECKPOINTER_AVAILABLE = False
     AsyncRedisSaver = None  # type: ignore
-    log.warning("langgraph-checkpoint-redis not installed, Redis persistence unavailable")
+    log.debug(f"{EMOJI_YONCA} {EMOJI_REDIS} langgraph-checkpoint-redis not installed")
+
+# Try to import PostgreSQL checkpointer from official package
+try:
+    from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+    POSTGRES_CHECKPOINTER_AVAILABLE = True
+except ImportError:
+    POSTGRES_CHECKPOINTER_AVAILABLE = False
+    AsyncPostgresSaver = None  # type: ignore
+    log.debug(f"{EMOJI_YONCA} {EMOJI_POSTGRES} langgraph-checkpoint-postgres not installed")
 
 
 # Type alias for checkpointer types
-CheckpointerType = Union[MemorySaver, "AsyncRedisSaver"]
+CheckpointerType = Union[MemorySaver, "AsyncRedisSaver", "AsyncPostgresSaver"]
 
 # Singleton instance
 _checkpointer: Optional[BaseCheckpointSaver] = None
 
 
 async def get_checkpointer_async(
-    redis_url: Optional[str] = None, 
+    redis_url: Optional[str] = None,
+    postgres_url: Optional[str] = None,
+    backend: CheckpointerBackend = "auto",
     use_singleton: bool = True
 ) -> BaseCheckpointSaver:
     """Get a LangGraph-compatible checkpointer (async version).
     
-    This version properly initializes AsyncRedisSaver within an async context.
+    Supports multiple backends with automatic fallback:
+    - "redis": Force Redis (fastest, requires Redis Stack)
+    - "postgres": Force PostgreSQL (production, uses existing DB)
+    - "memory": Force in-memory (dev only, no persistence)
+    - "auto": Try Redis → PostgreSQL → Memory (default)
     
     Args:
         redis_url: Redis connection URL. If None, reads from settings.redis_url
+        postgres_url: PostgreSQL URL. If None, reads from settings.database_url
+        backend: Which backend to use ("redis", "postgres", "memory", "auto")
         use_singleton: Whether to cache and reuse the checkpointer instance
         
     Returns:
-        AsyncRedisSaver if Redis is available, otherwise MemorySaver
+        Checkpointer instance based on backend preference and availability
     """
     global _checkpointer
     
@@ -57,25 +87,50 @@ async def get_checkpointer_async(
     if use_singleton and _checkpointer is not None:
         return _checkpointer
     
-    # Get Redis URL from param or settings
-    url = redis_url or settings.redis_url
+    # Get URLs from params or settings
+    redis = redis_url or settings.redis_url
+    postgres = postgres_url or settings.database_url
     
     checkpointer: BaseCheckpointSaver
     
-    if url and REDIS_CHECKPOINTER_AVAILABLE and AsyncRedisSaver is not None:
-        try:
-            # Use direct instantiation - AsyncRedisSaver manages its own lifecycle
-            checkpointer = AsyncRedisSaver(redis_url=url)
-            # Setup indexes (required on first use)
-            await checkpointer.asetup()
-            log.info("Using Redis checkpointer for session persistence", redis_url=url)
-        except Exception as e:
-            log.warning("Failed to create Redis checkpointer, falling back to memory", error=str(e))
-            checkpointer = MemorySaver()
-            log.info("Using in-memory checkpointer (no persistence across restarts)")
-    else:
-        checkpointer = MemorySaver()
-        log.info("Using in-memory checkpointer (no persistence across restarts)")
+    # Backend selection logic
+    if backend == "redis" or (backend == "auto" and redis):
+        if redis and REDIS_CHECKPOINTER_AVAILABLE and AsyncRedisSaver is not None:
+            try:
+                checkpointer = AsyncRedisSaver(redis_url=redis)
+                await checkpointer.asetup()
+                log.info("Using Redis checkpointer for session persistence", redis_url=redis)
+                if use_singleton:
+                    _checkpointer = checkpointer
+                return checkpointer
+            except Exception as e:
+                log.warning("Failed to create Redis checkpointer", error=str(e))
+                if backend == "redis":
+                    raise  # Don't fallback if explicitly requested
+    
+    if backend == "postgres" or (backend == "auto" and postgres):
+        if postgres and POSTGRES_CHECKPOINTER_AVAILABLE and AsyncPostgresSaver is not None:
+            try:
+                # Convert asyncpg URL to psycopg format if needed
+                pg_url = postgres.replace("postgresql+asyncpg://", "postgresql://")
+                checkpointer = AsyncPostgresSaver.from_conn_string(pg_url)
+                # Setup tables (required on first use) - method name may vary by version
+                if hasattr(checkpointer, 'setup'):
+                    await checkpointer.setup()
+                elif hasattr(checkpointer, 'asetup'):
+                    await checkpointer.asetup()
+                log.info("Using PostgreSQL checkpointer for session persistence")
+                if use_singleton:
+                    _checkpointer = checkpointer
+                return checkpointer
+            except Exception as e:
+                log.warning("Failed to create PostgreSQL checkpointer", error=str(e))
+                if backend == "postgres":
+                    raise  # Don't fallback if explicitly requested
+    
+    # Fallback to in-memory
+    checkpointer = MemorySaver()
+    log.info("Using in-memory checkpointer (no persistence across restarts)")
     
     if use_singleton:
         _checkpointer = checkpointer
@@ -87,21 +142,21 @@ def get_checkpointer(
     redis_url: Optional[str] = None, 
     use_singleton: bool = True
 ) -> BaseCheckpointSaver:
-    """Get a LangGraph-compatible checkpointer (sync version with MemorySaver fallback).
+    """Get a LangGraph-compatible checkpointer (sync version).
     
-    Note: For Redis support in async contexts, use get_checkpointer_async() instead.
-    This sync version will always return MemorySaver since AsyncRedisSaver 
-    requires an async context for initialization.
+    Note: For Redis/PostgreSQL support, use get_checkpointer_async() instead.
+    This sync version always returns MemorySaver since async checkpointers
+    require an async context for initialization.
     
     Args:
-        redis_url: Redis connection URL (ignored in sync version)
+        redis_url: Ignored in sync version
         use_singleton: Whether to cache and reuse the checkpointer instance
         
     Returns:
         Cached checkpointer if available, otherwise MemorySaver
         
     Usage:
-        # In async code (preferred for Redis support):
+        # In async code (preferred for persistent storage):
         checkpointer = await get_checkpointer_async()
         
         # In sync code (MemorySaver only):
@@ -109,14 +164,13 @@ def get_checkpointer(
     """
     global _checkpointer
     
-    # Return cached instance if available (might be AsyncRedisSaver from async init)
+    # Return cached instance if available (might be from async init)
     if use_singleton and _checkpointer is not None:
         return _checkpointer
     
     # In sync context, we can only use MemorySaver
-    # For Redis, use get_checkpointer_async() in an async context
     checkpointer = MemorySaver()
-    log.info("Using in-memory checkpointer (use get_checkpointer_async for Redis)")
+    log.info("Using in-memory checkpointer (use get_checkpointer_async for Redis/Postgres)")
     
     if use_singleton:
         _checkpointer = checkpointer

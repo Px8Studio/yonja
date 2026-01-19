@@ -1,103 +1,122 @@
-# 12 — Deployment & Infrastructure Guide
+# 12 — ALEM 1.0 Infrastructure & Deployment Guide
 
-> **Purpose:** Complete deployment strategy covering Groq cloud benchmarks, DigiRella self-hosted options, ALEM infrastructure tiers, and cost economics.
+> **ALEM** = **A**gronomical **L**ogic & **E**valuation **M**odel
 
-> 📖 **Quick Reference:** See [18-GROQ-VS-DIGIRELLA.md](18-GROQ-VS-DIGIRELLA.md) for 1-minute decision guide.  
+> **Purpose:** Complete ALEM 1.0 deployment strategy covering benchmark demonstrations, DigiRella deployment modes (Owned/Cloud), infrastructure tiers, and cost economics.
+
+> 📖 **Quick Reference:** See [18-GROQ-VS-DIGIRELLA.md](18-GROQ-VS-DIGIRELLA.md) for ALEM 1.0 decision guide.  
 > 💰 **Pricing Details:** See [19-PRICING-SIMPLIFIED.md](19-PRICING-SIMPLIFIED.md) for detailed costs.
 
 ---
 
-## ✅ Implementation Status (January 2026)
+## ✅ ALEM 1.0 Implementation Status (January 2026)
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
 pie showData
-    title Provider Implementation
-    "✅ Groq (Production)" : 40
-    "✅ Ollama (Local Dev)" : 35
-    "✅ Gemini (Fallback)" : 25
+    title ALEM 1.0 Infrastructure Options
+    "✅ DigiRella Ready" : 50
+    "✅ Benchmark API (Dev)" : 30
+    "✅ Gemini (Legacy)" : 20
 ```
 
-### Provider Comparison
+### ALEM 1.0 Architecture Decision Matrix
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
 quadrantChart
-    title LLM Providers: Speed vs Self-Hosting
-    x-axis Low Speed --> High Speed
-    y-axis No Self-Host --> Full Self-Host
-    quadrant-1 Best: Fast + Self-Hostable
-    quadrant-2 Good: Self-Hostable
-    quadrant-3 Risky: Slow + Locked
-    quadrant-4 Convenient: Fast but Locked
-    Groq: [0.85, 0.75]
-    Ollama: [0.35, 0.95]
+    title Infrastructure: Performance vs Data Sovereignty
+    x-axis Low Performance --> High Performance
+    y-axis No Sovereignty --> Full Sovereignty
+    quadrant-1 Best: Fast + Sovereign
+    quadrant-2 Good: Sovereign
+    quadrant-3 Risky: Slow + External
+    quadrant-4 Dev: Fast but External
+    DigiRella Owned: [0.85, 0.95]
+    DigiRella Cloud: [0.80, 0.90]
+    Benchmark API: [0.90, 0.20]
     Gemini: [0.70, 0.15]
-    vLLM: [0.65, 0.90]
 ```
 
 ---
 
-## 🎯 Open-Source First Philosophy
+## 🎯 ALEM 1.0 Philosophy
 
-Yonca AI is built on **open-source models** to demonstrate enterprise-ready AI that:
+**Yonca AI implements ALEM 1.0** — Azerbaijan's first sovereign agricultural AI architecture:
 
-✅ **Can be self-hosted** - Full control over deployment  
-✅ **No vendor lock-in** - Not dependent on proprietary APIs  
-✅ **Transparent & auditable** - Open weights, open architectures  
-✅ **Production-ready** - Enterprise performance with proper infrastructure (200-300 tok/s)
+✅ **100% Open-Source Models** - Llama, Qwen (Apache 2.0 / Llama Community License)  
+✅ **Full Data Sovereignty** - Deploy in Azerbaijan (self-hosted or AzInTelecom Cloud)  
+✅ **Proven Performance** - 200-300 tok/s (validated via cloud benchmarks)  
+✅ **Zero Vendor Lock-in** - Same models work everywhere (local, cloud, owned)
+
+### How We Demonstrate ALEM 1.0
+
+During **development**, we use external cloud APIs to:
+- **Prove** that open-source models (Llama, Qwen) can achieve 200-300 tok/s
+- **Validate** the ALEM 1.0 architecture end-to-end
+- **Show stakeholders** the target user experience
+
+For **production**, clients deploy via **DigiRella**:
+- **DigiRella Owned** - Buy GPU hardware, self-host in Azerbaijan
+- **DigiRella Cloud** - Rent GPU capacity from AzInTelecom (Baku)
 
 ---
 
-## 1. Dual-Mode Philosophy
+## 1. ALEM 1.0 Architecture Principles
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
 mindmap
-  root((🔀 Dual-Mode))
-    🌿 Open-Source Mode
-      Groq API demo
-      Self-hosted vLLM/TGI
+  root((ALEM 1.0))
+    🌿 Open-Source Models
+      Llama 4 Maverick
       Llama 3.3 70B
       Qwen 3 32B
-      Can self-host anytime
-    ☁️ Proprietary Mode
-      Render.com
-      Gemini API
-      Closed-source
-      Cannot self-host
-      Vendor lock-in
-    🔄 Abstraction Layer
-      LLM Provider Interface
-      Same LangGraph logic
-      Feature parity
-      Environment configs
+      Apache 2.0 License
+      Can self-host anywhere
+    🇦🇿 Data Sovereignty
+      DigiRella Owned
+      DigiRella Cloud (AzInTelecom)
+      100% Azerbaijan
+      No external dependencies
+    ⚡ Proven Performance
+      200-300 tok/s
+      Validated via benchmarks
+      Enterprise-grade
+      Production-ready
+    🔄 Flexible Infrastructure
+      Self-hosted hardware
+      Rented from AzInTelecom
+      Same models everywhere
+      Zero vendor lock-in
 ```
 
-### Why Dual-Mode?
+### ALEM 1.0 vs Traditional Approaches
 
-| Benefit | Open-Source (Groq/Self-Hosted) | Proprietary (Gemini) |
-|:--------|:-------------------------------|:---------------------|
-| **Models** | Llama, Qwen, Mistral (open) | Gemini (closed) |
-| **License** | Apache 2.0, Llama Community | Proprietary |
-| **Self-Hosting** | ✅ Full support | ❌ Not possible |
-| **Data Privacy** | ✅ On-premises capable | ⚠️ Cloud only |
-| **Performance** | 200-300 tok/s (with LPU/GPU) | ~80-120 tok/s |
-| **Cost (production)** | Hardware investment | Per-token pricing |
-| **Vendor Lock-in** | ✅ None | ⚠️ High |
-| **Customization** | ✅ Fine-tune, modify | ❌ Limited |
-| **Government Compliance** | ✅ Yes (on-prem) | ⚠️ Maybe |
+| Aspect | ALEM 1.0 (DigiRella) | External Cloud APIs | Proprietary (Gemini) |
+|:-------|:---------------------|:--------------------|:---------------------|
+| **Models** | Llama, Qwen (open) | Same open models | Gemini (closed) |
+| **License** | Apache 2.0, Llama Community | Apache 2.0 | Proprietary |
+| **Self-Hosting** | ✅ Core feature | ⚠️ Only for dev | ❌ Not possible |
+| **Data Privacy** | ✅ 100% Azerbaijan | ❌ External servers | ❌ Google servers |
+| **Performance** | 200-300 tok/s | 200-300 tok/s | ~80-120 tok/s |
+| **Cost (5-year)** | $7,050 (Owned) | Dev use only | $37,200+ |
+| **Vendor Lock-in** | ✅ None | ✅ None (same models) | ❌ High |
+| **Customization** | ✅ Fine-tune, modify | ✅ Fine-tune | ❌ Limited |
+| **Government Use** | ✅ Approved | ⚠️ Dev only | ⚠️ Restricted |
+
+**Key Insight:** External cloud APIs use the **same open-source models** as ALEM 1.0. We use them during development to demonstrate target performance, then deploy via DigiRella for production.
 
 ---
 
-## 2. Architecture Overview
+## 2. ALEM 1.0 Architecture Overview
 
-### 2.1 Open-Source Mode Architecture
+### 2.1 Development Architecture (Benchmark Demonstration)
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
 graph TB
-    subgraph opensource["🌿 OPEN-SOURCE DEPLOYMENT"]
+    subgraph dev["🧪 DEVELOPMENT (Benchmark Demo)"]
         subgraph services["🧠 Services"]
             api["🔌 FastAPI<br/><i>localhost:8000</i>"]
             brain["🧠 LangGraph<br/><i>Agent Orchestrator</i>"]
@@ -113,13 +132,11 @@ graph TB
         brain --> pg
     end
     
-    subgraph llm["🤖 LLM Options (choose one)"]
-        groq["⚡ Groq API<br/><i>200-300 tok/s</i><br/><i>Open-source models</i>"]
-        selfhost["🏢 Self-Hosted<br/><i>vLLM / TGI</i><br/><i>On-premises</i>"]
+    subgraph bench["⚡ Benchmark API (Dev Only)"]
+        cloud["Cloud API<br/><i>200-300 tok/s</i><br/><i>Llama/Qwen models</i><br/><i>⚠️ External servers</i>"]
     end
     
-    brain -->|"API Call"| groq
-    brain -.->|"Production"| selfhost
+    brain -->|"Validate Performance"| cloud
     
     subgraph client["📱 Clients"]
         demo["🖥️ Chainlit Demo<br/><i>localhost:8501</i>"]
@@ -129,10 +146,86 @@ graph TB
     demo --> api
     mobile --> api
     
-    style opensource fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#0d47a1
+    style dev fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#bf360c
     style services fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
     style data fill:#fff9c4,stroke:#f9a825,color:#5d4037
-    style llm fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
+    style bench fill:#ffebee,stroke:#c62828,color:#b71c1c,stroke-dasharray: 5 5
+```
+
+> ⚠️ **Development Only:** Benchmark API demonstrates target ALEM 1.0 performance using external infrastructure. **Production uses DigiRella** (see 2.2 & 2.3).
+
+### 2.2 Production Architecture (DigiRella Cloud)
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+graph TB
+    subgraph prod_cloud["🇦🇿 PRODUCTION (DigiRella Cloud)"]
+        subgraph services2["🧠 Services"]
+            api2["🔌 FastAPI<br/><i>yonca.gov.az</i>"]
+            brain2["🧠 LangGraph<br/><i>Agent Orchestrator</i>"]
+        end
+        
+        subgraph data2["💾 Data Layer"]
+            pg2["🐘 PostgreSQL<br/><i>AzInTelecom</i>"]
+            redis2["⚡ Redis<br/><i>AzInTelecom</i>"]
+        end
+        
+        api2 --> brain2
+        brain2 --> redis2
+        brain2 --> pg2
+    end
+    
+    subgraph digirella_cloud["🏛️ DigiRella Cloud (AzInTelecom)"]
+        llm_cloud["GPU Cluster<br/><i>200-300 tok/s</i><br/><i>Llama/Qwen models</i><br/><i>✅ Baku Data Center</i>"]
+    end
+    
+    brain2 -->|"100% Azerbaijan"| llm_cloud
+    
+    subgraph client2["📱 Clients"]
+        farmers["👨‍🌾 Farmers<br/>(nationwide)"]
+    end
+    
+    farmers --> api2
+    
+    style prod_cloud fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px,color:#1b5e20
+    style digirella_cloud fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
+```
+
+### 2.3 Production Architecture (DigiRella Owned)
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+graph TB
+    subgraph prod_owned["🇦🇿 PRODUCTION (DigiRella Owned)"]
+        subgraph services3["🧠 Services"]
+            api3["🔌 FastAPI<br/><i>On-Premises</i>"]
+            brain3["🧠 LangGraph<br/><i>Agent Orchestrator</i>"]
+        end
+        
+        subgraph data3["💾 Data Layer"]
+            pg3["🐘 PostgreSQL<br/><i>Local Server</i>"]
+            redis3["⚡ Redis<br/><i>Local Server</i>"]
+        end
+        
+        api3 --> brain3
+        brain3 --> redis3
+        brain3 --> pg3
+    end
+    
+    subgraph digirella_owned["🏢 DigiRella Owned Hardware"]
+        llm_owned["2× RTX 5090<br/><i>200-300 tok/s</i><br/><i>Llama/Qwen models</i><br/><i>✅ Your Premises</i>"]
+    end
+    
+    brain3 -->|"Air-gap capable"| llm_owned
+    
+    subgraph client3["📱 Clients"]
+        local["👨‍🌾 Local Network<br/>(offline capable)"]
+    end
+    
+    local --> api3
+    
+    style prod_owned fill:#e1f5fe,stroke:#01579b,stroke-width:3px,color:#01579b
+    style digirella_owned fill:#b3e5fc,stroke:#0277bd,stroke-width:2px,color:#01579b
 ```
 
 **Open-Source Models Available (via Groq or self-hosted):**
@@ -291,7 +384,7 @@ graph TB
 
 ## 3. ALEM Infrastructure Tiers
 
-> **ALEM** = Azərbaycan LLM Ekosistem Matrisi (Azerbaijan LLM Ecosystem Matrix)
+> **ALEM** = **A**gronomical **L**ogic & **E**valuation **M**odel
 
 This section defines the four-tier infrastructure model for LLM deployment in Azerbaijan, from rapid prototyping to air-gapped sovereign installations.
 

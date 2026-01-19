@@ -1,4 +1,6 @@
-# 🎯 Quick Reference: Groq vs DigiRella
+# 🎯 ALEM 1.0 — Deployment Decision Guide
+
+> **ALEM** = **A**gronomical **L**ogic & **E**valuation **M**odel
 
 ## One-Minute Overview
 
@@ -6,29 +8,31 @@
 
 | What | Where | Cost | Speed | Data |
 |------|-------|------|-------|------|
-| **Groq** | Cloud (US) | $0-50/mo | 300 tok/s ⚡ | Leaves Azerbaijan |
-| **DigiRella** | Self-hosted (AZ) | $2,600-145k | 300 tok/s 🏠 | Stays in Azerbaijan |
+| **DigiRella Owned** | Self-hosted (AZ) | $2,600-145k one-time | 300 tok/s 🏠 | Azerbaijan ✅ |
+| **DigiRella Cloud** | AzInTelecom (AZ) | $800-1,500/mo | 300 tok/s ☁️ | Azerbaijan ✅ |
+| *Benchmark Demo* | *Cloud API (for dev)* | *$0-50/mo* | *300 tok/s ⚡* | *External (dev only)* |
 
-## The Key Message
+## The ALEM 1.0 Philosophy
 
-> **Groq proves the benchmark.** (What's possible with open-source + hardware)  
-> **DigiRella shows the path.** (How to replicate it with sovereignty)
+> **We demonstrate performance via cloud APIs** (to show what's possible)  
+> **You deploy via DigiRella** (Owned hardware or AzInTelecom Cloud)  
+> **Result: Enterprise AI with 100% data sovereignty**
 
-## Three Simple Options
+## ALEM 1.0 Deployment Options
 
-### 1. Groq Cloud (Development)
+### Development Phase: Cloud API Benchmark
 - **Cost:** Free tier (14,400 req/day)
-- **Setup:** Just API key
-- **Use for:** Testing, demos, MVPs
-- **Limitation:** Data goes to US servers
+- **Setup:** Just API key (for testing)
+- **Use for:** Validating architecture, demos
+- **Limitation:** Data goes to external servers (development only)
 
-### 2. DigiRella Cloud (Production - Rented)
+### Production Mode 1: DigiRella Cloud (Rented)
 - **Cost:** $800-1,500/mo (rented GPU from AzInTelecom)
 - **Setup:** 1-2 weeks (contract)
-- **Use for:** Government, regulated industries
-- **Benefit:** Data stays in Azerbaijan 🇦🇿
+- **Use for:** Government, regulated industries, scalable production
+- **Benefit:** Data stays in Azerbaijan 🇦🇿, same performance as benchmark
 
-### 3. DigiRella Owned (Production - Owned)
+### Production Mode 2: DigiRella Owned (Self-Hosted)
 - **Cost:** $2,600 (Lite) to $145k (Pro) one-time
 - **Setup:** 2-6 weeks (hardware procurement)
 - **Use for:** Long-term deployment, air-gapped
@@ -51,13 +55,15 @@
 - 300+ tok/s
 - ALL models (Groq-equivalent)
 
-## Migration Path
+## ALEM 1.0 Adoption Path
 
 ```
-Week 1-12:    Groq Cloud        → Validate idea ($0)
-Week 13-52:   DigiRella Cloud  → Pilot with sovereignty ($1,500/mo)
-Year 2+:      DigiRella Owned  → Lowest TCO ($6,300 one-time)
+Phase 1 (Dev):    Cloud Benchmark API   → Validate architecture ($0)
+Phase 2 (Pilot):  DigiRella Cloud       → Production pilot ($1,500/mo)
+Phase 3 (Scale):  DigiRella Owned       → Long-term ownership ($6,300 one-time)
 ```
+
+> 💡 All phases use the same open-source models (Llama, Qwen). Only infrastructure changes.
 
 ## Break-Even Analysis
 

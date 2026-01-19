@@ -2,6 +2,8 @@
 
 > **Mission:** Build a Headless AI Sidecar that delivers personalized, rule-validated farm recommendations to Azerbaijani farmers—without ever touching real data.
 
+> **Architecture:** ALEM 1.0 (Agronomical Logic & Evaluation Model) — Proven open-source AI with full data sovereignty
+
 ---
 
 ## � Project Vision at a Glance
@@ -34,14 +36,16 @@ mindmap
 
 ---
 
-## 🌿 Open-Source First Architecture
+## 🌿 ALEM 1.0 Architecture
 
-**Yonca AI is built on open-source models** to demonstrate enterprise-ready AI that:
+**ALEM** = **A**gronomical **L**ogic & **E**valuation **M**odel
 
-✅ **Can be self-hosted** - Full control over deployment  
-✅ **No vendor lock-in** - Not dependent on proprietary APIs  
-✅ **Transparent & auditable** - Open weights, open architectures  
-✅ **Production-ready** - Enterprise performance (200-300 tok/s)  
+**Yonca AI implements ALEM 1.0**, the first production-ready Azerbaijani agricultural AI architecture:
+
+✅ **100% Open-Source Models** - Llama, Qwen (no proprietary dependencies)  
+✅ **Full Data Sovereignty** - Self-hosted or rented from AzInTelecom  
+✅ **Enterprise Performance** - 200-300 tok/s (proven via cloud benchmarks)  
+✅ **Two Deployment Modes** - DigiRella Owned (buy hardware) or DigiRella Cloud (rent capacity)  
 
 ### 🏆 The Gold Standard: 70B Parameter Class
 
@@ -68,11 +72,15 @@ graph LR
 
 > 📄 See **[15-HARDWARE-JUSTIFICATION.md](15-HARDWARE-JUSTIFICATION.md)** for full economics and hardware specs.
 
-### Deployment Modes
+### ALEM 1.0 Deployment Modes
 
-| Mode | Models | License | Self-Host | Best For |
-|:-----|:-------|:--------|:----------|:---------|
-| 🌿 **Open-Source** | Llama 4 Maverick, Qwen 3 | Apache 2.0 / Llama Community | ✅ Yes | **Recommended** |
+| Mode | Infrastructure | Models | Data Location | Best For |
+|:-----|:---------------|:-------|:--------------|:---------|
+| **DigiRella Owned** | Self-hosted hardware | Llama 4 Maverick, Qwen 3 | Your premises | Long-term, air-gapped |
+| **DigiRella Cloud** | Rented from AzInTelecom | Same open-source models | Azerbaijan 🇦🇿 | Production, scalable |
+| *Benchmark Demo* | *Cloud API (for testing)* | *Same models* | *External* | *Development only* |
+
+> 💡 **Note:** We use cloud APIs during development to demonstrate the target performance. Production deployments use DigiRella (self-hosted or rented).
 
 See **[12-DUAL-MODE-DEPLOYMENT.md](12-DUAL-MODE-DEPLOYMENT.md)** for full details.
 
@@ -148,7 +156,7 @@ flowchart LR
 | # | Document | Purpose | Status |
 |:-:|:---------|:--------|:------:|
 | 11 | **[11-DEMO-UI-SPEC.md](11-DEMO-UI-SPEC.md)** | Chainlit demo specification | ✅ |
-| 12 | **[12-DUAL-MODE-DEPLOYMENT.md](12-DUAL-MODE-DEPLOYMENT.md)** | Infrastructure tiers, Groq/DigiRella, pricing | ✅ |
+| 12 | **[12-DUAL-MODE-DEPLOYMENT.md](12-DUAL-MODE-DEPLOYMENT.md)** | ALEM 1.0 infrastructure, DigiRella deployment modes | ✅ |
 | 13 | **[13-IMPLEMENTATION-PLAN.md](13-IMPLEMENTATION-PLAN.md)** | Step-by-step build guide + EKTİS identity notes | ✅ |
 
 ### Executive & Strategy
@@ -162,8 +170,8 @@ flowchart LR
 
 | # | Document | Purpose | Status |
 |:-:|:---------|:--------|:------:|
-| 18 | **[18-GROQ-VS-DIGIRELLA.md](18-GROQ-VS-DIGIRELLA.md)** | 1-minute deployment decision guide | ✅ |
-| 19 | **[19-PRICING-SIMPLIFIED.md](19-PRICING-SIMPLIFIED.md)** | Detailed cost comparison (Groq/Cloud/Owned) | ✅ |
+| 18 | **[18-GROQ-VS-DIGIRELLA.md](18-GROQ-VS-DIGIRELLA.md)** | ALEM 1.0 deployment decision guide | ✅ |
+| 19 | **[19-PRICING-SIMPLIFIED.md](19-PRICING-SIMPLIFIED.md)** | DigiRella cost comparison (Owned/Cloud/Benchmark) | ✅ |
 | 20 | **[20-CHAINLIT-FEATURES-ROADMAP.md](20-CHAINLIT-FEATURES-ROADMAP.md)** | Native Chainlit features to implement | ✅ |
 
 ---
@@ -176,17 +184,17 @@ To avoid duplication, content is organized as follows:
 |:------|:-----------------|:-----------|
 | **Schemas & Data Models** | 02-SYNTHETIC-DATA-ENGINE | 03-ARCHITECTURE links here |
 | **Security & PII** | 08-SECURITY-HARDENING | 03-ARCHITECTURE summarizes |
-| **Deployment & Infrastructure** | 12-DUAL-MODE-DEPLOYMENT | Consolidates Groq, DigiRella, ALEM tiers, pricing |
+| **Deployment & Infrastructure** | 12-DUAL-MODE-DEPLOYMENT | ALEM 1.0 tiers, DigiRella modes (Owned/Cloud), pricing |
 | **Prompts & Dialogue** | 05-PROMPT + 06-CONVERSATION | 04-TESTING uses examples |
 | **Metrics & Monitoring** | 07-OBSERVABILITY | 09-PERFORMANCE references |
 | **Implementation Notes** | 13-IMPLEMENTATION-PLAN Appendix | EKTİS identity, Alembic, Chat UX |
 
 **Consolidated Content:**
 - **12-DUAL-MODE-DEPLOYMENT.md** now includes:
-  - ALEM Infrastructure Tiers (Groq/Gemini/DigiRella Cloud/DigiRella Owned)
+  - ALEM 1.0 Infrastructure Tiers (Benchmark/DigiRella Cloud/DigiRella Owned)
   - Hardware profiles and cost economics
   - Migration paths and decision matrix
-- **18-GROQ-VS-DIGIRELLA.md** — Quick 1-minute reference
+- **18-GROQ-VS-DIGIRELLA.md** — ALEM 1.0 deployment modes quick reference
 - **19-PRICING-SIMPLIFIED.md** — Detailed pricing breakdown
 - **13-IMPLEMENTATION-PLAN.md Appendix** now includes:
   - EKTİS identity integration notes

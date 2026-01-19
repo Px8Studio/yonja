@@ -4,23 +4,27 @@
 
 ---
 
-## 🎯 TL;DR — Three Simple Options
+## 🎯 TL;DR — ALEM 1.0 Deployment Options
 
 | Option | Cost | Performance | Data Location | Best For |
 |--------|------|-------------|---------------|----------|
-| **Groq Cloud** | $0-50/mo | 200-300 tok/s | 🇺🇸 US | Development, testing, demos |
-| **DigiRella Cloud** | $800-1,500/mo | 200-300 tok/s | 🇦🇿 Azerbaijan | Government, production (rented) |
 | **DigiRella Owned** | $2,600-145k one-time | 200-300 tok/s | 🏠 Your premises | Long-term, air-gapped, full ownership |
+| **DigiRella Cloud** | $800-1,500/mo | 200-300 tok/s | 🇦🇿 Azerbaijan (AzInTelecom) | Government, production (rented) |
+| *Benchmark API* | *$0-50/mo* | *200-300 tok/s* | *🇺🇸 External* | *Development, testing only* |
+
+> 💡 **Architecture:** We use cloud APIs during development to demonstrate target performance. Production uses **DigiRella** (Azerbaijan-based).
 
 ---
 
 ## 📊 Detailed Comparison
 
-### Option 1: Groq Cloud (Benchmark)
+### Development Phase: Cloud Benchmark API
 
-**What is it?** Cloud API using Groq's LPU (Language Processing Unit) infrastructure.
+**What is it?** External cloud API used to demonstrate ALEM 1.0 performance during development.
 
-**Performance:**
+> ⚠️ **For development/testing only.** Production deployments use DigiRella (see Options 2 & 3).
+
+**Performance (Benchmark Target):**
 - Llama 4 Maverick 17B: 300 tok/s
 - Llama 3.3 70B: 200+ tok/s
 - Qwen 3 32B: 280 tok/s
@@ -33,26 +37,29 @@
 
 **Pros:**
 - ✅ Fastest to start (just API key)
+- ✅ Demonstrates target ALEM 1.0 performance
 - ✅ Zero infrastructure management
 - ✅ Free tier for experimentation
-- ✅ 100% open-source models
+- ✅ Same open-source models as production
 
 **Cons:**
-- ❌ Data leaves Azerbaijan (US servers)
+- ❌ Data leaves Azerbaijan (external servers)
 - ❌ Rate limits on free tier
-- ❌ Internet dependency
+- ❌ Not suitable for production
 
-**When to use:** Development, testing, POC, demos
+**When to use:** Development, testing, architecture validation
+
+**Production path:** Switch to DigiRella Cloud or Owned (same models, Azerbaijan-based)
 
 ---
 
-### Option 2: DigiRella Cloud (Rented GPU)
+### Production Option 1: DigiRella Cloud (Rented GPU)
 
-**What is it?** Rented GPU capacity from AzInTelecom (Baku data centers). Same models as Groq, but data stays in Azerbaijan.
+**What is it?** Rented GPU capacity from AzInTelecom (Baku data centers). **ALEM 1.0 production deployment** with same models as benchmark, but data stays in Azerbaijan.
 
 **Performance:**
 - Current: 80 tok/s (optimizing)
-- Target: 200-300 tok/s (Groq-equivalent)
+- Target: 200-300 tok/s (benchmark-equivalent)
 - Latency: ~600ms → target: ~250ms
 
 **Cost:**
@@ -63,9 +70,10 @@
 **Pros:**
 - ✅ **Data sovereignty** (100% Azerbaijan 🇦🇿)
 - ✅ No hardware purchase needed
-- ✅ Same open-source models as Groq
+- ✅ Same open-source models as benchmark
 - ✅ Government-approved infrastructure
 - ✅ SLA guarantees
+- ✅ ALEM 1.0 certified deployment
 
 **Cons:**
 - ❌ Recurring monthly cost
@@ -76,9 +84,9 @@
 
 ---
 
-### Option 3: DigiRella Owned (Self-Hosted)
+### Production Option 2: DigiRella Owned (Self-Hosted)
 
-**What is it?** Hardware you own and operate. Achieves same performance as Groq with appropriate GPU configuration.
+**What is it?** Hardware you own and operate. **ALEM 1.0 self-hosted deployment** achieving benchmark-equivalent performance.
 
 **Three profiles to choose from:**
 

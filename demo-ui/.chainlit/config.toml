@@ -119,10 +119,20 @@ reaction_on_message_received = false
 # NOTE: Do NOT use "Sidecar" — that's internal architecture terminology.
 name = "Yonca AI"
 
-# default_theme = "dark"
-
-# Force Azerbaijani for all users (primary market)
-language = "az-AZ"
+# ════════════════════════════════════════════════════════════════════════════
+# LANGUAGE SETTINGS
+# ════════════════════════════════════════════════════════════════════════════
+# Chainlit UI language. Leave commented to use browser's default language.
+# Supported: en-US (default), az-AZ, ru-RU (if translations exist)
+# 
+# NOTE: Custom translations require .chainlit/translations/{locale}.json
+# If the file is missing or malformed, UI text will be blank!
+# 
+# For production, uncomment ONE of:
+# language = "en-US"    # English (built-in, always works)
+# language = "az-AZ"    # Azerbaijani (requires translations/az-AZ.json)
+# language = "ru-RU"    # Russian (requires translations/ru-RU.json)
+# ════════════════════════════════════════════════════════════════════════════
 
 # layout = "wide"
 

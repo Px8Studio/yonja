@@ -1,0 +1,249 @@
+{
+    "common": {
+        "actions": {
+            "cancel": "Ləğv et",
+            "confirm": "Təsdiq et",
+            "continue": "Davam et",
+            "goBack": "Geri qayıt",
+            "reset": "Sıfırla",
+            "submit": "Göndər"
+        },
+        "status": {
+            "loading": "Yüklənir...",
+            "error": {
+                "default": "Xəta baş verdi",
+                "serverConnection": "Serverə qoşulmaq mümkün olmadı"
+            }
+        }
+    },
+    "auth": {
+        "login": {
+            "title": "Tətbiqə daxil olun",
+            "form": {
+                "email": {
+                    "label": "E-poçt ünvanı",
+                    "required": "e-poçt tələb olunur",
+                    "placeholder": "men@misal.az"
+                },
+                "password": {
+                    "label": "Şifrə",
+                    "required": "şifrə tələb olunur"
+                },
+                "actions": {
+                    "signin": "Daxil ol"
+                },
+                "alternativeText": {
+                    "or": "VƏ YA"
+                }
+            },
+            "errors": {
+                "default": "Daxil olmaq mümkün olmadı",
+                "signin": "Başqa hesabla daxil olmağa çalışın",
+                "oauthSignin": "Başqa hesabla daxil olmağa çalışın",
+                "redirectUriMismatch": "Yönləndirmə URI OAuth konfiqurasiyası ilə uyğun gəlmir",
+                "oauthCallback": "Başqa hesabla daxil olmağa çalışın",
+                "oauthCreateAccount": "Başqa hesabla daxil olmağa çalışın",
+                "emailCreateAccount": "Başqa hesabla daxil olmağa çalışın",
+                "callback": "Başqa hesabla daxil olmağa çalışın",
+                "oauthAccountNotLinked": "Şəxsiyyətinizi təsdiqləmək üçün əvvəlcə istifadə etdiyiniz hesabla daxil olun",
+                "emailSignin": "E-poçt göndərilə bilmədi",
+                "emailVerify": "Zəhmət olmasa e-poçtunuzu yoxlayın, yeni e-poçt göndərildi",
+                "credentialsSignin": "Daxil olmaq mümkün olmadı. Məlumatlarınızı yoxlayın",
+                "sessionRequired": "Bu səhifəyə daxil olmaq üçün hesabınıza daxil olun"
+            }
+        },
+        "provider": {
+            "continue": "{{provider}} ilə davam et"
+        }
+    },
+    "chat": {
+        "input": {
+            "placeholder": "Mesajınızı bura yazın...",
+            "actions": {
+                "send": "Mesaj göndər",
+                "stop": "Dayandır",
+                "attachFiles": "Fayl əlavə et"
+            }
+        },
+        "favorites": {
+            "use": "Sevimlini istifadə et",
+            "headline": "Sevimli mesajlar"
+        },
+        "commands": {
+            "button": "Alətlər",
+            "changeTool": "Aləti dəyiş",
+            "availableTools": "Mövcud alətlər"
+        },
+        "speech": {
+            "start": "Yazmağa başla",
+            "stop": "Yazmağı dayandır",
+            "connecting": "Qoşulur"
+        },
+        "fileUpload": {
+            "dragDrop": "Faylları bura sürükləyin",
+            "browse": "Fayl seç",
+            "sizeLimit": "Limit:",
+            "errors": {
+                "failed": "Yükləmə uğursuz oldu",
+                "cancelled": "Yükləmə ləğv edildi"
+            },
+            "actions": {
+                "cancelUpload": "Yükləməni ləğv et",
+                "removeAttachment": "Əlavəni sil"
+            }
+        },
+        "messages": {
+            "status": {
+                "using": "İstifadə edir",
+                "used": "İstifadə edildi"
+            },
+            "actions": {
+                "copy": {
+                    "button": "Kopyala",
+                    "success": "Kopyalandı!"
+                }
+            },
+            "feedback": {
+                "positive": "Faydalıdır",
+                "negative": "Faydalı deyil",
+                "edit": "Rəyi redaktə et",
+                "dialog": {
+                    "title": "Şərh əlavə edin",
+                    "submit": "Rəyi göndər",
+                    "yourFeedback": "Rəyiniz..."
+                },
+                "status": {
+                    "updating": "Yenilənir",
+                    "updated": "Rəy yeniləndi"
+                }
+            }
+        },
+        "history": {
+            "title": "Son sorğular",
+            "empty": "Boşdur...",
+            "show": "Tarixçəni göstər"
+        },
+        "settings": {
+            "title": "Parametrlər",
+            "customize": "Söhbət parametrlərinizi burada tənzimləyin"
+        },
+        "watermark": "Süni intellekt səhv edə bilər. Vacib məlumatları yoxlayın."
+    },
+    "threadHistory": {
+        "sidebar": {
+            "title": "Keçmiş söhbətlər",
+            "filters": {
+                "search": "Axtar",
+                "placeholder": "Söhbətlərdə axtar..."
+            },
+            "timeframes": {
+                "today": "Bugün",
+                "yesterday": "Dünən",
+                "previous7days": "Son 7 gün",
+                "previous30days": "Son 30 gün"
+            },
+            "empty": "Söhbət tapılmadı",
+            "actions": {
+                "close": "Yan paneli bağla",
+                "open": "Yan paneli aç"
+            }
+        },
+        "thread": {
+            "untitled": "Adsız söhbət",
+            "menu": {
+                "rename": "Adını dəyiş",
+                "share": "Paylaş",
+                "delete": "Sil"
+            },
+            "actions": {
+                "share": {
+                    "title": "Söhbət linkini paylaş",
+                    "button": "Paylaş",
+                    "status": {
+                        "copied": "Link kopyalandı",
+                        "created": "Paylaşma linki yaradıldı!",
+                        "unshared": "Bu söhbət üçün paylaşma deaktivdir"
+                    },
+                    "error": {
+                        "create": "Paylaşma linki yaradıla bilmədi",
+                        "unshare": "Paylaşmanı ləğv etmək mümkün olmadı"
+                    }
+                },
+                "delete": {
+                    "title": "Silməyi təsdiqləyin",
+                    "description": "Bu söhbəti, mesajlarını və elementlərini siləcək. Bu əməliyyat geri qaytarıla bilməz",
+                    "success": "Söhbət silindi",
+                    "inProgress": "Söhbət silinir"
+                },
+                "rename": {
+                    "title": "Söhbətin adını dəyiş",
+                    "description": "Bu söhbət üçün yeni ad daxil edin",
+                    "form": {
+                        "name": {
+                            "label": "Ad",
+                            "placeholder": "Yeni ad daxil edin"
+                        }
+                    },
+                    "success": "Söhbətin adı dəyişdirildi!",
+                    "inProgress": "Ad dəyişdirilir"
+                }
+            }
+        }
+    },
+    "navigation": {
+        "header": {
+            "chat": "Söhbət",
+            "readme": "Haqqında",
+            "theme": {
+                "light": "Açıq tema",
+                "dark": "Qaranlıq tema",
+                "system": "Sistem teması"
+            }
+        },
+        "newChat": {
+            "button": "Yeni söhbət",
+            "dialog": {
+                "title": "Yeni söhbət yarat",
+                "description": "Bu cari söhbət tarixçəsini siləcək. Davam etmək istədiyinizə əminsiniz?",
+                "tooltip": "Yeni söhbət"
+            }
+        },
+        "user": {
+            "menu": {
+                "settings": "Parametrlər",
+                "settingsKey": "P",
+                "apiKeys": "API açarları",
+                "logout": "Çıxış"
+            }
+        }
+    },
+    "apiKeys": {
+        "title": "Tələb olunan API açarları",
+        "description": "Bu tətbiqi istifadə etmək üçün aşağıdakı API açarları tələb olunur. Açarlar cihazınızın lokal yaddaşında saxlanılır.",
+        "success": {
+            "saved": "Uğurla saxlanıldı"
+        }
+    },
+    "alerts": {
+        "info": "Məlumat",
+        "note": "Qeyd",
+        "tip": "Məsləhət",
+        "important": "Vacib",
+        "warning": "Xəbərdarlıq",
+        "caution": "Diqqət",
+        "debug": "Debug",
+        "example": "Nümunə",
+        "success": "Uğurlu",
+        "help": "Kömək",
+        "idea": "Fikir",
+        "pending": "Gözləyir",
+        "security": "Təhlükəsizlik",
+        "beta": "Beta",
+        "best-practice": "Ən yaxşı təcrübə"
+    },
+    "components": {
+        "MultiSelectInput": {
+            "placeholder": "Seçin..."
+        }
+    }
+}

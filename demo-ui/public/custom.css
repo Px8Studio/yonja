@@ -1,0 +1,480 @@
+/* Yonca AI Custom CSS
+ * "Natural Tech" Design Language — Liquid Glass Aesthetics
+ * Inspired by 2026 Azerbaijani government apps (SİMA, MyGov)
+ */
+
+/* ============================================
+ * Color Palette (Yonca Brand — Forest Green Authority)
+ * ============================================ */
+:root {
+    /* Primary: Deep Forest Green (Azerbaijan Agriculture) */
+    --yonca-green-primary: #2D5A27;
+    --yonca-green-light: #A8E6CF;  /* Emerald Mint for highlights */
+    --yonca-green-dark: #1B4D1F;
+    --yonca-green-accent: #4CAF50;
+    
+    /* Neutral palette */
+    --yonca-charcoal: #1F2937;     /* Soft charcoal for text */
+    --yonca-earth-brown: #5D4037;
+    --yonca-sky-blue: #1976D2;
+    --yonca-sun-yellow: #FFC107;
+    --yonca-cream: #FAFAFA;
+    
+    /* Glassmorphism variables */
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-bg-dark: rgba(31, 41, 55, 0.8);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --glass-border-dark: rgba(255, 255, 255, 0.1);
+    --glass-blur: blur(10px);
+    --glass-shadow: 0 8px 32px rgba(45, 90, 39, 0.15);
+}
+
+/* ============================================
+ * Chat Container (Nature-inspired backdrop)
+ * ============================================ */
+.cl-chat-container {
+    background: linear-gradient(135deg, #f8faf8 0%, #e8f5e9 50%, #d4edda 100%);
+    position: relative;
+}
+
+/* Subtle pattern overlay for depth */
+.cl-chat-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: radial-gradient(circle at 25% 25%, rgba(45, 90, 39, 0.03) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.dark .cl-chat-container {
+    background: linear-gradient(135deg, #1a1f1a 0%, #1f2937 50%, #1a2e1a 100%);
+}
+
+/* ============================================
+ * Messages (Liquid Glass Design)
+ * ============================================ */
+
+/* User messages */
+.cl-message[data-author="user"] {
+    background: linear-gradient(135deg, var(--yonca-sky-blue) 0%, #1565c0 100%) !important;
+    border-radius: 18px 18px 4px 18px !important;
+    box-shadow: 0 4px 15px rgba(25, 118, 210, 0.25);
+}
+
+/* Bot messages — Liquid Glass */
+.cl-message[data-author="Yonca AI"] {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-left: 4px solid var(--yonca-green-primary);
+    border-radius: 4px 18px 18px 18px;
+    box-shadow: var(--glass-shadow);
+}
+
+.dark .cl-message[data-author="Yonca AI"] {
+    background: var(--glass-bg-dark);
+    border: 1px solid var(--glass-border-dark);
+    border-left: 4px solid var(--yonca-green-light);
+}
+
+/* System messages */
+.cl-message[data-author="Sistem"] {
+    background: rgba(255, 248, 225, 0.9);
+    backdrop-filter: var(--glass-blur);
+    border-left: 4px solid var(--yonca-sun-yellow);
+    border-radius: 8px;
+    font-size: 0.9em;
+}
+
+/* Welcome/Dashboard card — Premium Liquid Glass */
+.cl-message[data-author="Yonca AI"]:first-of-type {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(168, 230, 207, 0.4) 100%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(45, 90, 39, 0.15);
+    border-left: 5px solid var(--yonca-green-primary);
+    box-shadow: 0 12px 40px rgba(45, 90, 39, 0.12);
+}
+
+.dark .cl-message[data-author="Yonca AI"]:first-of-type {
+    background: linear-gradient(135deg, rgba(31, 41, 55, 0.9) 0%, rgba(45, 90, 39, 0.3) 100%);
+}
+
+/* ============================================
+ * Header / Logo Area
+ * ============================================ */
+.cl-header {
+    background: linear-gradient(90deg, var(--yonca-green-dark) 0%, var(--yonca-green-primary) 100%);
+}
+
+.cl-header-title {
+    color: white !important;
+    font-weight: 600;
+}
+
+/* ============================================
+ * Steps (LangGraph Node Visualization)
+ * ============================================ */
+.cl-step {
+    background-color: #e8f5e9;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin: 4px 0;
+}
+
+.cl-step-icon {
+    color: var(--yonca-green-primary);
+}
+
+.cl-step-name {
+    font-weight: 500;
+    color: var(--yonca-earth-brown);
+}
+
+/* Step states */
+.cl-step[data-state="running"] {
+    border-left: 3px solid var(--yonca-sun-yellow);
+    animation: pulse 1.5s infinite;
+}
+
+.cl-step[data-state="completed"] {
+    border-left: 3px solid var(--yonca-green-light);
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* ============================================
+ * Input Area (Floating Design)
+ * ============================================ */
+.cl-input-container {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    margin: 0 16px 16px 16px;
+    padding: 8px 12px;
+    box-shadow: 0 8px 32px rgba(45, 90, 39, 0.1), 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.cl-input-container:focus-within {
+    box-shadow: 0 12px 40px rgba(45, 90, 39, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+
+.dark .cl-input-container {
+    background: var(--glass-bg-dark);
+    border: 1px solid var(--glass-border-dark);
+}
+
+.cl-input-textarea {
+    border-radius: 16px;
+    border: 2px solid transparent;
+    background: rgba(255, 255, 255, 0.5);
+    transition: all 0.2s ease;
+}
+
+.dark .cl-input-textarea {
+    background: rgba(31, 41, 55, 0.5);
+}
+
+.cl-input-textarea:focus {
+    border-color: var(--yonca-green-primary);
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 0 3px rgba(45, 90, 39, 0.1);
+}
+
+/* Send button — Pill shape with pulse */
+.cl-send-button {
+    background: linear-gradient(135deg, var(--yonca-green-primary) 0%, var(--yonca-green-dark) 100%) !important;
+    border-radius: 999px;
+    padding: 10px 20px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(45, 90, 39, 0.3);
+}
+
+.cl-send-button:hover {
+    background: linear-gradient(135deg, var(--yonca-green-accent) 0%, var(--yonca-green-primary) 100%) !important;
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(45, 90, 39, 0.4);
+}
+
+/* Pulse animation for send button on hover */
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 4px 15px rgba(45, 90, 39, 0.3); }
+    50% { box-shadow: 0 4px 25px rgba(45, 90, 39, 0.5), 0 0 40px rgba(168, 230, 207, 0.3); }
+}
+
+.cl-send-button:hover {
+    animation: pulse-glow 1.5s infinite;
+}
+
+/* ============================================
+ * Settings Panel (Farm Selector)
+ * ============================================ */
+.cl-settings-panel {
+    background-color: white;
+    border-left: 4px solid var(--yonca-green-primary);
+}
+
+.cl-settings-title {
+    color: var(--yonca-green-dark);
+    font-weight: 600;
+}
+
+/* Select dropdown */
+.cl-select {
+    border-radius: 8px;
+    border: 2px solid #e0e0e0;
+}
+
+.cl-select:focus {
+    border-color: var(--yonca-green-primary);
+}
+
+/* ============================================
+ * Feedback Buttons
+ * ============================================ */
+.cl-feedback-button {
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.cl-feedback-button:hover {
+    transform: scale(1.1);
+}
+
+.cl-feedback-button[data-feedback="positive"]:hover {
+    background-color: #c8e6c9;
+}
+
+.cl-feedback-button[data-feedback="negative"]:hover {
+    background-color: #ffcdd2;
+}
+
+/* ============================================
+ * Welcome Message (Dashboard Card)
+ * ============================================ */
+.cl-welcome-screen {
+    background: linear-gradient(135deg, rgba(232, 245, 233, 0.9) 0%, rgba(200, 230, 201, 0.8) 100%);
+    backdrop-filter: blur(8px);
+}
+
+/* Dashboard status cards styling */
+.dashboard-card {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin: 8px 0;
+    box-shadow: var(--glass-shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(45, 90, 39, 0.2);
+}
+
+.dark .dashboard-card {
+    background: var(--glass-bg-dark);
+    border: 1px solid var(--glass-border-dark);
+}
+
+/* SİMA authentication badge */
+.sima-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, rgba(45, 90, 39, 0.1) 0%, rgba(168, 230, 207, 0.2) 100%);
+    border: 1px solid rgba(45, 90, 39, 0.2);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 0.85em;
+    color: var(--yonca-green-primary);
+    font-weight: 500;
+}
+
+.dark .sima-badge {
+    background: linear-gradient(135deg, rgba(168, 230, 207, 0.1) 0%, rgba(45, 90, 39, 0.2) 100%);
+    color: var(--yonca-green-light);
+}
+
+/* Quick action buttons */
+.quick-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(45, 90, 39, 0.15);
+    border-radius: 12px;
+    padding: 12px 18px;
+    font-weight: 500;
+    color: var(--yonca-charcoal);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.quick-action-btn:hover {
+    background: linear-gradient(135deg, var(--yonca-green-light) 0%, rgba(168, 230, 207, 0.6) 100%);
+    border-color: var(--yonca-green-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(45, 90, 39, 0.15);
+}
+
+.dark .quick-action-btn {
+    background: var(--glass-bg-dark);
+    color: #e0e0e0;
+}
+
+.dark .quick-action-btn:hover {
+    background: linear-gradient(135deg, rgba(45, 90, 39, 0.4) 0%, rgba(168, 230, 207, 0.2) 100%);
+}
+
+/* ============================================
+ * Typography (Azerbaijani Support)
+ * ============================================ */
+body {
+    font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Ensure proper rendering of Azerbaijani characters */
+.cl-message-content {
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+}
+
+/* Code blocks */
+.cl-message-content pre {
+    background-color: #263238;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+/* ============================================
+ * Responsive Adjustments
+ * ============================================ */
+@media (max-width: 768px) {
+    .cl-message {
+        padding: 12px;
+    }
+    
+    .cl-settings-panel {
+        width: 100%;
+    }
+}
+
+/* ============================================
+ * Accessibility
+ * ============================================ */
+.cl-message:focus-visible,
+.cl-send-button:focus-visible,
+.cl-feedback-button:focus-visible {
+    outline: 3px solid var(--yonca-green-primary);
+    outline-offset: 2px;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .cl-message[data-author="Yonca AI"] {
+        border-left-width: 6px;
+    }
+    
+    .cl-step {
+        border: 2px solid var(--yonca-green-dark);
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .cl-step[data-state="running"] {
+        animation: none;
+    }
+}
+
+/* ============================================
+ * LOGIN PAGE CUSTOMIZATION
+ * ============================================
+ * Note: The login page background image is configured via
+ * .chainlit/config.toml using login_page_image setting.
+ * CSS here only enhances specific elements.
+ */
+
+/* Style the login form card for better visibility over the background */
+.flex.flex-col.gap-4.p-6,
+.w-full.max-w-xs {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
+}
+
+/* Dark mode login card */
+.dark .flex.flex-col.gap-4.p-6,
+.dark .w-full.max-w-xs {
+    background: rgba(30, 30, 30, 0.95);
+}
+
+/* Login title styling */
+.text-2xl.font-bold {
+    color: var(--yonca-green-dark);
+}
+
+.dark .text-2xl.font-bold {
+    color: var(--yonca-green-light);
+}
+
+/* OAuth provider buttons - enhance with Yonca branding on hover */
+button[type="button"]:has(svg) {
+    transition: all 0.3s ease;
+    border-radius: 12px;
+}
+
+button[type="button"]:has(svg):hover {
+    border-color: var(--yonca-green-primary) !important;
+    box-shadow: 0 4px 15px rgba(45, 90, 39, 0.25);
+    transform: translateY(-1px);
+}
+
+/* Primary login/action buttons — Pill shape with pulse */
+button[type="submit"],
+.login-button,
+button.primary {
+    background: linear-gradient(135deg, var(--yonca-green-primary) 0%, var(--yonca-green-dark) 100%) !important;
+    border-radius: 999px !important;
+    border: none !important;
+    color: white !important;
+    font-weight: 600;
+    padding: 12px 32px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(45, 90, 39, 0.3);
+}
+
+button[type="submit"]:hover,
+.login-button:hover,
+button.primary:hover {
+    transform: scale(1.02) translateY(-1px);
+    box-shadow: 0 6px 25px rgba(45, 90, 39, 0.4);
+    animation: login-pulse 2s infinite;
+}
+
+@keyframes login-pulse {
+    0%, 100% { 
+        box-shadow: 0 4px 15px rgba(45, 90, 39, 0.3);
+    }
+    50% { 
+        box-shadow: 0 4px 30px rgba(45, 90, 39, 0.5), 0 0 50px rgba(168, 230, 207, 0.3);
+    }
+}

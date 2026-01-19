@@ -1,0 +1,15 @@
+# Demo UI Dependencies
+chainlit>=1.3.0
+httpx>=0.26.0
+pydantic>=2.5.0
+python-dotenv>=1.0.0
+structlog>=24.1.0
+
+# LangGraph integration
+langgraph>=0.2.0
+langchain-core>=0.3.0
+
+# Import from main app
+# (demo-ui runs alongside main yonca package)
+
+asyncpg>=0.31.0

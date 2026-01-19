@@ -6,7 +6,7 @@
 ## 🎯 What This Is
 
 **Yonca AI** is a **Headless AI Sidecar** that generates personalized farming task lists by combining:
-- **Local LLM** (Qwen2.5-7B via Ollama) for natural language in Azerbaijani
+- **Local LLM** (Qwen3-4B via Ollama) for natural language in Azerbaijani
 - **Deterministic Agronomy Rules** to ensure ≥90% logical accuracy
 - **Synthetic Farm Scenarios** so no real farmer data is ever needed
 
@@ -48,6 +48,8 @@ yonca-ai/
 
 ## 🚀 Quick Start
 
+> 📚 **For detailed model switching and architecture guide, see [MODEL-SWITCHING-GUIDE.md](docs/MODEL-SWITCHING-GUIDE.md)**
+
 ### Prerequisites
 
 #### Option A: Local LLM with Ollama (Recommended for Azerbaijani 🇦🇿)
@@ -56,7 +58,7 @@ yonca-ai/
 - ✅ 100% offline capability
 - ✅ No API costs
 - ✅ Data never leaves your machine
-- ✅ Best Azerbaijani language support with Qwen2.5
+- ✅ Best Azerbaijani language support with Qwen3
 
 **Install Ollama:**
 
@@ -87,21 +89,22 @@ YONCA_LLM_MODEL=gemini-2.0-flash
 
 ### Installation
 
+> **Tooling Note:** We use **Poetry** for dependency management (reads `pyproject.toml`, creates reproducible environments). **Uvicorn** is the ASGI server that runs FastAPI—it's installed as a dependency, not a separate tool.
+
 ```bash
 # Clone the repository
 git clone https://github.com/ZekaLab/yonja.git
 cd yonja
 
-# Create virtual environment (Python 3.12)
-python -m venv .venv312
-.venv312\Scripts\activate  # Windows
-source .venv312/bin/activate  # Linux/Mac
+# Option A: Poetry (Recommended)
+poetry install              # Creates .venv and installs all deps
+poetry shell                # Activates the environment
 
-# Install with your preferred LLM provider
-pip install -e ".[ollama]"    # For local Qwen2.5
-pip install -e ".[gemini]"    # For Google Gemini
-pip install -e ".[all-llms]"  # Both options
-pip install -e ".[dev]"       # Development tools
+# Option B: pip + venv
+python -m venv .venv
+.venv\Scripts\activate      # Windows
+source .venv/bin/activate   # Linux/Mac
+pip install -e ".[dev]"     # Install in editable mode
 ```
 
 ### 🎮 Start Yonca AI
@@ -135,7 +138,7 @@ python -m yonca.startup --check-only
 
 ✅ Ollama installed
 ✅ Ollama server running
-✅ Model qwen2.5:7b ready
+✅ Model qwen3:4b ready
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃     🌿 Yonca AI Status             ┃
@@ -143,7 +146,7 @@ python -m yonca.startup --check-only
 ┃ Component  ┃ Status                ┃
 ┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━┩
 │ Ollama     │ ✅ Running            │
-│ LLM Model  │ ✅ qwen2.5:7b         │
+│ LLM Model  │ ✅ qwen3:4b           │
 │ API        │ 🚀 Starting...        │
 └────────────┴───────────────────────┘
 
@@ -158,13 +161,56 @@ INFO:     Uvicorn running on http://127.0.0.1:8000
 
 ## 🤖 LLM Configuration
 
+### Available Local Models
+
 | Provider | Model | Size | Best For |
 |----------|-------|------|----------|
-| **Ollama** | `qwen2.5:7b` | 4.7GB | 🇦🇿 Azerbaijani (Recommended) |
-| **Ollama** | `qwen2.5:3b` | 2.0GB | Fast responses, limited RAM |
-| **Ollama** | `qwen2.5:14b` | 9.0GB | Highest quality |
+| **Ollama** | `qwen3:4b` | 2.6GB | 🇦🇿 Multilingual (Recommended) |
+| **Ollama** | `qwen3:1.7b` | 1.2GB | Fast responses, limited RAM |
+| **Ollama** | `qwen3:8b` | 5.0GB | Higher quality reasoning |
+| **Ollama** | `atllama` | 2.5GB | 🇦🇿 Azerbaijani-tuned (GGUF) |
+| **Ollama** | `aya:8b` | 4.8GB | 100+ language support |
 | **Gemini** | `gemini-2.0-flash` | Cloud | Production, high volume |
-| **Gemini** | `gemini-1.5-pro` | Cloud | Complex reasoning |
+
+### Setting Up Local Models
+
+**Option 1: Docker (Recommended)**
+```bash
+# Start all services and setup models
+docker-compose -f docker-compose.local.yml up -d
+
+# First-time setup: pull qwen3 and import ATLLaMA
+docker-compose -f docker-compose.local.yml --profile setup up model-setup
+```
+
+**Option 2: Manual Setup**
+```powershell
+# Pull Qwen3 (primary model)
+ollama pull qwen3:4b
+
+# Import ATLLaMA from GGUF (Azerbaijani-tuned)
+python scripts/import_model.py --name atllama --path models/atllama.v3.5.Q4_K_M.gguf
+
+# Or import into Docker container
+python scripts/import_model.py --docker
+```
+
+### Switching Models
+
+Set the model via environment variable:
+```bash
+YONCA_OLLAMA_MODEL=qwen3:4b   # Qwen3 (default)
+YONCA_OLLAMA_MODEL=atllama    # ATLLaMA (Azerbaijani)
+```
+
+Or use the API:
+```bash
+# List available models
+curl http://localhost:8000/api/models
+
+# Check model status
+curl http://localhost:8000/api/models/qwen3:4b
+```
 
 ### Usage Example
 
@@ -172,7 +218,7 @@ INFO:     Uvicorn running on http://127.0.0.1:8000
 from yonca.agent import create_ollama_agent, create_gemini_agent
 
 # Local Ollama (Azerbaijani-optimized)
-agent = create_ollama_agent(model="qwen2.5:7b")
+agent = create_ollama_agent(model="qwen3:4b")
 response = agent.chat("Buğda sahəsini nə vaxt suvarmaq lazımdır?")
 
 # Google Gemini (Cloud)

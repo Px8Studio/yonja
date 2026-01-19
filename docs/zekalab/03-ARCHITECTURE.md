@@ -4,7 +4,141 @@
 
 ---
 
-## � Architecture at a Glance
+## 🧩 Component Architecture Overview (Implemented)
+
+> **The Big Picture:** How Chainlit, PostgreSQL, Redis, Langfuse, and LangGraph interconnect in the actual implementation.
+
+### Five-Component System
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+flowchart TB
+    subgraph user["👤 USER LAYER"]
+        farmer["🧑‍🌾 Farmer"]
+    end
+
+    subgraph ui["🖥️ PRESENTATION LAYER"]
+        chainlit["<b>Chainlit UI</b><br/>:8501<br/>━━━━━━━━━<br/>• Chat interface<br/>• Token streaming<br/>• Thread display<br/>• OAuth login"]
+    end
+
+    subgraph brain["🧠 INTELLIGENCE LAYER"]
+        langgraph["<b>LangGraph Agent</b><br/>━━━━━━━━━<br/>• Supervisor node<br/>• Agronomist node<br/>• Weather node<br/>• Validator node"]
+        llm["<b>LLM Providers</b><br/>━━━━━━━━━<br/>• Groq (cloud)<br/>• Ollama (local)<br/>• Gemini (fallback)"]
+    end
+
+    subgraph data["💾 PERSISTENCE LAYER"]
+        direction LR
+        postgres["<b>PostgreSQL</b><br/>:5433<br/>━━━━━━━━━<br/>🟢 Domain Data:<br/>• user_profiles<br/>• farms, parcels<br/>• crop_rotation<br/>━━━━━━━━━<br/>🔵 Chainlit Data:<br/>• users (OAuth)<br/>• threads<br/>• steps, feedbacks"]
+        redis["<b>Redis Stack</b><br/>:6379<br/>━━━━━━━━━<br/>• LangGraph checkpoints<br/>• Session state<br/>• Rate limiting<br/>• Caching"]
+    end
+
+    subgraph observe["📊 OBSERVABILITY LAYER"]
+        langfuse["<b>Langfuse</b><br/>:3001<br/>━━━━━━━━━<br/>• LLM traces<br/>• Token costs<br/>• Latency metrics<br/>• Prompt versions"]
+        langfusedb["<b>Langfuse DB</b><br/>(PostgreSQL)<br/>━━━━━━━━━<br/>• Traces storage<br/>• Evaluations"]
+    end
+
+    farmer --> chainlit
+    chainlit --> |"Direct Mode"| langgraph
+    langgraph --> llm
+    langgraph --> |"State checkpoints"| redis
+    chainlit --> |"Conversation history"| postgres
+    langgraph --> |"Farm context"| postgres
+    langgraph --> |"Traces"| langfuse
+    langfuse --> langfusedb
+
+    style chainlit fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style langgraph fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style postgres fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    style redis fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    style langfuse fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+```
+
+### Component Responsibility Matrix
+
+| Component | Purpose | What It Stores | Lifecycle |
+|:----------|:--------|:---------------|:----------|
+| **Chainlit** | Chat UI + thread display | UI state only (delegates storage) | Per-session |
+| **PostgreSQL (Yonca)** | Domain data + Chainlit persistence | Users, farms, threads, messages | Permanent |
+| **Redis** | Fast state + checkpoints | LangGraph state, sessions, cache | TTL-based |
+| **Langfuse** | LLM observability | Traces, costs, latencies | Permanent |
+| **LangGraph** | Agent orchestration | In-memory graph execution | Per-request |
+
+### Three Storage Concerns
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+graph LR
+    subgraph yonca_db["🐘 PostgreSQL: yonca (:5433)"]
+        direction TB
+        domain["<b>Domain Tables</b><br/>user_profiles<br/>farm_profiles<br/>parcels<br/>ndvi_readings"]
+        chainlit_tables["<b>Chainlit Tables</b><br/>users (OAuth)<br/>threads<br/>steps<br/>feedbacks"]
+    end
+
+    subgraph redis_db["🔴 Redis Stack (:6379)"]
+        direction TB
+        checkpoints["<b>LangGraph</b><br/>langgraph:checkpoint:{thread_id}"]
+        sessions["<b>Sessions</b><br/>session:{user_id}"]
+        cache["<b>Rate Limits</b><br/>rate_limit:{ip}:{window}"]
+    end
+
+    subgraph langfuse_db["🐘 PostgreSQL: langfuse"]
+        direction TB
+        traces["<b>Traces</b><br/>LLM calls"]
+        evals["<b>Evaluations</b><br/>quality scores"]
+    end
+
+    style yonca_db fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style redis_db fill:#ffebee,stroke:#c62828,stroke-width:2px
+    style langfuse_db fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+```
+
+| Storage | Tables/Keys | Purpose |
+|:--------|:------------|:--------|
+| **PostgreSQL (yonca)** | `users`, `threads`, `steps`, `feedbacks` | Chainlit conversation persistence |
+| **PostgreSQL (yonca)** | `user_profiles`, `farm_profiles`, `parcels` | Domain/farm data |
+| **Redis** | `langgraph:checkpoint:{thread_id}` | LangGraph state between turns |
+| **Redis** | `session:{user_id}`, `rate_limit:{ip}` | Sessions & rate limiting |
+| **Langfuse DB** | `traces`, `generations`, `spans` | LLM observability data |
+
+### Data Flow: Message Lifecycle
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+sequenceDiagram
+    participant F as 🧑‍🌾 Farmer
+    participant C as 🖥️ Chainlit
+    participant G as 🧠 LangGraph
+    participant R as 💾 Redis
+    participant P as 🐘 PostgreSQL
+    participant L as 📊 Langfuse
+
+    Note over F,L: 1️⃣ User sends message
+    F->>C: "Pomidor nə vaxt suvarmalıyam?"
+    
+    Note over C,P: 2️⃣ Chainlit saves to PostgreSQL
+    C->>P: INSERT INTO steps (threadId, input, ...)
+    
+    Note over C,G: 3️⃣ LangGraph processes
+    C->>G: invoke(message, thread_id)
+    G->>R: Load checkpoint (if exists)
+    G->>P: Query farm_profiles, parcels
+    G->>L: Trace: supervisor → agronomist → validator
+    
+    Note over G,R: 4️⃣ LangGraph saves state
+    G->>R: Save checkpoint (conversation memory)
+    
+    Note over G,C: 5️⃣ Response streams back
+    G-->>C: Stream tokens
+    C->>P: INSERT INTO steps (output, generation, ...)
+    C-->>F: Display response
+
+    Note over F,L: 🔄 On refresh: Chainlit loads threads from PostgreSQL
+    Note over F,L: 🔄 LangGraph loads state from Redis checkpoint
+```
+
+---
+
+## 📐 Architecture at a Glance (Original Design)
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
@@ -78,25 +212,86 @@ graph TB
     mygov -.->|"Validation"| api
 ```
 
-### A. PostgreSQL: The Persistence Layer
+### A. PostgreSQL: The Persistence Layer ✅ IMPLEMENTED
 
 | Aspect | Description |
 |:-------|:------------|
-| **Purpose** | Stores "Ground Truth" for 5+ synthetic farm profiles |
-| **Content** | Detailed schemas mirroring EKTİS—parcel boundaries, sowing declarations, crop health logs |
-| **Isolation** | Entirely isolated; prototype contains ONLY synthetic engine data |
-| **Tools** | Populated via **SDV** or **MOSTLY AI** |
+| **Purpose** | Single database for domain data + Chainlit conversation persistence |
+| **Domain Tables** | `user_profiles`, `farm_profiles`, `parcels`, `ndvi_readings`, `crop_rotation_logs` |
+| **Chainlit Tables** | `users` (OAuth), `threads`, `steps`, `elements`, `feedbacks` |
+| **Migrations** | Managed via Alembic — see `alembic/versions/` |
+| **Port** | `:5433` (mapped from container's `:5432`) |
+
+> **Key Insight:** Chainlit's `SQLAlchemyDataLayer` stores conversation history in the **same database** as domain data. This enables:
+> - Thread history sidebar in Chainlit UI
+> - Conversation persistence across browser refreshes
+> - OAuth user storage (Google login)
 
 ### B. Redis: The Context & Speed Layer ✅ IMPLEMENTED
 
 | Aspect | Description |
 |:-------|:------------|
-| **Purpose** | "Short-term memory" for LangGraph agents + fast lookups |
-| **Agent State** | Stores conversation Checkpoints—if farmer closes app mid-conversation, Redis remembers the exact state |
-| **Real-time Data** | Caches simulated live feeds (synthetic weather, market prices) for instant AI responses |
-| **Session Management** | Manages thread IDs and conversation history |
+| **Purpose** | LangGraph checkpointing + fast lookups + rate limiting |
+| **LangGraph Checkpoints** | `langgraph:checkpoint:{thread_id}` — agent state between conversation turns |
+| **Session Storage** | `session:{user_id}` — user preferences, farm_id cache |
+| **Rate Limiting** | `rate_limit:{ip}:{window}` — sliding window counters |
 | **Connection Pooling** | ✅ 50 max connections via `redis.asyncio` — see `src/yonca/data/redis_client.py` |
-| **Rate Limiting** | ✅ Redis sliding window — see `src/yonca/api/middleware/rate_limit.py` |
+| **Image** | `redis/redis-stack-server` (includes RediSearch for checkpoint queries) |
+
+> **Key Insight:** Redis stores **agent memory** (what was discussed), while PostgreSQL stores **conversation display** (what to show in UI). Both are needed for full persistence.
+
+### C. Langfuse: The Observability Layer ✅ IMPLEMENTED
+
+| Aspect | Description |
+|:-------|:------------|
+| **Purpose** | Self-hosted LLM observability (open-source LangSmith alternative) |
+| **Database** | Separate PostgreSQL instance (`:langfuse-db`) |
+| **Traces** | Every LLM call, token count, latency, cost |
+| **Sessions** | Conversations grouped by `thread_id` |
+| **Port** | `:3001` for dashboard |
+| **Integration** | `src/yonca/observability/langfuse.py` with LangChain callback handler |
+
+### D. Docker Compose Services Map
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+graph TB
+    subgraph compose["docker-compose.local.yml"]
+        postgres["🐘 postgres<br/>:5433"]
+        redis["🔴 redis<br/>:6379"]
+        ollama["🤖 ollama<br/>:11434"]
+        langfuse["📊 langfuse-server<br/>:3001"]
+        langfusedb["🐘 langfuse-db<br/>(internal)"]
+        api["🔌 api<br/>:8000"]
+        demoui["🖥️ demo-ui<br/>:8501"]
+    end
+    
+    api --> postgres
+    api --> redis
+    api --> ollama
+    demoui --> postgres
+    demoui --> redis
+    demoui --> ollama
+    demoui -.-> api
+    langfuse --> langfusedb
+    
+    style postgres fill:#e8f5e9,stroke:#388e3c
+    style redis fill:#ffebee,stroke:#c62828
+    style ollama fill:#fff3e0,stroke:#f57c00
+    style langfuse fill:#f3e5f5,stroke:#7b1fa2
+    style demoui fill:#e3f2fd,stroke:#1976d2
+```
+
+| Service | Port | Purpose | Profile |
+|:--------|:-----|:--------|:--------|
+| `postgres` | 5433 | Yonca DB (domain + Chainlit tables) | default |
+| `redis` | 6379 | LangGraph checkpoints, sessions | default |
+| `ollama` | 11434 | Local LLM inference | default |
+| `langfuse-server` | 3001 | Observability dashboard | default |
+| `langfuse-db` | — | Langfuse PostgreSQL | default |
+| `api` | 8000 | FastAPI backend | default |
+| `demo-ui` | 8501 | Chainlit chat UI | `--profile demo` |
+| `model-setup` | — | One-time model pull | `--profile setup` |
 
 ---
 

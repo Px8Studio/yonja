@@ -375,7 +375,7 @@ class PersonaProvisioner:
         persona = ALEMPersona(
             user_id=f"demo_{scenario_name}",
             full_name=config["full_name"],
-            email=f"demo_{scenario_name}@zekalab.az",
+            email=f"demo_{scenario_name}@zekalab.info",
             fin_code=generate_mock_fin(),  # Still mock for demo
             phone=generate_mock_phone(),
             region=config["region"],

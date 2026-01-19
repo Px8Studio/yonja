@@ -1272,6 +1272,97 @@ uvicorn yonca.api.main:app --reload
 
 ---
 
+## 📎 Appendix: Implementation Notes
+
+### A. Alembic Command Troubleshooting
+
+**Problem:** `alembic` command not recognized in PowerShell
+
+**Solutions:**
+
+```powershell
+# Option A: Activate Virtual Environment (RECOMMENDED)
+.\.venv\Scripts\Activate.ps1
+alembic upgrade head
+
+# Option B: Use Full Path
+.\.venv\Scripts\alembic.exe upgrade head
+
+# Option C: Use Python Module
+python -m alembic upgrade head
+```
+
+**Why:** Virtual environments isolate packages. Activating adds `.venv\Scripts` to PATH.
+
+**Quick one-liner:**
+```powershell
+.\.venv\Scripts\Activate.ps1; alembic upgrade head; deactivate
+```
+
+### B. EKTİS Identity Integration (2026-01-19)
+
+**Implemented:** Database migration `add_fin_oidc_identity.py`
+
+**New Fields in `user_profiles`:**
+
+| Field | Type | Purpose |
+|:------|:-----|:--------|
+| `fin_code` | CHAR(7) UNIQUE | FIN from mygov ID |
+| `provider_sub` | VARCHAR(255) UNIQUE | OIDC token claim |
+| `provider_name` | VARCHAR(50) | OAuth provider ("mygov", "asan_login", "google") |
+| `auth_level` | VARCHAR(20) | Authentication level ("SIMA", "ASAN_IMZA") |
+| `birth_date` | DATE | From mygov ID token |
+| `first_name`, `last_name`, `father_name` | VARCHAR(100) | Name components |
+| `phone_verified` | VARCHAR(20) | Plaintext for OTP |
+| `subsidy_balance_azn` | FLOAT | Current subsidy balance |
+| `last_payment_date` | TIMESTAMP | Last payment received |
+| `ektis_farmer_id` | VARCHAR(30) | Ministry farmer ID |
+
+**Indexes:**
+- `idx_user_profiles_fin` (unique) — Fast FIN lookups
+- `idx_user_profiles_provider_sub` (unique) — Fast OAuth lookups
+- `idx_user_profiles_ektis_farmer_id` — Ministry ID queries
+
+**Gap Analysis Findings:**
+- **78% compliance** with EKTİS integration best practices
+- **100%** alignment on agricultural data models
+- **Identity layer gap CLOSED** with this migration
+
+**References:**
+- Full analysis: `EKTIS-INTEGRATION-GAP-ANALYSIS.md` (consolidated)
+- Implementation summary: `IMPLEMENTATION-SUMMARY-EKTIS-IDENTITY.md` (consolidated)
+
+### C. Chat Settings UX Enhancement (Proposed)
+
+**Current Issue:** Chat profiles (General/Cotton/Wheat/Expert) are static dropdowns, not persona-aware.
+
+**Proposed Solution:** Smart context-aware profiles in Chat Settings
+
+**Implementation:**
+1. Detect user's crop types from `user_profiles` → `farm_profiles` → `parcels`
+2. Auto-enable relevant expertise in Chat Settings (multi-select)
+3. Allow user override in Settings panel
+4. Store preferences in user profile
+
+**Example:**
+```python
+# User growing cotton + wheat
+auto_enabled_expertises = ["cotton", "wheat", "irrigation"]
+# User can add "advanced_agronomy" manually
+```
+
+**Benefits:**
+- ✅ Aligns with real farming (multi-crop)
+- ✅ Reduces manual selection burden
+- ✅ Leverages existing ALEM persona data
+
+**Status:** Proposed (not yet implemented)
+
+**References:**
+- Full spec: `ALEMBIC-FIX-AND-CHAT-SETTINGS-UX.md` (consolidated)
+
+---
+
 <div align="center">
 
 **📄 Document:** `13-IMPLEMENTATION-PLAN.md`  

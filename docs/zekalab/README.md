@@ -148,15 +148,23 @@ flowchart LR
 | # | Document | Purpose | Status |
 |:-:|:---------|:--------|:------:|
 | 11 | **[11-DEMO-UI-SPEC.md](11-DEMO-UI-SPEC.md)** | Chainlit demo specification | ✅ |
-| 12 | **[12-DUAL-MODE-DEPLOYMENT.md](12-DUAL-MODE-DEPLOYMENT.md)** | Local vs Cloud deployment | ✅ |
-| 13 | **[13-IMPLEMENTATION-PLAN.md](13-IMPLEMENTATION-PLAN.md)** | Step-by-step build guide | ✅ |
+| 12 | **[12-DUAL-MODE-DEPLOYMENT.md](12-DUAL-MODE-DEPLOYMENT.md)** | Infrastructure tiers, Groq/DigiRella, pricing | ✅ |
+| 13 | **[13-IMPLEMENTATION-PLAN.md](13-IMPLEMENTATION-PLAN.md)** | Step-by-step build guide + EKTİS identity notes | ✅ |
 
 ### Executive & Strategy
 
 | # | Document | Purpose | Status |
 |:-:|:---------|:--------|:------:|
-| 14 | **[14-DISCOVERY-QUESTIONS.md](14-DISCOVERY-QUESTIONS.md)** | Questions for validation | ✅ |
+| 14 | **[14-DISCOVERY-QUESTIONS.md](14-DISCOVERY-QUESTIONS.md)** | Validation questions for stakeholders | ✅ |
 | 15 | **[15-HARDWARE-JUSTIFICATION.md](15-HARDWARE-JUSTIFICATION.md)** | 70B Gold Standard, economics | ✅ |
+
+### Quick Reference Guides
+
+| # | Document | Purpose | Status |
+|:-:|:---------|:--------|:------:|
+| 18 | **[18-GROQ-VS-DIGIRELLA.md](18-GROQ-VS-DIGIRELLA.md)** | 1-minute deployment decision guide | ✅ |
+| 19 | **[19-PRICING-SIMPLIFIED.md](19-PRICING-SIMPLIFIED.md)** | Detailed cost comparison (Groq/Cloud/Owned) | ✅ |
+| 20 | **[20-CHAINLIT-FEATURES-ROADMAP.md](20-CHAINLIT-FEATURES-ROADMAP.md)** | Native Chainlit features to implement | ✅ |
 
 ---
 
@@ -168,9 +176,22 @@ To avoid duplication, content is organized as follows:
 |:------|:-----------------|:-----------|
 | **Schemas & Data Models** | 02-SYNTHETIC-DATA-ENGINE | 03-ARCHITECTURE links here |
 | **Security & PII** | 08-SECURITY-HARDENING | 03-ARCHITECTURE summarizes |
-| **Deployment & Docker** | 10-DEVOPS-RUNBOOK | 03-ARCHITECTURE links here |
+| **Deployment & Infrastructure** | 12-DUAL-MODE-DEPLOYMENT | Consolidates Groq, DigiRella, ALEM tiers, pricing |
 | **Prompts & Dialogue** | 05-PROMPT + 06-CONVERSATION | 04-TESTING uses examples |
 | **Metrics & Monitoring** | 07-OBSERVABILITY | 09-PERFORMANCE references |
+| **Implementation Notes** | 13-IMPLEMENTATION-PLAN Appendix | EKTİS identity, Alembic, Chat UX |
+
+**Consolidated Content:**
+- **12-DUAL-MODE-DEPLOYMENT.md** now includes:
+  - ALEM Infrastructure Tiers (Groq/Gemini/DigiRella Cloud/DigiRella Owned)
+  - Hardware profiles and cost economics
+  - Migration paths and decision matrix
+- **18-GROQ-VS-DIGIRELLA.md** — Quick 1-minute reference
+- **19-PRICING-SIMPLIFIED.md** — Detailed pricing breakdown
+- **13-IMPLEMENTATION-PLAN.md Appendix** now includes:
+  - EKTİS identity integration notes
+  - Alembic troubleshooting
+  - Chat settings UX proposals
 
 ---
 

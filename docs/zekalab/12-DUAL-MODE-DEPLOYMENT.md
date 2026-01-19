@@ -1,6 +1,9 @@
-# 🔀 Yonca AI — Dual-Mode Deployment Architecture
+# 12 — Deployment & Infrastructure Guide
 
-> **Purpose:** Define the dual-mode deployment strategy supporting both **Open-Source** (Groq or self-hosted LLMs) and **Proprietary Cloud** (Gemini API) deployments.
+> **Purpose:** Complete deployment strategy covering Groq cloud benchmarks, DigiRella self-hosted options, ALEM infrastructure tiers, and cost economics.
+
+> 📖 **Quick Reference:** See [18-GROQ-VS-DIGIRELLA.md](18-GROQ-VS-DIGIRELLA.md) for 1-minute decision guide.  
+> 💰 **Pricing Details:** See [19-PRICING-SIMPLIFIED.md](19-PRICING-SIMPLIFIED.md) for detailed costs.
 
 ---
 
@@ -286,7 +289,253 @@ graph TB
 
 ---
 
-## 3. LLM Provider Abstraction
+## 3. ALEM Infrastructure Tiers
+
+> **ALEM** = Azərbaycan LLM Ekosistem Matrisi (Azerbaijan LLM Ecosystem Matrix)
+
+This section defines the four-tier infrastructure model for LLM deployment in Azerbaijan, from rapid prototyping to air-gapped sovereign installations.
+
+### 3.1 Tier Overview
+
+| Tier | Name | Provider | Performance | Data Residency | Cost |
+|------|------|----------|-------------|----------------|------|
+| **I** | Groq Cloud | Groq LPU | 200-300 tok/s | US (Groq servers) | $0–50/mo |
+| **II** | Gemini Cloud | Google | 80-150 tok/s | EU (Vertex AI) | $20–300/mo |
+| **III** | DigiRella Cloud | AzInTelecom | 200-300 tok/s | Azerbaijan 🇦🇿 | $800–1,500/mo |
+| **IV** | DigiRella Owned | Self-Hosted | 200-300 tok/s | Customer premises | $2,600–145k one-time |
+
+**Key Concept:** Groq demonstrates what's possible with open-source models (Llama, Qwen, Mixtral) on optimized hardware. All Groq benchmarks can be replicated with DigiRella self-hosted infrastructure.
+
+### 3.2 Tier I: Groq Cloud (Performance Benchmark)
+
+**Best for:** Development, testing, demos, MVPs  
+**Purpose:** Proves open-source models work at enterprise scale
+
+```env
+YONCA_LLM_PROVIDER=groq
+YONCA_GROQ_API_KEY=gsk_...
+YONCA_GROQ_MODEL=meta-llama/llama-4-maverick-17b-128e-instruct
+```
+
+**Specifications:**
+- **Models:** Llama 4 Maverick 17B, Llama 3.3 70B, Qwen 3 32B (all open-source)
+- **Performance:** 200-300 tok/s, ~200ms latency (P95)
+- **Cost:** Free tier (14,400 req/day), $0-50/mo paid
+- **Infrastructure:** LPU (Language Processing Unit) hardware
+
+**Pros:**
+- ✅ Fastest inference (LPU hardware) — benchmark standard
+- ✅ 100% open-source models
+- ✅ Free tier for experimentation
+- ✅ Zero infrastructure management
+
+**Cons:**
+- ⚠️ Data leaves Azerbaijan (US servers)
+- ⚠️ Rate limits on free tier
+- ⚠️ External dependency (requires internet)
+
+**Migration Path:** Start here for development/testing → replicate performance with DigiRella for production
+
+### 3.3 Tier II: Google Gemini (Proprietary Fallback)
+
+**Best for:** Complex reasoning, multimodal, when open-source unavailable  
+**Purpose:** Fallback option (proprietary)
+
+```env
+YONCA_LLM_PROVIDER=gemini
+YONCA_GEMINI_API_KEY=AI...
+YONCA_GEMINI_MODEL=gemini-2.0-flash-exp
+```
+
+**Specifications:**
+- **Models:** Gemini 2.0 Flash, Gemini 1.5 Pro (closed-source)
+- **Performance:** 80-150 tok/s, ~400ms latency (P95)
+- **Cost:** $20-300/mo
+- **Data Residency:** EU (via Vertex AI region lock)
+
+**Pros:**
+- ✅ Best-in-class reasoning
+- ✅ Multimodal (vision, audio)
+- ✅ Enterprise SLAs available
+
+**Cons:**
+- ❌ Proprietary (closed-source)
+- ❌ Cannot self-host
+- ⚠️ Higher cost than open-source
+- ⚠️ Data leaves Azerbaijan
+
+### 3.4 Tier III: DigiRella Cloud (Sovereign Rented GPU)
+
+**Best for:** Government, regulated industries, production with data sovereignty  
+**Purpose:** Groq-equivalent performance with Azerbaijan data residency
+
+```env
+YONCA_LLM_PROVIDER=azintelecom
+YONCA_AZINTELECOM_BASE_URL=https://llm.gov.az/v1
+YONCA_AZINTELECOM_API_KEY=...
+YONCA_AZINTELECOM_MODEL=llama-3.3-70b
+```
+
+**Specifications:**
+- **Provider:** AzInTelecom (Baku data centers)
+- **Models:** Llama 3.3 70B, Qwen 3 32B (same as Groq)
+- **Performance:** 200-300 tok/s target (currently 80 tok/s, optimizing)
+- **Cost:** $800-1,500/mo (rented GPU capacity)
+- **Data Residency:** 100% Azerbaijan 🇦🇿
+
+**Rented GPU Pricing:**
+
+| Profile | Hardware | Monthly Cost (24/7) | Groq-Equivalent |
+|---------|----------|---------------------|-----------------|
+| Lite | 1× A10G (24GB) | ~$470/mo | Llama 8B |
+| Standard | 2× A100 40GB | ~$1,900/mo | Llama 70B |
+| Pro | 8× A100 80GB | ~$7,600/mo | Full fleet |
+
+**Pros:**
+- ✅ **100% data sovereignty** — data never leaves Azerbaijan
+- ✅ Government-grade security
+- ✅ Compliance with local regulations
+- ✅ SLA guarantees
+- ✅ Same open-source models as Groq
+
+**Cons:**
+- ⚠️ Higher cost than Groq cloud
+- ⚠️ Performance optimization in progress
+- ⚠️ Requires contract with AzInTelecom
+
+**Use Cases:**
+- Government agricultural portals
+- Ministry of Agriculture integrations
+- Financial institutions
+- Healthcare data processing
+
+### 3.5 Tier IV: DigiRella Owned (Self-Hosted Hardware)
+
+**Best for:** Offline farms, banks, air-gapped networks, long-term deployment  
+**Purpose:** Full ownership, Groq-equivalent performance on owned hardware
+
+```env
+YONCA_LLM_PROVIDER=ollama
+YONCA_OLLAMA_BASE_URL=http://localhost:11434
+YONCA_OLLAMA_MODEL=atllama:7b
+```
+
+**DigiRella Hardware Profiles:**
+
+#### Profile 1: DigiRella Lite (Entry Self-Hosted)
+*Matches: Llama 3.1 8B on Groq*
+
+| Component | Specification | Cost |
+|-----------|---------------|------|
+| GPU | 1× NVIDIA RTX 4090 (24GB) | $1,800 |
+| CPU | AMD Ryzen 9 / Intel i9 (16 cores) | $500 |
+| RAM | 64GB DDR5 | $200 |
+| Storage | 1TB NVMe SSD | $100 |
+| **Total** | One-time investment | **$2,600** |
+
+**Performance:** 300+ tok/s  
+**Models:** Llama 3.1 8B, Qwen 3 4B, Mistral 7B  
+**Best for:** Single-farm pilot, development, testing
+
+#### Profile 2: DigiRella Standard (70B Production) ⭐ Recommended
+*Matches: Llama 3.3 70B on Groq*
+
+| Component | Specification | Cost |
+|-----------|---------------|------|
+| GPU | 2× NVIDIA RTX 5090 (64GB total) | $4,000 |
+| CPU | AMD Threadripper / Intel Xeon (32 cores) | $1,500 |
+| RAM | 128GB DDR5 | $600 |
+| Storage | 2TB NVMe SSD | $200 |
+| **Total** | One-time investment | **$6,300** |
+
+**Performance:** 200+ tok/s (Groq 70B-equivalent)  
+**Models:** Llama 3.3 70B, Qwen 3 32B, Mixtral 8x7B  
+**Best for:** Regional cooperative (5,000-10,000 farmers), government pilots
+
+#### Profile 3: DigiRella Pro (Enterprise Scale)
+*Matches: Full Groq infrastructure*
+
+| Component | Specification | Cost |
+|-----------|---------------|------|
+| GPU | 8× NVIDIA A100 80GB | $120,000 |
+| CPU | Dual AMD EPYC 9004 (128 cores) | $15,000 |
+| RAM | 512GB DDR5 ECC | $3,000 |
+| Storage | 10TB NVMe RAID | $2,000 |
+| Networking | InfiniBand 200Gbps | $5,000 |
+| **Total** | One-time investment | **$145,000** |
+
+**Performance:** 300+ tok/s (all models)  
+**Models:** ALL models simultaneously (multi-instance)  
+**Best for:** National deployment (100,000+ farmers), Ministry of Agriculture
+
+**Pros:**
+- ✅ **Complete data isolation** — air-gap capable
+- ✅ No internet dependency
+- ✅ One-time cost (no recurring fees)
+- ✅ Custom fine-tuning possible
+- ✅ Same models as Groq
+
+**Cons:**
+- ⚠️ Requires hardware investment
+- ⚠️ Maintenance responsibility
+- ⚠️ Larger upfront cost
+
+**Use Cases:**
+- Remote farms with poor connectivity
+- Military/defense applications
+- Banking secure zones
+- GDPR/KVKK extreme compliance
+
+### 3.6 Cost Comparison: 2-Year Total Cost of Ownership
+
+| Approach | Year 1 | Year 2 | 2-Year Total | Data Sovereignty |
+|----------|--------|--------|--------------|------------------|
+| **Groq Free Tier** | $0 | $0 | **$0** | ❌ US |
+| **Groq Paid** | $600 | $600 | **$1,200** | ❌ US |
+| **DigiRella Lite (owned)** | $2,600 + $100 | $100 | **$2,800** | ✅ Azerbaijan |
+| **DigiRella Standard (owned)** | $6,300 + $150 | $150 | **$6,600** | ✅ Azerbaijan |
+| **DigiRella Cloud (rented)** | $22,800 | $22,800 | **$45,600** | ✅ Azerbaijan |
+
+**Break-even point:** Owned hardware (DigiRella Standard) pays for itself in ~4 months vs DigiRella Cloud.
+
+### 3.7 Decision Matrix
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    ALEM Decision Tree                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Is data sovereignty MANDATORY?                                 │
+│  ├── YES → Is air-gap required?                                 │
+│  │         ├── YES → Tier IV (DigiRella Owned)                 │
+│  │         └── NO  → Tier III (DigiRella Cloud)                │
+│  │                                                              │
+│  └── NO  → Is this production deployment?                      │
+│            ├── YES → Budget > $100/mo?                          │
+│            │         ├── YES → Tier II (Gemini)                │
+│            │         └── NO  → Tier I (Groq)                   │
+│            │                                                    │
+│            └── NO  → Tier I (Groq) — fastest & cheapest        │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 3.8 Migration Path
+
+```
+Development         Pilot               Production
+────────────────────────────────────────────────────────
+Groq Free Tier  →  DigiRella Cloud  →  DigiRella Owned
+($0/mo)            ($1,900/mo)          ($6,300 one-time)
+
+↑                  ↑                     ↑
+Validate idea      Scale to 5k farms    Long-term ownership
+No commitment      Data sovereignty     Lowest TCO
+```
+
+---
+
+## 4. LLM Provider Abstraction
 
 ### 3.1 Provider Interface
 
@@ -563,7 +812,7 @@ def create_llm_provider(
 
 ---
 
-## 4. Self-Hosting Guide (Production)
+## 5. Self-Hosting Guide (Production)
 
 For production deployment in Azerbaijan with government compliance, you can self-host the same open-source models.
 
@@ -614,7 +863,7 @@ vllm serve Qwen/Qwen3-32B \
 
 ---
 
-## 5. Environment Configuration
+## 6. Environment Configuration
 
 ### 5.1 Environment Matrix
 
@@ -675,7 +924,7 @@ YONCA_API_PORT=10000
 
 ---
 
-## 6. Docker Configuration
+## 7. Docker Configuration
 
 ### 6.1 Open-Source Mode (docker-compose.local.yml)
 
@@ -841,7 +1090,7 @@ databases:
 
 ---
 
-## 7. Feature Parity Matrix
+## 8. Feature Parity Matrix
 
 Both modes support identical features:
 
@@ -862,7 +1111,7 @@ Both modes support identical features:
 
 ---
 
-## 8. Model Selection Guide
+## 9. Model Selection Guide
 
 ### 8.1 Open-Source Models (via Groq or Self-Hosted)
 
@@ -885,7 +1134,7 @@ Both modes support identical features:
 
 ---
 
-## 9. Switching Between Modes
+## 10. Switching Between Modes
 
 ### 9.1 Environment Detection
 
@@ -964,7 +1213,7 @@ def get_llm_provider():
 
 ---
 
-## 10. Deployment Commands
+## 11. Deployment Commands
 
 ### 10.1 Open-Source Development
 
@@ -1007,7 +1256,7 @@ render blueprint launch
 
 ---
 
-## 11. Cost Analysis
+## 12. Cost Analysis
 
 ### 11.1 Open-Source Mode Costs
 

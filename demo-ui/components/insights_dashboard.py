@@ -360,6 +360,12 @@ def format_daily_breakdown(
 async def render_dashboard_sidebar(insights: "UserInsights") -> None:
     """Render the full dashboard in Chainlit's sidebar.
     
+    This is the SECONDARY welcome element (non-intrusive analytics).
+    Shows usage stats, streak, and activity heatmap from Langfuse.
+    Loads in background while main welcome message appears in chat.
+    
+    Companion to: send_dashboard_welcome() in app.py (primary greeting)
+    
     Args:
         insights: UserInsights from Langfuse
     """

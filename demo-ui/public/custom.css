@@ -587,3 +587,171 @@ button.primary:hover {
     background: rgba(220, 53, 69, 0.1) !important;
 }
 
+/* ============================================
+ * ALEM Spinners & Loading States
+ * ============================================ */
+
+/* Keyframe animations for spinners */
+@keyframes alem-pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.6;
+        transform: scale(1.1);
+    }
+}
+
+@keyframes alem-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes alem-bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* Animated spinner container */
+.alem-spinner {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, rgba(45, 90, 39, 0.05) 0%, rgba(168, 230, 207, 0.1) 100%);
+    border-radius: 12px;
+    border-left: 3px solid var(--yonca-green-primary);
+}
+
+.alem-spinner .spinner-icon {
+    font-size: 1.5em;
+    animation: alem-pulse 1.5s ease-in-out infinite;
+}
+
+.alem-spinner .spinner-text {
+    color: var(--yonca-green-dark);
+    font-weight: 500;
+    font-size: 0.95em;
+}
+
+/* Progress bar */
+.alem-progress {
+    padding: 16px;
+    background: var(--glass-bg);
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+}
+
+.alem-progress .progress-label {
+    color: var(--yonca-green-dark);
+    font-weight: 500;
+    margin-bottom: 8px;
+    font-size: 0.9em;
+}
+
+.alem-progress .progress-bar-container {
+    height: 8px;
+    background: rgba(45, 90, 39, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.alem-progress .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--yonca-green-primary) 0%, var(--yonca-clover) 100%);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.alem-progress .progress-percentage {
+    text-align: right;
+    color: var(--yonca-green-primary);
+    font-weight: 600;
+    font-size: 0.85em;
+}
+
+/* Step indicator */
+.alem-step-indicator {
+    padding: 16px;
+    background: linear-gradient(135deg, rgba(232, 245, 233, 0.9) 0%, rgba(200, 230, 201, 0.8) 100%);
+    border-radius: 12px;
+    border-left: 4px solid var(--yonca-green-primary);
+}
+
+.alem-step-indicator .step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.alem-step-indicator .step-number {
+    color: var(--yonca-green-dark);
+    font-weight: 600;
+    font-size: 0.85em;
+}
+
+.alem-step-indicator .step-percentage {
+    color: var(--yonca-green-primary);
+    font-weight: 700;
+    font-size: 0.9em;
+}
+
+.alem-step-indicator .step-name {
+    color: var(--yonca-green-dark);
+    font-weight: 500;
+    margin-bottom: 12px;
+    font-size: 1em;
+}
+
+.alem-step-indicator .step-progress {
+    height: 6px;
+    background: rgba(45, 90, 39, 0.15);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.alem-step-indicator .step-progress-fill {
+    height: 100%;
+    background: var(--yonca-green-primary);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+/* Inline spinner (text-only) */
+.inline-spinner {
+    animation: alem-pulse 1.5s ease-in-out infinite;
+}
+
+/* Dark mode adjustments */
+.dark .alem-spinner {
+    background: linear-gradient(135deg, rgba(45, 90, 39, 0.2) 0%, rgba(168, 230, 207, 0.15) 100%);
+}
+
+.dark .alem-spinner .spinner-text {
+    color: var(--yonca-clover);
+}
+
+.dark .alem-progress {
+    background: rgba(45, 90, 39, 0.15);
+}
+
+.dark .alem-step-indicator {
+    background: linear-gradient(135deg, rgba(45, 90, 39, 0.2) 0%, rgba(168, 230, 207, 0.15) 100%);
+}
+
+/* ============================================
+ * END Spinners
+ * ============================================ */
+
+

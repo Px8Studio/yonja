@@ -174,6 +174,7 @@ flowchart LR
 | 19 | **[19-PRICING-SIMPLIFIED.md](19-PRICING-SIMPLIFIED.md)** | DigiRella cost comparison (Owned/Cloud/Benchmark) | ✅ |
 | 20 | **[20-CHAINLIT-FEATURES-ROADMAP.md](20-CHAINLIT-FEATURES-ROADMAP.md)** | Native Chainlit features to implement | ✅ |
 | 21 | **[21-CHAINLIT-UI-UX-INVENTORY.md](21-CHAINLIT-UI-UX-INVENTORY.md)** | Chainlit design philosophy, feature inventory, sidebar strategy | ✅ |
+| 22 | **[22-WELCOME-UI-ANALYSIS.md](22-WELCOME-UI-ANALYSIS.md)** | Two-message welcome architecture (main chat + sidebar) | ✅ |
 
 ---
 

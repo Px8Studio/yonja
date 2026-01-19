@@ -153,6 +153,12 @@ from components.insights_dashboard import (
     render_dashboard_sidebar,
     format_welcome_stats,
 )
+from components.spinners import (
+    LoadingStates,
+    get_inline_spinner,
+    show_spinner,
+    clear_spinner,
+)
 
 logger = structlog.get_logger()
 
@@ -1069,11 +1075,41 @@ async def on_settings_update(settings: dict):
 # ============================================
 # DASHBOARD WELCOME (Agricultural Command Center)
 # ============================================
+# WELCOME EXPERIENCE ARCHITECTURE:
+# After OAuth login, users see TWO welcome elements:
+#
+# 1. MAIN CHAT (this function): send_dashboard_welcome()
+#    - Primary greeting (personalized with user's first name)
+#    - Farm status display (normal/attention indicators)
+#    - Quick action buttons (Weather, Subsidy, Irrigation)
+#    - Focus: Immediate interaction, farm context, action-oriented
+#
+# 2. SIDEBAR: render_dashboard_sidebar() (from insights_dashboard.py)
+#    - Usage analytics (conversations, tokens, streak)
+#    - Activity heatmap (last 90 days)
+#    - Link to Langfuse for drill-down
+#    - Focus: Secondary context, non-intrusive, analytics
+#
+# Why Two Messages?
+# - Main chat: Conversation-focused (users talk to ALEM here)
+# - Sidebar: Data-focused (users check stats here)
+# - Separation respects Chainlit's UI philosophy (chat ≠ sidebar)
+#
+# Render Sequence (in @on_chat_start):
+#   1. Load Langfuse stats
+#   2. Render sidebar dashboard (non-blocking background context)
+#   3. Send main welcome message (primary user attention)
+#
 # BRANDING NOTE: Use "ALEM" as primary agent name. "Yonca" is the internal project name.
 # AVOID: "Sidecar" (internal term), "DigiRella", "ZekaLab" (business names)
 # ============================================
 async def send_dashboard_welcome(user: Optional[cl.User] = None):
-    """Send enhanced dashboard welcome with farm status and quick actions.
+    """Send primary welcome message to main chat with farm status and quick actions.
+    
+    This is the FIRST message users see after logging in (main chat).
+    Displays personalized greeting, farm context, and action buttons.
+    
+    Companion to: render_dashboard_sidebar() (analytics in sidebar)
     
     Creates a "Warm Handshake" experience that transforms the chat from
     a generic interface into an agricultural command center.
@@ -1191,8 +1227,8 @@ async def on_audio_end(elements: list[cl.Audio]):
     
     audio = elements[0]  # Get the first (and usually only) audio element
     
-    # Show thinking indicator
-    thinking_msg = cl.Message(content="🎤 Səsinizi eşidirəm...")
+    # Show audio processing indicator
+    thinking_msg = cl.Message(content=LoadingStates.transcribing_audio())
     await thinking_msg.send()
     
     try:
@@ -1477,7 +1513,11 @@ async def on_chat_start():
         )
     
     # ─────────────────────────────────────────────────────────────
-    # Load Activity Dashboard (from Langfuse)
+    # WELCOME EXPERIENCE (Two-Part Strategy)
+    # ─────────────────────────────────────────────────────────────
+    # PART 1: Activity Dashboard (Sidebar) - Background context
+    # PART 2: Welcome Message (Main Chat) - Primary interaction
+    # See: DASHBOARD WELCOME comment block for full architecture
     # ─────────────────────────────────────────────────────────────
     try:
         insights_client = get_insights_client()
@@ -1485,7 +1525,7 @@ async def on_chat_start():
             user_insights = await get_user_dashboard_data(user_id, days=90)
             cl.user_session.set("user_insights", user_insights)
             
-            # Render the activity dashboard in sidebar
+            # PART 1: Render the activity dashboard in sidebar (non-intrusive)
             await render_dashboard_sidebar(user_insights)
             
             logger.info(
@@ -1498,7 +1538,7 @@ async def on_chat_start():
     except Exception as e:
         logger.warning("dashboard_load_failed", error=str(e))
     
-    # Build the enhanced dashboard welcome message
+    # PART 2: Build the enhanced dashboard welcome message (main chat)
     await send_dashboard_welcome(user)
 
 
@@ -1536,8 +1576,8 @@ async def on_message(message: cl.Message):
                 api_client = await get_api_client()
                 cl.user_session.set("api_client", api_client)
             
-            # Show thinking indicator
-            await response_msg.stream_token("🔄 ")
+            # Show thinking indicator with ALEM branding
+            await response_msg.stream_token(LoadingStates.thinking())
             
             try:
                 # Call FastAPI backend - same as mobile app will

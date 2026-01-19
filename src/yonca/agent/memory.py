@@ -94,43 +94,72 @@ async def get_checkpointer_async(
     checkpointer: BaseCheckpointSaver
     
     # Backend selection logic
-    if backend == "redis" or (backend == "auto" and redis):
-        if redis and REDIS_CHECKPOINTER_AVAILABLE and AsyncRedisSaver is not None:
-            try:
-                checkpointer = AsyncRedisSaver(redis_url=redis)
-                await checkpointer.asetup()
-                log.info("Using Redis checkpointer for session persistence", redis_url=redis)
-                if use_singleton:
-                    _checkpointer = checkpointer
-                return checkpointer
-            except Exception as e:
-                log.warning("Failed to create Redis checkpointer", error=str(e))
-                if backend == "redis":
-                    raise  # Don't fallback if explicitly requested
+    # PRIORITY: Postgres (persistent) > Redis (fast but ephemeral) > Memory (dev only)
+    # NOTE: On Windows, psycopg requires SelectorEventLoop, not ProactorEventLoop
+    #       This means Postgres checkpointer may fail on Windows dev environments.
+    #       Redis or Memory will be used as fallback.
     
+    # 1. Try PostgreSQL first (persistent across restarts)
     if backend == "postgres" or (backend == "auto" and postgres):
         if postgres and POSTGRES_CHECKPOINTER_AVAILABLE and AsyncPostgresSaver is not None:
             try:
                 # Convert asyncpg URL to psycopg format if needed
                 pg_url = postgres.replace("postgresql+asyncpg://", "postgresql://")
-                checkpointer = AsyncPostgresSaver.from_conn_string(pg_url)
-                # Setup tables (required on first use) - method name may vary by version
-                if hasattr(checkpointer, 'setup'):
-                    await checkpointer.setup()
-                elif hasattr(checkpointer, 'asetup'):
-                    await checkpointer.asetup()
-                log.info("Using PostgreSQL checkpointer for session persistence")
+                log.debug(f"Attempting PostgreSQL checkpointer with: {pg_url[:50]}...")
+                
+                # v3.x API: from_conn_string is an async context manager
+                # We need to enter the context and keep the reference
+                async_cm = AsyncPostgresSaver.from_conn_string(pg_url)
+                checkpointer = await async_cm.__aenter__()
+                
+                # Setup tables (required on first use)
+                await checkpointer.setup()
+                
+                log.info(f"{EMOJI_YONCA} {EMOJI_POSTGRES} Using PostgreSQL checkpointer (persistent)")
                 if use_singleton:
                     _checkpointer = checkpointer
                 return checkpointer
             except Exception as e:
-                log.warning("Failed to create PostgreSQL checkpointer", error=str(e))
+                # On Windows, this commonly fails due to event loop incompatibility
+                error_str = str(e)
+                if "ProactorEventLoop" in error_str:
+                    log.info(
+                        f"{EMOJI_YONCA} PostgreSQL checkpointer not available on Windows "
+                        "(ProactorEventLoop incompatibility), using Redis fallback"
+                    )
+                else:
+                    log.warning(
+                        f"{EMOJI_YONCA} {EMOJI_ERROR} PostgreSQL checkpointer failed, will try Redis",
+                        error=error_str
+                    )
                 if backend == "postgres":
                     raise  # Don't fallback if explicitly requested
+        else:
+            reasons = []
+            if not postgres:
+                reasons.append("no postgres_url")
+            if not POSTGRES_CHECKPOINTER_AVAILABLE:
+                reasons.append("langgraph-checkpoint-postgres not installed")
+            log.debug(f"Skipping PostgreSQL checkpointer: {', '.join(reasons)}")
     
-    # Fallback to in-memory
+    # 2. Try Redis (fast but data lost on restart)
+    if backend == "redis" or (backend == "auto" and redis):
+        if redis and REDIS_CHECKPOINTER_AVAILABLE and AsyncRedisSaver is not None:
+            try:
+                checkpointer = AsyncRedisSaver(redis_url=redis)
+                await checkpointer.asetup()
+                log.info(f"{EMOJI_YONCA} {EMOJI_REDIS} Using Redis checkpointer (fast, ephemeral)")
+                if use_singleton:
+                    _checkpointer = checkpointer
+                return checkpointer
+            except Exception as e:
+                log.warning(f"{EMOJI_YONCA} {EMOJI_ERROR} Failed to create Redis checkpointer", error=str(e))
+                if backend == "redis":
+                    raise  # Don't fallback if explicitly requested
+    
+    # 3. Fallback to in-memory (no persistence)
     checkpointer = MemorySaver()
-    log.info("Using in-memory checkpointer (no persistence across restarts)")
+    log.info(f"{EMOJI_YONCA} {EMOJI_MEMORY} Using in-memory checkpointer (no persistence)")
     
     if use_singleton:
         _checkpointer = checkpointer

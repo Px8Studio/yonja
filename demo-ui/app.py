@@ -202,10 +202,19 @@ _api_client: YoncaClient | None = None
 
 
 async def get_app_checkpointer():
-    """Get or create the checkpointer singleton (async) - for direct mode."""
+    """Get or create the checkpointer singleton (async) - for direct mode.
+    
+    Priority: PostgreSQL (persistent) > Redis (fast) > Memory (dev only)
+    """
     global _checkpointer
     if _checkpointer is None:
-        _checkpointer = await get_checkpointer_async(redis_url=demo_settings.redis_url)
+        # Prefer Postgres for persistence, fallback to Redis, then Memory
+        # This ensures conversation history survives restarts
+        _checkpointer = await get_checkpointer_async(
+            redis_url=demo_settings.redis_url,
+            postgres_url=demo_settings.database_url,
+            backend="auto",  # Will try Postgres first if available
+        )
     return _checkpointer
 
 

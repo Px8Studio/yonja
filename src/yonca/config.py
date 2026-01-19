@@ -35,53 +35,70 @@ class InferenceTier(str, Enum):
     """ALEM Infrastructure Matrix — Inference deployment tiers.
     
     From ALEM (Azərbaycan LLM Ekosistem Matrisi):
-    - Tier I: Rapid prototyping with Groq LPU cloud
-    - Tier III: Sovereign cloud via AzInTelecom
-    - Tier IV: Private on-prem hardware (ZekaLab Custom)
+    - Tier I: Groq LPU (cloud benchmark — proves what's possible)
+    - Tier III: DigiRella Cloud (rented GPU from AzInTelecom)
+    - Tier IV: DigiRella Owned (self-hosted hardware)
+    
+    DigiRella = "Digital Farm Relay" — brand for self-hosted LLM infrastructure.
+    Groq benchmarks (200-300 tok/s) achievable with DigiRella hardware.
     """
     
-    TIER_I_GROQ = "tier_i_groq"           # Rapid Prototyping — Groq LPU
-    TIER_III_SOVEREIGN = "tier_iii_sov"   # Sovereign Cloud — AzInTelecom
-    TIER_IV_ONPREM = "tier_iv_onprem"     # Private On-Prem — ZekaLab Custom
+    TIER_I_GROQ = "tier_i_groq"           # Groq LPU — Cloud Benchmark
+    TIER_III_SOVEREIGN = "tier_iii_sov"   # DigiRella Cloud — Rented GPU
+    TIER_IV_ONPREM = "tier_iv_onprem"     # DigiRella Owned — Self-Hosted
 
 
 # ALEM Infrastructure Matrix — Tier specifications
 INFERENCE_TIER_SPECS = {
     InferenceTier.TIER_I_GROQ: {
         "name": "Tier I: Groq LPU",
-        "tagline": "Rapid Prototyping",
-        "provider": "Groq Cloud",
-        "models": ["Llama 4 Maverick 17B", "Qwen 3 32B"],
+        "tagline": "Cloud Benchmark (Open-Source Models)",
+        "provider": "Groq Cloud (LPU infrastructure)",
+        "models": ["Llama 4 Maverick 17B", "Qwen 3 32B", "Llama 3.3 70B"],
         "latency": "~200ms (P95)",
-        "throughput": "800 tok/s",
+        "throughput": "800 tok/s (benchmark target)",
         "data_residency": "US (Groq servers)",
         "cost_range": "$0–50/mo (dev)",
-        "use_case": "Hackathons, demos, MVPs, dev/test",
+        "use_case": "Development, testing, benchmarking",
         "icon": "⚡",
+        "self_hosted_equivalent": "DigiRella Standard ($6,300) or Pro ($145k)",
+        "notes": "Proves performance achievable with open-source + optimized hardware. "
+                 "Same models/performance available with DigiRella self-hosted.",
     },
     InferenceTier.TIER_III_SOVEREIGN: {
-        "name": "Tier III: AzInTelecom",
-        "tagline": "Sovereign Cloud",
-        "provider": "AzInTelecom Government Cloud",
-        "models": ["Llama 3.3 70B", "Mistral Large"],
-        "latency": "~600ms (P95)",
-        "throughput": "80 tok/s",
+        "name": "Tier III: DigiRella Cloud",
+        "tagline": "Sovereign Rented GPU (AzInTelecom)",
+        "provider": "AzInTelecom (DigiRella Cloud partner)",
+        "models": ["Llama 3.3 70B", "Qwen 3 32B", "Mistral Large"],
+        "latency": "~600ms (P95) → target: ~250ms",
+        "throughput": "80 tok/s → target: 200+ tok/s (Groq-equivalent)",
         "data_residency": "Azerbaijan 🇦🇿 (Baku DC)",
-        "cost_range": "$800–1,500/mo",
+        "cost_range": "$800–1,500/mo (rented GPU)",
         "use_case": "Government, regulated industries, data sovereignty",
         "icon": "🏛️",
+        "groq_equivalent": "Groq Tier I performance + Azerbaijan data residency",
+        "notes": "Rented GPU capacity from AzInTelecom. Same open-source models as Groq. "
+                 "Performance target: match Groq benchmarks with local sovereignty.",
     },
     InferenceTier.TIER_IV_ONPREM: {
-        "name": "Tier IV: ZekaLab Custom",
-        "tagline": "Private On-Prem",
-        "provider": "Self-hosted (customer premises)",
-        "models": ["ATLLaMA 7B", "Qwen 3 4B", "custom fine-tunes"],
-        "latency": "~300ms (P95)",
-        "throughput": "40 tok/s (CPU) / 200 tok/s (GPU)",
-        "data_residency": "Customer premises (air-gapped option)",
-        "cost_range": "$6,500–12,000 one-time",
+        "name": "Tier IV: DigiRella Owned",
+        "tagline": "Self-Hosted Hardware (Your Premises)",
+        "provider": "Self-hosted (DigiRella hardware profiles)",
+        "models": ["ALL Groq models (Llama 70B, Qwen 32B, Maverick 17B, etc.)"],
+        "latency": "~250ms (P95) — Groq-equivalent",
+        "throughput": "200-300 tok/s — Groq-equivalent",
+        "data_residency": "Customer premises (air-gapped capable)",
+        "cost_range": "$2,600–145,000 one-time (see DigiRella profiles)",
         "use_case": "Offline farms, military, banks, air-gapped networks",
         "icon": "🔒",
+        "groq_equivalent": "Full Groq performance, your hardware",
+        "profiles": {
+            "lite": "1× RTX 4090 ($2,600) → 300+ tok/s (8B models)",
+            "standard": "2× RTX 5090 ($6,300) → 200+ tok/s (70B models)",
+            "pro": "8× A100 ($145k) → 300+ tok/s (all models, Groq-level)",
+        },
+        "notes": "Owned hardware with Groq-equivalent performance. No recurring costs. "
+                 "Complete data isolation. Fine-tuning capable.",
     },
 }
 

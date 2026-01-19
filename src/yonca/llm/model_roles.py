@@ -1,5 +1,5 @@
 # Yonca AI - Model Role Configuration
-# Open-Source vs Proprietary Model Strategy
+# Open-Source Models: Groq Benchmark → DigiRella Self-Hosted
 
 """
 MODEL ARCHITECTURE IN YONCA AI (2026 UPDATE)
@@ -19,22 +19,38 @@ parameters and 128 experts. It replaces the previous two-model stack:
    - Llama 4 Maverick → ALL tasks (logic + language + vision)
    - Benefit: Single-pass, native Azerbaijani, multimodal support
 
-OPEN-SOURCE MODELS (via Groq or self-hosted):
-- Maverick, Llama, Qwen, Mistral, Mixtral - fully open-source
-- Can be self-hosted with appropriate hardware (GPU clusters, LPU)
-- Groq demonstrates enterprise-grade performance these models can achieve
-- With proper infrastructure: 200-300 tokens/sec, production-ready
+OPEN-SOURCE MODELS — TWO DEPLOYMENT MODES:
+-------------------------------------------
+All models are 100% open-source (Llama, Qwen, Mistral, Mixtral).
+
+MODE 1: Groq Cloud (Benchmark)
+  - Purpose: Proves what's possible with open-source + optimized hardware
+  - Performance: 200-300 tok/s (enterprise-grade)
+  - Cost: $0-50/mo (free tier available)
+  - Data: US servers (no Azerbaijan sovereignty)
+  - Use case: Development, testing, proof-of-concept
+
+MODE 2: DigiRella Self-Hosted (Production)
+  - Purpose: Same performance as Groq, your infrastructure
+  - Performance: 200-300 tok/s (matches Groq)
+  - Cost: $2,600-145,000 one-time (hardware) OR $470-7,600/mo (rented GPU)
+  - Data: Azerbaijan 🇦🇿 (complete sovereignty)
+  - Use case: Production deployment, government, regulated industries
+  
+  DigiRella Profiles:
+    • Lite ($2,600): 1× RTX 4090 → 300+ tok/s (8B models)
+    • Standard ($6,300): 2× RTX 5090 → 200+ tok/s (70B models)
+    • Pro ($145k): 8× A100 → 300+ tok/s (all models, Groq-equivalent)
 
 Philosophy:
 -----------
-We prioritize open-source models to demonstrate:
-1. Enterprise-readiness with proper infrastructure
-2. No vendor lock-in
-3. Full control over deployment
-4. Transparency and auditability
+1. Groq demonstrates the BENCHMARK (what's achievable)
+2. DigiRella provides the PATH (how to self-host with same performance)
+3. NO vendor lock-in (same models, your hardware)
+4. Data sovereignty (keep farmer data in Azerbaijan)
+5. Full transparency (know exact specs/costs needed)
 
-Groq serves as proof-of-concept that open-source models can match or exceed
-proprietary performance when given the right hardware.
+📚 See docs/zekalab/17-DIGIRELLA-HOSTING-PROFILES.md for hardware specs
 """
 
 # ============================================================
@@ -55,7 +71,9 @@ MODEL_ROLES = {
         "math_logic_quality": "excellent",  # 400B-equivalent reasoning
         "speed": "ultra_fast (~300 tok/s on Groq)",
         "self_hostable": True,
-        "recommended_hardware": "4x A100 GPUs or Groq LPU",
+        "recommended_hardware": "DigiRella Standard: 2× RTX 5090 (64GB) OR DigiRella Pro: 4× A100",
+        "groq_benchmark": "300 tok/s @ 200ms latency (LPU infrastructure)",
+        "digirella_equivalent": "DigiRella Standard ($6,300) → 200+ tok/s | Pro ($145k) → 300+ tok/s",
         "multimodal": True,  # NEW: Can process images!
         "context_window": 128000,
         "use_for": [
@@ -70,7 +88,8 @@ MODEL_ROLES = {
         ],
         "avoid_for": [],  # Can handle everything
         "notes": "2026 Gold Standard. MoE architecture (17B active, 128 experts). "
-                 "Replaces Qwen+Llama two-pass system. Native Azerbaijani."
+                 "Replaces Qwen+Llama two-pass system. Native Azerbaijani. "
+                 "Groq = benchmark | DigiRella = self-hosted equivalent"
     },
     
     # ===== LEGACY MODELS (Still Supported) =====
@@ -84,7 +103,9 @@ MODEL_ROLES = {
         "math_logic_quality": "medium-high",
         "speed": "fast (200+ tok/s on Groq infrastructure)",
         "self_hostable": True,
-        "recommended_hardware": "8x A100 GPUs or Groq LPU",
+        "recommended_hardware": "DigiRella Standard: 2× RTX 5090 (64GB) OR 8× A100 (for multi-instance)",
+        "groq_benchmark": "200 tok/s @ 220ms latency",
+        "digirella_equivalent": "DigiRella Standard ($6,300) → 200+ tok/s",
         "use_for": [
             "final_response_generation",
             "farmer_conversation",
@@ -95,7 +116,8 @@ MODEL_ROLES = {
             "complex_calculations",
             "precise_numeric_schedules"
         ],
-        "notes": "Best for final user-facing responses. Less Turkish leakage. Open-source."
+        "notes": "Best for final user-facing responses. Less Turkish leakage. Open-source. "
+                 "Groq = benchmark | DigiRella = self-hosted equivalent"
     },
     
     "qwen3-32b": {
@@ -107,7 +129,9 @@ MODEL_ROLES = {
         "math_logic_quality": "very_high",
         "speed": "very_fast (250-300 tok/s on Groq)",
         "self_hostable": True,
-        "recommended_hardware": "4x A100 GPUs or optimized inference server",
+        "recommended_hardware": "DigiRella Standard: 2× RTX 5090 OR 4× A100",
+        "groq_benchmark": "280 tok/s @ 200ms latency",
+        "digirella_equivalent": "DigiRella Standard ($6,300) → 270+ tok/s",
         "use_for": [
             "irrigation_schedule_calculation",
             "fertilization_dosage_calculation",
@@ -119,7 +143,8 @@ MODEL_ROLES = {
             "direct_farmer_responses",
             "conversational_chat"
         ],
-        "notes": "Use for internal calculations. Output rewritten by Llama. Open-source."
+        "notes": "Use for internal calculations. Output rewritten by Llama. Open-source. "
+                 "Groq = benchmark | DigiRella = self-hosted equivalent"
     },
     
     "llama-3.1-8b-instant": {
@@ -131,13 +156,16 @@ MODEL_ROLES = {
         "math_logic_quality": "medium",
         "speed": "very_fast (300+ tok/s on Groq)",
         "self_hostable": True,
-        "recommended_hardware": "2x A100 GPUs or single H100",
+        "recommended_hardware": "DigiRella Lite: 1× RTX 4090 (24GB) OR 2× A100",
+        "groq_benchmark": "300 tok/s @ 150ms latency",
+        "digirella_equivalent": "DigiRella Lite ($2,600) → 300+ tok/s",
         "use_for": [
             "quick_responses",
             "simple_questions",
             "fallback_chat"
         ],
-        "notes": "Fast and capable. Open-source. Good default."
+        "notes": "Fast and capable. Open-source. Good default. "
+                 "Groq = benchmark | DigiRella Lite = perfect match"
     },
     
     "mixtral-8x7b-32768": {
@@ -149,13 +177,16 @@ MODEL_ROLES = {
         "math_logic_quality": "high",
         "speed": "fast (180+ tok/s on Groq)",
         "self_hostable": True,
-        "recommended_hardware": "8x A100 GPUs (MoE architecture)",
+        "recommended_hardware": "DigiRella Standard: 2× RTX 5090 OR 8× A100 (MoE requires more VRAM)",
+        "groq_benchmark": "180 tok/s @ 230ms latency",
+        "digirella_equivalent": "DigiRella Standard ($6,300) → 180+ tok/s | Pro ($145k) → 250+ tok/s",
         "use_for": [
             "complex_multi_turn_conversations",
             "large_context_analysis",
             "document_understanding"
         ],
-        "notes": "Mixture-of-Experts architecture. Open-source. 32k context."
+        "notes": "Mixture-of-Experts architecture. Open-source. 32k context. "
+                 "Groq = benchmark | DigiRella = self-hosted equivalent"
     },
 }
 

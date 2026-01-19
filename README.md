@@ -149,18 +149,36 @@ INFO:     Uvicorn running on http://127.0.0.1:8000
 
 ## 🤖 LLM Configuration
 
-### Available Local Models
+### Two Deployment Modes
 
-| Provider | Model | Size | Best For |
-|----------|-------|------|----------|
-| **Ollama** | `qwen3:4b` | 2.6GB | 🇦🇿 Multilingual (Recommended) |
-| **Ollama** | `qwen3:1.7b` | 1.2GB | Fast responses, limited RAM |
-| **Ollama** | `qwen3:8b` | 5.0GB | Higher quality reasoning |
-| **Ollama** | `atllama` | 2.5GB | 🇦🇿 Azerbaijani-tuned (GGUF) |
-| **Ollama** | `aya:8b` | 4.8GB | 100+ language support |
-| **Groq** | `llama-4-maverick-17b` | Cloud | 🚀 Ultra-fast (200-300 tok/s) |
+**MODE 1: Groq Cloud (Benchmark)**
+- Purpose: Proves what's possible with open-source models
+- Performance: 200-300 tok/s (enterprise-grade)
+- Cost: $0-50/mo (free tier available)
+- Use for: Development, testing, proof-of-concept
 
-### Setting Up Local Models
+**MODE 2: DigiRella Self-Hosted (Production)**
+- Purpose: Same performance as Groq, your infrastructure
+- Performance: 200-300 tok/s (matches Groq)
+- Cost: $2,600-145k one-time OR $470-7,600/mo (rented GPU)
+- Use for: Production, data sovereignty, air-gapped
+
+📚 See [PRICING-SIMPLIFIED.md](docs/PRICING-SIMPLIFIED.md) for full comparison
+
+### Available Models (All Open-Source)
+
+| Provider | Model | Deployment | Performance |
+|----------|-------|------------|-------------|
+| **Groq** | `llama-4-maverick-17b` | Cloud | 🚀 300 tok/s (benchmark) |
+| **Groq** | `llama-3.3-70b` | Cloud | 🚀 200+ tok/s |
+| **Groq** | `qwen3-32b` | Cloud | 🚀 280 tok/s |
+| **DigiRella** | Same models | Self-hosted | 🏠 200-300 tok/s |
+| **Ollama** | `qwen3:4b` | Local | 🇦🇿 Offline-capable |
+| **Ollama** | `atllama:7b` | Local | 🇦🇿 Azerbaijani-tuned |
+
+> **Key:** Groq = Cloud benchmark | DigiRella = Self-hosted equivalent | Ollama = Lightweight local
+
+### Setting Up Local Models (Ollama)
 
 **Option 1: Docker (Recommended)**
 ```bash
@@ -210,12 +228,29 @@ from yonca.llm import create_groq_provider
 agent = create_ollama_agent(model="qwen3:4b")
 response = agent.chat("Buğda sahəsini nə vaxt suvarmaq lazımdır?")
 
-# Groq Cloud (Ultra-fast open-source models)
+# Groq Cloud (Ultra-fast open-source models - benchmark)
 llm = create_groq_provider(api_key="your-key", model="llama-4-maverick-17b-128e-instruct")
 response = await llm.generate([
     LLMMessage.user("Torpağın pH səviyyəsi nə olmalıdır?")
 ])
 ```
+
+## 🚀 Deployment Options
+
+Yonca AI supports three deployment tiers with the same open-source models:
+
+| Tier | Infrastructure | Cost | Data Location | Performance |
+|------|----------------|------|---------------|-------------|
+| **Groq Cloud** | Cloud API (benchmark) | $0-50/mo | US | 200-300 tok/s |
+| **DigiRella Cloud** | Rented GPU (AzInTelecom) | $800-1,500/mo | 🇦🇿 Azerbaijan | 200-300 tok/s |
+| **DigiRella Owned** | Self-hosted hardware | $2,600-145k one-time | Your premises | 200-300 tok/s |
+
+**Key Principle:** Groq demonstrates the benchmark. DigiRella provides the path to replicate that performance with data sovereignty.
+
+📚 **Full Details:**
+- [PRICING-SIMPLIFIED.md](docs/PRICING-SIMPLIFIED.md) — Cost comparison & migration path
+- [17-DIGIRELLA-HOSTING-PROFILES.md](docs/zekalab/17-DIGIRELLA-HOSTING-PROFILES.md) — Hardware specs
+- [16-ALEM-INFRASTRUCTURE-TIERS.md](docs/zekalab/16-ALEM-INFRASTRUCTURE-TIERS.md) — Tier comparison
 
 ## 📡 API Endpoints
 

@@ -4,6 +4,12 @@
 
 This document defines the four-tier infrastructure model for LLM deployment in Azerbaijan, from rapid prototyping to air-gapped sovereign installations.
 
+## 🎯 Key Concept: Groq as Performance Benchmark
+
+**Groq demonstrates what's possible** with open-source models (Llama, Qwen, Mixtral) on optimized hardware. All Groq benchmarks (200-300 tok/s) can be replicated with **DigiRella self-hosted infrastructure** — either hardware you own, or rented GPU capacity from AzInTelecom.
+
+👉 See [17-DIGIRELLA-HOSTING-PROFILES.md](17-DIGIRELLA-HOSTING-PROFILES.md) for hardware specs that match Groq performance.
+
 ---
 
 ## 🏗️ Tier Overview
@@ -17,18 +23,20 @@ This document defines the four-tier infrastructure model for LLM deployment in A
 
 ---
 
-## ⚡ Tier I: Groq LPU — Rapid Prototyping
+## ⚡ Tier I: Groq LPU — Rapid Prototyping (Performance Benchmark)
 
-**Best for:** Hackathons, demos, MVPs, development/testing
+**Best for:** Hackathons, demos, MVPs, development/testing  
+**Note:** Groq demonstrates enterprise-grade performance achievable with open-source models. Same performance available with DigiRella self-hosted (see Tier III/IV).
 
 | Specification | Value |
 |--------------|-------|
-| **Provider** | Groq Cloud |
-| **Models** | Llama 4 Maverick 17B, Qwen 3 32B |
+| **Provider** | Groq Cloud (LPU infrastructure) |
+| **Models** | Llama 4 Maverick 17B, Qwen 3 32B (open-source) |
 | **Latency** | ~200ms (P95) |
-| **Throughput** | 800 tok/s |
+| **Throughput** | 800 tok/s (benchmark target) |
 | **Data Residency** | US (Groq servers) |
 | **Cost** | Free tier available, $0–50/mo for dev workloads |
+| **Self-Hosted Equivalent** | DigiRella Lite ($2,600) or Standard ($6,300) |
 
 ### Configuration
 
@@ -39,15 +47,20 @@ YONCA_GROQ_MODEL=meta-llama/llama-4-maverick-17b-128e-instruct
 ```
 
 ### Pros
-- ✅ Fastest inference (LPU hardware)
+- ✅ **Fastest inference** (LPU hardware) — **benchmark standard**
+- ✅ **100% open-source models** (Llama, Qwen, Mistral)
 - ✅ Free tier for experimentation
-- ✅ Open-source models (Llama, Qwen, Mistral)
 - ✅ Zero infrastructure management
+- ✅ Proves performance possible with self-hosted hardware
 
 ### Cons
-- ⚠️ Data leaves Azerbaijan
+- ⚠️ Data leaves Azerbaijan (US servers)
 - ⚠️ Rate limits on free tier
-- ⚠️ External dependency
+- ⚠️ External dependency (requires internet)
+
+### Migration Path
+- **Start here** for development/testing
+- **Replicate performance** with DigiRella Tier III/IV for production
 
 ---
 
@@ -85,18 +98,21 @@ YONCA_GEMINI_MODEL=gemini-2.0-flash-exp
 
 ---
 
-## 🏛️ Tier III: AzInTelecom — Sovereign Cloud
+## 🏛️ Tier III: DigiRella Cloud (AzInTelecom) — Sovereign Rented GPU
 
-**Best for:** Government, regulated industries, data sovereignty requirements
+**Best for:** Government, regulated industries, data sovereignty requirements  
+**Performance:** Matches Groq benchmarks with Azerbaijan data residency  
+**Alias:** AzInTelecom Sovereign Cloud
 
 | Specification | Value |
 |--------------|-------|
-| **Provider** | AzInTelecom Government Cloud |
-| **Models** | Llama 3.3 70B, Mistral Large |
-| **Latency** | ~600ms (P95) |
-| **Throughput** | 80 tok/s |
+| **Provider** | AzInTelecom (DigiRella Cloud partner) |
+| **Models** | Llama 3.3 70B, Qwen 3 32B (same as Groq) |
+| **Latency** | ~600ms (P95) ⟶ target: ~250ms (optimizing) |
+| **Throughput** | 80 tok/s ⟶ target: 200+ tok/s (Groq-equivalent) |
 | **Data Residency** | Azerbaijan 🇦🇿 (Baku DC) |
-| **Cost** | $800–1,500/mo |
+| **Cost** | $800–1,500/mo (rented GPU capacity) |
+| **Equivalent Groq Profile** | Groq Tier I performance + data sovereignty |
 
 ### Configuration
 
@@ -126,18 +142,21 @@ YONCA_AZINTELECOM_MODEL=llama-3.3-70b
 
 ---
 
-## 🔒 Tier IV: ZekaLab Custom — Private On-Prem
+## 🔒 Tier IV: DigiRella Owned (Self-Hosted) — Private Hardware
 
-**Best for:** Offline farms, military, banks, air-gapped networks
+**Best for:** Offline farms, military, banks, air-gapped networks  
+**Performance:** Matches/exceeds Groq with owned hardware  
+**Alias:** ZekaLab Custom, Private On-Prem
 
 | Specification | Value |
 |--------------|-------|
-| **Provider** | Self-hosted (customer premises) |
-| **Models** | ATLLaMA 7B, Qwen 3 4B, custom fine-tunes |
-| **Latency** | ~300ms (P95) |
-| **Throughput** | 40 tok/s (CPU) / 200 tok/s (GPU) |
-| **Data Residency** | Customer premises (air-gapped option) |
-| **Cost** | $6,500–12,000 one-time hardware |
+| **Provider** | Self-hosted hardware (DigiRella profiles) |
+| **Models** | ALL Groq models (Llama 70B, Qwen 32B, Maverick 17B) |
+| **Latency** | ~250ms (P95) — **Groq-equivalent** |
+| **Throughput** | 200-300 tok/s — **Groq-equivalent** |
+| **Data Residency** | Customer premises (air-gapped capable) |
+| **Cost** | $2,600–145,000 one-time (see DigiRella profiles) |
+| **Equivalent Groq Profile** | Full Groq performance, your hardware |
 
 ### Configuration (Ollama)
 
@@ -147,25 +166,27 @@ YONCA_OLLAMA_BASE_URL=http://localhost:11434
 YONCA_OLLAMA_MODEL=atllama:7b
 ```
 
-### Hardware Requirements
+### Hardware Requirements (DigiRella Profiles)
 
-**Minimum (CPU-only):**
-- Intel i7/Xeon or AMD Ryzen 7
-- 32GB RAM
-- 256GB SSD
-- ~$2,000
-
-**Recommended (GPU):**
-- NVIDIA RTX 4090 or A6000
-- 64GB RAM
+**DigiRella Lite** (8B models, Groq 8B-equivalent):
+- 1× NVIDIA RTX 4090 (24GB)
+- 64GB RAM DDR5
 - 1TB NVMe SSD
-- ~$8,000
+- **$2,600 one-time** → 300+ tok/s
 
-**Enterprise (Multi-GPU):**
-- 2× NVIDIA A100 80GB
-- 256GB RAM
-- 2TB NVMe RAID
-- ~$25,000
+**DigiRella Standard** (70B models, Groq 70B-equivalent):
+- 2× NVIDIA RTX 5090 (64GB total)
+- 128GB RAM DDR5
+- 2TB NVMe SSD
+- **$6,300 one-time** → 200+ tok/s
+
+**DigiRella Pro** (Enterprise scale, full Groq-equivalent):
+- 8× NVIDIA A100 80GB
+- 512GB RAM ECC
+- 10TB NVMe RAID
+- **$145,000 one-time** → 300+ tok/s
+
+👉 Full specs: [17-DIGIRELLA-HOSTING-PROFILES.md](17-DIGIRELLA-HOSTING-PROFILES.md)
 
 ### Pros
 - ✅ **Complete data isolation** — air-gap capable
@@ -264,9 +285,10 @@ The startup banner automatically shows the current tier:
 
 ## 📎 Related Documentation
 
+- [17-DIGIRELLA-HOSTING-PROFILES.md](./17-DIGIRELLA-HOSTING-PROFILES.md) — **Groq-to-hardware mapping** ⭐
 - [03-ARCHITECTURE.md](./03-ARCHITECTURE.md) — System architecture
 - [12-DUAL-MODE-DEPLOYMENT.md](./12-DUAL-MODE-DEPLOYMENT.md) — Deployment modes
-- [15-HARDWARE-JUSTIFICATION.md](./15-HARDWARE-JUSTIFICATION.md) — Hardware requirements
+- [15-HARDWARE-JUSTIFICATION.md](./15-HARDWARE-JUSTIFICATION.md) — Hardware economics
 
 ---
 

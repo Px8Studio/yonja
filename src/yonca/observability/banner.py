@@ -525,6 +525,27 @@ def print_infrastructure_tier(
         else:
             print(f"     {_c(f'{label}:', Colors.BRIGHT_WHITE)} {value}")
     
+    # Show Groq-to-DigiRella equivalence
+    groq_equiv = tier_spec.get("groq_equivalent")
+    self_hosted_equiv = tier_spec.get("self_hosted_equivalent")
+    
+    if groq_equiv:
+        print()
+        print(f"     {_c('Groq Equivalent:', Colors.BRIGHT_MAGENTA)} {_dim(groq_equiv)}")
+    
+    if self_hosted_equiv:
+        print()
+        print(f"     {_c('Self-Hosted Option:', Colors.BRIGHT_GREEN)} {_dim(self_hosted_equiv)}")
+        print(f"     {_dim('→ Same performance as Groq, your infrastructure')}")
+    
+    # Show DigiRella profiles for Tier IV
+    profiles = tier_spec.get("profiles")
+    if profiles:
+        print()
+        print(f"     {_c('DigiRella Profiles:', Colors.BRIGHT_CYAN)}")
+        for profile_name, spec in profiles.items():
+            print(f"       • {_c(profile_name.title()+':', Colors.BRIGHT_WHITE)} {_dim(spec)}")
+    
     # Models available
     models = tier_spec.get("models", [])
     if models:
@@ -535,6 +556,12 @@ def print_infrastructure_tier(
     use_case = tier_spec.get("use_case", "")
     if use_case:
         print(f"     {_c('Best for:', Colors.BRIGHT_WHITE)} {_dim(use_case)}")
+    
+    # Notes
+    notes = tier_spec.get("notes")
+    if notes:
+        print()
+        print(f"     {_dim('ℹ️  ' + notes)}")
 
 
 def print_tier_comparison() -> None:

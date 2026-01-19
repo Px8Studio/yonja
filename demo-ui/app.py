@@ -27,8 +27,14 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+# Load .env from demo-ui folder BEFORE any other imports
+# This ensures OAuth secrets are available for Chainlit
+from dotenv import load_dotenv
+demo_ui_dir = Path(__file__).parent
+load_dotenv(demo_ui_dir / ".env")  # Local secrets (gitignored)
+
 # Add project root to path for imports
-project_root = Path(__file__).parent.parent
+project_root = demo_ui_dir.parent
 sys.path.insert(0, str(project_root / "src"))
 
 # Now safe to import chainlit

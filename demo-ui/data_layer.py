@@ -18,17 +18,25 @@ Architecture:
                          Link to user_profiles via email for farm data
 """
 
+import json
 import os
-from typing import TYPE_CHECKING
+from datetime import datetime
+from typing import TYPE_CHECKING, Optional
+import uuid
 
 import chainlit as cl
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
+from chainlit.user import User, PersistedUser
 import structlog
+from sqlalchemy import text
 
 if TYPE_CHECKING:
-    from chainlit.user import PersistedUser
+    pass  # Type hints already imported above
 
 logger = structlog.get_logger(__name__)
+
+# Module-level singleton
+_data_layer: Optional["YoncaDataLayer"] = None
 
 
 def get_database_url() -> str:
@@ -78,36 +86,47 @@ class YoncaDataLayer(SQLAlchemyDataLayer):
             )
         return user
     
-    async def create_user(self, user: cl.User) -> "PersistedUser | None":
-        """Create a new user from OAuth callback.
-        
-        Initializes default ChatSettings in metadata.
-        """
-        # Ensure metadata exists and has default settings
-        if user.metadata is None:
-            user.metadata = {}
-        
-        # Initialize default ChatSettings if not present
-        if "chat_settings" not in user.metadata:
-            user.metadata["chat_settings"] = {
-                "language": "Azərbaycanca",
-                "detail_level": "Orta",
-                "units": "Metrik (ha, kg)",
-                "notifications": True,
-                "show_sources": False,
-            }
-        
-        created_user = await super().create_user(user)
-        
-        if created_user:
-            logger.info(
-                "user_created",
-                identifier=user.identifier,
-                provider=user.metadata.get("provider"),
-            )
-        
-        return created_user
-    
+    async def create_user(self, user: User) -> Optional[PersistedUser]:
+        """Override to use proper UUID and ISO string for createdAt."""
+        try:
+            async with self.async_session() as session:
+                # Use ISO string for createdAt (Chainlit uses TEXT column)
+                created_at = datetime.utcnow().isoformat()
+                
+                # Generate proper UUID for id column
+                user_uuid = str(uuid.uuid4())
+                
+                # Convert metadata to proper JSON string (not Python repr!)
+                if isinstance(user.metadata, str):
+                    metadata_json = user.metadata
+                elif user.metadata is None:
+                    metadata_json = "{}"
+                else:
+                    metadata_json = json.dumps(user.metadata)
+                
+                await session.execute(
+                    text("""
+                        INSERT INTO users ("id", "identifier", "createdAt", "metadata")
+                        VALUES (:id, :identifier, :created_at, :metadata)
+                        ON CONFLICT ("identifier") DO UPDATE SET
+                            "metadata" = :metadata
+                    """),
+                    {
+                        "id": user_uuid,
+                        "identifier": user.identifier,
+                        "created_at": created_at,
+                        "metadata": metadata_json,
+                    }
+                )
+                await session.commit()
+                
+                # Fetch and return
+                return await self.get_user(user.identifier)
+                
+        except Exception as e:
+            logger.warning("create_user_failed", error=str(e))
+            return None
+
     async def update_user_metadata(
         self,
         identifier: str,
@@ -132,16 +151,19 @@ class YoncaDataLayer(SQLAlchemyDataLayer):
                 return False
             
             # Merge metadata (keep existing, update with new)
-            merged_metadata = {**user.metadata, **metadata}
+            existing_metadata = user.metadata if isinstance(user.metadata, dict) else {}
+            merged_metadata = {**existing_metadata, **metadata}
+            
+            # Convert to proper JSON string
+            metadata_json = json.dumps(merged_metadata)
             
             # Use SQLAlchemy to update
             async with self.async_session() as session:
-                from sqlalchemy import text
                 await session.execute(
                     text(
                         'UPDATE users SET metadata = :metadata WHERE identifier = :identifier'
                     ),
-                    {"metadata": merged_metadata, "identifier": identifier}
+                    {"metadata": metadata_json, "identifier": identifier}
                 )
                 await session.commit()
             
@@ -161,41 +183,32 @@ class YoncaDataLayer(SQLAlchemyDataLayer):
 # DATA LAYER FACTORY
 # ============================================
 
-_data_layer: YoncaDataLayer | None = None
-
-
-def get_data_layer() -> YoncaDataLayer:
-    """Get or create the data layer singleton.
-    
-    This is called by Chainlit via the @cl.data_layer decorator.
-    """
+def get_data_layer() -> Optional[YoncaDataLayer]:
+    """Get or create the data layer singleton."""
     global _data_layer
     
-    if _data_layer is None:
-        db_url = get_database_url()
-        
-        # Only create if we have a real database (not SQLite for now)
-        # SQLite support would require different handling
-        if "sqlite" in db_url:
-            logger.warning(
-                "sqlite_not_supported_for_persistence",
-                message="Using SQLite - data persistence disabled. Use Postgres for full persistence.",
-            )
-            # Return None to disable persistence (Chainlit will work without it)
-            return None  # type: ignore
-        
-        logger.info(
-            "initializing_data_layer",
-            db_url=db_url.split("@")[-1] if "@" in db_url else "local",  # Hide credentials
-        )
-        
-        _data_layer = YoncaDataLayer(
-            conninfo=db_url,
-            # No storage provider for now (files stored locally)
-            # Add Azure/S3 storage_provider here if needed for file uploads
-        )
+    if _data_layer is not None:
+        return _data_layer
     
-    return _data_layer
+    from config import settings as demo_settings
+    
+    if not demo_settings.data_persistence_enabled:
+        logger.info("data_persistence_disabled")
+        return None
+    
+    db_url = demo_settings.effective_database_url
+    
+    logger.info(
+        "initializing_data_layer",
+        db_url=db_url.split("@")[-1] if "@" in db_url else "local",
+    )
+    
+    try:
+        _data_layer = YoncaDataLayer(conninfo=db_url)
+        return _data_layer
+    except Exception as e:
+        logger.error("data_layer_init_failed", error=str(e))
+        return None
 
 
 # ============================================

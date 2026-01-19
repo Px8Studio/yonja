@@ -144,6 +144,10 @@ class LangfuseInsightsClient:
         self.public_key = public_key or os.getenv("YONCA_LANGFUSE_PUBLIC_KEY", "")
         self.secret_key = secret_key or os.getenv("YONCA_LANGFUSE_SECRET_KEY", "")
         
+        # Debug: Log configuration status
+        key_preview = f"{self.public_key[:15]}..." if len(self.public_key) > 15 else self.public_key
+        logger.info(f"LangfuseInsightsClient configured: host={self.host}, key_prefix={key_preview}")
+        
         self._client: httpx.AsyncClient | None = None
     
     @property
@@ -256,24 +260,37 @@ class LangfuseInsightsClient:
         try:
             client = await self._get_client()
             
-            # Fetch traces for this user
+            # Fetch traces for this user (Langfuse limit is 100 per page)
             from_time = (datetime.utcnow() - timedelta(days=days)).isoformat() + "Z"
             
-            response = await client.get(
-                "/api/public/traces",
-                params={
-                    "userId": user_id,
-                    "fromTimestamp": from_time,
-                    "limit": 1000,  # Paginate if needed
-                }
-            )
+            # Paginate through all results
+            all_traces = []
+            page = 1
+            while True:
+                response = await client.get(
+                    "/api/public/traces",
+                    params={
+                        "userId": user_id,
+                        "fromTimestamp": from_time,
+                        "limit": 100,  # Langfuse max is 100
+                        "page": page,
+                    }
+                )
+                
+                if response.status_code != 200:
+                    logger.warning(f"Failed to fetch traces for user: {user_id}")
+                    break
+                
+                data = response.json()
+                traces = data.get("data", [])
+                all_traces.extend(traces)
+                
+                meta = data.get("meta", {})
+                if page >= meta.get("totalPages", 1):
+                    break
+                page += 1
             
-            if response.status_code != 200:
-                logger.warning(f"Failed to fetch traces for user: {user_id}")
-                return self._empty_insights(user_id)
-            
-            data = response.json()
-            traces = data.get("data", [])
+            traces = all_traces
             
             if not traces:
                 return self._empty_insights(user_id)

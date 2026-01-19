@@ -229,6 +229,105 @@ async def get_api_client() -> YoncaClient:
 
 
 # ============================================
+# STARTERS (Quick Action Suggestions)
+# ============================================
+# These appear on the welcome screen to help users start conversations.
+
+# ============================================
+# CHAT PROFILES (Farmer Personas)
+# ============================================
+# Different profiles for different farming needs.
+# Each profile has specialized starters and system prompts.
+
+# Profile-specific starters
+PROFILE_STARTERS = {
+    "general": [
+        cl.Starter(label="📅 Həftəlik plan", message="Bu həftə üçün iş planı hazırla", icon="/public/elements/calendar.svg"),
+        cl.Starter(label="🌤️ Hava proqnozu", message="Bu günkü hava proqnozu necədir?", icon="/public/elements/weather.svg"),
+        cl.Starter(label="💧 Suvarma vaxtı", message="Sahəmi nə vaxt suvarmalıyam?", icon="/public/elements/water.svg"),
+        cl.Starter(label="💰 Subsidiyalar", message="Hansı subsidiyalardan yararlana bilərəm?", icon="/public/elements/money.svg"),
+    ],
+    "cotton": [
+        cl.Starter(label="🌱 Pambıq əkini", message="Pambıq əkini üçün ən yaxşı vaxt nədir?", icon="/public/elements/plant.svg"),
+        cl.Starter(label="🐛 Zərərverici", message="Pambıqda hansı zərərvericilər var?", icon="/public/elements/bug.svg"),
+        cl.Starter(label="💧 Suvarma norması", message="Pambıq üçün suvarma norması nə qədərdir?", icon="/public/elements/water.svg"),
+        cl.Starter(label="🧪 Gübrələmə", message="Pambıq üçün hansı gübrələr lazımdır?", icon="/public/elements/fertilizer.svg"),
+    ],
+    "wheat": [
+        cl.Starter(label="🌾 Buğda əkini", message="Payızlıq buğda nə vaxt əkilir?", icon="/public/elements/wheat.svg"),
+        cl.Starter(label="🌡️ Don zədəsi", message="Buğdanı dondan necə qorumaq olar?", icon="/public/elements/frost.svg"),
+        cl.Starter(label="🌿 Alaq otları", message="Buğdada alaq otlarına qarşı nə etmək olar?", icon="/public/elements/weed.svg"),
+        cl.Starter(label="📊 Məhsuldarlıq", message="Buğda məhsuldarlığını necə artırmaq olar?", icon="/public/elements/chart.svg"),
+    ],
+    "expert": [
+        cl.Starter(label="📊 Torpaq analizi", message="Torpaq analizinin nəticələrini şərh et", icon="/public/elements/soil.svg"),
+        cl.Starter(label="🔬 Xəstəlik diaqnozu", message="Bu bitkidə hansı xəstəlik var?", icon="/public/elements/microscope.svg"),
+        cl.Starter(label="📈 ROI hesablaması", message="Əkin planımın rentabelliyini hesabla", icon="/public/elements/calculator.svg"),
+        cl.Starter(label="🗺️ GIS məlumatları", message="Sahəmin peyk şəkillərini göstər", icon="/public/elements/satellite.svg"),
+    ],
+}
+
+# Profile-specific system prompt additions
+PROFILE_PROMPTS = {
+    "general": "",  # Use default system prompt
+    "cotton": """
+Sən pambıqçılıq üzrə ixtisaslaşmış aqronomiqa ekspertisən. 
+Azərbaycanda pambıq becərmə (Aran bölgəsi, Muğan düzü) haqqında dərin biliyə maliksən.
+Pambığın vegetasiya mərhələləri, suvarma rejimi, gübrələmə normaları və zərərvericilərə qarşı mübarizə haqqında ətraflı məlumat ver.
+""",
+    "wheat": """
+Sən taxılçılıq üzrə ixtisaslaşmış aqronomiqa ekspertisən.
+Azərbaycanda buğda və arpa becərmə haqqında dərin biliyə maliksən.
+Payızlıq və yazlıq taxıllar, don zədəsi, alaq otlarına qarşı mübarizə və məhsuldarlığın artırılması haqqında ətraflı məlumat ver.
+""",
+    "expert": """
+Sən kənd təsərrüfatı üzrə yüksək ixtisaslı ekspertsən.
+Cavablarını daha texniki və ətraflı ver. Torpaq analizləri, bitki fiziologiyası, iqtisadi hesablamalar və GIS məlumatları daxil et.
+Lazım gəldikdə elmi terminologiya istifadə et, lakin izah da ver.
+""",
+}
+
+
+@cl.set_chat_profiles
+async def chat_profiles(current_user: cl.User = None):
+    """Define available chat profiles (farming personas)."""
+    return [
+        cl.ChatProfile(
+            name="general",
+            markdown_description="**Ümumi kənd təsərrüfatı məsələləri** — hava, suvarma, subsidiyalar və s.",
+            icon="/public/avatars/general.svg",
+            default=True,
+            starters=PROFILE_STARTERS["general"],
+        ),
+        cl.ChatProfile(
+            name="cotton",
+            markdown_description="**Pambıqçılıq üzrə ekspert** — əkin, suvarma, zərərvericilər, gübrələmə",
+            icon="/public/avatars/cotton.svg",
+            starters=PROFILE_STARTERS["cotton"],
+        ),
+        cl.ChatProfile(
+            name="wheat",
+            markdown_description="**Taxılçılıq üzrə ekspert** — buğda, arpa, don zədəsi, alaq otları",
+            icon="/public/avatars/wheat.svg",
+            starters=PROFILE_STARTERS["wheat"],
+        ),
+        cl.ChatProfile(
+            name="expert",
+            markdown_description="**Ekspert rejimi** — texniki analiz, torpaq tədqiqatı, ROI hesablaması",
+            icon="/public/avatars/expert.svg",
+            starters=PROFILE_STARTERS["expert"],
+        ),
+    ]
+
+
+@cl.set_starters
+async def set_starters(current_user: cl.User = None, chat_profile: str = None):
+    """Return starters based on selected chat profile."""
+    profile = chat_profile or "general"
+    return PROFILE_STARTERS.get(profile, PROFILE_STARTERS["general"])
+
+
+# ============================================
 # AUTHENTICATION (Optional Google OAuth)
 # ============================================
 # This allows real users (developers) to be tracked in Langfuse
@@ -241,6 +340,20 @@ async def get_api_client() -> YoncaClient:
 #    - OAUTH_GOOGLE_CLIENT_ID
 #    - OAUTH_GOOGLE_CLIENT_SECRET
 #    - CHAINLIT_AUTH_SECRET (any random string)
+#
+# AVAILABLE USER DATA (by scope):
+# ─────────────────────────────────────────────────────────────────────────
+# Standard (no extra consent):
+#   - email, name, picture, given_name, family_name, locale, google_id
+#   - hosted_domain (hd) - for Google Workspace users
+#
+# Sensitive (requires Google app verification + user consent):
+#   - birthday: scope=user.birthday.read
+#   - gender: scope=user.gender.read  
+#   - phone: scope=user.phonenumbers.read
+#   - address: scope=user.addresses.read
+#   - age_range: scope=profile.agerange.read
+# ─────────────────────────────────────────────────────────────────────────
 
 def is_oauth_enabled() -> bool:
     """Check if OAuth is configured."""
@@ -250,53 +363,206 @@ def is_oauth_enabled() -> bool:
     )
 
 
+async def fetch_google_people_api(access_token: str) -> dict:
+    """Fetch enhanced user profile from Google People API.
+    
+    This requires additional OAuth scopes configured in Google Cloud Console:
+    - https://www.googleapis.com/auth/user.birthday.read
+    - https://www.googleapis.com/auth/user.gender.read
+    - https://www.googleapis.com/auth/user.phonenumbers.read
+    - https://www.googleapis.com/auth/user.addresses.read
+    
+    Note: These are "sensitive scopes" and require Google app verification
+    before they can be used in production.
+    
+    Args:
+        access_token: OAuth access token from Google login
+        
+    Returns:
+        Dict with enhanced profile fields (birthday, gender, phone, address)
+    """
+    import httpx
+    
+    # Request specific person fields from People API
+    person_fields = "birthdays,genders,phoneNumbers,addresses,locales,ageRanges"
+    url = f"https://people.googleapis.com/v1/people/me?personFields={person_fields}"
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                url,
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=10.0
+            )
+            
+            if response.status_code != 200:
+                logger.warning(
+                    "people_api_error",
+                    status=response.status_code,
+                    detail=response.text[:200]
+                )
+                return {}
+            
+            data = response.json()
+            
+            # Extract fields from People API response
+            result = {}
+            
+            # Birthday (may have year/month/day or just month/day for privacy)
+            if birthdays := data.get("birthdays"):
+                for bday in birthdays:
+                    if date := bday.get("date"):
+                        result["birthday"] = {
+                            "year": date.get("year"),
+                            "month": date.get("month"),
+                            "day": date.get("day"),
+                        }
+                        break
+            
+            # Gender
+            if genders := data.get("genders"):
+                for gender in genders:
+                    if value := gender.get("value"):
+                        result["gender"] = value
+                        break
+            
+            # Phone number (primary)
+            if phones := data.get("phoneNumbers"):
+                for phone in phones:
+                    if value := phone.get("value"):
+                        result["phone"] = value
+                        result["phone_type"] = phone.get("type", "unknown")
+                        break
+            
+            # Address (primary)
+            if addresses := data.get("addresses"):
+                for addr in addresses:
+                    result["address"] = {
+                        "formatted": addr.get("formattedValue"),
+                        "city": addr.get("city"),
+                        "region": addr.get("region"),
+                        "country": addr.get("country"),
+                        "country_code": addr.get("countryCode"),
+                        "postal_code": addr.get("postalCode"),
+                    }
+                    break
+            
+            # Age range (less sensitive than exact birthday)
+            if age_ranges := data.get("ageRanges"):
+                for ar in age_ranges:
+                    if value := ar.get("ageRange"):
+                        result["age_range"] = value  # e.g., "TWENTY_ONE_OR_OLDER"
+                        break
+            
+            logger.info(
+                "people_api_success",
+                fields_retrieved=list(result.keys())
+            )
+            
+            return result
+            
+    except Exception as e:
+        logger.error("people_api_exception", error=str(e))
+        return {}
+
+
 # Only register OAuth callback if credentials are configured
 # This prevents Chainlit from requiring OAuth env vars at startup
 if is_oauth_enabled():
     @cl.oauth_callback
     async def oauth_callback(
         provider_id: str,
-        _token: str,
+        token: str,
         raw_user_data: dict[str, str],
         default_user: cl.User,
         _id_token: Optional[str] = None,
     ) -> Optional[cl.User]:
-        """Handle OAuth callback from Google.
+        """Handle OAuth callback from Google with enhanced user profile data.
         
-        This allows any authenticated Google user to access the demo.
-        The user's email is stored and passed to Langfuse for tracking.
+        This captures all available user info from Google OAuth:
+        - Basic: email, name, picture (always available)
+        - Profile: given_name, family_name, locale (with 'profile' scope)
+        - Domain: hd (Google Workspace hosted domain, if applicable)
+        
+        For additional data (birthday, gender, phone, address), you would need:
+        1. Add scopes to Google OAuth config (requires Google app verification)
+        2. Call People API with the access token
         
         Args:
             provider_id: OAuth provider (e.g., "google")
-            _token: OAuth access token (unused but required by signature)
-            raw_user_data: User info from provider
+            token: OAuth access token (can be used for additional API calls)
+            raw_user_data: User info from provider's userinfo endpoint
             default_user: Chainlit's default user object
-            _id_token: Optional ID token (unused but required by signature)
+            _id_token: Optional ID token
             
         Returns:
             cl.User if allowed, None to deny access.
         """
         if provider_id == "google":
-            # Extract user info
+            # ═══════════════════════════════════════════════════════════════
+            # STANDARD PROFILE DATA (available with openid + profile + email)
+            # ═══════════════════════════════════════════════════════════════
             email = raw_user_data.get("email", "unknown")
             name = raw_user_data.get("name", email)
             picture = raw_user_data.get("picture")
             
+            # Additional fields available by default from Google OAuth
+            given_name = raw_user_data.get("given_name")      # First name
+            family_name = raw_user_data.get("family_name")    # Last name  
+            locale = raw_user_data.get("locale")              # Language/region (e.g., "en", "az")
+            email_verified = raw_user_data.get("email_verified", False)
+            
+            # Google Workspace domain (only for workspace/organization accounts)
+            hosted_domain = raw_user_data.get("hd")  # e.g., "yonca.az"
+            
+            # Google user ID (unique, stable identifier)
+            google_id = raw_user_data.get("sub")
+            
             logger.info(
-                "oauth_login",
+                "oauth_login_standard",
                 provider=provider_id,
                 email=email,
                 name=name,
+                given_name=given_name,
+                family_name=family_name,
+                locale=locale,
+                hosted_domain=hosted_domain,
+                email_verified=email_verified,
             )
             
-            # Return user with metadata for Langfuse
+            # ═══════════════════════════════════════════════════════════════
+            # NOTE: People API (birthday, gender, phone, address) NOT used
+            # ═══════════════════════════════════════════════════════════════
+            # People API sensitive scopes require Google app verification
+            # which costs $15k-75k and is not practical for this demo.
+            # We use only FREE data from standard OAuth scopes.
+            # 
+            # See: https://support.google.com/cloud/answer/9110914
+            
+            # Return user with FREE metadata only (no paid APIs)
             return cl.User(
                 identifier=email,
                 metadata={
+                    # ════════════════════════════════════════════════════════
+                    # ALL FIELDS BELOW ARE 100% FREE (standard OAuth scopes)
+                    # ════════════════════════════════════════════════════════
+                    
+                    # Core identity (openid scope)
                     "name": name,
                     "email": email,
-                    "picture": picture,
+                    "email_verified": email_verified,
+                    "image": picture,      # Chainlit expects 'image' for avatar
+                    "picture": picture,    # Keep 'picture' too for compatibility
                     "provider": provider_id,
+                    "google_id": google_id,
+                    
+                    # Profile details (profile scope - FREE)
+                    "given_name": given_name,
+                    "family_name": family_name,
+                    "locale": locale,  # Language/region: "az", "en", "ru"
+                    
+                    # Organization (FREE - only for Google Workspace accounts)
+                    "hosted_domain": hosted_domain,  # e.g., "zekalab.com"
                 }
             )
         
@@ -559,6 +825,168 @@ async def on_irrigation_action(action: cl.Action):
     msg = cl.Message(content="Bu gün sahəmi suvarmağı tövsiyə edirsiniz?")
     await on_message(msg)
 
+
+# ============================================
+# AUDIO INPUT (Voice for Farmers)
+# ============================================
+# Farmers in the field can speak questions instead of typing.
+# Uses browser's MediaRecorder to capture audio, then transcribes via Whisper.
+
+@cl.on_audio_start
+async def on_audio_start():
+    """Called when user starts recording audio.
+    
+    Return True to allow recording, False to reject.
+    We could add checks here (e.g., rate limiting).
+    """
+    logger.info("audio_recording_started")
+    return True
+
+
+@cl.on_audio_chunk
+async def on_audio_chunk(chunk: cl.InputAudioChunk):
+    """Process incoming audio chunks.
+    
+    For real-time transcription, we could accumulate chunks here.
+    Currently we wait for the full recording (on_audio_end).
+    """
+    # Buffer chunks if needed for streaming transcription
+    # For now, we do nothing - wait for complete audio in on_audio_end
+    _ = chunk  # Mark as intentionally unused
+
+
+@cl.on_audio_end
+async def on_audio_end(elements: list[cl.Audio]):
+    """Called when audio recording ends. Transcribe and process.
+    
+    Args:
+        elements: List of Audio elements with the recorded audio
+    """
+    if not elements:
+        logger.warning("audio_end_no_elements")
+        return
+    
+    audio = elements[0]  # Get the first (and usually only) audio element
+    
+    # Show thinking indicator
+    thinking_msg = cl.Message(content="🎤 Səsinizi eşidirəm...")
+    await thinking_msg.send()
+    
+    try:
+        # Get audio data
+        audio_data = audio.content
+        if not isinstance(audio_data, bytes):
+            logger.error("audio_data_not_bytes", type=type(audio_data).__name__)
+            await thinking_msg.remove()
+            await cl.Message(content="❌ Audio formatı dəstəklənmir.").send()
+            return
+        mime_type = audio.mime or "audio/webm"
+        
+        logger.info(
+            "audio_transcription_started",
+            size_bytes=len(audio_data) if audio_data else 0,
+            mime_type=mime_type
+        )
+        
+        # Transcribe using Whisper via Ollama or external service
+        transcription = await transcribe_audio_whisper(audio_data, mime_type)
+        
+        if transcription and transcription.strip():
+            # Remove thinking message
+            await thinking_msg.remove()
+            
+            # Show transcribed text as user message
+            await cl.Message(
+                content=transcription,
+                author="user",
+            ).send()
+            
+            logger.info("audio_transcribed", text=transcription[:100])
+            
+            # Process as regular message
+            msg = cl.Message(content=transcription)
+            await on_message(msg)
+        else:
+            # Remove thinking message and show error
+            await thinking_msg.remove()
+            await cl.Message(content="❌ Səs aydın deyildi. Zəhmət olmasa yenidən cəhd edin.").send()
+            logger.warning("audio_transcription_empty")
+            
+    except Exception as e:  # noqa: BLE001
+        logger.error("audio_transcription_error", error=str(e))
+        await thinking_msg.remove()
+        await cl.Message(content=f"❌ Xəta: {str(e)}").send()
+
+
+async def transcribe_audio_whisper(audio_data: bytes, mime_type: str) -> str:
+    """Transcribe audio using Whisper model.
+    
+    Options:
+    1. Local Whisper via Ollama (if model available)
+    2. OpenAI Whisper API (requires API key)
+    3. Azure Speech Services (requires Azure subscription)
+    
+    For now, we use a simple approach with httpx to Ollama or fallback.
+    
+    Args:
+        audio_data: Raw audio bytes
+        mime_type: MIME type (e.g., "audio/webm", "audio/wav")
+        
+    Returns:
+        Transcribed text string
+    """
+    import httpx
+    import tempfile
+    
+    # Save audio to temp file (Whisper needs file input)
+    ext = ".webm" if "webm" in mime_type else ".wav"
+    with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as f:
+        f.write(audio_data)
+        temp_path = f.name
+    
+    try:
+        # Try OpenAI-compatible Whisper endpoint (works with local or cloud)
+        whisper_url = os.getenv("WHISPER_API_URL", "http://localhost:11434/v1/audio/transcriptions")
+        whisper_key = os.getenv("WHISPER_API_KEY", "")
+        
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            # Method 1: OpenAI-compatible API (Ollama with whisper model)
+            with open(temp_path, "rb") as audio_file:
+                files = {"file": (f"audio{ext}", audio_file, mime_type)}
+                data = {"model": "whisper", "language": "az"}  # Azerbaijani
+                headers = {}
+                if whisper_key:
+                    headers["Authorization"] = f"Bearer {whisper_key}"
+                
+                response = await client.post(
+                    whisper_url,
+                    files=files,
+                    data=data,
+                    headers=headers
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    return result.get("text", "")
+                else:
+                    logger.warning(
+                        "whisper_api_error",
+                        status=response.status_code,
+                        detail=response.text[:200]
+                    )
+        
+        # Fallback: Return placeholder if no Whisper available
+        logger.warning("whisper_not_available", detail="No Whisper service configured")
+        return ""
+        
+    finally:
+        # Cleanup temp file
+        try:
+            os.unlink(temp_path)
+        except OSError:
+            pass
+
+
 # ============================================
 # SESSION MANAGEMENT
 # ============================================
@@ -573,9 +1001,21 @@ async def on_chat_start():
     user_id = user.identifier if user else "anonymous"
     user_email = user.metadata.get("email") if user and user.metadata else None
     
-    # Store user info for Langfuse tracking
+    # Get selected chat profile (farming persona)
+    chat_profile = cl.user_session.get("chat_profile") or "general"
+    profile_prompt = PROFILE_PROMPTS.get(chat_profile, "")
+    
+    # Store session info
     cl.user_session.set("user_id", user_id)
     cl.user_session.set("user_email", user_email)
+    cl.user_session.set("profile_prompt", profile_prompt)  # For system prompt enhancement
+    
+    logger.info(
+        "chat_profile_selected",
+        profile=chat_profile,
+        user_id=user_id,
+        has_custom_prompt=bool(profile_prompt),
+    )
     
     # Default farm for demo (synthetic farmer profile - NOT the real user)
     farm_id = "demo_farm_001"
@@ -652,6 +1092,10 @@ async def on_message(message: cl.Message):
     user_id = cl.user_session.get("user_id", "anonymous")
     user_email = cl.user_session.get("user_email")
     
+    # Get chat profile for specialized responses
+    chat_profile = cl.user_session.get("chat_profile") or "general"
+    profile_prompt = cl.user_session.get("profile_prompt", "")
+    
     # Create response message for streaming
     response_msg = cl.Message(content="", author="Yonca AI")
     await response_msg.send()
@@ -721,11 +1165,12 @@ async def on_message(message: cl.Message):
             langfuse_handler = create_langfuse_handler(
                 session_id=thread_id,           # Groups all messages in conversation
                 user_id=user_id,                # Attributes costs to user
-                tags=["demo-ui", "development", "direct-mode"],
+                tags=["demo-ui", "development", "direct-mode", f"profile:{chat_profile}"],
                 metadata={
                     "farm_id": farm_id,
                     "user_email": user_email,
-                    "source": "chainlit"
+                    "source": "chainlit",
+                    "chat_profile": chat_profile,
                 },
             )
             

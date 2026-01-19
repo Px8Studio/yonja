@@ -478,3 +478,125 @@ button.primary:hover {
         box-shadow: 0 4px 30px rgba(45, 90, 39, 0.5), 0 0 50px rgba(168, 230, 207, 0.3);
     }
 }
+/* ============================================
+ * Profile Dropdown Enhancement (Yonca User Menu)
+ * ============================================ */
+
+/* User avatar in header — add ring effect */
+[data-testid="user-button"] img,
+.MuiAvatar-root img {
+    border: 2px solid var(--yonca-green-light);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+[data-testid="user-button"]:hover img,
+.MuiAvatar-root:hover img {
+    border-color: var(--yonca-green-primary);
+    box-shadow: 0 0 0 3px rgba(168, 230, 207, 0.4);
+    transform: scale(1.05);
+}
+
+/* User menu dropdown — glassmorphism */
+[data-testid="user-menu"],
+.MuiMenu-paper,
+.MuiPopover-paper {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 12px 40px rgba(45, 90, 39, 0.15) !important;
+    overflow: hidden;
+}
+
+.dark [data-testid="user-menu"],
+.dark .MuiMenu-paper,
+.dark .MuiPopover-paper {
+    background: var(--glass-bg-dark) !important;
+    border: 1px solid var(--glass-border-dark) !important;
+}
+
+/* Menu items hover effect */
+.MuiMenuItem-root {
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    margin: 2px 6px;
+}
+
+.MuiMenuItem-root:hover {
+    background: rgba(45, 90, 39, 0.08) !important;
+}
+
+.dark .MuiMenuItem-root:hover {
+    background: rgba(168, 230, 207, 0.1) !important;
+}
+
+/* Logout button styling */
+.MuiMenuItem-root[data-testid="logout"],
+.MuiMenuItem-root:last-child {
+    color: #dc3545;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    margin-top: 4px;
+    padding-top: 8px;
+}
+
+.MuiMenuItem-root[data-testid="logout"]:hover,
+.MuiMenuItem-root:last-child:hover {
+    background: rgba(220, 53, 69, 0.1) !important;
+}
+
+/* Yonca Profile Card (injected by profile-enhancer.js) */
+.yonca-profile-card {
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Profile photo hover effect */
+.yonca-profile-card .profile-photo {
+    transition: all 0.3s ease;
+}
+
+.yonca-profile-card:hover .profile-photo {
+    box-shadow: 0 0 0 4px rgba(45, 90, 39, 0.2);
+}
+
+/* Info row icons */
+.yonca-profile-card .info-row svg,
+.yonca-profile-card .info-row::before {
+    color: var(--yonca-green-primary);
+}
+
+/* Badge/tag styling */
+.yonca-profile-card .locale-badge,
+.yonca-profile-card .domain-badge {
+    background: linear-gradient(135deg, var(--yonca-green-light) 0%, rgba(168, 230, 207, 0.6) 100%);
+    color: var(--yonca-green-dark);
+    font-weight: 500;
+}
+
+/* Theme toggle in profile */
+.yonca-profile-card .theme-toggle {
+    background: linear-gradient(135deg, var(--yonca-green-primary) 0%, var(--yonca-green-dark) 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.yonca-profile-card .theme-toggle:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(45, 90, 39, 0.3);
+}

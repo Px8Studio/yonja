@@ -93,6 +93,139 @@ flowchart TB
 | **Langfuse** | LLM observability (separate DB) | Traces, costs, latencies | `src/yonca/observability/langfuse.py` |
 | **LangGraph** | Agent orchestration | In-memory graph execution | `src/yonca/agent/graph.py` |
 
+### 🎯 Architecture Clarification: Three Different "LangGraphs"
+
+> **Common Confusion:** The term "LangGraph" appears in three contexts. Understanding these distinctions is critical for navigating the codebase.
+
+| What It Is | Type | Port | Purpose | Required? |
+|:-----------|:-----|:-----|:--------|:----------|
+| **LangGraph Library** | Python package | — | Agent orchestration framework (like React) | ✅ **Core dependency** |
+| **LangGraph Dev Server** | Development tool | 2024 | Visual debugger (LangGraph Studio) | ❌ **Optional** |
+| **FastAPI Backend** | Production API | 8000 | REST endpoints for mobile app | ✅ **Production critical** |
+
+#### 1️⃣ LangGraph Library (The Brain)
+
+```python
+from langgraph.graph import StateGraph  # ← This is the library
+agent = StateGraph(AgentState)
+agent.add_node("supervisor", supervisor_node)
+```
+
+- **What**: Python library you import and use in code
+- **Where**: `src/yonca/agent/` — all agent logic
+- **Analogy**: Like React — you build your app with it
+- **Status**: ✅ **Required** — this is your agent's foundation
+
+#### 2️⃣ LangGraph Dev Server (Optional Debugger)
+
+```bash
+langgraph dev  # Starts on http://127.0.0.1:2024
+```
+
+- **What**: Visual debugger for LangGraph applications
+- **Where**: Started separately via CLI command
+- **Analogy**: Like React DevTools — helpful for debugging
+- **Status**: ❌ **Optional** — you can safely ignore this for development
+
+> 💡 **Decision**: We **don't use** the LangGraph Dev Server. Chainlit provides built-in step visualization, making this redundant.
+
+#### 3️⃣ FastAPI Backend (Production API)
+
+```python
+# src/yonca/api/main.py
+@app.post("/api/v1/chat")
+async def chat(request: ChatMessage):
+    # Imports LangGraph library internally
+    agent = get_agent()
+    response = await agent.chat(request.message)
+```
+
+- **What**: REST API server exposing agent functionality
+- **Where**: `src/yonca/api/` — all HTTP endpoints
+- **Analogy**: Express.js server for your React app
+- **Status**: ✅ **Required** — mobile app calls these endpoints
+
+### 🔄 Integration Modes: Direct vs API Bridge
+
+The Chainlit demo UI supports **two integration patterns** for flexibility:
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+flowchart TB
+    subgraph dev["🔧 DEVELOPMENT MODE (Current)"]
+        chainlit1["Chainlit UI<br/>:8501"]
+        langgraph_lib1["LangGraph Library<br/>(imported directly)"]
+        llm1["Ollama/Groq"]
+        
+        chainlit1 --> langgraph_lib1
+        langgraph_lib1 --> llm1
+        
+        note1["✅ Direct Mode<br/>Fast iteration<br/>No HTTP overhead"]
+    end
+    
+    subgraph prod["🚀 PRODUCTION SIMULATION"]
+        mobile["Mobile App"]
+        fastapi["FastAPI<br/>:8000"]
+        langgraph_lib2["LangGraph Library<br/>(imported by FastAPI)"]
+        llm2["Groq API"]
+        
+        mobile --> fastapi
+        fastapi --> langgraph_lib2
+        langgraph_lib2 --> llm2
+        
+        note2["🌐 API Bridge Mode<br/>Tests production API<br/>(optional for demo)"]
+    end
+    
+    style dev fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style prod fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+```
+
+| Mode | How It Works | When to Use |
+|:-----|:-------------|:------------|
+| **Direct Mode** | Chainlit → LangGraph Library (in-process) | ✅ **Development** — Faster, simpler |
+| **API Bridge Mode** | Chainlit → FastAPI → LangGraph Library | ⚙️ **Testing** — Validates API contract |
+
+> 🎯 **Recommendation**: Use **Direct Mode** for daily development. The "API Bridge" exists to test the same HTTP endpoints the mobile app will use, but it's not required for building the agent.
+
+**Configuration** (`.env` or `demo-ui/.env`):
+```env
+# Simple setup (recommended)
+INTEGRATION_MODE=direct
+```
+
+### 🧠 Mental Model: One Backend, Two Entry Points
+
+```
+┌─────────────────────────────────────────────────────┐
+│         🧠 LANGGRAPH AGENT (Core Logic)             │
+│                                                      │
+│  • Supervisor node (routes intent)                 │
+│  • Agronomist node (agricultural advice)           │
+│  • Weather node (weather queries)                  │
+│  • Validator node (safety checks)                  │
+│                                                      │
+│         Location: src/yonca/agent/                  │
+└─────────────────────────────────────────────────────┘
+            ▲                        ▲
+            │                        │
+    ┌───────┴────────┐      ┌────────┴────────┐
+    │                │      │                 │
+    │  Entry Point 1 │      │  Entry Point 2  │
+    │                │      │                 │
+    │   📱 Chainlit  │      │   🌐 FastAPI    │
+    │   (Direct)     │      │   (HTTP API)    │
+    │                │      │                 │
+    │   For: Demo    │      │   For: Mobile   │
+    │        Testing │      │        App      │
+    └────────────────┘      └─────────────────┘
+```
+
+**Key Insight**: Both entry points use the **same LangGraph agent code**. The only difference is how they access it:
+- **Chainlit**: Imports directly (`from yonca.agent import get_agent`)
+- **FastAPI**: Also imports directly, but exposes via HTTP endpoints
+
+There's **no duplication** — just different interfaces to the same intelligence layer.
+
 ---
 
 ## 💾 Data Ecosystem
@@ -290,31 +423,127 @@ supervisor ──┬──> end (greeting/off-topic handled)
 
 ## 🚀 Operational Quick Reference
 
+### 🎯 Essential vs Optional Components
+
+Before diving into service URLs and commands, understand what you actually need:
+
+| Component | Status | Why |
+|:----------|:-------|:----|
+| **Docker Services** | ✅ **Required** | PostgreSQL, Redis, Langfuse, Ollama |
+| **FastAPI Backend** | ✅ **Required** | Mobile app integration point |
+| **Chainlit UI (Direct Mode)** | ✅ **Required** | Primary testing interface |
+| **LangGraph Library** | ✅ **Required** | Agent brain (imported by both above) |
+| **LangGraph Dev Server** | ❌ **Optional** | Visual debugger (redundant with Chainlit) |
+| **API Bridge Mode** | ❌ **Optional** | Tests FastAPI contract (use Swagger instead) |
+
+### 🎬 Simplified Startup Sequence
+
+```powershell
+# 1. Start Docker services
+docker-compose -f docker-compose.local.yml up -d
+
+# 2. Run migrations (first time only)
+$env:DATABASE_URL = "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
+alembic upgrade head
+
+# 3. Start Chainlit UI (development testing)
+cd demo-ui
+.\.venv\Scripts\Activate.ps1
+chainlit run app.py -w --port 8501
+
+# 4. Start FastAPI (mobile app testing - separate terminal)
+cd C:\Users\rjjaf\_Projects\yonja
+.\.venv\Scripts\Activate.ps1
+uvicorn yonca.api.main:app --reload
+
+# That's it! No LangGraph dev server needed.
+```
+
+> 💡 **Pro Tip**: Chainlit and FastAPI can run simultaneously. Test the agent in Chainlit, then validate the HTTP API via Swagger UI (http://localhost:8000/docs).
+
 ### Service URLs
 
-| Service | URL | Health Check |
-|:--------|:----|:-------------|
-| **Chainlit UI** | http://localhost:8501 | Visual check |
-| **PostgreSQL** | localhost:5433 | `pg_isready -h localhost -p 5433` |
-| **Redis** | localhost:6379 | `redis-cli ping` |
-| **Langfuse** | http://localhost:3001 | Dashboard loads |
-| **Ollama** | http://localhost:11434 | `curl http://localhost:11434/api/tags` |
+| Service | URL | Purpose | Health Check |
+|:--------|:----|:--------|:-------------|
+| **Chainlit UI** | http://localhost:8501 | Demo testing interface | Visual check |
+| **FastAPI Backend** | http://localhost:8000 | Mobile app API | http://localhost:8000/health |
+| **Swagger UI** | http://localhost:8000/docs | Interactive API testing | N/A |
+| **ReDoc** | http://localhost:8000/redoc | API documentation | N/A |
+| **PostgreSQL** | localhost:5433 | App database | `pg_isready -h localhost -p 5433` |
+| **Redis** | localhost:6379 | State persistence | `redis-cli ping` |
+| **Langfuse** | http://localhost:3001 | LLM observability | Dashboard loads |
+| **Ollama** | http://localhost:11434 | Local LLM (dev) | `curl http://localhost:11434/api/tags` |
+
+> 🎯 **Testing Workflow**: Develop in Chainlit → Test API via Swagger → Mobile app uses FastAPI endpoints
 
 ### Common Commands
 
 ```powershell
-# Start all services
+# ═══════════════════════════════════════════════════════
+# DOCKER SERVICES
+# ═══════════════════════════════════════════════════════
+
+# Start all services (PostgreSQL, Redis, Langfuse, Ollama)
 docker-compose -f docker-compose.local.yml up -d
 
-# Run database migrations
+# Check service health
+docker ps
+docker-compose -f docker-compose.local.yml ps
+
+# View logs
+docker-compose -f docker-compose.local.yml logs -f
+
+# Stop all services
+docker-compose -f docker-compose.local.yml down
+
+# ═══════════════════════════════════════════════════════
+# DATABASE MANAGEMENT
+# ═══════════════════════════════════════════════════════
+
+# Run migrations (first time setup)
 $env:DATABASE_URL = "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
+$env:PYTHONPATH = "C:\Users\rjjaf\_Projects\yonja\src"
 alembic upgrade head
+
+# Create new migration (after model changes)
+alembic revision --autogenerate -m "description"
+
+# Seed database with synthetic data
+python scripts/seed_database.py
 
 # Verify Redis checkpoints
 docker exec yonca-redis redis-cli KEYS "langgraph:*"
 
-# Start Chainlit UI
-cd demo-ui && chainlit run app.py -w --port 8501
+# ═══════════════════════════════════════════════════════
+# DEVELOPMENT SERVERS
+# ═══════════════════════════════════════════════════════
+
+# Start Chainlit UI (primary testing interface)
+cd demo-ui
+.\.venv\Scripts\Activate.ps1
+chainlit run app.py -w --port 8501
+
+# Start FastAPI Backend (for mobile app testing)
+cd C:\Users\rjjaf\_Projects\yonja
+.\.venv\Scripts\Activate.ps1
+uvicorn yonca.api.main:app --reload --port 8000
+
+# Test FastAPI endpoints
+curl http://localhost:8000/health
+# or visit http://localhost:8000/docs for Swagger UI
+
+# ═══════════════════════════════════════════════════════
+# TESTING & VERIFICATION
+# ═══════════════════════════════════════════════════════
+
+# Run tests
+pytest tests/ -v
+
+# Check code quality
+ruff check src/ tests/
+
+# View Langfuse traces
+# Open http://localhost:3001 in browser
 ```
 
 ### Verification Checklist

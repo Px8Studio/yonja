@@ -1539,29 +1539,16 @@ async def on_chat_start():
     user_settings = await setup_chat_settings(user=user)
     cl.user_session.set("user_preferences", user_settings)
     
-    # Initialize based on integration mode
-    if demo_settings.use_api_bridge:
-        # API Bridge Mode: Use YoncaClient to talk to FastAPI
-        # This is the EXACT pattern Digital Umbrella will use
-        api_client = await get_api_client()
-        cl.user_session.set("api_client", api_client)
-        logger.info(
-            "session_started_api_mode",
-            session_id=session_id,
-            user_id=user_id,
-            api_url=demo_settings.yonca_api_url,
-        )
-    else:
-        # Direct Mode: Import LangGraph directly (faster for development)
-        checkpointer = await get_app_checkpointer()
-        agent = compile_agent_graph(checkpointer=checkpointer)
-        cl.user_session.set("agent", agent)
-        logger.info(
-            "session_started_direct_mode",
-            session_id=session_id,
-            user_id=user_id,
-            farm_id=farm_id,
-        )
+    # Initialize LangGraph agent (Direct Mode - Simplified)
+    checkpointer = await get_app_checkpointer()
+    agent = compile_agent_graph(checkpointer=checkpointer)
+    cl.user_session.set("agent", agent)
+    logger.info(
+        "session_started_direct_mode",
+        session_id=session_id,
+        user_id=user_id,
+        farm_id=farm_id,
+    )
     
     # ─────────────────────────────────────────────────────────────
     # WELCOME EXPERIENCE (Two-Part Strategy)
@@ -1603,201 +1590,127 @@ async def on_chat_start():
     await send_dashboard_welcome(user)
 
 
-# Upload handler for image files used by Vision-to-Action
-@cl.on_event("upload")
-async def on_file_upload(files: list[cl.UploadedFile]):
-    paths: list[str] = []
-    try:
-        for f in files:
-            saved_path = await f.save()
-            if saved_path:
-                paths.append(saved_path)
-        existing = cl.user_session.get("uploaded_images", []) or []
-        existing.extend(paths)
-        cl.user_session.set("uploaded_images", existing)
-        await cl.Message(content=f"✅ {len(paths)} şəkil yükləndi").send()
-    except Exception as e:
-        await cl.Message(content=f"⚠️ Yükləmə xətası: {e}").send()
-
+# ============================================
+# MESSAGE HANDLER
+# ============================================
 @cl.on_message
 async def on_message(message: cl.Message):
-    """Handle incoming user messages with dual-mode support.
+    """Handle incoming user messages with direct LangGraph integration.
     
-    - API Mode: Routes through FastAPI backend (production pattern)
-    - Direct Mode: Calls LangGraph directly (development pattern)
+    This is the CORE message handler - uses Direct Mode for simplicity.
+    For mobile app testing, use FastAPI directly (http://localhost:8000/docs).
     """
-    session_id = cl.user_session.get("id")
-    farm_id = cl.user_session.get("farm_id", "demo_farm_001")
-    thread_id = cl.user_session.get("thread_id", session_id)
+    # Get session data
     user_id = cl.user_session.get("user_id", "anonymous")
-    user_email = cl.user_session.get("user_email")
+    farm_id = cl.user_session.get("farm_id")
+    thread_id = cl.user_session.get("thread_id")
     
-    # Get expertise-based profile prompt for specialized responses
-    expertise_areas = cl.user_session.get("expertise_areas", ["general"])
+    # Get user preferences for response customization
+    user_preferences = cl.user_session.get("user_preferences", {})
+    enable_thinking_steps = user_preferences.get("show_thinking_steps", demo_settings.enable_thinking_steps)
+    enable_feedback = user_preferences.get("enable_feedback", demo_settings.enable_feedback)
+    
+    # Get expertise-enhanced system prompt
     profile_prompt = cl.user_session.get("profile_prompt", "")
     
-    # Create response message for streaming
-    response_msg = cl.Message(content="", author="ALEM")
+    logger.info(
+        "message_received",
+        user_id=user_id,
+        message_length=len(message.content),
+        has_profile_prompt=bool(profile_prompt),
+    )
+    
+    # Create response message
+    response_msg = cl.Message(content="")
     await response_msg.send()
     
-    full_response = ""
-    
     try:
-        if demo_settings.use_api_bridge:
-            # ═══════════════════════════════════════════════════════
-            # API BRIDGE MODE - The "Gold Standard" Production Pattern
-            # This is EXACTLY how Digital Umbrella's mobile app will work
-            # ═══════════════════════════════════════════════════════
-            api_client = cl.user_session.get("api_client")
-            if not api_client:
-                api_client = await get_api_client()
-                cl.user_session.set("api_client", api_client)
-            
-            # Show thinking indicator with ALEM branding
-            await response_msg.stream_token(LoadingStates.thinking())
-            
-            try:
-                # Call FastAPI backend - same as mobile app will
-                result = await api_client.chat(
-                    message=message.content,
-                    session_id=thread_id,
-                    farm_id=farm_id,
-                    user_id=user_id,
-                )
-                full_response = result.content
-                
-                # Clear thinking indicator and show response
-                response_msg.content = full_response
-                await response_msg.update()
-                
-                logger.info(
-                    "api_response_received",
-                    session_id=session_id,
-                    model=result.model,
-                    tokens=result.tokens_used,
-                    message_count=result.message_count,
-                )
-                
-            except YoncaClientError as e:
-                logger.error("api_error", error=str(e), status_code=e.status_code)
-                response_msg.content = f"❌ API xətası: {e}"
-                await response_msg.update()
-                return
-            
-        else:
-            # ═══════════════════════════════════════════════════════
-            # DIRECT MODE - Fast Development Pattern
-            # Calls LangGraph directly without HTTP overhead
-            # ═══════════════════════════════════════════════════════
-            agent = cl.user_session.get("agent")
-            
-            if not agent:
-                checkpointer = await get_app_checkpointer()
-                agent = compile_agent_graph(checkpointer=checkpointer)
-                cl.user_session.set("agent", agent)
-            
-            # Build input for the agent
-            input_messages = {
-                "messages": [HumanMessage(content=message.content)]
-            }
-            
-            # Create Langfuse handler for observability
-            alem_persona_dict = cl.user_session.get("alem_persona", {})
-            
-            # Build tags with persona information
-            tags = [
-                "demo-ui",
-                "development",
-                "direct-mode",
-                f"expertise:{','.join(expertise_areas)}",
-            ]
-            if alem_persona_dict:
-                tags.extend([
-                    f"fin:{alem_persona_dict.get('fin_code', 'unknown')}",
-                    f"region:{alem_persona_dict.get('region', 'unknown')}",
-                    f"crop:{alem_persona_dict.get('crop_type', 'unknown')}",
-                    f"experience:{alem_persona_dict.get('experience_level', 'unknown')}",
-                ])
-            
-            # Include uploaded image paths in metadata for observability
-            uploaded_images = cl.user_session.get("uploaded_images", []) or []
-            langfuse_handler = create_langfuse_handler(
-                session_id=thread_id,           # Groups all messages in conversation
-                user_id=user_id,                # Attributes costs to user
-                tags=tags,
-                metadata={
-                    "farm_id": farm_id,
-                    "user_email": user_email,
-                    "source": "chainlit",
-                    "expertise_areas": expertise_areas,
-                    "alem_persona": alem_persona_dict,  # Full persona for analysis
-                    "uploaded_images": uploaded_images,
-                },
-            )
-            
-            # Combine BOTH callback handlers
-            callbacks = [cl.LangchainCallbackHandler()]  # UI step visualization
-            if langfuse_handler:
-                callbacks.append(langfuse_handler)        # LLM tracing
-            
-            # Pass to LangGraph
-            config = RunnableConfig(
-                configurable={"thread_id": thread_id},
-                callbacks=callbacks  # Both handlers receive all events
-            )
-            
-            # Stream the response from LangGraph
-            # astream() returns an async generator - iterate with async for
-            async for chunk in agent.astream(input_messages, config=config):
-                # Extract content from the chunk based on its structure
-                if isinstance(chunk, dict):
-                    for node_name, node_output in chunk.items():
-                        if isinstance(node_output, dict) and "messages" in node_output:
-                            for msg in node_output["messages"]:
-                                if hasattr(msg, "content") and msg.content:
-                                    # Only update if we got actual content
-                                    full_response = msg.content
-            
-            # Update final message with complete response
-            response_msg.content = full_response
+        # ═══════════════════════════════════════════════════════
+        # DIRECT MODE — Native LangGraph Integration (Simplified)
+        # ═══════════════════════════════════════════════════════
+        agent = cl.user_session.get("agent")
+        
+        if not agent:
+            logger.error("agent_not_initialized")
+            await response_msg.stream_token("❌ Agent yüklənməyib. Zəhmət olmasa səhifəni yeniləyin.")
             await response_msg.update()
+            return
+        
+        # Configure LangGraph execution
+        config: RunnableConfig = {
+            "configurable": {
+                "thread_id": thread_id,
+            }
+        }
+        
+        # Add Chainlit callback for native step visualization
+        if enable_thinking_steps:
+            cb = cl.LangchainCallbackHandler()
+            config["callbacks"] = [cb]
+        
+        # Prepare initial state
+        from yonca.agent.state import create_initial_state
+        
+        initial_state = create_initial_state(
+            thread_id=thread_id,
+            user_input=message.content,
+            user_id=user_id,
+            language="az",
+        )
+        
+        # Stream response from LangGraph
+        try:
+            async for event in agent.astream(initial_state, config=config):
+                # Extract response from final state
+                for node_name, node_output in event.items():
+                    if isinstance(node_output, dict):
+                        # Check for response content
+                        if "current_response" in node_output:
+                            response_content = node_output["current_response"]
+                            await response_msg.stream_token(response_content)
+                        
+                        # Log node execution
+                        logger.debug(
+                            "node_executed",
+                            node=node_name,
+                            has_response="current_response" in node_output,
+                        )
             
-            # ─────────────────────────────────────────────────────────
-            # Add Response Metadata (expandable details)
-            # ─────────────────────────────────────────────────────────
-            if langfuse_handler:
-                try:
-                    # Get trace_id from the handler (last_trace_id in SDK v3)
-                    trace_id = getattr(langfuse_handler, 'last_trace_id', None) or \
-                               getattr(langfuse_handler, 'trace_id', None)
-                    if trace_id:
-                        # Fetch metadata from Langfuse
-                        metadata = await get_response_metadata(trace_id)
-                        if metadata:
-                            await add_response_metadata_element(response_msg, metadata)
-                            logger.debug("response_metadata_added", trace_id=trace_id)
-                except Exception as e:
-                    logger.warning("response_metadata_failed", error=str(e))
+            logger.info(
+                "message_processed_direct",
+                user_id=user_id,
+                thread_id=thread_id,
+            )
+            
+        except Exception as e:
+            logger.error("langgraph_execution_error", error=str(e), exc_info=True)
+            await response_msg.stream_token(f"\n\n❌ Xəta: {str(e)}")
+        
+        # Finalize response
+        await response_msg.update()
+        
+        # Add feedback buttons if enabled
+        if enable_feedback:
+            actions = [
+                cl.Action(
+                    name="feedback_positive",
+                    value="positive",
+                    label="👍 Kömək etdi",
+                ),
+                cl.Action(
+                    name="feedback_negative",
+                    value="negative",
+                    label="👎 Təkmilləşdirmək olar",
+                ),
+            ]
+            await response_msg.send()
+            for action in actions:
+                await action.send()
         
     except Exception as e:
-        logger.error("message_error", error=str(e), session_id=session_id)
-        response_msg.content = AZ_STRINGS["error"]
+        logger.error("message_handler_error", error=str(e), exc_info=True)
+        await response_msg.stream_token(f"\n\n❌ Gözlənilməz xəta: {str(e)}")
         await response_msg.update()
-        raise
-    
-    logger.info(
-        "message_handled",
-        session_id=session_id,
-        mode="api" if demo_settings.use_api_bridge else "direct",
-        user_message_length=len(message.content),
-        response_length=len(full_response),
-    )
-
-
-@cl.on_stop
-async def on_stop():
-    """Handle user stopping generation."""
-    logger.info("generation_stopped", session_id=cl.user_session.get("id"))
 
 
 # ============================================

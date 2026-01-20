@@ -82,19 +82,28 @@ flowchart LR
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
 flowchart TB
-    subgraph current["✅ CURRENT: Synthetic Data"]
-        synthetic["Mirror-Image<br/>Farm Profiles"]
+    subgraph existing["✅ EXISTING: Yonca Mobile"]
+        yonca["Yonca Mobile App<br/>(Digital Umbrella)"]
+        ektis_prod["EKTIS Production API<br/>(100k+ farms)"]
     end
     
-    subgraph future["🔮 FUTURE: EKTİS Integration"]
-        ektis["EKTİS Database<br/>(100k+ Real Farms)"]
-        bridge["ASAN Bridge<br/>(G2B REST API)"]
-        realtime["Real-Time Updates<br/>(Crop Declarations)"]
+    subgraph current["✅ CURRENT: ALEM"]
+        synthetic["Synthetic Data<br/>(Mirror-Image)"]
     end
     
-    synthetic -.->|"Hot-Swap Ready"| ektis
-    ektis --> bridge --> realtime
+    subgraph future["🔮 FUTURE: ALEM Integration Options"]
+        direction LR
+        option_a["Option A:<br/>Via Yonca Mobile<br/>(Indirect)"]
+        option_b["Option B:<br/>Direct EKTIS API<br/>(New Partnership)"]
+    end
     
+    ektis_prod ==>|"✅ EXISTING"| yonca
+    synthetic -.->|"🔮 Phase 2"| option_a
+    synthetic -.->|"🔮 Phase 2"| option_b
+    yonca -.->|"Option A"| option_a
+    ektis_prod -.->|"Option B"| option_b
+    
+    style existing fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
     style current fill:#e8f5e9,stroke:#2e7d32
     style future fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
 ```
@@ -102,15 +111,20 @@ flowchart TB
 | Attribute | Details |
 |:----------|:--------|
 | **Data Scope** | Farm registry, land plots, crop declarations, subsidy status, NDVI tracking |
+| **Current Status** | ✅ **Yonca Mobile** has production access (Digital Umbrella's existing integration) |
+| **ALEM Integration** | 🔮 **Two options for Phase 2**:<br/>**Option A**: Via Yonca Mobile API (leverage existing)<br/>**Option B**: Direct EKTIS partnership (new G2B protocol) |
 | **Technical Integration** | ASAN Bridge (REST API), possible direct database access for government partners |
-| **Status** | 🟠 **High Confidence** — Digital Umbrella has production access |
 | **Cost Structure** | Free for government-approved projects |
 | **ALEM Use Case** | Replace synthetic farms with real data, enable "hot-swap" without code changes |
 
 **Integration Priority:** 🔴 **Critical** (Phase 2)
 
+**Decision Required:** Choose between Option A (faster, via Digital Umbrella) vs Option B (direct, more control)
+
 **Action Items:**
-- [ ] Request EKTİS API documentation from Ministry via Digital Umbrella
+- [ ] **Decision:** Discuss with Digital Umbrella — Option A (via Yonca Mobile API) or Option B (direct EKTIS partnership)
+- [ ] **Option A path:** Request Yonca Mobile API documentation from Digital Umbrella
+- [ ] **Option B path:** Request EKTİS API documentation directly from Ministry
 - [ ] Map EKTİS schema to ALEM data models (validate assumptions in [14-DISCOVERY-QUESTIONS](14-DISCOVERY-QUESTIONS.md))
 - [ ] Implement read-only API client with fallback to synthetic data
 - [ ] Add EKTIS sync job for nightly farm data updates

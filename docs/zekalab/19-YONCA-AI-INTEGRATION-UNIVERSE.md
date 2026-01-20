@@ -10,92 +10,83 @@ This document provides a comprehensive visual representation of Yonca AI's integ
 
 ---
 
-## 🌐 The Full Integration Universe
+## 🌐 The Full Integration Universe (Compact View)
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
-flowchart TB
-    subgraph core["🤖 YONCA AI CORE SYSTEM"]
+flowchart LR
+    subgraph current["✅ CURRENT ALEM SYSTEM"]
         direction TB
-        alem["🧠 <b>ALEM Agent</b><br/>━━━━━━━━━<br/>• LangGraph<br/>• Llama 4 Maverick<br/>• Multi-node reasoning"]
-        chainlit["🖥️ <b>Chainlit UI</b><br/>━━━━━━━━━<br/>• Chat interface<br/>• OAuth login<br/>• Thread persistence"]
-        db["💾 <b>Yonca App DB</b><br/>━━━━━━━━━<br/>• PostgreSQL<br/>• Users/Farms<br/>• Synthetic data"]
+        ui["🖥️ Chainlit UI"]
+        alem["🧠 ALEM Agent<br/><i>LangGraph</i>"]
+        db["💾 PostgreSQL"]
+        groq["☁️ Groq LLM"]
+        redis["⚡ Redis<br/><i>checkpoints</i>"]
+        lf["📊 Langfuse<br/><i>traces</i>"]
     end
     
-    subgraph gov_live["🏛️ GOVERNMENT (Production)"]
-        direction TB
-        ektis_live["✅ <b>EKTIS</b><br/><i>Ministry of Agriculture</i><br/>━━━━━━━━━<br/>• 100k+ farms<br/>• Crop declarations<br/>• Land registry"]
-        yonca_mobile["✅ <b>Yonca Mobile</b><br/><i>Digital Umbrella</i><br/>━━━━━━━━━<br/>• Production app<br/>• Real farmers<br/>• GPS tracking"]
+    subgraph existing["✅ EXISTING (Via Yonca Mobile)"]
+        ektis["🏛️ EKTIS<br/><i>100k farms</i>"]
+        yonca["📱 Yonca Mobile<br/><i>DigiRella</i>"]
     end
     
-    subgraph gov_future["🔮 GOVERNMENT (Phase 1-3)"]
-        direction TB
-        sima["⏳ <b>SİMA/ASAN</b><br/><i>IDDA</i><br/>━━━━━━━━━<br/>Phase 1<br/>• Face ID auth<br/>• OIDC/SAML<br/>• VOEN lookup"]
-        tax["⏳ <b>State Tax</b><br/><i>e-Taxes API</i><br/>━━━━━━━━━<br/>Phase 3<br/>• VOEN verify<br/>• Subsidy status<br/>• Compliance"]
+    subgraph p1["🔮 Phase 1"]
+        sima["🔐 SİMA/ASAN<br/><i>Auth</i>"]
     end
     
-    subgraph finance_future["💰 FINANCIAL (Phase 2-4)"]
-        direction TB
-        cbar["⏳ <b>CBAR Banking</b><br/><i>Central Bank</i><br/>━━━━━━━━━<br/>Phase 2<br/>• Fermer Kartı<br/>• Open Banking<br/>• Credit scoring"]
-        pasha["⏳ <b>PASHA Bank</b><br/><i>Commercial</i><br/>━━━━━━━━━<br/>Phase 4<br/>• Agro loans<br/>• Advisory API"]
-        abb["⏳ <b>ABB</b><br/><i>International Bank</i><br/>━━━━━━━━━<br/>Phase 4<br/>• Corporate finance<br/>• Developer portal"]
+    subgraph p2["🔮 Phase 2"]
+        ektis_d["🏛️ EKTIS Direct<br/><i>Option B</i>"]
+        cbar["💰 CBAR<br/><i>Banking</i>"]
+        weather["🌡️ Weather"]
+        azintel["🖥️ AzInTelecom<br/><i>GPU</i>"]
     end
     
-    subgraph data_current["📊 DATA SERVICES (Current)"]
-        direction TB
-        groq["✅ <b>Groq</b><br/><i>Benchmark LLM</i><br/>━━━━━━━━━<br/>• Llama 4 Maverick<br/>• 300 tok/s<br/>• Dev only"]
-        langfuse["✅ <b>Langfuse</b><br/><i>Observability</i><br/>━━━━━━━━━<br/>• LLM traces<br/>• Token costs<br/>• Self-hosted"]
-        redis["✅ <b>Redis</b><br/><i>State Store</i><br/>━━━━━━━━━<br/>• Checkpoints<br/>• Sessions<br/>• Rate limiting"]
+    subgraph p3["🔮 Phase 3"]
+        satellite["🛰️ Azərkosmos"]
+        tax["🏛️ Tax Service"]
     end
     
-    subgraph data_future["🛰️ DATA SERVICES (Phase 2-3)"]
-        direction TB
-        azerkosmos["⏳ <b>Azərkosmos</b><br/><i>Space Agency</i><br/>━━━━━━━━━<br/>Phase 3<br/>• Satellite imagery<br/>• NDVI feeds<br/>• Multi-spectral"]
-        weather["⏳ <b>Weather APIs</b><br/><i>Meteorology</i><br/>━━━━━━━━━<br/>Phase 2<br/>• Forecasts<br/>• Hyperlocal<br/>• IoT sensors"]
-        azintel["⏳ <b>AzInTelecom</b><br/><i>GPU Cloud</i><br/>━━━━━━━━━<br/>Phase 2<br/>• RTX 5090<br/>• Self-hosted LLM<br/>• Data sovereignty"]
+    subgraph p4["🔮 Phase 4"]
+        pasha["💰 PASHA"]
+        abb["💰 ABB"]
     end
     
-    subgraph enterprise_future["🏢 ENTERPRISE (Phase 5+)"]
-        direction TB
-        sap["⏳ <b>SAP BTP</b><br/><i>ERP Integration</i><br/>━━━━━━━━━<br/>Phase 5<br/>• OData API<br/>• Agro holdings<br/>• White-label"]
-        oracle["⏳ <b>Oracle Cloud</b><br/><i>ERP Integration</i><br/>━━━━━━━━━<br/>Phase 5<br/>• REST services<br/>• Corporate farms"]
+    subgraph p5["🔮 Phase 5+"]
+        sap["🏢 SAP"]
+        oracle["🏢 Oracle"]
     end
     
-    %% Current connections (solid lines)
-    yonca_mobile --> ektis_live
-    chainlit --> alem
-    alem --> db
-    alem --> groq
-    alem --> langfuse
-    alem --> redis
+    %% Existing (green solid)
+    ektis ==>|"✅"| yonca
     
-    %% Future connections (dashed lines)
-    ektis_live -.->|"Phase 2: Hot-swap"| db
-    sima -.->|"Phase 1: Auth"| chainlit
-    tax -.->|"Phase 3: Verify"| alem
-    cbar -.->|"Phase 2: Finance"| alem
-    pasha -.->|"Phase 4: Loans"| alem
-    abb -.->|"Phase 4: Advisory"| alem
-    azerkosmos -.->|"Phase 3: Imagery"| alem
-    weather -.->|"Phase 2: Forecast"| alem
-    azintel -.->|"Phase 2: Hosting"| alem
-    sap -.->|"Phase 5: B2B"| alem
-    oracle -.->|"Phase 5: B2B"| alem
+    %% Current ALEM internal connections (blue solid)
+    ui --> alem
+    alem --> db & groq & redis & lf
+    
+    %% Future via Yonca (orange dashed)
+    yonca -.->|"🔮 A"| db
+    
+    %% Future direct (purple dashed)
+    sima -.->|"🔮"| ui
+    ektis_d & cbar & weather & satellite & tax & pasha & abb & sap & oracle -.->|"🔮"| alem
+    azintel -.->|"🔮 host"| alem
     
     %% Styling
-    style core fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
-    style gov_live fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
-    style gov_future fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5,opacity:0.7
-    style finance_future fill:#fff9c4,stroke:#f9a825,stroke-dasharray: 5 5,opacity:0.7
-    style data_current fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
-    style data_future fill:#f3e5f5,stroke:#7b1fa2,stroke-dasharray: 5 5,opacity:0.7
-    style enterprise_future fill:#e0f7fa,stroke:#00838f,stroke-dasharray: 5 5,opacity:0.7
+    style current fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style existing fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style p1 fill:#fff3e0,stroke:#f57c00,stroke-dasharray:3 3,opacity:0.6
+    style p2 fill:#fff3e0,stroke:#f57c00,stroke-dasharray:3 3,opacity:0.6
+    style p3 fill:#f3e5f5,stroke:#7b1fa2,stroke-dasharray:3 3,opacity:0.6
+    style p4 fill:#fff9c4,stroke:#f9a825,stroke-dasharray:3 3,opacity:0.6
+    style p5 fill:#e0f7fa,stroke:#00838f,stroke-dasharray:3 3,opacity:0.6
 ```
 
 **Legend:**
-- ✅ **Solid boxes + solid lines** = Currently implemented
-- ⏳ **Dashed boxes + dashed lines** = Planned future integrations
-- **Phase numbers** = Implementation priority (see roadmap below)
+- ✅ **Solid green** = Yonca Mobile's existing integrations
+- ✅ **Solid blue** = ALEM currently implemented  
+- 🔮 **Dashed A** = Future via Yonca Mobile (Option A)
+- 🔮 **Dashed purple** = Future direct partnerships  
+- **Phases** = Priority order (see timeline below)
 
 ---
 
@@ -103,10 +94,12 @@ flowchart TB
 
 | Partner | Category | Status | Phase | Priority | Data Flow | Notes |
 |:--------|:---------|:------:|:-----:|:--------:|:----------|:------|
-| **Groq** | LLM Provider | ✅ Live | — | 🟢 | ALEM → Groq | Benchmark only (dev) |
-| **Langfuse** | Observability | ✅ Live | — | 🟢 | ALEM → Langfuse | Self-hosted traces |
-| **Redis** | State Store | ✅ Live | — | 🟢 | ALEM ↔ Redis | Checkpoints + sessions |
-| **EKTIS** | Gov Farm Data | 🔄 Via Yonca | — | 🟠 | EKTIS → Yonca → ALEM | Indirect access |
+| **Groq** | LLM Provider | ✅ ALEM Live | — | 🟢 | ALEM → Groq | Benchmark only (dev) |
+| **Langfuse** | Observability | ✅ ALEM Live | — | 🟢 | ALEM → Langfuse | Self-hosted traces |
+| **Redis** | State Store | ✅ ALEM Live | — | 🟢 | ALEM ↔ Redis | Checkpoints + sessions |
+| **EKTIS** | Gov Farm Data | ✅ **Yonca Mobile** has it | — | 🟠 | **EXISTING**: EKTIS → Yonca Mobile | Digital Umbrella's integration |
+| **EKTIS (Option A)** | Gov Farm Data | 🔮 Planned | 2 | 🟠 | EKTIS → Yonca → ALEM | Via existing Yonca Mobile |
+| **EKTIS (Option B)** | Gov Farm Data | 🔮 Planned | 2 | 🟠 | EKTIS → ALEM | Direct API (new partnership) |
 | **SİMA/ASAN** | Gov Auth | ⏳ Planned | 1 | 🔴 | User → SİMA → ALEM | Replace OAuth |
 | **Weather APIs** | Data Service | ⏳ Planned | 2 | 🟠 | Weather → ALEM | Forecasts + IoT |
 | **CBAR Banking** | Fintech | ⏳ Planned | 2 | 🟠 | Bank ↔ ALEM | Fermer Kartı balance |

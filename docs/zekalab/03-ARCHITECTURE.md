@@ -11,48 +11,69 @@
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
 flowchart TB
-    subgraph external["🌐 EXTERNAL SYSTEMS (Digital Umbrella)"]
+    subgraph gov_existing["🏛️ GOVERNMENT SYSTEMS (Existing)"]
         direction TB
-        yonca_mobile["📱 <b>Yonca Mobile App</b><br/><i>Production • 100k+ users</i><br/>━━━━━━━━━<br/>• Real farmers<br/>• Real farms/parcels<br/>• EKTIS integration"]
-        ektis_db["🏛️ <b>EKTIS Database</b><br/><i>Government • Read-only</i>"]
+        ektis_db["<b>EKTIS Database</b><br/><i>Ministry of Agriculture</i><br/>━━━━━━━━━<br/>✅ Live: 100k+ farms<br/>• Crop declarations<br/>• Land registry<br/>• NDVI tracking"]
+    end
+    
+    subgraph external["🌐 YONCA MOBILE (Digital Umbrella)"]
+        direction TB
+        yonca_mobile["📱 <b>Yonca Mobile App</b><br/><i>Production • 100k+ users</i><br/>━━━━━━━━━<br/>✅ Existing Integrations:<br/>• EKTIS (farm data)<br/>• mygov ID (auth)<br/>• GPS tracking"]
     end
 
-    subgraph future_partners["🔮 FUTURE INTEGRATIONS (Phase 1-3)"]
+    subgraph future_partners["🔮 FUTURE DIRECT INTEGRATIONS (Phase 1-3)"]
         direction TB
-        sima["🔐 <b>SİMA/ASAN</b><br/><i>Authentication</i>"]
-        cbar["💰 <b>CBAR Banking</b><br/><i>Fermer Kartı</i>"]
-        azerkosmos["🛰️ <b>Azərkosmos</b><br/><i>Satellite Data</i>"]
-        weather["🌡️ <b>Weather APIs</b><br/><i>Meteorology</i>"]
+        sima["🔐 <b>SİMA/ASAN</b><br/><i>IDDA</i><br/>Phase 1"]
+        ektis_direct["🏛️ <b>EKTIS Direct API</b><br/><i>Ministry of Agriculture</i><br/>Phase 2"]
+        cbar["💰 <b>CBAR Banking</b><br/><i>Central Bank</i><br/>Phase 2"]
+        azerkosmos["🛰️ <b>Azərkosmos</b><br/><i>Space Agency</i><br/>Phase 3"]
+        weather["🌡️ <b>Weather APIs</b><br/><i>Azerbaijan Meteorology</i><br/>Phase 2"]
     end
 
     subgraph our_system["🤖 YONCA AI (Our System)"]
         direction TB
         alem["🧠 <b>ALEM</b><br/><i>AI Model Stack</i>"]
         demo_ui["🖥️ <b>Demo UI</b><br/><i>Chainlit :8501</i>"]
+        synthetic["💾 <b>Synthetic Data</b><br/><i>Current: Mirror-image</i>"]
     end
 
-    yonca_mobile -.->|"Future: Real data sync"| our_system
-    ektis_db --> yonca_mobile
+    %% Existing connections (solid green)
+    ektis_db ==>|"✅ EXISTING<br/>Production API"| yonca_mobile
     
-    sima -.->|"Phase 1: Auth"| our_system
-    cbar -.->|"Phase 2: Finance"| our_system
-    azerkosmos -.->|"Phase 3: Imagery"| our_system
-    weather -.->|"Phase 2: Forecasts"| our_system
+    %% Current ALEM setup (solid)
+    demo_ui --> alem
+    alem --> synthetic
     
-    style external fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
+    %% Future indirect path (dashed orange)
+    yonca_mobile -.->|"🔮 Option A: Via Yonca Mobile<br/>Leverage existing integration"| our_system
+    
+    %% Future direct paths (dashed purple)
+    sima -.->|"🔮 Phase 1: Auth"| our_system
+    ektis_direct -.->|"🔮 Option B: Direct API<br/>Separate partnership"| our_system
+    cbar -.->|"🔮 Phase 2: Finance"| our_system
+    azerkosmos -.->|"🔮 Phase 3: Imagery"| our_system
+    weather -.->|"🔮 Phase 2: Forecasts"| our_system
+    
+    style gov_existing fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style external fill:#fff3e0,stroke:#f57c00,stroke-width:2px
     style future_partners fill:#f3e5f5,stroke:#9c27b0,stroke-dasharray: 5 5,opacity:0.6
     style our_system fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
     style alem fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
 ```
 
-| System | Owner | Purpose | Status |
-|:-------|:------|:--------|:-------|
-| **Yonca Mobile App** | Digital Umbrella | Production farming app (100k+ users) | ✅ Live |
-| **EKTIS** | Government | Official farm registry | ✅ Live |
-| **Yonca AI (ALEM)** | Zekalab | AI assistant sidecar | 🔄 Development |
-| **SİMA/ASAN** | IDDA (Gov) | Sovereign authentication | 🔮 Planned (Phase 1) |
-| **CBAR Open Banking** | Central Bank | Financial integration | 🔮 Planned (Phase 2) |
-| **Azərkosmos** | Space Agency | Satellite imagery | 🔮 Planned (Phase 3) |
+**Legend:**
+- **Solid green arrows** (⇒) = Existing production integrations
+- **Dashed orange arrows** (⇢) = Future integration via existing Yonca Mobile
+- **Dashed purple arrows** (⇢) = Future direct integrations (new partnerships)
+
+| System | Owner | Purpose | Status | ALEM Integration Path |
+|:-------|:------|:--------|:-------|:----------------------|
+| **EKTIS** | Ministry of Agriculture | Official farm registry (100k+ farms) | ✅ Live | 🔮 **Option A**: Via Yonca Mobile (indirect)<br/>🔮 **Option B**: Direct API (new partnership) |
+| **Yonca Mobile App** | Digital Umbrella | Production farming app | ✅ Live | 🔮 Data sync partner |
+| **Yonca AI (ALEM)** | Zekalab | AI assistant sidecar | 🔄 Development | — |
+| **SİMA/ASAN** | IDDA (Gov) | Sovereign authentication | 🔮 Planned (Phase 1) | 🔮 Direct integration |
+| **CBAR Open Banking** | Central Bank | Financial integration | 🔮 Planned (Phase 2) | 🔮 Direct integration |
+| **Azərkosmos** | Space Agency | Satellite imagery | 🔮 Planned (Phase 3) | 🔮 Direct integration |
 
 > **See:** [18-ENTERPRISE-INTEGRATION-ROADMAP](18-ENTERPRISE-INTEGRATION-ROADMAP.md) for full partnership strategy.
 

@@ -171,33 +171,104 @@ flowchart LR
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
 flowchart TB
-    subgraph future["🔮 FUTURE: CBAR Open Banking"]
-        sandbox["Developer Sandbox<br/>(Test Accounts)"]
-        accounts["Account Information<br/>(Fermer Kartı Balance)"]
-        payments["Payment Initiation<br/>(Vendor Transactions)"]
-        credit["Credit Scoring<br/>(Loan Eligibility)"]
+    subgraph certification["📋 CERTIFICATION PATH"]
+        tpp["TPP Accreditation<br/>(Third Party Provider)"]
+        qwac["QWAC Certificate<br/>(SİMA/AzInTelecom)"]
+        compliance["Security Audit<br/>(Data Protection)"]
     end
     
-    sandbox --> accounts --> payments --> credit
+    subgraph sandbox["🔮 SANDBOX PHASE"]
+        test["CBAR Fintech Portal<br/>(fintech.cbar.az)"]
+        ais["AIS: Account Info<br/>(Read-only)"]
+        pis["PIS: Payments<br/>(Pilot)"]
+    end
     
-    style future fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
+    subgraph production["🔮 PRODUCTION FEATURES"]
+        balance["Fermer Kartı Balance"]
+        transactions["Transaction History"]
+        lending["Loan Eligibility"]
+        autopay["Bill Payment"]
+    end
+    
+    tpp --> qwac --> compliance --> test
+    test --> ais & pis
+    ais --> balance & transactions & lending
+    pis --> autopay
+    
+    style certification fill:#fff3e0,stroke:#f57c00
+    style sandbox fill:#e3f2fd,stroke:#1976d2,stroke-dasharray: 5 5
+    style production fill:#f3e5f5,stroke:#7b1fa2,stroke-dasharray: 5 5
 ```
 
 | Attribute | Details |
 |:----------|:--------|
-| **Data Scope** | Account information, payment initiation, credit scoring, Fermer Kartı balance |
-| **Technical Integration** | CBAR Open Banking API (2026 Standard), OAuth 2.0 |
-| **Status** | 🟢 **Confirmed** — Officially launched in 2026 |
-| **Cost Structure** | Tier-based SaaS or transaction fee for private developers |
-| **ALEM Use Case** | "You have 500 AZN subsidy left—buy fertilizer now?" |
+| **Data Scope** | Account information (AIS), payment initiation (PIS), credit scoring, Fermer Kartı balance |
+| **Technical Integration** | CBAR Open Banking API ("Berlin Group" standard), OAuth 2.0 + SCA (Strong Customer Authentication) |
+| **Status** | 🟢 **AIS Live** (read-only), 🟡 **PIS Pilot** (payments in development) |
+| **Accreditation Model** | Centralized via **CBAR National Platform** (not individual banks) |
+| **Cost Structure** | TPP accreditation (government review) + QWAC certificate (~$500-2k/year) |
+| **ALEM Use Case** | "You have 500 AZN subsidy left on Fermer Kartı—buy fertilizer now? [Authorize via SİMA]" |
 
-**Integration Priority:** 🟠 **High** (Phase 2–3)
+**Integration Priority:** 🟠 **High** (Phase 2)
 
-**Action Items:**
-- [ ] Apply for **CBAR Open Banking Sandbox** access
-- [ ] Implement OAuth 2.0 consent flow for bank account linking
-- [ ] Add "Financial Dashboard" to Chainlit UI showing Fermer Kartı balance
-- [ ] Integrate payment recommendations (e.g., "Your subsidy expires in 10 days")
+#### 🎯 TPP Accreditation Process (5-Step Path)
+
+**Step 1: Select TPP Role**
+- **AISP** (Account Information Service Provider) — Read bank data ✅ **Recommended for Phase 2**
+- **PISP** (Payment Initiation Service Provider) — Execute transactions ⏳ Phase 3+
+
+**Step 2: Formal Application to CBAR**
+- Submit via **CBAR Fintech Portal** ([fintech.cbar.az](https://fintech.cbar.az))
+- Required documents:
+  - ZekaLab VOEN registration
+  - Company constituent documents
+  - Detailed "Service Description" (how ALEM uses financial data)
+  - Data protection compliance proof (PostgreSQL encryption, PII handling)
+
+**Step 3: Obtain QWAC Certificate**
+- **Recommended Provider:** **SİMA** (AzInTelecom subsidiary) ✅
+- **Why SİMA?**
+  - Native integration with existing SİMA Face ID authentication
+  - Subsidized pricing for government-aligned agrotech projects
+  - Faster approval via "Partner Portal" (existing local company)
+  - Creates "trust loop" (server + user phone use same root authority)
+- **Alternative:** International providers (DigiCert, GlobalSign) — slower, more expensive
+- **Cost:** ~$500-2,000/year (SİMA likely lower end for strategic partners)
+
+**Step 4: Security Audit & Compliance**
+- Demonstrate **Strong Customer Authentication (SCA)** implementation:
+  - Farmer clicks "Authorize ALEM" in mobile app
+  - Bank sends OTP or SİMA biometric challenge
+  - ALEM receives time-limited access token
+- Prove data handling meets **Personal Data Protection Law (2010)**
+- Show encryption standards (TLS 1.3, database encryption at rest)
+
+**Step 5: Operational Whitelisting**
+- CBAR whitelists ZekaLab's public keys on **National Open Banking Platform**
+- Single integration = access to **all Azerbaijani banks** (PASHA, ABB, Kapital, etc.)
+- No need for individual bank partnerships
+
+#### 📋 Action Items
+
+**Immediate (Certification Track):**
+- [ ] Register on **CBAR Fintech Portal** ([fintech.cbar.az](https://fintech.cbar.az))
+- [ ] Download **Open Banking Manual** and review technical specs
+- [ ] Apply for **AISP** (Account Information) TPP role
+- [ ] Contact **SİMA Partner Portal** for QWAC certificate quote
+- [ ] Prepare data protection compliance documentation
+
+**Short-Term (Sandbox Phase):**
+- [ ] Implement OAuth 2.0 + SCA consent flow in Chainlit
+- [ ] Build **AIS API client** for account balance queries
+- [ ] Add "Financial Dashboard" widget to UI
+- [ ] Test with CBAR sandbox accounts (fake Fermer Kartı data)
+
+**Medium-Term (Production):**
+- [ ] Complete TPP accreditation (target: Q2 2026)
+- [ ] Integrate live Fermer Kartı balance checks
+- [ ] Add payment recommendations: "Subsidy expires in 10 days"
+- [ ] Build "Loan Eligibility Calculator" using transaction history
+- [ ] Apply for **PISP** role (payment initiation) for Phase 3
 
 ---
 
@@ -310,6 +381,88 @@ flowchart TB
 | **ERP Vendors** | White-label ALEM as SAP add-on | SAP Business Technology Platform SDK |
 
 **Integration Priority:** 🟢 **Low** (Phase 5+, B2B Sales)
+
+---
+
+## 🤝 DigiRella Partnership Strategy: "The Brain-to-Body Connection"
+
+### Strategic Positioning
+
+> **ALEM is not a replacement for Yonca Mobile—it's the autonomous intelligence layer that makes Yonca smarter.**
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+flowchart LR
+    subgraph yonca["📱 YONCA MOBILE (The Body)<br/><i>DigiRella's Platform</i>"]
+        ui["Farmer UI"]
+        data["EKTİS Data<br/>(100k farms)"]
+        maps["Satellite Maps<br/>(NDVI)"]
+        notif["Push Notifications"]
+    end
+    
+    subgraph alem["🧠 ALEM (The Brain)<br/><i>ZekaLab's Intelligence</i>"]
+        logic["Agronomical Logic<br/>(Llama 4 Maverick)"]
+        rules["Validation Rules<br/>(Ministry Guidelines)"]
+        banking["Financial Context<br/>(CBAR Open Banking)"]
+    end
+    
+    data -->|"Read: Parcel Info"| logic
+    logic -->|"Write: Optimized Plan"| ui
+    banking -->|"Credit Check"| logic
+    logic -->|"Action: Trigger Payment"| notif
+    
+    style yonca fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style alem fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+```
+
+### The "One-Platform" Pitch to DigiRella
+
+**Executive Summary:**
+
+> "We don't want to replace Yonca; we want to make it **Autonomous**. By integrating ALEM with your existing EKTİS-linked APIs, we transform Yonca from a manual reporting tool into a **proactive AI advisor**. Our TPP accreditation means ALEM can pull real-time bank balances to tell a farmer exactly when they can afford the fertilizer our AI just recommended. **You provide the Data, we provide the Brain, and the farmer gets a Complete Sovereign Ecosystem.**"
+
+### Integration Architecture (Three-Layer Model)
+
+| Layer | DigiRella Provides | ZekaLab Provides | Integration Method |
+|:------|:-------------------|:-----------------|:-------------------|
+| **1. Data Intake** | REST API for parcel data, NDVI, farmer profiles | API client + data normalization | **Webhooks / API Proxy** |
+| **2. Logic Processing** | (None—this is ALEM's domain) | Llama 4 Maverick inference, rule validation | **Sidecar Microservice** |
+| **3. Action Execution** | UI endpoints for displaying recommendations | Optimized farm plans, payment triggers | **Reverse API Integration** |
+
+### Technical Requirements from DigiRella
+
+**Minimum Viable Integration (Phase 2A):**
+- [ ] **Read Access**: `GET /api/v1/farms/{farmer_id}/parcels` → Parcel metadata (crop, area, coordinates)
+- [ ] **Read Access**: `GET /api/v1/parcels/{parcel_id}/ndvi` → Latest satellite data
+- [ ] **Write Access**: `POST /api/v1/notifications` → Send ALEM recommendations to farmer
+
+**Full Integration (Phase 2B):**
+- [ ] **Read Access**: `GET /api/v1/farmers/{id}/profile` → Experience level, subsidy status
+- [ ] **Read Access**: `GET /api/v1/weather/{region_code}` → Local forecasts
+- [ ] **Write Access**: `POST /api/v1/tasks` → Create actionable tasks in Yonca UI ("Apply fertilizer today")
+- [ ] **Webhooks**: Real-time notifications when farmer plants new crop or weather alert triggers
+
+### Value Proposition for DigiRella
+
+**Why DigiRella Should Partner:**
+
+1. **Differentiation**: Yonca becomes the **first AI-native agricultural app** in the Caucasus
+2. **Revenue Share**: Tiered pricing model (Standard/Premium/Enterprise) where DigiRella gets 30% of ALEM subscriptions
+3. **Zero Dev Cost**: ZekaLab builds and maintains the AI layer; DigiRella just exposes APIs
+4. **Government Alignment**: Ministry of Agriculture wants "smart farming"—ALEM + Yonca delivers this
+5. **International Scalability**: Proven architecture can be replicated in Georgia, Uzbekistan, Kazakhstan
+
+### Meeting Agenda (First Pitch)
+
+**30-Minute Structured Presentation:**
+
+1. **Problem (5 min)**: Farmers have data but no intelligence
+2. **Solution (10 min)**: Live demo of ALEM with synthetic Yonca data
+3. **Integration (10 min)**: Show API integration diagram, minimal technical lift
+4. **Business Model (5 min)**: Revenue share, government subsidies, international expansion
+
+**Key Takeaway:**
+> "ALEM is the operating system for the future of Azerbaijani agriculture. Yonca is the interface. Together, we build the world's first truly AI-autonomous farming platform."
 
 ---
 

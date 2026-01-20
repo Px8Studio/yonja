@@ -34,24 +34,33 @@ flowchart TB
     end
     
     subgraph backend["⚙️ Backend"]
-        graph["🧠 LangGraph"]
+        agent["🧠 LangGraph Agent"]
         llm["🤖 LLM Provider"]
     end
     
-    subgraph data["💾 Data"]
-        redis["⚡ Redis Sessions"]
-        pg["🐘 PostgreSQL"]
+    subgraph appdata["💾 Yonca App Data"]
+        subgraph pg_app["🐘 PostgreSQL :5433"]
+            app_tables["users, threads, farms..."]
+        end
+        subgraph redis_app["🔴 Redis :6379"]
+            checkpoints["LangGraph checkpoints"]
+        end
     end
     
-    subgraph observe["📊 Observability"]
-        langfuse["Langfuse (:3001)"]
+    subgraph observe["📊 Langfuse (Separate Stack)"]
+        subgraph pg_langfuse["🐘 PostgreSQL (internal)"]
+            traces["Auto-managed traces"]
+        end
+        langfuse_ui["Langfuse UI :3001"]
     end
     
-    ui <-->|"Stream"| graph
-    graph --> llm
-    graph <--> redis
-    graph <--> pg
-    graph --> langfuse
+    ui <-->|"Stream"| agent
+    agent --> llm
+    agent <--> redis_app
+    agent <--> pg_app
+    agent -.->|"traces"| pg_langfuse
+    pg_langfuse --> langfuse_ui
+    langfuse_ui -.->|"insights API"| sidebar
 ```
 
 ---

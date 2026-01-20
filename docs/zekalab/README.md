@@ -64,8 +64,9 @@ mindmap
 | Doc | Purpose |
 |:----|:--------|
 | [11-CHAINLIT-UI](11-CHAINLIT-UI.md) | Demo UI implementation |
-| [12-DEPLOYMENT-PRICING](12-DEPLOYMENT-PRICING.md) | DigiRella options, costs |
+| [12-DEPLOYMENT-PRICING](12-DEPLOYMENT-PRICING.md) | DigiRella options, costs, ALEM versioning |
 | [14-DISCOVERY-QUESTIONS](14-DISCOVERY-QUESTIONS.md) | Integration questions for Digital Umbrella |
+| [15-IMPLEMENTATION-BACKLOG](15-IMPLEMENTATION-BACKLOG.md) | 📋 Unimplemented features tracker |
 
 ---
 
@@ -95,31 +96,43 @@ cd demo-ui && chainlit run app.py -w --port 8501
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
-flowchart LR
-    subgraph ui["🖥️ UI"]
-        chainlit["Chainlit :8501"]
+flowchart TB
+    subgraph external["🌐 External: Yonca Mobile (Digital Umbrella)"]
+        yonca_mobile["📱 Production App<br/><i>Future data source</i>"]
     end
     
-    subgraph brain["🧠 Agent"]
-        langgraph["LangGraph"]
-        llm["Groq/Ollama"]
+    subgraph yonca_ai["🤖 YONCA AI (Our System)"]
+        subgraph ui["🖥️ Demo UI"]
+            chainlit["Chainlit :8501"]
+        end
+        
+        subgraph brain["🧠 ALEM Agent"]
+            agent["LangGraph"]
+            llm["Groq/Ollama"]
+        end
+        
+        subgraph data["💾 App Data (Docker)"]
+            pg["🐘 PostgreSQL :5433"]
+            redis["🔴 Redis :6379"]
+        end
     end
     
-    subgraph data["💾 App Data"]
-        pg["Yonca App DB :5433"]
-        redis["Redis :6379"]
+    subgraph observe["📊 Langfuse Stack (Separate)"]
+        langfuse_db["🐘 PostgreSQL<br/><i>auto-managed</i>"]
+        langfuse_ui["Langfuse :3001"]
     end
     
-    subgraph observe["📊 Observability"]
-        langfuse["Langfuse :3001<br/><i>(separate DB)</i>"]
-    end
+    yonca_mobile -.->|"future sync"| pg
+    chainlit --> agent --> llm
+    agent --> pg
+    agent --> redis
+    agent -.->|traces| langfuse_db
+    langfuse_db --> langfuse_ui
     
-    chainlit --> langgraph --> llm
-    langgraph --> pg
-    langgraph --> redis
-    langgraph -.->|traces| langfuse
-    langfuse -.->|insights| pg
+    style external fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
+    style yonca_ai fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style observe fill:#f3e5f5,stroke:#7b1fa2
 ```
 
-> **Note:** Langfuse has its own database — we read from it via API for dashboards.  
-> See [03-ARCHITECTURE](03-ARCHITECTURE.md) for full data ecosystem diagram.
+> **Key:** Yonca AI = our system | Yonca Mobile = Digital Umbrella's production app  
+> See [03-ARCHITECTURE](03-ARCHITECTURE.md) for full data ecosystem + VS Code DB access.

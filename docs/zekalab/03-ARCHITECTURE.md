@@ -4,6 +4,41 @@
 
 ---
 
+## 🌍 System Context: Yonca Ecosystem
+
+> **Important Distinction:** We are building **Yonca AI** (ALEM-powered assistant) as a sidecar to the existing **Yonca Mobile App** (Digital Umbrella's production platform).
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+flowchart TB
+    subgraph external["🌐 EXTERNAL SYSTEMS (Digital Umbrella)"]
+        direction TB
+        yonca_mobile["📱 <b>Yonca Mobile App</b><br/><i>Production • 100k+ users</i><br/>━━━━━━━━━<br/>• Real farmers<br/>• Real farms/parcels<br/>• EKTIS integration"]
+        ektis_db["🏛️ <b>EKTIS Database</b><br/><i>Government • Read-only</i>"]
+    end
+
+    subgraph our_system["🤖 YONCA AI (Our System)"]
+        direction TB
+        alem["🧠 <b>ALEM</b><br/><i>AI Model Stack</i>"]
+        demo_ui["🖥️ <b>Demo UI</b><br/><i>Chainlit :8501</i>"]
+    end
+
+    yonca_mobile -.->|"Future: Real data sync"| our_system
+    ektis_db --> yonca_mobile
+    
+    style external fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
+    style our_system fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style alem fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+```
+
+| System | Owner | Purpose | Status |
+|:-------|:------|:--------|:-------|
+| **Yonca Mobile App** | Digital Umbrella | Production farming app (100k+ users) | ✅ Live |
+| **EKTIS** | Government | Official farm registry | ✅ Live |
+| **Yonca AI (ALEM)** | Zekalab | AI assistant sidecar | 🔄 Development |
+
+---
+
 ## 🧩 Five-Component System
 
 ```mermaid
@@ -62,57 +97,122 @@ flowchart TB
 
 ## 💾 Data Ecosystem
 
-> **Key Insight:** We have TWO PostgreSQL instances — the **Yonca App Database** (our primary) and **Langfuse Database** (observability, read-only via API).
+> **Key Architecture:** THREE storage systems running in Docker — two PostgreSQL instances + Redis.
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
-graph TB
-    subgraph future["🔜 FUTURE: Real Data"]
-        ektis["📱 Yonca Mobile<br/>(Digital Umbrella)<br/>━━━━━━━━━<br/>Real users<br/>Real farms<br/>Real EKTIS data"]
-    end
-
-    subgraph current["✅ CURRENT: App Data"]
-        subgraph yonca_db["🐘 Yonca App Database (:5433)"]
-            direction TB
-            app_data["<b>App Tables</b><br/>━━━━━━━━━<br/>👤 users (OAuth identity)<br/>💬 threads, steps, feedbacks<br/>🌾 user_profiles, farm_profiles<br/>📍 parcels, ndvi_readings<br/>🎭 alem_personas"]
+flowchart TB
+    subgraph docker["🐳 Docker Compose Stack"]
+        direction TB
+        
+        subgraph yonca_ai_data["💾 YONCA AI APP DATA"]
+            subgraph pg_app["🐘 PostgreSQL :5433<br/><code>yonca-postgres</code>"]
+                app_tables["📋 <b>App Tables</b><br/>━━━━━━━━━━━━━<br/>users, threads, steps<br/>user_profiles, farm_profiles<br/>parcels, alem_personas"]
+            end
+            
+            subgraph redis["🔴 Redis Stack :6379<br/><code>yonca-redis</code>"]
+                redis_data["⚡ <b>Runtime State</b><br/>━━━━━━━━━━━━━<br/>LangGraph checkpoints<br/>Session cache<br/>Rate limits"]
+            end
         end
-
-        subgraph redis_db["🔴 Redis (:6379)"]
-            direction TB
-            checkpoints["<b>Runtime State</b><br/>━━━━━━━━━<br/>LangGraph checkpoints<br/>Session cache<br/>Rate limits"]
+        
+        subgraph langfuse_stack["📊 LANGFUSE STACK (Self-Contained)"]
+            subgraph pg_langfuse["🐘 PostgreSQL :5432<br/><code>yonca-langfuse-db</code><br/><i>Internal only</i>"]
+                lf_tables["🔍 <b>Auto-Managed</b><br/>━━━━━━━━━━━━━<br/>traces, generations<br/>scores, prompts<br/>sessions, users"]
+            end
+            
+            langfuse_ui["🌐 <b>Langfuse UI :3001</b><br/><code>yonca-langfuse</code>"]
         end
     end
-
-    subgraph observability["📊 OBSERVABILITY (Separate)"]
-        subgraph langfuse_db["🐘 Langfuse Database"]
-            direction TB
-            traces["<b>Auto-Managed</b><br/>━━━━━━━━━<br/>LLM traces<br/>Token costs<br/>Latencies<br/>Sessions"]
-        end
-        langfuse_api["📡 Langfuse API<br/><i>Read-only queries</i>"]
+    
+    subgraph external["🌐 FUTURE: External Data"]
+        yonca_mobile["📱 Yonca Mobile<br/>(Digital Umbrella)"]
     end
-
-    ektis -.->|"Hot-swap<br/>when ready"| yonca_db
-    yonca_db <--> redis_db
-    langfuse_db --> langfuse_api
-    langfuse_api -.->|"Dashboard<br/>insights"| yonca_db
-
-    style future fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
-    style yonca_db fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-    style redis_db fill:#ffebee,stroke:#c62828,stroke-width:2px
-    style langfuse_db fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    
+    pg_langfuse --> langfuse_ui
+    langfuse_ui -.->|"REST API<br/>read-only"| pg_app
+    yonca_mobile -.->|"Hot-swap<br/>when ready"| pg_app
+    
+    style yonca_ai_data fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style langfuse_stack fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style external fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
 ```
+
+### 📦 Complete Storage Inventory
+
+| Container | Type | Port | Database/Purpose | You Manage? |
+|:----------|:-----|:-----|:-----------------|:------------|
+| `yonca-postgres` | PostgreSQL 15 | **:5433** | Yonca App tables | ✅ **Yes** — migrations, seeds |
+| `yonca-redis` | Redis Stack | **:6379** | LangGraph checkpoints, sessions | ✅ **Yes** — ephemeral |
+| `yonca-langfuse-db` | PostgreSQL 15 | *internal* | Langfuse traces (auto-managed) | ❌ **No** — Langfuse handles |
+| `yonca-langfuse` | Next.js app | **:3001** | Observability dashboard | ❌ **No** — just view it |
+
+### 🔍 Langfuse: How It Works
+
+**Q: Do we need to seed Langfuse with synthetic data?**  
+**A: No!** Langfuse auto-populates when you interact with ALEM:
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+sequenceDiagram
+    participant U as 👤 Demo User
+    participant A as 🧠 ALEM Agent
+    participant LF as 📊 Langfuse
+    participant DB as 🐘 Langfuse DB
+    
+    U->>A: Send message
+    A->>LF: Trace callback (auto)
+    LF->>DB: INSERT trace, generation
+    Note over DB: Auto-managed!<br/>No seeds needed
+    
+    A->>U: Response
+    
+    U->>LF: View dashboard :3001
+    LF->>DB: Query traces
+    DB->>LF: Return data
+    LF->>U: Show analytics
+```
+
+**Key Points:**
+1. **Traces auto-populate** — Every LLM call creates a trace automatically
+2. **No synthetic Langfuse data needed** — Just use the app normally
+3. **Read via API** — Dashboard queries Langfuse's own DB, we read via REST API
+4. **Caching optional** — We can cache aggregated insights in our App DB
+
+### 🔑 VS Code Database Access
+
+To view databases directly from VS Code, install these extensions:
+
+| Extension | ID | Purpose |
+|:----------|:---|:--------|
+| **Database Client** | `cweijan.vscode-database-client2` | PostgreSQL, Redis, SQLite GUI |
+| **Redis** | `cweijan.vscode-redis-client` | Redis key browser |
+
+**Connection strings:**
+```bash
+# Yonca App DB (your data)
+postgresql://yonca:yonca_dev_password@localhost:5433/yonca
+
+# Redis
+redis://localhost:6379
+
+# Langfuse DB (just for viewing, don't modify!)
+postgresql://langfuse:langfuse_secret@localhost:5432/langfuse
+# Note: Langfuse DB runs on internal port, map it in docker-compose if needed
+```
+
+> ⚠️ **Warning:** The Langfuse DB port (5432) is internal only by default. To browse it, temporarily add port mapping: `- "5434:5432"` to `langfuse-db` in docker-compose.
 
 ### Storage Responsibilities
 
-| Database | Tables/Keys | Purpose | Access |
-|:---------|:------------|:--------|:-------|
-| **Yonca App DB** (:5433) | `users`, `threads`, `steps`, `feedbacks` | Conversation history | Read/Write |
-| **Yonca App DB** (:5433) | `user_profiles`, `farm_profiles`, `parcels` | Farm data (synthetic → real) | Read/Write |
-| **Langfuse DB** (separate) | `traces`, `generations`, `scores` | LLM observability | **Read-only via API** |
-| **Redis** (:6379) | `langgraph:checkpoint:*` | LangGraph state | Read/Write |
-| **Redis** (:6379) | `session:*`, `rate_limit:*` | Runtime cache | Read/Write |
+| Storage | Type | Tables/Keys | Purpose | Access |
+|:--------|:-----|:------------|:--------|:-------|
+| **Yonca App DB** | PostgreSQL :5433 | `users`, `threads`, `steps`, `feedbacks` | Conversation history | Read/Write |
+| **Yonca App DB** | PostgreSQL :5433 | `user_profiles`, `farm_profiles`, `parcels` | Farm data (synthetic → real) | Read/Write |
+| **Langfuse DB** | PostgreSQL (internal) | `traces`, `generations`, `scores` | LLM observability | **Auto-managed** |
+| **Redis** | Redis Stack :6379 | `langgraph:checkpoint:*` | LangGraph state | Read/Write |
+| **Redis** | Redis Stack :6379 | `session:*`, `rate_limit:*` | Runtime cache | Read/Write |
 
-> 💡 **Langfuse is self-contained** — it manages its own database. We query it via API for dashboard insights, but all trace data stays in Langfuse's DB. We can optionally cache aggregated insights in our App DB for faster access.
+> 💡 **Langfuse is self-contained** — it manages its own PostgreSQL database. We query it via REST API for dashboard insights, but all trace data stays in Langfuse's DB. We can optionally cache aggregated insights in our App DB for faster access.
 
 ### Hot-Swap Strategy: Synthetic → Real Data
 

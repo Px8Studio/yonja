@@ -133,3 +133,76 @@ Phase 3 (Scale):  DigiRella Owned   → Long-term ownership ($6,300 one-time)
 ```
 
 > 💡 All phases use the same open-source models. Only infrastructure changes.
+
+---
+
+## 🔖 ALEM Versioning Strategy
+
+> **ALEM** wraps multiple open-source models into a unified "branded" AI stack. We version ALEM based on upstream model changes.
+
+### Version Format
+
+```
+ALEM v{MAJOR}.{MINOR}.{PATCH}
+
+MAJOR: Breaking changes (new model family, API changes)
+MINOR: Model version bumps (any upstream change)
+PATCH: Prompt/config changes only
+```
+
+### Current Stack
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+flowchart LR
+    subgraph alem["🧠 ALEM v1.1.0"]
+        primary["<b>Primary</b><br/>llama-4-maverick-17b-128e"]
+        fallback["<b>Fallback</b><br/>llama-3.3-70b-versatile"]
+        local["<b>Local/Edge</b><br/>qwen3:4b"]
+    end
+    
+    subgraph hash["🔐 Version Hash"]
+        fingerprint["SHA256 of model identifiers<br/><code>maverick-17b+llama-70b+qwen-4b</code>"]
+    end
+    
+    alem --> hash
+    
+    style alem fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+```
+
+### Versioning Rules
+
+| Event | Version Bump | Example |
+|:------|:-------------|:--------|
+| Upstream model patch | +0.1 | `llama-4-maverick-17b` → `llama-4-maverick-17b-v2` = ALEM 1.1 → 1.2 |
+| Add new model variant | +0.1 | Add `qwen3-32b` option = ALEM 1.2 → 1.3 |
+| Replace model family | +1.0 | `llama-3` → `llama-4` = ALEM 1.x → 2.0 |
+| Prompt changes only | +0.0.1 | System prompt update = ALEM 1.1.0 → 1.1.1 |
+
+### Lightweight Tracking (Recommended)
+
+Use a simple `alem_version.toml` file — no complex tooling needed:
+
+```toml
+# alem_version.toml
+[alem]
+version = "1.1.0"
+release_date = "2026-01-20"
+
+[models]
+primary = "meta-llama/llama-4-maverick-17b-128e-instruct"
+fallback = "llama-3.3-70b-versatile"
+local = "qwen3:4b"
+
+[fingerprint]
+# Auto-generated: SHA256 of sorted model identifiers
+hash = "a3f2b1c4..."
+```
+
+**CI Integration (optional):**
+```bash
+# Compare model strings, bump version if changed
+python scripts/check_alem_version.py --models-from-env
+```
+
+> 🔬 **Best Practice:** Log ALEM version + model fingerprint in every Langfuse trace for full reproducibility.

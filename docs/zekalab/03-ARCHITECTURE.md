@@ -22,23 +22,24 @@ flowchart TB
         llm["<b>LLM Providers</b><br/>━━━━━━━━━<br/>• Groq (cloud)<br/>• Ollama (local)"]
     end
 
-    subgraph data["💾 PERSISTENCE LAYER"]
+    subgraph data["💾 APP DATA LAYER"]
         direction LR
-        postgres["<b>PostgreSQL</b><br/>:5433<br/>━━━━━━━━━<br/>🟢 Domain Data:<br/>• user_profiles<br/>• farms, parcels<br/>• crop_rotation<br/>━━━━━━━━━<br/>🔵 Chainlit Data:<br/>• users (OAuth)<br/>• threads<br/>• steps, feedbacks"]
-        redis["<b>Redis Stack</b><br/>:6379<br/>━━━━━━━━━<br/>• LangGraph checkpoints<br/>• Session state<br/>• Rate limiting"]
+        postgres["<b>Yonca App DB</b><br/>:5433<br/>━━━━━━━━━<br/>📋 App Tables:<br/>• users (OAuth)<br/>• threads, steps<br/>• user_profiles<br/>• farms, parcels<br/>• alem_personas"]
+        redis["<b>Redis</b><br/>:6379<br/>━━━━━━━━━<br/>• LangGraph checkpoints<br/>• Session state<br/>• Rate limiting"]
     end
 
-    subgraph observe["📊 OBSERVABILITY LAYER"]
-        langfuse["<b>Langfuse</b><br/>:3001<br/>━━━━━━━━━<br/>• LLM traces<br/>• Token costs<br/>• Latency metrics"]
+    subgraph observe["📊 OBSERVABILITY (Separate DB)"]
+        langfuse["<b>Langfuse</b><br/>:3001<br/>━━━━━━━━━<br/>Own database<br/>• LLM traces<br/>• Token costs<br/>• Latencies"]
     end
 
     farmer --> chainlit
     chainlit --> |"Direct Mode"| langgraph
     langgraph --> llm
     langgraph --> |"State checkpoints"| redis
-    chainlit --> |"Conversation history"| postgres
+    chainlit --> |"App data"| postgres
     langgraph --> |"Farm context"| postgres
-    langgraph --> |"Traces"| langfuse
+    langgraph -.-> |"Traces"| langfuse
+    langfuse -.-> |"Insights API"| postgres
 
     style chainlit fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     style langgraph fill:#fff3e0,stroke:#f57c00,stroke-width:2px
@@ -51,41 +52,79 @@ flowchart TB
 
 | Component | Purpose | What It Stores | Key File |
 |:----------|:--------|:---------------|:---------|
-| **Chainlit** | Chat UI + thread display | UI state (delegates storage) | `demo-ui/app.py` |
-| **PostgreSQL** | Domain + Chainlit persistence | Users, farms, threads, messages | `demo-ui/data_layer.py` |
+| **Chainlit** | Chat UI + thread display | UI state (delegates to App DB) | `demo-ui/app.py` |
+| **Yonca App DB** | All app data | Users, farms, threads, personas | `demo-ui/data_layer.py` |
 | **Redis** | Fast state + checkpoints | LangGraph state, sessions | `src/yonca/agent/memory.py` |
-| **Langfuse** | LLM observability | Traces, costs, latencies | `src/yonca/observability/langfuse.py` |
+| **Langfuse** | LLM observability (separate DB) | Traces, costs, latencies | `src/yonca/observability/langfuse.py` |
 | **LangGraph** | Agent orchestration | In-memory graph execution | `src/yonca/agent/graph.py` |
 
 ---
 
-## 💾 Storage Architecture
+## 💾 Data Ecosystem
+
+> **Key Insight:** We have TWO PostgreSQL instances — the **Yonca App Database** (our primary) and **Langfuse Database** (observability, read-only via API).
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
-graph LR
-    subgraph yonca_db["🐘 PostgreSQL: yonca (:5433)"]
-        direction TB
-        domain["<b>Domain Tables</b><br/>user_profiles<br/>farm_profiles<br/>parcels<br/>ndvi_readings"]
-        chainlit_tables["<b>Chainlit Tables</b><br/>users (OAuth)<br/>threads<br/>steps<br/>feedbacks"]
+graph TB
+    subgraph future["🔜 FUTURE: Real Data"]
+        ektis["📱 Yonca Mobile<br/>(Digital Umbrella)<br/>━━━━━━━━━<br/>Real users<br/>Real farms<br/>Real EKTIS data"]
     end
 
-    subgraph redis_db["🔴 Redis Stack (:6379)"]
-        direction TB
-        checkpoints["<b>LangGraph</b><br/>langgraph:checkpoint:{thread_id}"]
-        sessions["<b>Sessions</b><br/>session:{user_id}"]
+    subgraph current["✅ CURRENT: App Data"]
+        subgraph yonca_db["🐘 Yonca App Database (:5433)"]
+            direction TB
+            app_data["<b>App Tables</b><br/>━━━━━━━━━<br/>👤 users (OAuth identity)<br/>💬 threads, steps, feedbacks<br/>🌾 user_profiles, farm_profiles<br/>📍 parcels, ndvi_readings<br/>🎭 alem_personas"]
+        end
+
+        subgraph redis_db["🔴 Redis (:6379)"]
+            direction TB
+            checkpoints["<b>Runtime State</b><br/>━━━━━━━━━<br/>LangGraph checkpoints<br/>Session cache<br/>Rate limits"]
+        end
     end
 
+    subgraph observability["📊 OBSERVABILITY (Separate)"]
+        subgraph langfuse_db["🐘 Langfuse Database"]
+            direction TB
+            traces["<b>Auto-Managed</b><br/>━━━━━━━━━<br/>LLM traces<br/>Token costs<br/>Latencies<br/>Sessions"]
+        end
+        langfuse_api["📡 Langfuse API<br/><i>Read-only queries</i>"]
+    end
+
+    ektis -.->|"Hot-swap<br/>when ready"| yonca_db
+    yonca_db <--> redis_db
+    langfuse_db --> langfuse_api
+    langfuse_api -.->|"Dashboard<br/>insights"| yonca_db
+
+    style future fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
     style yonca_db fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
     style redis_db fill:#ffebee,stroke:#c62828,stroke-width:2px
+    style langfuse_db fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
 ```
 
-| Storage | Tables/Keys | Purpose |
-|:--------|:------------|:--------|
-| **PostgreSQL** | `users`, `threads`, `steps`, `feedbacks` | Chainlit conversation persistence |
-| **PostgreSQL** | `user_profiles`, `farm_profiles`, `parcels` | Domain/farm data |
-| **Redis** | `langgraph:checkpoint:{thread_id}` | LangGraph state between turns |
-| **Redis** | `session:{user_id}`, `rate_limit:{ip}` | Sessions & rate limiting |
+### Storage Responsibilities
+
+| Database | Tables/Keys | Purpose | Access |
+|:---------|:------------|:--------|:-------|
+| **Yonca App DB** (:5433) | `users`, `threads`, `steps`, `feedbacks` | Conversation history | Read/Write |
+| **Yonca App DB** (:5433) | `user_profiles`, `farm_profiles`, `parcels` | Farm data (synthetic → real) | Read/Write |
+| **Langfuse DB** (separate) | `traces`, `generations`, `scores` | LLM observability | **Read-only via API** |
+| **Redis** (:6379) | `langgraph:checkpoint:*` | LangGraph state | Read/Write |
+| **Redis** (:6379) | `session:*`, `rate_limit:*` | Runtime cache | Read/Write |
+
+> 💡 **Langfuse is self-contained** — it manages its own database. We query it via API for dashboard insights, but all trace data stays in Langfuse's DB. We can optionally cache aggregated insights in our App DB for faster access.
+
+### Hot-Swap Strategy: Synthetic → Real Data
+
+The Yonca mobile platform (Digital Umbrella) already serves many users with real farm data from EKTIS. Our architecture is designed for seamless integration:
+
+| Phase | Data Source | Status |
+|:------|:------------|:-------|
+| **Now** | Synthetic profiles (schema-matched) | ✅ Active |
+| **Pilot** | Real users, synced from Yonca mobile | ⏳ Pending handoff |
+| **Production** | Full EKTIS integration | 🔜 Future |
+
+> **No code changes required** — same `user_profiles`, `farm_profiles`, `parcels` tables, just different data source.
 
 ---
 

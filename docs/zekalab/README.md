@@ -105,19 +105,21 @@ flowchart LR
         llm["Groq/Ollama"]
     end
     
-    subgraph data["💾 Data"]
-        pg["PostgreSQL :5433"]
+    subgraph data["💾 App Data"]
+        pg["Yonca App DB :5433"]
         redis["Redis :6379"]
     end
     
     subgraph observe["📊 Observability"]
-        langfuse["Langfuse :3001"]
+        langfuse["Langfuse :3001<br/><i>(separate DB)</i>"]
     end
     
     chainlit --> langgraph --> llm
     langgraph --> pg
     langgraph --> redis
-    langgraph --> langfuse
+    langgraph -.->|traces| langfuse
+    langfuse -.->|insights| pg
 ```
 
-> See [03-ARCHITECTURE](03-ARCHITECTURE.md) for full details.
+> **Note:** Langfuse has its own database — we read from it via API for dashboards.  
+> See [03-ARCHITECTURE](03-ARCHITECTURE.md) for full data ecosystem diagram.

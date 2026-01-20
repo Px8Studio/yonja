@@ -163,6 +163,10 @@ def create_langfuse_handler(
     try:
         from langfuse.callback import CallbackHandler
         
+        # Merge ALEM version/fingerprint metadata
+        version_meta = _get_alem_version_metadata()
+        merged_meta = {**(metadata or {}), **version_meta}
+
         handler = CallbackHandler(
             secret_key=settings.langfuse_secret_key,
             public_key=settings.langfuse_public_key,
@@ -170,7 +174,7 @@ def create_langfuse_handler(
             session_id=session_id,
             user_id=user_id,
             tags=tags or [],
-            metadata=metadata or {},
+            metadata=merged_meta,
             trace_name=trace_name,
             debug=settings.langfuse_debug,
             sample_rate=settings.langfuse_sample_rate,
@@ -227,12 +231,13 @@ def langfuse_trace(
         return
     
     try:
+        version_meta = _get_alem_version_metadata()
         trace = client.trace(
             name=name,
             session_id=session_id,
             user_id=user_id,
             input=input_data,
-            metadata=metadata or {},
+            metadata={**(metadata or {}), **version_meta},
         )
         yield trace
         
@@ -331,3 +336,53 @@ def get_langfuse_trace_url(trace_id: str) -> str | None:
         return None
     
     return f"{settings.langfuse_host}/trace/{trace_id}"
+
+
+# ============================================================
+# ALEM Version Metadata Loader
+# ============================================================
+
+def _get_alem_version_metadata() -> dict:
+    """Load ALEM version and fingerprints from alem_version.toml.
+
+    Returns a dict suitable for Langfuse metadata, e.g.:
+    {
+        "alem": {"version": "0.1.0", "updated_at": "..."},
+        "models": {
+            "nl_to_sql": {"id": "...", "fingerprint": "..."},
+            "reasoner": {"id": "...", "fingerprint": "..."},
+            "vision": {"id": "...", "fingerprint": "..."},
+        }
+    }
+    """
+    import os
+    try:
+        path = os.path.join(os.getcwd(), "alem_version.toml")
+        if not os.path.exists(path):
+            return {}
+        try:
+            import tomllib  # Python 3.11+
+            with open(path, "rb") as f:
+                data = tomllib.load(f)
+        except Exception:
+            try:
+                import toml  # type: ignore
+                data = toml.load(path)
+            except Exception:
+                return {}
+        out = {}
+        if isinstance(data, dict):
+            if "alem" in data:
+                out["alem"] = {
+                    "version": data["alem"].get("version"),
+                    "updated_at": data["alem"].get("updated_at"),
+                }
+            if "models" in data:
+                out["models"] = {
+                    "nl_to_sql": data["models"].get("nl_to_sql", {}),
+                    "reasoner": data["models"].get("reasoner", {}),
+                    "vision": data["models"].get("vision", {}),
+                }
+        return out
+    except Exception:
+        return {}

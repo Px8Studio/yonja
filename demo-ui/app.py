@@ -1397,6 +1397,12 @@ async def transcribe_audio_whisper(audio_data: bytes, mime_type: str) -> str:
 @cl.on_chat_start
 async def on_chat_start():
     """Initialize chat session with farm context, user tracking, ALEM persona, and dashboard welcome."""
+    # Add image upload button for Vision-to-Action flow
+    try:
+        cl.UploadButton(name="image_uploads", multiple=True, accept=["image/png", "image/jpeg"]).render()
+        cl.user_session.set("uploaded_images", [])
+    except Exception:
+        pass
     session_id = cl.user_session.get("id")
     
     # Get authenticated user (if OAuth enabled)
@@ -1597,6 +1603,22 @@ async def on_chat_start():
     await send_dashboard_welcome(user)
 
 
+# Upload handler for image files used by Vision-to-Action
+@cl.on_event("upload")
+async def on_file_upload(files: list[cl.UploadedFile]):
+    paths: list[str] = []
+    try:
+        for f in files:
+            saved_path = await f.save()
+            if saved_path:
+                paths.append(saved_path)
+        existing = cl.user_session.get("uploaded_images", []) or []
+        existing.extend(paths)
+        cl.user_session.set("uploaded_images", existing)
+        await cl.Message(content=f"✅ {len(paths)} şəkil yükləndi").send()
+    except Exception as e:
+        await cl.Message(content=f"⚠️ Yükləmə xətası: {e}").send()
+
 @cl.on_message
 async def on_message(message: cl.Message):
     """Handle incoming user messages with dual-mode support.
@@ -1697,6 +1719,8 @@ async def on_message(message: cl.Message):
                     f"experience:{alem_persona_dict.get('experience_level', 'unknown')}",
                 ])
             
+            # Include uploaded image paths in metadata for observability
+            uploaded_images = cl.user_session.get("uploaded_images", []) or []
             langfuse_handler = create_langfuse_handler(
                 session_id=thread_id,           # Groups all messages in conversation
                 user_id=user_id,                # Attributes costs to user
@@ -1707,6 +1731,7 @@ async def on_message(message: cl.Message):
                     "source": "chainlit",
                     "expertise_areas": expertise_areas,
                     "alem_persona": alem_persona_dict,  # Full persona for analysis
+                    "uploaded_images": uploaded_images,
                 },
             )
             

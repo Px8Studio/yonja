@@ -45,6 +45,12 @@ class UserIntent(str, Enum):
     # Clarification
     CLARIFICATION = "clarification"     # Dəqiqləşdirmə - need more info
 
+    # Data query (NL → SQL)
+    DATA_QUERY = "data_query"            # Verilənlər bazası sorğuları / NL-to-SQL
+
+    # Vision analysis (image → action)
+    VISION_ANALYSIS = "vision_analysis"  # Şəkil analizi / təsir təklifi
+
 
 class Severity(str, Enum):
     """Severity level for alerts and recommendations."""

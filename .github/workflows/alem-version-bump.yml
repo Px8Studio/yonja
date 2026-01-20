@@ -1,0 +1,67 @@
+name: ALEM Version Bump
+
+on:
+  workflow_dispatch:
+    inputs:
+      component:
+        description: "Component to update (nl_to_sql, reasoner, vision)"
+        required: true
+        type: choice
+        options:
+          - nl_to_sql
+          - reasoner
+          - vision
+      model_id:
+        description: "New model identifier (e.g., meta-llama/llama-4-maverick-17b-128e-instruct)"
+        required: true
+        type: string
+      fingerprint:
+        description: "Model fingerprint/hash/version"
+        required: true
+        type: string
+      bump:
+        description: "Version bump type"
+        required: false
+        default: "auto"
+        type: choice
+        options:
+          - auto
+          - major
+          - minor
+          - patch
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install toml
+        run: |
+          python -m pip install --upgrade pip
+          pip install toml
+
+      - name: Run bump script
+        run: |
+          python scripts/ci_bump_alem_version.py \
+            --file alem_version.toml \
+            --component "${{ github.event.inputs.component }}" \
+            --model-id "${{ github.event.inputs.model_id }}" \
+            --fingerprint "${{ github.event.inputs.fingerprint }}" \
+            --bump "${{ github.event.inputs.bump }}"
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add alem_version.toml
+          git commit -m "chore(ci): bump ALEM version for ${{ github.event.inputs.component }}"
+          git push

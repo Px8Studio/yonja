@@ -15,6 +15,8 @@ from yonca.agent.memory import get_checkpointer
 from yonca.agent.nodes.agronomist import agronomist_node
 from yonca.agent.nodes.context_loader import context_loader_node, route_after_context
 from yonca.agent.nodes.supervisor import route_from_supervisor, supervisor_node
+from yonca.agent.nodes.nl_to_sql import nl_to_sql_node
+from yonca.agent.nodes.vision_to_action import vision_to_action_node
 from yonca.agent.nodes.validator import validator_node
 from yonca.agent.nodes.weather import weather_node
 from yonca.agent.state import AgentState, create_initial_state
@@ -54,6 +56,8 @@ def create_agent_graph() -> StateGraph:
     graph.add_node("context_loader", context_loader_node)
     graph.add_node("agronomist", agronomist_node)
     graph.add_node("weather", weather_node)
+    graph.add_node("nl_to_sql", nl_to_sql_node)
+    graph.add_node("vision_to_action", vision_to_action_node)
     graph.add_node("validator", validator_node)
     
     # Set entry point
@@ -68,6 +72,8 @@ def create_agent_graph() -> StateGraph:
             "context_loader": "context_loader",
             "agronomist": "agronomist",
             "weather": "weather",
+            "nl_to_sql": "nl_to_sql",
+            "vision_to_action": "vision_to_action",
         },
     )
     
@@ -78,12 +84,16 @@ def create_agent_graph() -> StateGraph:
         {
             "agronomist": "agronomist",
             "weather": "weather",
+            "nl_to_sql": "nl_to_sql",
+            "vision_to_action": "vision_to_action",
         },
     )
     
     # Specialist nodes go to validator
     graph.add_edge("agronomist", "validator")
     graph.add_edge("weather", "validator")
+    graph.add_edge("nl_to_sql", "validator")
+    graph.add_edge("vision_to_action", "validator")
     
     # Validator goes to end
     graph.add_edge("validator", END)

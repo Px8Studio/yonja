@@ -42,6 +42,7 @@ KATEQORIYALAR:
 - general_advice: Ümumi kənd təsərrüfatı məsləhəti
 - off_topic: Kənd təsərrüfatı ilə əlaqəsi olmayan mövzu
 - clarification: Daha çox məlumat lazımdır
+ - data_query: Verilənlər bazası sorğuları (SQL, cədvəl, filter, SELECT)
 
 CAVAB FORMATI (JSON):
 {
@@ -70,6 +71,7 @@ INTENT_TO_NODE = {
     UserIntent.GENERAL_ADVICE: "agronomist",
     UserIntent.OFF_TOPIC: "end",  # Handled directly in supervisor_node
     UserIntent.CLARIFICATION: "end",  # Needs clarification, ask user to be more specific
+    UserIntent.DATA_QUERY: "nl_to_sql",
 }
 
 INTENT_REQUIRES_CONTEXT = {
@@ -81,6 +83,7 @@ INTENT_REQUIRES_CONTEXT = {
     UserIntent.CROP_ROTATION: ["farm"],
     UserIntent.WEATHER: ["farm", "weather"],
     UserIntent.GENERAL_ADVICE: ["farm"],
+    UserIntent.DATA_QUERY: ["farm"],
 }
 
 
@@ -124,6 +127,13 @@ async def classify_intent(user_input: str) -> tuple[UserIntent, float, str]:
     # Weather patterns
     if any(word in input_lower for word in ["hava", "temperatur", "yağış", "proqnoz", "dərəcə"]):
         return UserIntent.WEATHER, 0.90, "Hava ilə bağlı sözlər aşkarlandı"
+
+    # Data query / SQL patterns
+    if any(word in input_lower for word in [
+        "sql", "select", "verilənlər bazası", "sorgu", "query", "cədvəl", "filter",
+        "parsel", "parcel", "farm", "məlumat bazası"
+    ]):
+        return UserIntent.DATA_QUERY, 0.88, "Verilənlər bazası sorğusu aşkarlandı"
     
     # For more complex classification, use LLM
     provider = get_llm_provider()

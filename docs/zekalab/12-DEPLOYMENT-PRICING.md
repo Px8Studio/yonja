@@ -24,10 +24,10 @@ quadrantChart
     title Infrastructure: Performance vs Data Sovereignty
     x-axis Low Performance --> High Performance
     y-axis No Sovereignty --> Full Sovereignty
-    quadrant-1 Best: Fast + Sovereign
-    quadrant-2 Good: Sovereign
-    quadrant-3 Risky: Slow + External
-    quadrant-4 Dev: Fast but External
+    quadrant-1 Fast & Sovereign
+    quadrant-2 Sovereign but Slower
+    quadrant-3 Slow & External
+    quadrant-4 Fast but External
     DigiRella Owned: [0.85, 0.95]
     DigiRella Cloud: [0.80, 0.90]
     Benchmark API: [0.90, 0.20]

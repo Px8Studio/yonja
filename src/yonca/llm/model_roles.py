@@ -208,6 +208,7 @@ LANGGRAPH_NODE_MODELS = {
         "response_writer": "meta-llama/llama-4-maverick-17b-128e-instruct",
         "rule_validator": "meta-llama/llama-4-maverick-17b-128e-instruct",
         "image_analyzer": "meta-llama/llama-4-maverick-17b-128e-instruct",  # NEW!
+        "nl_to_sql": "meta-llama/llama-4-maverick-17b-128e-instruct",  # SQL generation
     },
     
     # ===== LEGACY OPEN-SOURCE DEPLOYMENT (Qwen + Llama stack) =====
@@ -221,6 +222,7 @@ LANGGRAPH_NODE_MODELS = {
         "weather_interpreter": "llama-3.3-70b-versatile",  # Language-heavy
         "response_writer": "llama-3.3-70b-versatile",  # Final farmer-facing output
         "rule_validator": "qwen3-32b",  # Logic validation
+        "nl_to_sql": "qwen3-32b",  # Legacy stack: structured query mapping
     },
 }
 

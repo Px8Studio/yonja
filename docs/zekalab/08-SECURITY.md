@@ -2,9 +2,13 @@
 
 > **Purpose:** Security controls and threat mitigations for ALEM.
 
+> **📋 NEW:** Comprehensive security enhancement plan available in [17-SECURITY-ENHANCEMENT-PLAN.md](17-SECURITY-ENHANCEMENT-PLAN.md)
+
 ---
 
 ## ✅ Implementation Status
+
+### Current State (AI & API Security)
 
 | Component | Status | Location |
 |:----------|:-------|:---------|
@@ -16,6 +20,21 @@
 | JWT Validation | ✅ | Auth module |
 | OAuth | 🔄 | Google OAuth in Chainlit |
 | RBAC | ⏳ | Planned |
+
+### Infrastructure Security (Gap Analysis)
+
+| Component | Status | Tool Proposed | Priority |
+|:----------|:-------|:--------------|:---------|
+| **TLS/HTTPS** | ❌ | Traefik | 🔴 Critical |
+| **Secrets Management** | ⚠️ | Hashicorp Vault / SOPS | 🔴 Critical |
+| **Container Scanning** | ❌ | Trivy | 🔴 Critical |
+| **Network Isolation** | ❌ | Docker networks | 🔴 Critical |
+| **Database Encryption** | ❌ | PostgreSQL TDE | 🟠 High |
+| **Security Monitoring** | ⏳ | Prometheus + Grafana | 🟠 High |
+| **WAF** | ❌ | ModSecurity | 🟡 Medium |
+| **SIEM** | ❌ | Wazuh (optional) | 🟡 Medium |
+
+> **See [17-SECURITY-ENHANCEMENT-PLAN.md](17-SECURITY-ENHANCEMENT-PLAN.md) for detailed implementation roadmap.**
 
 ---
 

@@ -58,6 +58,7 @@ mindmap
 | [07-OBSERVABILITY](07-OBSERVABILITY.md) | Langfuse tracing, metrics |
 | [08-SECURITY](08-SECURITY.md) | Input validation, PII protection |
 | [09-PERFORMANCE-SLA](09-PERFORMANCE-SLA.md) | Latency targets, SLOs |
+| [17-SECURITY-ENHANCEMENT-PLAN](17-SECURITY-ENHANCEMENT-PLAN.md) | 🔐 **Production security roadmap** |
 
 ### Deployment
 

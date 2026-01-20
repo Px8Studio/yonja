@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from yonca.config import settings
-from yonca.api.routes import health, chat, models, vision
+from yonca.api.routes import health, chat, models, vision, auth
 from yonca.api.middleware.rate_limit import RateLimitMiddleware, RateLimiter, RateLimitExceeded
 from yonca.data.redis_client import RedisClient
 from yonca.llm.http_pool import HTTPClientPool
@@ -310,9 +310,10 @@ app.add_middleware(
 # ===== Routes =====
 
 app.include_router(health.router, tags=["Health"])
+app.include_router(auth.router, prefix="/api", tags=["Authentication"])
 app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
 app.include_router(models.router, prefix="/api", tags=["Models"])
-app.include_router(vision.router, tags=["Vision"])
+app.include_router(vision.router, prefix="/api/v1", tags=["Vision"])
 
 
 # ===== Root Endpoint =====
@@ -329,16 +330,14 @@ async def root():
             "docs": "/docs",
             "redoc": "/redoc",
             "health": "/health",
+            "auth_test": "/api/v1/auth/test",
             "chat": "/api/v1/chat",
+            "vision": "/api/v1/vision/analyze",
             "models": "/api/models"
         },
-        "methods": {
-            "/api/v1/chat": {
-                "GET": "Get chat endpoint information",
-                "POST": "Send messages to AI assistant"
-            },
-            "/api/models": {
-                "GET": "List available models"
-            }
+        "integration": {
+            "primary_endpoint": "http://localhost:8000",
+            "quick_test": "POST /api/v1/auth/test with 'Authorization: Bearer <token>'",
+            "swagger_ui": "http://localhost:8000/docs"
         }
     }

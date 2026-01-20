@@ -71,6 +71,7 @@ mindmap
 | [16-ADVANCED-FEATURES](16-ADVANCED-FEATURES.md) | 🎨 Multimodal, NL-to-SQL, Vision-to-Action |
 | [18-ENTERPRISE-INTEGRATION-ROADMAP](18-ENTERPRISE-INTEGRATION-ROADMAP.md) | 🌐 **Partnership strategy & phased roadmap** |
 | [19-YONCA-AI-INTEGRATION-UNIVERSE](19-YONCA-AI-INTEGRATION-UNIVERSE.md) | 🌌 **Complete integration landscape & data flows** |
+| [20-INTEGRATION-API](20-INTEGRATION-API.md) | 🔌 **API contract for Yonca Mobile integration** |
 
 ---
 

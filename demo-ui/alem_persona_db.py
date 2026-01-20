@@ -78,14 +78,31 @@ async def save_alem_persona_to_db(
     
     Args:
         alem_persona: Persona dict from ALEMPersona.to_dict()
-        chainlit_user_id: Chainlit user.identifier (UUID)
+        chainlit_user_id: Chainlit user.identifier (email from OAuth)
         email: User email
         user_profile_id: Optional FK to user_profiles table
     
     Returns:
         True if saved successfully, False otherwise
+        
+    Note:
+        The chainlit_user_id FK requires the user to exist in the 'users' table first.
+        Call ensure_user_persisted() before this function.
     """
     try:
+        # CRITICAL: Ensure user exists in 'users' table before FK insert
+        from data_layer import get_data_layer
+        data_layer = get_data_layer()
+        if data_layer:
+            existing_user = await data_layer.get_user(chainlit_user_id)
+            if not existing_user:
+                logger.warning(
+                    "user_not_in_db_skipping_persona_save",
+                    email=email,
+                    hint="Call ensure_user_persisted() before save_alem_persona_to_db()"
+                )
+                return False
+        
         async with get_db_session() as session:
             persona_id = str(uuid.uuid4())
             

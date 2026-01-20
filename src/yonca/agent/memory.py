@@ -34,8 +34,9 @@ CheckpointerBackend = Literal["redis", "postgres", "memory"]
 
 # Try to import Redis checkpointer from official package
 try:
-    from langgraph.checkpoint.redis.aio import AsyncRedisSaver
+    from langgraph_checkpoint_redis.aio import AsyncRedisSaver
     REDIS_CHECKPOINTER_AVAILABLE = True
+    log.debug(f"{EMOJI_YONCA} {EMOJI_REDIS} langgraph-checkpoint-redis available")
 except ImportError:
     REDIS_CHECKPOINTER_AVAILABLE = False
     AsyncRedisSaver = None  # type: ignore
@@ -43,8 +44,9 @@ except ImportError:
 
 # Try to import PostgreSQL checkpointer from official package
 try:
-    from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+    from langgraph_checkpoint_postgres.aio import AsyncPostgresSaver
     POSTGRES_CHECKPOINTER_AVAILABLE = True
+    log.debug(f"{EMOJI_YONCA} {EMOJI_POSTGRES} langgraph-checkpoint-postgres available")
 except ImportError:
     POSTGRES_CHECKPOINTER_AVAILABLE = False
     AsyncPostgresSaver = None  # type: ignore

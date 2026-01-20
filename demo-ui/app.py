@@ -1696,11 +1696,13 @@ async def on_message(message: cl.Message):
                     name="feedback_positive",
                     value="positive",
                     label="👍 Kömək etdi",
+                    payload={"type": "feedback", "sentiment": "positive"},
                 ),
                 cl.Action(
                     name="feedback_negative",
                     value="negative",
                     label="👎 Təkmilləşdirmək olar",
+                    payload={"type": "feedback", "sentiment": "negative"},
                 ),
             ]
             await response_msg.send()

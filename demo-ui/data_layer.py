@@ -120,11 +120,17 @@ class YoncaDataLayer(SQLAlchemyDataLayer):
                 )
                 await session.commit()
                 
+                logger.info(
+                    "user_created_or_updated",
+                    identifier=user.identifier,
+                    has_metadata=bool(metadata_json and metadata_json != "{}"),
+                )
+                
                 # Fetch and return
                 return await self.get_user(user.identifier)
                 
         except Exception as e:
-            logger.warning("create_user_failed", error=str(e))
+            logger.error("create_user_failed", identifier=user.identifier, error=str(e))
             return None
 
     async def update_user_metadata(

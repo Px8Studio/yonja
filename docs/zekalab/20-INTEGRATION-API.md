@@ -50,7 +50,29 @@ Key points:
 
 These endpoints provide full functionality for chat/agent, vision analysis, and data queries.
 
-1. POST `/api/agent/chat`
+1. **POST `/api/v1/auth/test`** ⭐
+   - Purpose: Verify authentication tokens and test integration setup.
+   - Payload (minimal):
+     ```json
+     {
+       "test_token": "optional"
+     }
+     ```
+   - Headers:
+     ```
+     Authorization: Bearer <your_jwt_token>
+     ```
+   - Response (example):
+     ```json
+     {
+       "authenticated": true,
+       "token_valid": true,
+       "user_id": "demo-user",
+       "message": "✅ Authentication successful (dev mode)"
+     }
+     ```
+
+2. **POST `/api/v1/chat`**
    - Purpose: Send a user message to ALEM and receive an actionable response.
    - Payload (minimal):
      ```json
@@ -71,17 +93,17 @@ These endpoints provide full functionality for chat/agent, vision analysis, and 
      }
      ```
 
-2. POST `/api/vision/analyze`
+3. **POST `/api/v1/vision/analyze`**
    - Purpose: Upload an image for crop/pest analysis.
    - Example:
      ```bash
      curl -X POST \
        -H "Authorization: Bearer <token>" \
        -F "file=@./leaf.jpg" \
-       http://localhost:8000/api/vision/analyze
+       http://localhost:8000/api/v1/vision/analyze
      ```
 
-3. POST `/api/sql/query`
+4. **POST `/api/sql/query`** (experimental)
    - Purpose: NL-to-SQL + read-only execution for dashboards.
    - Payload:
      ```json
@@ -89,14 +111,19 @@ These endpoints provide full functionality for chat/agent, vision analysis, and 
      ```
    - Response: Markdown table with up to 1000 rows.
 
-4. GET `/health`
+5. **GET `/health`**
    - Purpose: Health check (readiness/liveness).
 
-5. GET `/docs`
+6. **GET `/docs`**
    - Purpose: Swagger/OpenAPI UI for developer testing.
 
+7. **GET `/`**
+   - Purpose: API info and available endpoints.
+
 Notes:
-- Vision route is implemented (see docs and code references). Chat and SQL routes are standardized interfaces; confirm availability in the FastAPI app and wire to LangGraph nodes where needed.
+- Vision route is fully implemented at `/api/v1/vision/analyze`.
+- Auth test route is live at `/api/v1/auth/test` for quick token verification.
+- Chat route exists; ensure payload matches schema (see Swagger docs).
 
 ---
 
@@ -113,6 +140,15 @@ Environment hints:
 
 ## ⚡ Quick Test Examples
 
+Auth test (verify tokens):
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer test_token_12345" \
+  -d '{"test_token": "optional"}' \
+  http://localhost:8000/api/v1/auth/test
+```
+
 Chat (JSON):
 ```bash
 curl -X POST \
@@ -123,7 +159,7 @@ curl -X POST \
         "message": "Pomidorları nə vaxt suvarmalıyam?",
         "context": {"region_code": "ARAN"}
       }' \
-  http://localhost:8000/api/agent/chat
+  http://localhost:8000/api/v1/chat
 ```
 
 Vision (file upload):
@@ -131,7 +167,7 @@ Vision (file upload):
 curl -X POST \
   -H "Authorization: Bearer <token>" \
   -F "file=@./leaf.jpg" \
-  http://localhost:8000/api/vision/analyze
+  http://localhost:8000/api/v1/vision/analyze
 ```
 
 SQL (read-only):

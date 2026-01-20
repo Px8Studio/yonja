@@ -67,6 +67,7 @@ mindmap
 | [12-DEPLOYMENT-PRICING](12-DEPLOYMENT-PRICING.md) | DigiRella options, costs, ALEM versioning |
 | [14-DISCOVERY-QUESTIONS](14-DISCOVERY-QUESTIONS.md) | Integration questions for Digital Umbrella |
 | [15-IMPLEMENTATION-BACKLOG](15-IMPLEMENTATION-BACKLOG.md) | 📋 Unimplemented features tracker |
+| [16-ADVANCED-FEATURES](16-ADVANCED-FEATURES.md) | 🎨 Multimodal, NL-to-SQL, Vision-to-Action |
 
 ---
 

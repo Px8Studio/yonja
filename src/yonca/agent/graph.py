@@ -16,6 +16,7 @@ from yonca.agent.nodes.agronomist import agronomist_node
 from yonca.agent.nodes.context_loader import context_loader_node, route_after_context
 from yonca.agent.nodes.supervisor import route_from_supervisor, supervisor_node
 from yonca.agent.nodes.nl_to_sql import nl_to_sql_node
+from yonca.agent.nodes.sql_executor import sql_executor_node
 from yonca.agent.nodes.vision_to_action import vision_to_action_node
 from yonca.agent.nodes.validator import validator_node
 from yonca.agent.nodes.weather import weather_node
@@ -57,6 +58,7 @@ def create_agent_graph() -> StateGraph:
     graph.add_node("agronomist", agronomist_node)
     graph.add_node("weather", weather_node)
     graph.add_node("nl_to_sql", nl_to_sql_node)
+    graph.add_node("sql_executor", sql_executor_node)
     graph.add_node("vision_to_action", vision_to_action_node)
     graph.add_node("validator", validator_node)
     
@@ -92,7 +94,8 @@ def create_agent_graph() -> StateGraph:
     # Specialist nodes go to validator
     graph.add_edge("agronomist", "validator")
     graph.add_edge("weather", "validator")
-    graph.add_edge("nl_to_sql", "validator")
+    graph.add_edge("nl_to_sql", "sql_executor")
+    graph.add_edge("sql_executor", "validator")
     graph.add_edge("vision_to_action", "validator")
     
     # Validator goes to end

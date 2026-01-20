@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from yonca.config import settings
-from yonca.api.routes import health, chat, models
+from yonca.api.routes import health, chat, models, vision
 from yonca.api.middleware.rate_limit import RateLimitMiddleware, RateLimiter, RateLimitExceeded
 from yonca.data.redis_client import RedisClient
 from yonca.llm.http_pool import HTTPClientPool
@@ -312,6 +312,7 @@ app.add_middleware(
 app.include_router(health.router, tags=["Health"])
 app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
 app.include_router(models.router, prefix="/api", tags=["Models"])
+app.include_router(vision.router, tags=["Vision"])
 
 
 # ===== Root Endpoint =====

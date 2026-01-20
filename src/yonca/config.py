@@ -29,6 +29,7 @@ class LLMProvider(str, Enum):
 
     OLLAMA = "ollama"  # Local LLM server
     GROQ = "groq"  # Open-source models, production-ready infrastructure
+    VLLM = "vllm"  # Self-hosted OpenAI-compatible (AzInTelecom/DigiRella)
 
 
 class InferenceTier(str, Enum):
@@ -132,6 +133,11 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "qwen3:4b"
 
+    # ===== Self-Hosted vLLM (AzInTelecom/DigiRella) =====
+    # OpenAI-compatible HTTP endpoint for sovereign deployments
+    vllm_base_url: str | None = None  # e.g., "http://vllm:8000/v1"
+    vllm_model: str = "meta-llama/llama-4-maverick-17b-128e-instruct"
+
     # ===== Open-Source Models (via Groq) =====
     # 2026 Gold Standard: Llama 4 Maverick - single model replaces entire stack
     # Demonstrates enterprise-ready performance with proper infrastructure
@@ -211,6 +217,8 @@ class Settings(BaseSettings):
             return self.ollama_model
         if self.llm_provider == LLMProvider.GROQ:
             return self.groq_model
+        if self.llm_provider == LLMProvider.VLLM:
+            return self.vllm_model
         return self.groq_model  # Default to Groq
 
     @property
@@ -220,6 +228,8 @@ class Settings(BaseSettings):
             return InferenceTier.TIER_IV_ONPREM
         if self.llm_provider == LLMProvider.GROQ:
             return InferenceTier.TIER_I_GROQ
+        if self.llm_provider == LLMProvider.VLLM:
+            return InferenceTier.TIER_III_SOVEREIGN
         return InferenceTier.TIER_I_GROQ  # Default
 
     @property

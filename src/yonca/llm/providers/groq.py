@@ -108,6 +108,7 @@ class GroqProvider(LLMProvider):
             headers={
                 "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json",
+                "X-Sovereign-Data": "cloud",
             },
         )
 

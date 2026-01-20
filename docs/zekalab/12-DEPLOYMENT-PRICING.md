@@ -134,6 +134,31 @@ Phase 3 (Scale):  DigiRella Owned   → Long-term ownership ($6,300 one-time)
 
 > 💡 All phases use the same open-source models. Only infrastructure changes.
 
+
+## 🧪 Linguistic & Logical Parity
+
+Open-source models deliver the same “brain” (weights) across environments. What changes is the “metabolism” (speed):
+
+| Dimension | Groq LPU (API) | AzInTelecom (vLLM) | Local (Ollama) |
+|-----------|-----------------|--------------------|----------------|
+| Quality (Azerbaijani + logic) | ⭐ Identical | ⭐ Identical | ⭐ Identical |
+| Speed (tokens/sec) | ⚡ 300+ | ⚡ 80–120 | ⚡ 20–40 |
+| Data Residency | 🟡 External | 🟢 Sovereign (Baku) | 🟢 Physical Control |
+
+> The “identity” of advice remains identical across deployments. Only latency changes.
+
+---
+
+## 🧠 ALEM Capability Matrix (2026)
+
+| Capability | Model Recommendation | Hardware (Min) | Note on Azerbaijani |
+|------------|----------------------|----------------|----------------------|
+| Deep Reasoning / RAG | Llama 4 Maverick | 1× H100 or 2× RTX 5090 | Best “common sense” for EKTİS rules |
+| NL-to-SQL | Qwen 3-235B (MoE) | 2× H100 or 128GB Mac | Strong structured query mapping |
+| Visual Scanning | Llama 4 Maverick | Native Multimodal | Pest/disease from photos |
+| STT/TTS | Whisper v4 / Parler | CPU-friendly | Farmer voice memos |
+| Data Analytics | ALEM Analyst (tool-calling) | 32GB VRAM | Automated charts |
+
 ---
 
 ## 🔖 ALEM Versioning Strategy

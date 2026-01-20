@@ -33,6 +33,7 @@ structlog = "^24.1.0"
 protobuf = ">=6.31.1,<7.0.0"
 aiosqlite = "^0.22.1"
 asyncpg = "^0.31.0"
+toml = "^0.10.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"

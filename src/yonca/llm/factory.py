@@ -92,6 +92,29 @@ def create_ollama_provider(
         timeout=timeout,
     )
 
+def create_vllm_provider(
+    base_url: str | None = None,
+    model: str | None = None,
+    timeout: float = 30.0,
+    api_key: str | None = None,
+) -> LLMProvider:
+    """Create a vLLM provider for self-hosted OpenAI-compatible inference.
+    
+    Args:
+        base_url: vLLM server base URL (uses config if None)
+        model: Model name (uses config if None)
+        timeout: Request timeout in seconds
+        api_key: Optional bearer token for secured endpoints
+    """
+    from .providers.vllm import VLLMProvider
+
+    return VLLMProvider(
+        base_url=base_url or settings.vllm_base_url,
+        model=model or settings.vllm_model,
+        timeout=timeout,
+        api_key=api_key,
+    )
+
 
 def create_llm_provider(
     provider_type: LLMProviderEnum | None = None,
@@ -115,6 +138,8 @@ def create_llm_provider(
         return create_ollama_provider(**kwargs)
     elif provider == LLMProviderEnum.GROQ:
         return create_groq_provider(**kwargs)
+    elif provider == LLMProviderEnum.VLLM:
+        return create_vllm_provider(**kwargs)
     else:
         raise LLMProviderError(f"Unknown LLM provider: {provider}")
 

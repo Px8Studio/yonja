@@ -58,7 +58,7 @@ class OllamaProvider(LLMProvider):
         return await HTTPClientPool.get_pool(
             provider="ollama",
             base_url=self.base_url,
-            headers={"Content-Type": "application/json"},
+            headers={"Content-Type": "application/json", "X-Sovereign-Data": "sovereign-local"},
         )
 
     async def __aenter__(self) -> "OllamaProvider":

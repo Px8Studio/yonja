@@ -69,6 +69,8 @@ mindmap
 | [14-DISCOVERY-QUESTIONS](14-DISCOVERY-QUESTIONS.md) | Integration questions for Digital Umbrella |
 | [15-IMPLEMENTATION-BACKLOG](15-IMPLEMENTATION-BACKLOG.md) | 📋 Unimplemented features tracker |
 | [16-ADVANCED-FEATURES](16-ADVANCED-FEATURES.md) | 🎨 Multimodal, NL-to-SQL, Vision-to-Action |
+| [18-ENTERPRISE-INTEGRATION-ROADMAP](18-ENTERPRISE-INTEGRATION-ROADMAP.md) | 🌐 **Partnership strategy & phased roadmap** |
+| [19-YONCA-AI-INTEGRATION-UNIVERSE](19-YONCA-AI-INTEGRATION-UNIVERSE.md) | 🌌 **Complete integration landscape & data flows** |
 
 ---
 

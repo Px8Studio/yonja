@@ -15,6 +15,22 @@
 
 ---
 
+## 🌐 NEW: Enterprise Integration Roadmap
+
+> **Strategic Priority:** See [18-ENTERPRISE-INTEGRATION-ROADMAP](18-ENTERPRISE-INTEGRATION-ROADMAP.md) for full partnership strategy.
+
+| # | Integration Partner | Phase | Status | Effort | Priority | Notes |
+|:-:|:--------------------|:------|:------:|:-------|:--------:|:------|
+| 0.1 | **SİMA/ASAN Login** | Phase 1 | ⬜ | 3-4 weeks | 🔴 | Replace OAuth with sovereign auth |
+| 0.2 | **EKTİS Hot-Swap** | Phase 2 | ⬜ | 6-8 weeks | 🔴 | Real farm data integration |
+| 0.3 | **CBAR Open Banking** | Phase 2 | ⬜ | 4-6 weeks | 🟠 | Fermer Kartı balance/payments |
+| 0.4 | **Azərkosmos Satellite** | Phase 3 | ⬜ | 8-10 weeks | 🟡 | Real NDVI feeds |
+| 0.5 | **Tax Service VOEN** | Phase 3 | ⬜ | 2-3 weeks | 🟡 | Business verification |
+| 0.6 | **Weather APIs** | Phase 2 | ⬜ | 1-2 weeks | 🟠 | Azerbaijan Meteorology |
+| 0.7 | **SAP/Oracle ERP** | Phase 5 | ⬜ | 12+ weeks | 🟢 | Enterprise B2B |
+
+---
+
 ## 🔴 Priority 1: Critical Path
 
 | # | Feature | Status | Doc Reference | Effort | Notes |

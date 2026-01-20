@@ -17,6 +17,14 @@ flowchart TB
         ektis_db["🏛️ <b>EKTIS Database</b><br/><i>Government • Read-only</i>"]
     end
 
+    subgraph future_partners["🔮 FUTURE INTEGRATIONS (Phase 1-3)"]
+        direction TB
+        sima["🔐 <b>SİMA/ASAN</b><br/><i>Authentication</i>"]
+        cbar["💰 <b>CBAR Banking</b><br/><i>Fermer Kartı</i>"]
+        azerkosmos["🛰️ <b>Azərkosmos</b><br/><i>Satellite Data</i>"]
+        weather["🌡️ <b>Weather APIs</b><br/><i>Meteorology</i>"]
+    end
+
     subgraph our_system["🤖 YONCA AI (Our System)"]
         direction TB
         alem["🧠 <b>ALEM</b><br/><i>AI Model Stack</i>"]
@@ -26,7 +34,13 @@ flowchart TB
     yonca_mobile -.->|"Future: Real data sync"| our_system
     ektis_db --> yonca_mobile
     
+    sima -.->|"Phase 1: Auth"| our_system
+    cbar -.->|"Phase 2: Finance"| our_system
+    azerkosmos -.->|"Phase 3: Imagery"| our_system
+    weather -.->|"Phase 2: Forecasts"| our_system
+    
     style external fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
+    style future_partners fill:#f3e5f5,stroke:#9c27b0,stroke-dasharray: 5 5,opacity:0.6
     style our_system fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
     style alem fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
 ```
@@ -36,6 +50,11 @@ flowchart TB
 | **Yonca Mobile App** | Digital Umbrella | Production farming app (100k+ users) | ✅ Live |
 | **EKTIS** | Government | Official farm registry | ✅ Live |
 | **Yonca AI (ALEM)** | Zekalab | AI assistant sidecar | 🔄 Development |
+| **SİMA/ASAN** | IDDA (Gov) | Sovereign authentication | 🔮 Planned (Phase 1) |
+| **CBAR Open Banking** | Central Bank | Financial integration | 🔮 Planned (Phase 2) |
+| **Azərkosmos** | Space Agency | Satellite imagery | 🔮 Planned (Phase 3) |
+
+> **See:** [18-ENTERPRISE-INTEGRATION-ROADMAP](18-ENTERPRISE-INTEGRATION-ROADMAP.md) for full partnership strategy.
 
 ---
 
@@ -558,11 +577,75 @@ SELECT id, type, "threadId", LEFT(output, 50) as preview FROM steps ORDER BY "cr
 
 ---
 
+## 🌐 Enterprise Integration Strategy
+
+ALEM's roadmap includes strategic partnerships with Azerbaijan's digital infrastructure ecosystem. See dedicated documentation for full details:
+
+### Key Integration Partners
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+mindmap
+  root((🌐 Integration<br/>Partners))
+    🏛️ Government
+      SİMA/ASAN
+      EKTİS
+      State Tax
+    💰 Financial
+      CBAR Banking
+      PASHA Bank
+      ABB
+    🛰️ Data Services
+      Azərkosmos
+      AzInTelecom
+      Weather APIs
+    🏢 Enterprise
+      SAP/Oracle
+      Agro Holdings
+```
+
+### Implementation Phases
+
+| Phase | Timeline | Focus | Key Partners |
+|:------|:---------|:------|:-------------|
+| **Phase 1** | Q1-Q2 2026 | Authentication | SİMA/ASAN (IDDA) |
+| **Phase 2** | Q2-Q3 2026 | Core Data | EKTİS, CBAR, Weather, AzInTelecom |
+| **Phase 3** | Q3-Q4 2026 | Premium Intelligence | Azərkosmos, State Tax |
+| **Phase 4** | Q4 2026 - Q1 2027 | Commercial Banking | PASHA Bank, ABB |
+| **Phase 5** | Q1 2027+ | Enterprise B2B | SAP, Oracle |
+
+### Architecture Impact
+
+**Current (Development):**
+- OAuth authentication (Google)
+- Synthetic farm data
+- Cloud LLM (Groq benchmark)
+- Local PostgreSQL + Redis
+
+**Future (Production):**
+- SİMA biometric authentication
+- Real EKTIS farm data ("hot-swap ready")
+- Self-hosted LLM (AzInTelecom GPU)
+- Real satellite imagery (Azərkosmos)
+- Fermer Kartı integration (CBAR Open Banking)
+
+### Documentation References
+
+| Document | Purpose |
+|:---------|:--------|
+| [18-ENTERPRISE-INTEGRATION-ROADMAP](18-ENTERPRISE-INTEGRATION-ROADMAP.md) | Detailed partnership strategy, technical specs, action items |
+| [19-YONCA-AI-INTEGRATION-UNIVERSE](19-YONCA-AI-INTEGRATION-UNIVERSE.md) | Visual integration landscape, data flows, phased timeline |
+| [00-IMPLEMENTATION-BACKLOG](00-IMPLEMENTATION-BACKLOG.md) | Prioritized integration tasks (items 0.1-0.7) |
+| [14-DISCOVERY-QUESTIONS](14-DISCOVERY-QUESTIONS.md) | Schema validation questions for Digital Umbrella |
+
+---
+
 ## 📋 Implementation Gaps
 
 | Gap | Priority | Effort |
 |:----|:---------|:-------|
 | Evaluation test suite | 🔴 High | 5 days |
 | Prometheus metrics | 🟡 Medium | 1 day |
+| Enterprise integrations | 🔴 High | See [18-ENTERPRISE-INTEGRATION-ROADMAP](18-ENTERPRISE-INTEGRATION-ROADMAP.md) |
 
 > See [04-TESTING-STRATEGY.md](04-TESTING-STRATEGY.md) for evaluation framework.

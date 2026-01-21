@@ -243,54 +243,97 @@ def create_activity_heatmap(
 # ============================================================
 
 
-def format_dashboard_summary(insights: UserInsights) -> str:
-    """Format the main dashboard summary as markdown.
+def format_dashboard_summary(
+    insights: UserInsights,
+    alem_persona: dict | None = None,
+    expertise_areas: list[str] | None = None,
+) -> str:
+    """Format the main dashboard summary as compact, GitHub-style markdown.
+
+    Shows "how ALEM sees you" - combining Langfuse metrics with persona data.
 
     Args:
         insights: UserInsights from Langfuse
+        alem_persona: ALEM persona dictionary from session
+        expertise_areas: Detected expertise areas from profile
 
     Returns:
         Markdown string for display
     """
-    if insights.total_interactions == 0:
+    if insights.total_interactions == 0 and not alem_persona:
         return """
-*No activity yet — start chatting!*
+*🌱 New user — ALEM is learning about you...*
 """
 
-    # Calculate time since first interaction
-    first_activity = (
-        insights.first_interaction.replace(tzinfo=None) if insights.first_interaction else None
-    )
-    (datetime.now() - first_activity).days if first_activity else 0
-    member_since = (
-        insights.first_interaction.strftime("%B %d, %Y") if insights.first_interaction else "N/A"
-    )
+    # === ALEM MIRROR: WHO YOU ARE ===
+    mirror_lines = []
 
-    # Format average latency
-    if insights.avg_latency_ms < 1000:
-        _latency_display = f"{insights.avg_latency_ms}ms"
-    else:
-        _latency_display = f"{insights.avg_latency_ms / 1000:.1f}s"
+    if alem_persona:
+        # Farmer identity
+        crop = alem_persona.get("crop_type", "N/A")
+        region = alem_persona.get("region", "N/A")
+        experience = alem_persona.get("experience_level", "N/A")
+        farm_size = alem_persona.get("farm_size_ha", 0)
 
-    # Streak emoji
-    if insights.streak_days >= 7:
-        streak_emoji = "🔥"
-    elif insights.streak_days >= 3:
-        streak_emoji = "⭐"
-    else:
-        streak_emoji = "📅"
+        # Experience emoji
+        if experience == "expert":
+            exp_emoji = "🎓"
+        elif experience == "intermediate":
+            exp_emoji = "🌾"
+        else:
+            exp_emoji = "🌱"
 
-    summary = f"""
-| Metric | Value |
-|:-------|------:|
-| 💬 Conversations | {insights.total_sessions:,} |
-| 🔄 Interactions | {insights.total_interactions:,} |
-| 📝 Tokens | {insights.total_tokens:,} |
-| {streak_emoji} Streak | {insights.streak_days}d |
+        # Farm size category
+        if farm_size >= 30:
+            size_emoji = "🏭"
+            size_label = "Large"
+        elif farm_size >= 10:
+            size_emoji = "🏘️"
+            size_label = "Medium"
+        else:
+            size_emoji = "🏡"
+            size_label = "Small"
 
-<sub>Since {member_since}</sub>
-"""
-    return summary.strip()
+        mirror_lines.append(f"**🌿 {crop}** fermer · {region}")
+        mirror_lines.append(
+            f"{exp_emoji} {experience.title()} · {size_emoji} {size_label} ({farm_size:.1f} ha)"
+        )
+
+        # Expertise areas (auto-detected)
+        if expertise_areas:
+            expertise_labels = {
+                "cotton": "Pambıq",
+                "wheat": "Taxıl",
+                "orchard": "Meyvə",
+                "vegetable": "Tərəvəz",
+                "livestock": "Heyvandarlıq",
+                "advanced": "Qabaqcıl",
+                "general": "Ümumi",
+            }
+            skills = [expertise_labels.get(e, e) for e in expertise_areas[:3]]
+            mirror_lines.append(f"🎯 {' · '.join(skills)}")
+
+    # === ACTIVITY METRICS (GitHub-style compact) ===
+    if insights.total_interactions > 0:
+        # Streak emoji
+        if insights.streak_days >= 7:
+            streak_emoji = "🔥"
+        elif insights.streak_days >= 3:
+            streak_emoji = "⭐"
+        else:
+            streak_emoji = "📅"
+
+        # Compact metric line (GitHub contributions style)
+        metrics = f"{insights.total_interactions:,} sual · {insights.total_sessions:,} söhbət · {streak_emoji} {insights.streak_days}d"
+        mirror_lines.append(metrics)
+
+        # Member since (subtle)
+        if insights.first_interaction:
+            member_since = insights.first_interaction.strftime("%b %Y")
+            mirror_lines.append(f"<sub>Since {member_since}</sub>")
+
+    # Build final compact layout
+    return "\n\n".join(mirror_lines) if mirror_lines else "*No data yet*"
 
 
 def format_daily_breakdown(
@@ -356,50 +399,54 @@ def format_daily_breakdown(
 # ============================================================
 
 
-async def render_dashboard_sidebar(insights: UserInsights) -> None:
+async def render_dashboard_sidebar(
+    insights: UserInsights,
+    alem_persona: dict | None = None,
+    expertise_areas: list[str] | None = None,
+) -> None:
     """Render the full dashboard in Chainlit's sidebar.
 
     This is the SECONDARY welcome element (non-intrusive analytics).
-    Shows usage stats, streak, and activity heatmap from Langfuse.
+    Shows "how ALEM sees you" — combining Langfuse metrics with persona/farm data.
     Loads in background while main welcome message appears in chat.
 
     Companion to: send_dashboard_welcome() in app.py (primary greeting)
 
     Args:
         insights: UserInsights from Langfuse
+        alem_persona: ALEM persona dictionary from session (optional)
+        expertise_areas: Detected expertise areas (optional)
     """
     elements = []
 
-    # 1. Summary stats
-    summary_text = format_dashboard_summary(insights)
+    # 1. ALEM Mirror: WHO YOU ARE + Activity (compact)
+    summary_text = format_dashboard_summary(insights, alem_persona, expertise_areas)
     elements.append(
         cl.Text(
-            name="dashboard_summary",
+            name="alem_mirror",
             content=summary_text,
             display="inline",
         )
     )
 
-    # 2. Activity heatmap
+    # 2. Activity heatmap (only if there's data)
     if insights.daily_activity:
         heatmap = create_activity_heatmap(insights.daily_activity, title="")
         elements.append(heatmap)
 
-    # 3. Legend for heatmap
-    legend_text = """
-<sub>🟫 Less → 🟩 More</sub>
-"""
-    elements.append(
-        cl.Text(
-            name="heatmap_legend",
-            content=legend_text,
-            display="inline",
+        # Legend for heatmap (subtle)
+        legend_text = "<sub>🟫 Less → 🟩 More</sub>"
+        elements.append(
+            cl.Text(
+                name="heatmap_legend",
+                content=legend_text,
+                display="inline",
+            )
         )
-    )
 
-    # Set sidebar
+    # Set sidebar (compact title)
     await cl.ElementSidebar.set_elements(elements)
-    await cl.ElementSidebar.set_title("📊 Your Activity")
+    await cl.ElementSidebar.set_title("🌿 ALEM Mirror")
 
 
 async def update_dashboard_with_day(

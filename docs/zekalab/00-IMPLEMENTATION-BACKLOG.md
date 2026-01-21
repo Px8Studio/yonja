@@ -7,6 +7,22 @@
 
 ## 🎉 Recent Completions
 
+### 2026-01-21: Dynamic Farm Scenario Planning System
+- ✅ **Feature:** Agrotechnological calendar with evolving conversational state
+- ✅ **Implementation:**
+  - Database: [farm_scenario_plans table](../../alembic/versions/add_farm_scenario_plans_table.py)
+  - State: [ScenarioContext in AgentState](../../src/yonca/agent/state.py#L118-L145)
+  - Prompts: [Crop-specific calendar templates](../../prompts/agro_calendar_prompts.py)
+  - Integration: [Chat settings → agent state flow](../../demo-ui/app.py#L1433-L1493)
+- ✅ **Impact:** Replicates Yonca Mobile's "Aqrotexnoloji təqvim planı" with smart yes/no questions
+- ✅ **Documentation:** [DYNAMIC-SCENARIO-PLANNING.md](DYNAMIC-SCENARIO-PLANNING.md)
+
+### 2026-01-21: Mobile App Feature Replication
+- ✅ **Feature:** Farm profile + planning settings in Chainlit UI
+- ✅ **Implementation:** [demo-ui/app.py](../../demo-ui/app.py#L1087-L1520) - Chat settings + handler
+- ✅ **Impact:** Feature parity with Yonca Mobile App (crop, region, size, soil, irrigation, planning)
+- ✅ **Documentation:** [MOBILE-APP-FEATURES-REPLICATION.md](MOBILE-APP-FEATURES-REPLICATION.md)
+
 ### 2026-01-21: Chat Profiles Activation
 - ✅ **Feature:** Expertise-based AI behavior via system prompts
 - ✅ **Implementation:** [src/yonca/agent/state.py](../../src/yonca/agent/state.py#L275-L325), [demo-ui/app.py](../../demo-ui/app.py#L672-L730)

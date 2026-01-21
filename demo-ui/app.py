@@ -132,7 +132,7 @@ from alem_persona_db import (  # noqa: E402
     save_alem_persona_to_db,
     update_persona_login_time,
 )
-from chainlit.input_widget import MultiSelect, Select, Switch  # noqa: E402
+from chainlit.input_widget import MultiSelect, NumberInput, Select, Switch  # noqa: E402
 from chainlit.types import ThreadDict  # noqa: E402
 from components.insights_dashboard import (  # noqa: E402
     render_dashboard_sidebar,
@@ -1122,18 +1122,193 @@ async def setup_chat_settings(user: cl.User | None = None):
 
     settings = await cl.ChatSettings(
         [
-            # ─────────────────────────────────────────────────────────────
+            # ═══════════════════════════════════════════════════════════════
+            # FARM PROFILE (Yonca Mobile App Fields)
+            # ═══════════════════════════════════════════════════════════════
+            Select(
+                id="crop_type",
+                label="Əsas məhsul / Primary Crop",
+                values=[
+                    # Danli (Grains)
+                    "Buğda (Wheat)",
+                    "Arpa (Barley)",
+                    "Çəltik (Rice)",
+                    "Vələmir (Oats)",
+                    "Çovdar (Rye)",
+                    # Taravaz (Vegetables)
+                    "Pomidor (Tomato)",
+                    "Xıyar (Cucumber)",
+                    "Kartof (Potato)",
+                    "Kələm (Cabbage)",
+                    "Badımcan (Eggplant)",
+                    "Bibər (Pepper)",
+                    "Soğan (Onion)",
+                    "Sarımsaq (Garlic)",
+                    # Texniki (Technical)
+                    "Pambıq (Cotton)",
+                    "Tütün (Tobacco)",
+                    "Şəkər çuğunduru (Sugar Beet)",
+                    "Günəbaxan (Sunflower)",
+                    "Qarğıdalı (Corn)",
+                    "Çay (Tea)",
+                    # Yem (Feed)
+                    "Yonca (Alfalfa)",
+                    "Gülül (Vetch)",
+                    # Meyva (Fruits)
+                    "Üzüm (Grape)",
+                    "Nar (Pomegranate)",
+                    "Gilas (Cherry)",
+                    "Alma (Apple)",
+                    "Armud (Pear)",
+                    "Heyva (Quince)",
+                    "Qoz (Walnut)",
+                    "Fındıq (Hazelnut)",
+                    "Zeytun (Olive)",
+                    "Sitrus (Citrus)",
+                    # Bostan (Melons)
+                    "Qarpız (Watermelon)",
+                    "Yemiş (Melon)",
+                    "Boranı (Pumpkin)",
+                ],
+                initial_index=0
+                if not alem_persona
+                else [
+                    "Pambıq (Cotton)",
+                    "Buğda (Wheat)",
+                    "Arpa (Barley)",
+                    "Qarğıdalı (Corn)",
+                    "Alma (Apple)",
+                    "Üzüm (Grape)",
+                ].index(alem_persona.get("crop_type", "Pambıq (Cotton)"))
+                if alem_persona.get("crop_type")
+                in ["Pambıq", "Buğda", "Arpa", "Qarğıdalı", "Alma", "Üzüm"]
+                else 0,
+                description="Təsərrüfatınızda əkin etdiyiniz əsas məhsul",
+            ),
+            Select(
+                id="region",
+                label="Region",
+                values=[
+                    "Aran",
+                    "Quba-Xaçmaz",
+                    "Şəki-Zaqatala",
+                    "Mil-Muğan",
+                    "Lənkəran-Astara",
+                    "Gəncə-Qazax",
+                    "Naxçıvan",
+                    "Qarabağ",
+                ],
+                initial_index=0 if not alem_persona else 0,
+                description="Təsərrüfatınızın yerləşdiyi iqtisadi region",
+            ),
+            NumberInput(
+                id="farm_size_ha",
+                label="Sahə (hektar) / Farm Size (ha)",
+                initial=alem_persona.get("farm_size_ha", 5.0) if alem_persona else 5.0,
+                min=0.5,
+                max=500.0,
+                step=0.5,
+                description="Təsərrüfatınızın ümumi sahəsi",
+            ),
+            Select(
+                id="experience_level",
+                label="Təcrübə səviyyəsi / Experience Level",
+                values=[
+                    "Başlanğıc / Novice",
+                    "Orta / Intermediate",
+                    "Mütəxəssis / Expert",
+                ],
+                initial_index=1
+                if not alem_persona
+                else (
+                    ["novice", "intermediate", "expert"].index(
+                        alem_persona.get("experience_level", "intermediate")
+                    )
+                ),
+                description="Kənd təsərrüfatı təcrübəniz",
+            ),
+            Select(
+                id="soil_type",
+                label="Torpaq növü / Soil Type",
+                values=[
+                    "Gilli / Clay",
+                    "Qumlu / Sandy",
+                    "Lopam / Loam",
+                    "Şoranlı / Saline",
+                ],
+                initial_index=2,
+                description="Təsərrüfatınızın əsas torpaq növü",
+            ),
+            Select(
+                id="irrigation_type",
+                label="Suvarma sistemi / Irrigation System",
+                values=[
+                    "Damcı / Drip",
+                    "Pivot",
+                    "Şırım / Flood",
+                    "Yağış / Rainfed",
+                ],
+                initial_index=0,
+                description="İstifadə etdiyiniz suvarma üsulu",
+            ),
+            # ═══════════════════════════════════════════════════════════════
+            # PLANNING & ACTIONS (Yonca Planner Features)
+            # ═══════════════════════════════════════════════════════════════
+            Select(
+                id="planning_month",
+                label="Planlaşdırma ayı / Planning Month",
+                values=[
+                    "Yanvar / January",
+                    "Fevral / February",
+                    "Mart / March",
+                    "Aprel / April",
+                    "May / May",
+                    "İyun / June",
+                    "İyul / July",
+                    "Avqust / August",
+                    "Sentyabr / September",
+                    "Oktyabr / October",
+                    "Noyabr / November",
+                    "Dekabr / December",
+                ],
+                initial_index=0,  # Current month (January)
+                description="Hansı ay üçün planlaşdırma görmək istəyirsiniz?",
+            ),
+            MultiSelect(
+                id="action_categories",
+                label="Fəaliyyət kateqoriyaları / Action Categories",
+                values=[
+                    "Əkin / Planting",
+                    "Suvarma / Irrigation",
+                    "Gübrələmə / Fertilization",
+                    "Zərərverici mübarizə / Pest Control",
+                    "Məhsul yığımı / Harvest",
+                    "Torpaq işləri / Soil Work",
+                    "Budama / Pruning",
+                    "İqlim monitorinqi / Weather Monitoring",
+                ],
+                initial_value=[
+                    "Əkin / Planting",
+                    "Suvarma / Irrigation",
+                    "Gübrələmə / Fertilization",
+                ],
+                description="Hansı fəaliyyətlər üzrə məsləhət almaq istəyirsiniz?",
+            ),
+            # ═══════════════════════════════════════════════════════════════
             # EXPERTISE AREAS — Multi-select with smart defaults
-            # ─────────────────────────────────────────────────────────────
+            # ═══════════════════════════════════════════════════════════════
             MultiSelect(
                 id="expertise_areas",
-                label="🧠 Ekspertiza sahələri",
+                label="Ekspertiza sahələri / Expertise Areas",
                 values=[label for _, label in expertise_values],
                 initial_value=[
                     label for area_id, label in expertise_values if area_id in expertise_areas
                 ],
                 description="Hansı sahələrdə məsləhət almaq istəyirsiniz? (Birdən çox seçə bilərsiniz)",
             ),
+            # ═══════════════════════════════════════════════════════════════
+            # UI PREFERENCES
+            # ═══════════════════════════════════════════════════════════════
             Select(
                 id="language",
                 label=AZ_STRINGS["settings_language"],
@@ -1211,15 +1386,46 @@ async def on_settings_update(settings: dict):
     If data persistence is enabled, settings are ALSO saved to database
     so they persist across sessions.
 
-    Special handling for expertise_areas:
-    - Converts labels back to IDs for internal use
-    - Updates system prompt based on selected areas
+    Special handling for:
+    - expertise_areas: Converts labels back to IDs for internal use
+    - Farm profile fields: Updates agent context with crop/region/size
+    - Planning fields: Triggers month-by-month action generation
     """
     user: cl.User | None = cl.user_session.get("user")
 
-    # ─────────────────────────────────────────────────────────────
-    # PROCESS EXPERTISE AREAS — Convert labels to IDs
-    # ─────────────────────────────────────────────────────────────
+    # ═══════════════════════════════════════════════════════════════
+    # FARM PROFILE FIELDS — Extract and normalize
+    # ═══════════════════════════════════════════════════════════════
+    crop_type_raw = settings.get("crop_type", "Pambıq (Cotton)")
+    crop_type = crop_type_raw.split("(")[0].strip()  # "Pambıq (Cotton)" → "Pambıq"
+
+    region = settings.get("region", "Aran")
+    farm_size_ha = settings.get("farm_size_ha", 5.0)
+
+    experience_raw = settings.get("experience_level", "Orta / Intermediate")
+    experience = experience_raw.split("/")[0].strip().lower()  # "Orta / Intermediate" → "orta"
+    # Map Azerbaijani experience to English keys
+    experience_map = {"başlanğıc": "novice", "orta": "intermediate", "mütəxəssis": "expert"}
+    experience_level = experience_map.get(experience, "intermediate")
+
+    soil_type_raw = settings.get("soil_type", "Lopam / Loam")
+    soil_type = soil_type_raw.split("/")[0].strip()
+
+    irrigation_raw = settings.get("irrigation_type", "Damcı / Drip")
+    irrigation_type = irrigation_raw.split("/")[0].strip()
+
+    # ═══════════════════════════════════════════════════════════════
+    # PLANNING FIELDS — Extract month and action categories
+    # ═══════════════════════════════════════════════════════════════
+    planning_month_raw = settings.get("planning_month", "Yanvar / January")
+    planning_month = planning_month_raw.split("/")[1].strip()  # "Yanvar / January" → "January"
+
+    action_categories_raw = settings.get("action_categories", [])
+    action_categories = [cat.split("/")[0].strip() for cat in action_categories_raw]
+
+    # ═══════════════════════════════════════════════════════════════
+    # EXPERTISE AREAS — Convert labels to IDs
+    # ═══════════════════════════════════════════════════════════════
     raw_expertise = settings.get("expertise_areas", [])
 
     # Convert labels to IDs
@@ -1230,27 +1436,143 @@ async def on_settings_update(settings: dict):
         elif label in EXPERTISE_AREAS:  # Already an ID
             expertise_ids.append(label)
 
-    # Store normalized settings with IDs
+    # Store normalized settings with IDs and parsed fields
     normalized_settings = {
         **settings,
         "expertise_areas": expertise_ids,
+        "crop_type_clean": crop_type,
+        "experience_level_clean": experience_level,
+        "soil_type_clean": soil_type,
+        "irrigation_type_clean": irrigation_type,
+        "planning_month_clean": planning_month,
+        "action_categories_clean": action_categories,
     }
 
     logger.info(
         "settings_updated",
         session_id=cl.user_session.get("id"),
         user=user.identifier if user else "anonymous",
-        raw_expertise=raw_expertise,
+        farm_profile={
+            "crop": crop_type,
+            "region": region,
+            "size_ha": farm_size_ha,
+            "experience": experience_level,
+            "soil": soil_type,
+            "irrigation": irrigation_type,
+        },
+        planning={
+            "month": planning_month,
+            "categories": action_categories,
+        },
         expertise_ids=expertise_ids,
-        settings={k: v for k, v in normalized_settings.items() if k != "expertise_areas"},
     )
 
     # Update session with normalized settings
     cl.user_session.set("chat_settings", normalized_settings)
 
-    # Build combined system prompt based on expertise areas
-    combined_prompt = build_combined_system_prompt(expertise_ids)
-    cl.user_session.set("profile_prompt", combined_prompt)
+    # ═══════════════════════════════════════════════════════════════
+    # BUILD AGROTECHNOLOGICAL CALENDAR PROMPT
+    # ═══════════════════════════════════════════════════════════════
+    # Import agro calendar prompt builder
+    import sys
+    from pathlib import Path
+
+    prompts_path = Path(__file__).parent.parent / "prompts"
+    if str(prompts_path) not in sys.path:
+        sys.path.insert(0, str(prompts_path))
+
+    try:
+        from agro_calendar_prompts import build_agro_calendar_prompt
+
+        # Map crop to category (matches YONCA Agrotechnological Calendar standard)
+        crop_to_category = {
+            # Danli (Grains)
+            "Buğda": "Danli",
+            "Arpa": "Danli",
+            "Çəltik": "Danli",
+            "Vələmir": "Danli",
+            "Çovdar": "Danli",
+            # Taravaz (Vegetables)
+            "Pomidor": "Taravaz",
+            "Xıyar": "Taravaz",
+            "Kartof": "Taravaz",
+            "Kələm": "Taravaz",
+            "Badımcan": "Taravaz",
+            "Bibər": "Taravaz",
+            "Soğan": "Taravaz",
+            "Sarımsaq": "Taravaz",
+            # Texniki (Technical/Industrial)
+            "Pambıq": "Texniki",
+            "Tütün": "Texniki",
+            "Şəkər çuğunduru": "Texniki",
+            "Günəbaxan": "Texniki",
+            "Qarğıdalı": "Texniki",
+            "Çay": "Texniki",
+            # Yem (Feed/Fodder)
+            "Yonca": "Yem",
+            "Gülül": "Yem",
+            # Meyva (Fruits)
+            "Üzüm": "Meyva",
+            "Nar": "Meyva",
+            "Gilas": "Meyva",
+            "Alma": "Meyva",
+            "Armud": "Meyva",
+            "Heyva": "Meyva",
+            "Qoz": "Meyva",
+            "Fındıq": "Meyva",
+            "Zeytun": "Meyva",
+            "Sitrus": "Meyva",
+            # Bostan (Melons/Gourds)
+            "Qarpız": "Bostan",
+            "Yemiş": "Bostan",
+            "Boranı": "Bostan",
+        }
+
+        crop_category = crop_to_category.get(crop_type, "Danli")
+
+        # Build scenario for prompt generation
+        scenario = {
+            "crop_category": crop_category,
+            "specific_crop": crop_type,
+            "region": region,
+            "current_month": planning_month,
+            "farm_size_ha": farm_size_ha,
+            "experience_level": experience_level,
+            "soil_type": soil_type,
+            "irrigation_type": irrigation_type,
+            "action_categories": action_categories,
+            "conversation_stage": cl.user_session.get("conversation_stage", "profile_setup"),
+        }
+
+        # Generate agrotechnological calendar prompt
+        agro_prompt = build_agro_calendar_prompt(scenario)
+
+        # Combine with expertise-based prompts
+        combined_prompt = build_combined_system_prompt(expertise_ids)
+        combined_prompt += f"\n\n{agro_prompt}"
+
+        # Store scenario context in session for LangGraph state
+        cl.user_session.set("scenario_context", scenario)
+        cl.user_session.set("profile_prompt", combined_prompt)
+
+    except ImportError:
+        logger.warning("agro_calendar_prompts not found, using basic farm context")
+        # Fallback to basic farm context
+        combined_prompt = build_combined_system_prompt(expertise_ids)
+        farm_context = f"""
+
+FARM PROFILE:
+- Primary Crop: {crop_type}
+- Region: {region}
+- Farm Size: {farm_size_ha} ha
+- Experience: {experience_level}
+- Soil Type: {soil_type}
+- Irrigation: {irrigation_type}
+
+When providing recommendations, consider these farm-specific details.
+"""
+        combined_prompt += farm_context
+        cl.user_session.set("profile_prompt", combined_prompt)
 
     # Persist settings to database if user is authenticated
     if user:
@@ -1258,27 +1580,47 @@ async def on_settings_update(settings: dict):
         if saved:
             logger.info("settings_persisted", user=user.identifier)
 
-    # Acknowledge the change to user with expertise summary
+    # ═══════════════════════════════════════════════════════════════
+    # PLANNING TRIGGER — Generate month-by-month actions if requested
+    # ═══════════════════════════════════════════════════════════════
+    if action_categories:
+        # This will be integrated with rules engine to generate monthly plans
+        # For now, log the request
+        logger.info(
+            "planning_requested",
+            month=planning_month,
+            categories=action_categories,
+            crop=crop_type,
+            region=region,
+        )
+
+    # Acknowledge the change to user with comprehensive summary
     language = settings.get("language", "Azərbaycanca")
 
+    # Build summary message
     if expertise_ids:
         expertise_names = [EXPERTISE_AREAS.get(e, e) for e in expertise_ids]
         expertise_summary = ", ".join(expertise_names)
     else:
         expertise_summary = "Ümumi"
 
+    farm_summary = f"{crop_type} • {region} • {farm_size_ha} ha"
+
     if language == "English":
-        await cl.Message(
-            content=f"✅ Settings updated. Expertise areas: {expertise_summary}"
-        ).send()
+        msg = f"Settings updated\n\n**Farm Profile:** {farm_summary}\n**Expertise:** {expertise_summary}"
+        if action_categories:
+            msg += f"\n**Planning:** {planning_month} - {len(action_categories)} categories"
+        await cl.Message(content=msg).send()
     elif language == "Русский":
-        await cl.Message(
-            content=f"✅ Настройки обновлены. Области экспертизы: {expertise_summary}"
-        ).send()
+        msg = f"Настройки обновлены\n\n**Профиль фермы:** {farm_summary}\n**Области экспертизы:** {expertise_summary}"
+        if action_categories:
+            msg += f"\n**Планирование:** {planning_month} - {len(action_categories)} категорий"
+        await cl.Message(content=msg).send()
     else:
-        await cl.Message(
-            content=f"✅ Parametrlər yeniləndi. Ekspertiza sahələri: {expertise_summary}"
-        ).send()
+        msg = f"Parametrlər yeniləndi\n\n**Təsərrüfat profili:** {farm_summary}\n**Ekspertiza sahələri:** {expertise_summary}"
+        if action_categories:
+            msg += f"\n**Planlaşdırma:** {planning_month} - {len(action_categories)} kateqoriya"
+        await cl.Message(content=msg).send()
 
 
 # ============================================
@@ -1808,11 +2150,20 @@ async def on_chat_start():
 
             # PART 1: Render the activity dashboard in sidebar (non-intrusive)
             try:
-                await render_dashboard_sidebar(user_insights)
+                # Get persona and expertise for ALEM mirror
+                alem_persona_dict = cl.user_session.get("alem_persona")
+                expertise_areas = cl.user_session.get("expertise_areas")
+
+                await render_dashboard_sidebar(
+                    user_insights,
+                    alem_persona=alem_persona_dict,
+                    expertise_areas=expertise_areas,
+                )
                 logger.info(
                     "dashboard_sidebar_rendered",
                     user_id=user_id,
                     total_interactions=user_insights.total_interactions,
+                    has_persona=bool(alem_persona_dict),
                 )
             except Exception as e:
                 logger.warning("dashboard_sidebar_render_failed", error=str(e), exc_info=True)
@@ -2012,12 +2363,16 @@ async def on_message(message: cl.Message):
         # Prepare initial state with profile-specific system prompt
         from yonca.agent.state import create_initial_state
 
+        # Get scenario context from session
+        scenario_context = cl.user_session.get("scenario_context", None)
+
         initial_state = create_initial_state(
             thread_id=thread_id,
             user_input=message.content,
             user_id=user_id,
             language="az",
             system_prompt_override=profile_prompt if profile_prompt else None,
+            scenario_context=scenario_context,
         )
 
         # Stream response from LangGraph

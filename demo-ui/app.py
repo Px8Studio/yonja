@@ -122,6 +122,7 @@ from alem_persona_db import (  # noqa: E402
     update_persona_login_time,
 )
 from chainlit.input_widget import MultiSelect, Select, Switch  # noqa: E402
+from chainlit.types import ThreadDict  # noqa: E402
 from components.insights_dashboard import (  # noqa: E402
     render_dashboard_sidebar,
 )
@@ -1739,7 +1740,6 @@ async def on_chat_start():
     await cl.Message(
         content=model_summary,
         author="system",
-        # disable_feedback not supported in this Chainlit version
     ).send()
 
     # Initialize LangGraph agent (Direct Mode - Simplified)
@@ -1752,6 +1752,29 @@ async def on_chat_start():
         user_id=user_id,
         farm_id=farm_id,
     )
+
+    # ─────────────────────────────────────────────────────────────
+    # THREAD METADATA PERSISTENCE (For Resume Functionality)
+    # ─────────────────────────────────────────────────────────────
+    # Store session state in thread metadata so it can be restored on resume
+    data_layer = get_data_layer()
+    if data_layer and user:
+        try:
+            # Get current thread (auto-created by Chainlit on first message)
+            # We'll update its metadata on first message or here if possible
+            thread_metadata = {
+                "farm_id": farm_id,
+                "expertise_areas": default_expertise,
+                "alem_persona_fin": alem_persona_dict.get("fin_code")
+                if alem_persona_dict
+                else None,
+                "language": "az",
+                "active_model": active_model,
+            }
+            cl.user_session.set("thread_metadata", thread_metadata)
+            logger.debug("thread_metadata_prepared", metadata_keys=list(thread_metadata.keys()))
+        except Exception as e:
+            logger.warning("thread_metadata_preparation_failed", error=str(e))
 
     # ─────────────────────────────────────────────────────────────
     # WELCOME EXPERIENCE (Two-Part Strategy)
@@ -1791,6 +1814,103 @@ async def on_chat_start():
     # PART 2: Send the enhanced dashboard welcome message (main chat)
     # This is the PRIMARY user-facing welcome experience
     await send_dashboard_welcome(user)
+
+
+# ============================================
+# THREAD RESUME (Critical for UX!)
+# ============================================
+# This makes the thread list in sidebar functional.
+# When user refreshes browser and clicks "Resume" → this restores session state.
+
+
+@cl.on_chat_resume
+async def on_chat_resume(thread: ThreadDict):
+    """Resume existing thread after browser refresh.
+
+    This is THE MISSING PIECE that makes threads work in UI!
+    Without this, clicking "Resume Thread" does nothing.
+
+    Args:
+        thread: Contains id, name, userId, metadata, tags, createdAt
+    """
+    logger.info(
+        "thread_resumed",
+        thread_id=thread["id"],
+        user_id=thread.get("userId"),
+        thread_name=thread.get("name"),
+    )
+
+    # 1. Get authenticated user
+    user: cl.User | None = cl.user_session.get("user")
+    user_id = user.identifier if user else thread.get("userId", "anonymous")
+    user_email = user.metadata.get("email") if user and user.metadata else None
+
+    # 2. Restore session variables from thread metadata
+    metadata = thread.get("metadata", {})
+    cl.user_session.set("thread_id", thread["id"])
+    cl.user_session.set("user_id", user_id)
+    cl.user_session.set("user_email", user_email)
+    cl.user_session.set("farm_id", metadata.get("farm_id", "demo_farm_001"))
+
+    # 3. Restore ALEM persona
+    if user and user_email:
+        from alem_persona_db import load_alem_persona_from_db, update_persona_login_time
+
+        existing_persona_dict = await load_alem_persona_from_db(email=user_email)
+        if existing_persona_dict:
+            cl.user_session.set("alem_persona", existing_persona_dict)
+            await update_persona_login_time(email=user_email)
+            logger.info("persona_restored", fin_code=existing_persona_dict.get("fin_code"))
+        else:
+            logger.warning("persona_not_found_on_resume", email=user_email)
+
+    # 4. Restore chat settings
+    from data_layer import load_user_settings
+
+    user_settings = await load_user_settings(user)
+    cl.user_session.set("user_preferences", user_settings)
+
+    # 5. Restore expertise areas (from metadata or regenerate from persona)
+    alem_persona_dict = cl.user_session.get("alem_persona")
+    expertise = metadata.get("expertise_areas")
+    if not expertise and alem_persona_dict:
+        # Regenerate from persona if not in metadata
+        expertise = detect_expertise_from_persona(alem_persona_dict)
+    if not expertise:
+        expertise = ["general"]
+    cl.user_session.set("expertise_areas", expertise)
+
+    # Build system prompt from expertise
+    profile_prompt = build_combined_system_prompt(expertise)
+    cl.user_session.set("profile_prompt", profile_prompt)
+
+    # 6. Get active model metadata
+    active_model = resolve_active_model()
+    cl.user_session.set("active_model", active_model)
+
+    # 7. Reinitialize LangGraph agent with SAME thread_id
+    # This allows LangGraph to load conversation history from checkpoint
+    checkpointer = await get_app_checkpointer()
+    agent = compile_agent_graph(checkpointer=checkpointer)
+    cl.user_session.set("agent", agent)
+
+    # 8. Restore chat settings UI
+    await setup_chat_settings(user=user)
+
+    logger.info(
+        "thread_resume_complete",
+        thread_id=thread["id"],
+        user_id=user_id,
+        has_persona=bool(alem_persona_dict),
+        has_settings=bool(user_settings),
+        expertise=expertise,
+    )
+
+    # 9. Send a subtle "conversation resumed" indicator
+    await cl.Message(
+        content="🔄 Söhbət bərpa olundu. Sualınızı davam etdirə bilərsiniz.",
+        author="system",
+    ).send()
 
 
 # ============================================

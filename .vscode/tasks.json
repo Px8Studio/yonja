@@ -324,6 +324,23 @@
       "args": ["exec", "yonca-ollama", "ollama", "list"],
       "problemMatcher": [],
       "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "🌿 Yonca AI: 📊 Master Logs",
+      "detail": "Unified log stream: All Docker services (Postgres + Redis + Ollama + Langfuse)",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["-f", "docker-compose.local.yml", "logs", "-f", "--tail=50", "--timestamps"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": true,
+        "showReuseMessage": false
+      }
     }
   ],
   "inputs": [

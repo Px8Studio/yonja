@@ -37,6 +37,7 @@ import engineio
 
 engineio.payload.Payload.max_decode_packets = 500
 
+import json  # noqa: E402
 import os  # noqa: E402
 import sys  # noqa: E402
 from pathlib import Path  # noqa: E402
@@ -1847,6 +1848,13 @@ async def on_chat_resume(thread: ThreadDict):
 
     # 2. Restore session variables from thread metadata
     metadata = thread.get("metadata", {})
+    # Chainlit can store thread metadata as a JSON string in some setups.
+    # Normalize to dict to avoid AttributeError on .get()
+    if isinstance(metadata, str):
+        try:
+            metadata = json.loads(metadata) if metadata.strip() else {}
+        except Exception:
+            metadata = {}
     cl.user_session.set("thread_id", thread["id"])
     cl.user_session.set("user_id", user_id)
     cl.user_session.set("user_email", user_email)

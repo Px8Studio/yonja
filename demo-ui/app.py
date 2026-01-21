@@ -1967,6 +1967,7 @@ async def on_message(message: cl.Message):
         user_id=user_id,
         message_length=len(message.content),
         has_profile_prompt=bool(profile_prompt),
+        expertise_areas=cl.user_session.get("expertise_areas", []),
     )
 
     # Create response message
@@ -2008,7 +2009,7 @@ async def on_message(message: cl.Message):
             cb = cl.LangchainCallbackHandler()
             config["callbacks"] = [cb]
 
-        # Prepare initial state
+        # Prepare initial state with profile-specific system prompt
         from yonca.agent.state import create_initial_state
 
         initial_state = create_initial_state(
@@ -2016,6 +2017,7 @@ async def on_message(message: cl.Message):
             user_input=message.content,
             user_id=user_id,
             language="az",
+            system_prompt_override=profile_prompt if profile_prompt else None,
         )
 
         # Stream response from LangGraph

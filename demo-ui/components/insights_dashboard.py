@@ -32,38 +32,36 @@ def format_response_metadata(metadata: ResponseMetadata) -> str:
     """
     # Build thinking process description
     if metadata.nodes_executed:
-        thinking_steps = " → ".join(metadata.nodes_executed)
+        _thinking_steps = " → ".join(metadata.nodes_executed)
     else:
-        thinking_steps = "Direct response"
+        _thinking_steps = "Direct response"
 
     # Determine speed indicator
     if metadata.latency_ms < 500:
         speed_emoji = "⚡"
-        speed_label = "Very Fast"
+        _speed_label = "Very Fast"
     elif metadata.latency_ms < 1500:
         speed_emoji = "🚀"
-        speed_label = "Fast"
+        _speed_label = "Fast"
     elif metadata.latency_ms < 3000:
         speed_emoji = "⏱️"
-        speed_label = "Normal"
+        _speed_label = "Normal"
     else:
         speed_emoji = "🐢"
-        speed_label = "Slow"
+        _speed_label = "Slow"
 
     # Format the metadata block
     metadata_text = f"""
 <details>
-<summary>📊 <em>Response Details</em></summary>
+<summary>📊 <em>Details</em></summary>
 
-| Metric | Value |
-|:-------|:------|
-| {speed_emoji} **Response Time** | {metadata.latency_display} ({speed_label}) |
-| 📝 **Tokens Used** | {metadata.tokens_display} |
-| 🤖 **Model** | `{metadata.model}` |
-| 💰 **Cost** | {metadata.cost_display} |
-| 🧠 **Thinking Process** | {thinking_steps} |
+| | |
+|:--|:--|
+| {speed_emoji} Time | {metadata.latency_display} |
+| 📝 Tokens | {metadata.tokens_display} |
+| 🤖 Model | `{metadata.model}` |
 
-<sub>🔗 [View full trace](http://localhost:3001/trace/{metadata.trace_id})</sub>
+<sub>[Trace](http://localhost:3001/trace/{metadata.trace_id})</sub>
 
 </details>
 """
@@ -256,11 +254,7 @@ def format_dashboard_summary(insights: UserInsights) -> str:
     """
     if insights.total_interactions == 0:
         return """
-## 📊 Your AI Assistant Usage
-
-*No interactions recorded yet.*
-
-Start chatting to see your usage statistics here!
+*No activity yet — start chatting!*
 """
 
     # Calculate time since first interaction
@@ -274,9 +268,9 @@ Start chatting to see your usage statistics here!
 
     # Format average latency
     if insights.avg_latency_ms < 1000:
-        latency_display = f"{insights.avg_latency_ms}ms"
+        _latency_display = f"{insights.avg_latency_ms}ms"
     else:
-        latency_display = f"{insights.avg_latency_ms / 1000:.1f}s"
+        _latency_display = f"{insights.avg_latency_ms / 1000:.1f}s"
 
     # Streak emoji
     if insights.streak_days >= 7:
@@ -287,18 +281,14 @@ Start chatting to see your usage statistics here!
         streak_emoji = "📅"
 
     summary = f"""
-## 📊 Your AI Assistant Usage
-
 | Metric | Value |
 |:-------|------:|
-| 💬 **Total Conversations** | {insights.total_sessions:,} |
-| 🔄 **Total Interactions** | {insights.total_interactions:,} |
-| 📝 **Total Tokens** | {insights.total_tokens:,} |
-| ⚡ **Avg Response Time** | {latency_display} |
-| {streak_emoji} **Current Streak** | {insights.streak_days} days |
-| 📆 **Active Days** | {insights.active_days} |
+| 💬 Conversations | {insights.total_sessions:,} |
+| 🔄 Interactions | {insights.total_interactions:,} |
+| 📝 Tokens | {insights.total_tokens:,} |
+| {streak_emoji} Streak | {insights.streak_days}d |
 
-<sub>Member since: {member_since}</sub>
+<sub>Since {member_since}</sub>
 """
     return summary.strip()
 
@@ -392,15 +382,12 @@ async def render_dashboard_sidebar(insights: UserInsights) -> None:
 
     # 2. Activity heatmap
     if insights.daily_activity:
-        heatmap = create_activity_heatmap(insights.daily_activity, title="🗓️ Last 90 Days")
+        heatmap = create_activity_heatmap(insights.daily_activity, title="")
         elements.append(heatmap)
 
     # 3. Legend for heatmap
     legend_text = """
-<sub>
-🟫 Less activity → 🟩 More activity
-<br/>Click any day in Langfuse for details
-</sub>
+<sub>🟫 Less → 🟩 More</sub>
 """
     elements.append(
         cl.Text(
@@ -412,7 +399,7 @@ async def render_dashboard_sidebar(insights: UserInsights) -> None:
 
     # Set sidebar
     await cl.ElementSidebar.set_elements(elements)
-    await cl.ElementSidebar.set_title("📊 Activity Dashboard")
+    await cl.ElementSidebar.set_title("📊 Your Activity")
 
 
 async def update_dashboard_with_day(
@@ -451,7 +438,7 @@ async def update_dashboard_with_day(
 
     # Set sidebar
     await cl.ElementSidebar.set_elements(elements)
-    await cl.ElementSidebar.set_title("📊 Activity Dashboard")
+    await cl.ElementSidebar.set_title("📊 Your Activity")
 
 
 # ============================================================

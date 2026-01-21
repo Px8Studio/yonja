@@ -278,6 +278,7 @@ def create_initial_state(
     user_id: str | None = None,
     session_id: str | None = None,
     language: str = "az",
+    system_prompt_override: str | None = None,
 ) -> AgentState:
     """Create initial state for a new conversation turn.
 
@@ -287,15 +288,27 @@ def create_initial_state(
         user_id: Authenticated user ID (optional)
         session_id: API session ID (optional)
         language: Response language (default Azerbaijani)
+        system_prompt_override: Custom system prompt for profile-specific behavior (optional)
 
     Returns:
         Initialized AgentState ready for graph execution.
     """
+    # Build initial human message
+    human_msg = HumanMessage(content=user_input)
+
+    # If system prompt override provided, inject it as a system message
+    messages = []
+    if system_prompt_override:
+        from langchain_core.messages import SystemMessage
+
+        messages.append(SystemMessage(content=system_prompt_override))
+    messages.append(human_msg)
+
     return AgentState(
         thread_id=thread_id,
         user_id=user_id,
         session_id=session_id,
-        messages=[HumanMessage(content=user_input)],
+        messages=messages,
         current_input=user_input,
         current_response=None,
         routing=None,

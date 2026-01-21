@@ -164,11 +164,15 @@ alert_style = "classic"
 # Specify additional attributes for custom JS file
 # custom_js_attributes = "async type = \"module\""
 
-# Custom login page image - agricultural theme
-# Using Unsplash for a beautiful farm/agricultural background
-login_page_image = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1920&q=80"
+# Custom login page image - DISABLED for minimal re-auth experience
+# The default Chainlit login page with heavy images creates visual confusion
+# during session refresh. Using CSS instead for styling (see custom.css).
+# Uncomment to enable farm background:
+# login_page_image = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1920&q=80"
+login_page_image = ""
 
 # Custom login page image filter (Tailwind internal filters)
+# These only apply when login_page_image is set
 login_page_image_filter = "brightness-75"
 login_page_image_dark_filter = "brightness-50"
 

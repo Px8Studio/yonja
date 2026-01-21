@@ -753,3 +753,146 @@ button.primary:hover {
 /* ============================================
  * END Spinners
  * ============================================ */
+
+/* ============================================
+ * LOGIN PAGE (OAuth Re-auth) — Minimal Design
+ * ============================================
+ * This styles Chainlit's built-in OAuth login page.
+ * The page appears during:
+ *   1. First visit (needs authentication)
+ *   2. Session expiry (re-authentication)
+ *   3. Page refresh (token validation)
+ *
+ * Design Philosophy:
+ *   - Minimal, non-intrusive
+ *   - Quick visual → auto-redirect
+ *   - ALEM branding maintained
+ * ============================================ */
+
+/* Login page container — clean white background instead of busy image */
+.cl-login-page,
+[data-testid="login-page"] {
+    background: linear-gradient(135deg, #f8faf8 0%, #e8f5e9 50%, #d4edda 100%) !important;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Hide the background image entirely for faster perception */
+.cl-login-page::before,
+[data-testid="login-page"]::before {
+    display: none !important;
+}
+
+/* Login card — Liquid Glass aesthetic */
+.cl-login-card,
+[data-testid="login-card"] {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(45, 90, 39, 0.15) !important;
+    border-radius: 24px !important;
+    box-shadow: 0 20px 60px rgba(45, 90, 39, 0.12) !important;
+    padding: 40px !important;
+    max-width: 400px !important;
+    text-align: center;
+}
+
+/* Login title — ALEM branding */
+.cl-login-title,
+[data-testid="login-title"] {
+    color: var(--yonca-green-dark) !important;
+    font-size: 1.75rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 8px !important;
+}
+
+/* Login subtitle — brief message */
+.cl-login-subtitle,
+[data-testid="login-subtitle"] {
+    color: var(--yonca-charcoal) !important;
+    font-size: 0.95rem !important;
+    opacity: 0.8;
+    margin-bottom: 24px !important;
+}
+
+/* OAuth buttons — Green theme */
+.cl-login-button,
+[data-testid="oauth-button"],
+button[class*="oauth"] {
+    background: linear-gradient(135deg, var(--yonca-green-primary) 0%, var(--yonca-green-dark) 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 14px 28px !important;
+    font-weight: 500 !important;
+    font-size: 1rem !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 15px rgba(45, 90, 39, 0.25) !important;
+    cursor: pointer;
+}
+
+.cl-login-button:hover,
+[data-testid="oauth-button"]:hover,
+button[class*="oauth"]:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(45, 90, 39, 0.35) !important;
+}
+
+/* Loading state during OAuth redirect */
+.cl-login-loading,
+[data-testid="login-loading"] {
+    color: var(--yonca-green-primary) !important;
+}
+
+/* Hide confusing elements on login page */
+.cl-login-page .cl-header,
+[data-testid="login-page"] header {
+    display: none !important;
+}
+
+/* Dark mode login page */
+.dark .cl-login-page,
+.dark [data-testid="login-page"] {
+    background: linear-gradient(135deg, #1a1f1a 0%, #1f2937 50%, #1a2e1a 100%) !important;
+}
+
+.dark .cl-login-card,
+.dark [data-testid="login-card"] {
+    background: var(--glass-bg-dark) !important;
+    border: 1px solid var(--glass-border-dark) !important;
+}
+
+.dark .cl-login-title,
+.dark [data-testid="login-title"] {
+    color: var(--yonca-green-light) !important;
+}
+
+.dark .cl-login-subtitle,
+.dark [data-testid="login-subtitle"] {
+    color: #e0e0e0 !important;
+}
+
+/* ============================================
+ * Session Refresh Overlay — Quick Loading State
+ * ============================================
+ * When the page refreshes and needs to re-validate,
+ * show a minimal loading state instead of full login page.
+ * ============================================ */
+
+/* Add subtle loading animation */
+@keyframes session-pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+.cl-login-loading .cl-spinner,
+[data-testid="login-loading"] [class*="spinner"] {
+    animation: session-pulse 1.2s ease-in-out infinite;
+}
+
+/* Make the loading text more reassuring */
+.cl-login-loading-text::after {
+    content: " 🌿";
+}

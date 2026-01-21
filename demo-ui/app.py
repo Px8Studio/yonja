@@ -1739,7 +1739,7 @@ async def on_chat_start():
     await cl.Message(
         content=model_summary,
         author="system",
-        disable_feedback=True,
+        # disable_feedback not supported in this Chainlit version
     ).send()
 
     # Initialize LangGraph agent (Direct Mode - Simplified)

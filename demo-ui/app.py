@@ -326,6 +326,35 @@ _checkpointer = None
 _api_client: YoncaClient | None = None
 
 
+def resolve_active_model() -> dict:
+    """Return a single source of truth for the active model metadata."""
+    integration_mode = demo_settings.integration_mode.lower()
+    provider = demo_settings.llm_provider.lower()
+
+    if integration_mode == "api":
+        return {
+            "provider": "yonca-api",
+            "model": "server_default",
+            "location": "cloud",
+            "integration_mode": "api",
+            "source": "fastapi",
+        }
+
+    location = "local" if provider == "ollama" else "cloud"
+    base_url = (
+        demo_settings.ollama_base_url if provider == "ollama" else "https://api.groq.com/openai/v1"
+    )
+
+    return {
+        "provider": provider,
+        "model": demo_settings.ollama_model,
+        "location": location,
+        "integration_mode": integration_mode,
+        "source": "langgraph",
+        "base_url": base_url,
+    }
+
+
 async def get_app_checkpointer():
     """Get or create the checkpointer singleton (async) - for direct mode.
 
@@ -1698,6 +1727,21 @@ async def on_chat_start():
     user_settings = await setup_chat_settings(user=user)
     cl.user_session.set("user_preferences", user_settings)
 
+    # Capture and display the active model for this session
+    active_model = resolve_active_model()
+    cl.user_session.set("active_model", active_model)
+    model_summary = (
+        f"Model: **{active_model['provider']}** / {active_model['model']}"
+        f" ({active_model['location']})"
+    )
+    if active_model.get("base_url"):
+        model_summary += f"\nEndpoint: {active_model['base_url']}"
+    await cl.Message(
+        content=model_summary,
+        author="system",
+        disable_feedback=True,
+    ).send()
+
     # Initialize LangGraph agent (Direct Mode - Simplified)
     checkpointer = await get_app_checkpointer()
     agent = compile_agent_graph(checkpointer=checkpointer)
@@ -1790,6 +1834,7 @@ async def on_message(message: cl.Message):
         # DIRECT MODE — Native LangGraph Integration (Simplified)
         # ═══════════════════════════════════════════════════════
         agent = cl.user_session.get("agent")
+        model_info = cl.user_session.get("active_model") or resolve_active_model()
 
         if not agent:
             logger.error("agent_not_initialized")
@@ -1803,7 +1848,15 @@ async def on_message(message: cl.Message):
         config: RunnableConfig = {
             "configurable": {
                 "thread_id": thread_id,
-            }
+            },
+            "metadata": {
+                "model": model_info.get("model"),
+                "provider": model_info.get("provider"),
+                "location": model_info.get("location"),
+                "integration_mode": model_info.get("integration_mode"),
+                "source": model_info.get("source"),
+                "base_url": model_info.get("base_url"),
+            },
         }
 
         # Add Chainlit callback for native step visualization

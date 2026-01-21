@@ -1,0 +1,4 @@
+# Enforce consistent line endings
+*.ps1          text eol=crlf
+*.py           text eol=lf
+.secrets.baseline text eol=lf

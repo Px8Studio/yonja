@@ -23,8 +23,9 @@
       "type": "shell",
       "command": "pwsh",
       "args": ["-File", "${workspaceFolder}/scripts/pre-start-checks.ps1"],
+      "isBackground": true,
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "shared", "clear": true }
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
     },
     {
       "label": "yonca:cleanup",

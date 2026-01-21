@@ -1746,19 +1746,18 @@ async def on_chat_start():
     user_settings = await setup_chat_settings(user=user)
     cl.user_session.set("user_preferences", user_settings)
 
-    # Capture and display the active model for this session
+    # Capture the active model for this session (stored for logging, not displayed to user)
     active_model = resolve_active_model()
     cl.user_session.set("active_model", active_model)
-    model_summary = (
-        f"Model: **{active_model['provider']}** / {active_model['model']}"
-        f" ({active_model['location']})"
+    # NOTE: Model info is intentionally NOT displayed to users
+    # It's technical debug info that confuses the welcome experience
+    # Developers can see it in startup banner or via /debug endpoint
+    logger.debug(
+        "active_model_configured",
+        provider=active_model.get("provider"),
+        model=active_model.get("model"),
+        location=active_model.get("location"),
     )
-    if active_model.get("base_url"):
-        model_summary += f"\nEndpoint: {active_model['base_url']}"
-    await cl.Message(
-        content=model_summary,
-        author="system",
-    ).send()
 
     # Initialize LangGraph agent (Direct Mode - Simplified)
     checkpointer = await get_app_checkpointer()

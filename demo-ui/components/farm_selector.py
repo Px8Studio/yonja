@@ -3,7 +3,6 @@
 
 import chainlit as cl
 from chainlit.input_widget import Select
-
 from services.mock_data import MockDataService, get_demo_farm_by_id
 
 # Localized strings
@@ -25,13 +24,13 @@ AZ_STRINGS = {
 
 async def create_farm_settings() -> list:
     """Create the farm selector settings widget.
-    
+
     Returns:
         List of ChatSettings widgets.
     """
     mock_data = MockDataService()
     farm_options = mock_data.get_farm_selector_options()
-    
+
     # Create Select widget with farm options
     return [
         Select(
@@ -45,24 +44,24 @@ async def create_farm_settings() -> list:
 
 async def handle_farm_change(settings: dict) -> dict | None:
     """Handle farm selection change.
-    
+
     Args:
         settings: The updated settings dictionary.
-        
+
     Returns:
         The selected farm context or None.
     """
     farm_id = settings.get("farm_id")
     if not farm_id:
         return None
-    
+
     farm = get_demo_farm_by_id(farm_id)
     if not farm:
         return None
-    
+
     # Format NDVI for display
     ndvi_display = f"{farm['last_ndvi']:.2f}" if farm.get("last_ndvi") else "N/A"
-    
+
     # Send farm context message
     details = AZ_STRINGS["farm_details"].format(
         name=farm["name"],
@@ -75,21 +74,21 @@ async def handle_farm_change(settings: dict) -> dict | None:
         irrigation_type=farm["irrigation_type"],
         ndvi=ndvi_display,
     )
-    
+
     await cl.Message(
         content=AZ_STRINGS["farm_loaded"].format(farm_name=farm["name"]) + "\n" + details,
         author="Sistem",
     ).send()
-    
+
     return farm
 
 
 def format_farm_context_for_prompt(farm: dict) -> str:
     """Format farm context for inclusion in LLM prompts.
-    
+
     Args:
         farm: Farm dictionary.
-        
+
     Returns:
         Formatted context string.
     """

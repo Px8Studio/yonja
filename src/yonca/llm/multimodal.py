@@ -29,11 +29,11 @@ def get_image_media_type(image_path: str) -> str:
 
 def create_multimodal_message(text: str, image_paths: list[str] | None = None):
     """Create a LangChain HumanMessage with text + images.
-    
+
     Args:
         text: The text portion
         image_paths: List of local image file paths
-        
+
     Returns:
         HumanMessage with content as list of dicts (text + images)
     """
@@ -49,10 +49,12 @@ def create_multimodal_message(text: str, image_paths: list[str] | None = None):
         try:
             b64 = image_path_to_base64(img_path)
             media_type = get_image_media_type(img_path)
-            content.append({
-                "type": "image_url",
-                "image_url": {"url": f"data:{media_type};base64,{b64}"},
-            })
+            content.append(
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:{media_type};base64,{b64}"},
+                }
+            )
         except Exception:
             pass  # Skip broken image paths
 

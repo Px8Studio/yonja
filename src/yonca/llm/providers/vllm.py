@@ -4,12 +4,13 @@ Used for sovereign deployments (AzInTelecom/DigiRella) exposing a vLLM server
 with OpenAI-compatible `chat/completions` endpoints.
 """
 
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
 import httpx
 
 from yonca.config import settings
 from yonca.llm.http_pool import HTTPClientPool
+
 from .base import LLMMessage, LLMProvider, LLMResponse
 
 
@@ -64,7 +65,10 @@ class VLLMProvider(LLMProvider):
             "temperature": temperature,
             "max_tokens": max_tokens,
         }
-        resp = await client.post("/chat/completions" if not self.base_url.endswith("/v1") else "/v1/chat/completions", json=payload)
+        resp = await client.post(
+            "/chat/completions" if not self.base_url.endswith("/v1") else "/v1/chat/completions",
+            json=payload,
+        )
         resp.raise_for_status()
         data = resp.json()
         choice = data.get("choices", [{}])[0]

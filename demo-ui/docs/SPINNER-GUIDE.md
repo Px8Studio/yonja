@@ -1,8 +1,8 @@
 # 🎨 ALEM Spinner & Loading States Guide
 
-> **Purpose**: Reusable, ALEM-branded loading indicators  
-> **Location**: `demo-ui/components/spinners.py`  
-> **CSS**: `demo-ui/public/custom.css` (animations)  
+> **Purpose**: Reusable, ALEM-branded loading indicators
+> **Location**: `demo-ui/components/spinners.py`
+> **CSS**: `demo-ui/public/custom.css` (animations)
 > **Status**: Active
 
 ---
@@ -128,7 +128,7 @@ for idx, step_name in enumerate(steps, 1):
     step_html = get_step_indicator(idx, len(steps), step_name)
     msg.content = step_html
     await msg.update()
-    
+
     # Perform step
     await process_step(step_name)
 
@@ -396,6 +396,6 @@ await response_msg.update()
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: January 19, 2026  
+**Document Version**: 1.0
+**Last Updated**: January 19, 2026
 **Maintainer**: ZekaLab ALEM Team

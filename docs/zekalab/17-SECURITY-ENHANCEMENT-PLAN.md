@@ -20,35 +20,35 @@
 %%{init: {'theme': 'neutral'}}%%
 block-beta
     columns 4
-    
+
     block:ai["🤖 AI Security"]:1
         input["Input Validation ✅"]
         output["Output Validation ✅"]
         pii["PII Gateway ✅"]
         guard["Guardrails ✅"]
     end
-    
+
     block:api["🔌 API Security"]:1
         rate["Rate Limiting ✅"]
         jwt["JWT Auth ✅"]
         cors["CORS ✅"]
         rbac["RBAC ⏳"]
     end
-    
+
     block:infra["🏗️ Infrastructure"]:1
         tls["TLS/HTTPS ❌"]
         secrets["Secrets Mgmt ⚠️"]
         network["Network Isolation ❌"]
         firewall["Firewall Rules ❌"]
     end
-    
+
     block:ops["📊 SecOps"]:1
         monitor["Security Monitoring ⚠️"]
         audit["Audit Logging ⏳"]
         incident["Incident Response ❌"]
         pentest["Penetration Testing ❌"]
     end
-    
+
     style ai fill:#c8e6c9,stroke:#2e7d32
     style api fill:#fff9c4,stroke:#f9a825
     style infra fill:#ffcdd2,stroke:#c62828
@@ -67,8 +67,8 @@ block-beta
 
 ### 1. Transport Layer Security (TLS/HTTPS)
 
-**Current:** HTTP only (development mode)  
-**Risk:** MITM attacks, credential theft, data exposure  
+**Current:** HTTP only (development mode)
+**Risk:** MITM attacks, credential theft, data exposure
 **Impact:** 🔴 Critical for production
 
 **Open-Source Solution:** [Traefik](https://traefik.io/) v3 (MIT License)
@@ -87,8 +87,8 @@ block-beta
 
 ### 2. Secrets Management
 
-**Current:** `.env` files (basic)  
-**Risk:** Secrets in version control, no rotation, exposed in logs  
+**Current:** `.env` files (basic)
+**Risk:** Secrets in version control, no rotation, exposed in logs
 **Impact:** 🟠 High
 
 **Open-Source Solution:** [Hashicorp Vault](https://www.vaultproject.io/) Community Edition (MPL 2.0)
@@ -107,8 +107,8 @@ block-beta
 
 ### 3. Container Security
 
-**Current:** Default Docker images, no scanning  
-**Risk:** Vulnerable dependencies, privilege escalation  
+**Current:** Default Docker images, no scanning
+**Risk:** Vulnerable dependencies, privilege escalation
 **Impact:** 🟠 High
 
 **Open-Source Solutions:**
@@ -129,8 +129,8 @@ block-beta
 
 ### 4. Network Isolation
 
-**Current:** All containers on same network  
-**Risk:** Lateral movement, unrestricted service-to-service access  
+**Current:** All containers on same network
+**Risk:** Lateral movement, unrestricted service-to-service access
 **Impact:** 🟡 Medium
 
 **Solution:** Docker network segmentation + Firewall rules
@@ -142,32 +142,32 @@ flowchart TB
     subgraph dmz["🌐 DMZ (Public Network)"]
         traefik["Traefik Proxy<br/>:80, :443"]
     end
-    
+
     subgraph app["🔒 Application Network (Private)"]
         fastapi["FastAPI<br/>:8000"]
         chainlit["Chainlit<br/>:8501"]
         langgraph["LangGraph Studio<br/>:2024"]
     end
-    
+
     subgraph data["🔐 Data Network (Isolated)"]
         postgres["PostgreSQL<br/>:5432"]
         redis["Redis<br/>:6379"]
         langfuse["Langfuse<br/>:3001"]
     end
-    
+
     traefik --> fastapi
     traefik --> chainlit
     traefik --> langgraph
-    
+
     fastapi --> postgres
     fastapi --> redis
     chainlit --> postgres
     chainlit --> redis
     langgraph --> postgres
-    
+
     fastapi -.->|observability| langfuse
     langfuse --> postgres
-    
+
     style dmz fill:#ffebee,stroke:#c62828
     style app fill:#fff3e0,stroke:#f57c00
     style data fill:#e8f5e9,stroke:#2e7d32
@@ -177,8 +177,8 @@ flowchart TB
 
 ### 5. Security Monitoring & SIEM
 
-**Current:** Langfuse (LLM traces only)  
-**Risk:** No intrusion detection, compliance gaps  
+**Current:** Langfuse (LLM traces only)
+**Risk:** No intrusion detection, compliance gaps
 **Impact:** 🟡 Medium (🔴 Critical for regulated environments)
 
 **Open-Source Solutions:**
@@ -202,8 +202,8 @@ flowchart TB
 
 ### 6. Role-Based Access Control (RBAC)
 
-**Current:** Basic JWT auth, no role enforcement  
-**Risk:** Privilege escalation, unauthorized admin access  
+**Current:** Basic JWT auth, no role enforcement
+**Risk:** Privilege escalation, unauthorized admin access
 **Impact:** 🟠 High
 
 **Open-Source Solution:** [Casbin](https://casbin.org/) (Apache 2.0)
@@ -221,8 +221,8 @@ flowchart TB
 
 ### 7. API Gateway Hardening
 
-**Current:** Direct FastAPI exposure  
-**Risk:** No request/response transformation, limited security policies  
+**Current:** Direct FastAPI exposure
+**Risk:** No request/response transformation, limited security policies
 **Impact:** 🟡 Medium
 
 **Open-Source Solution:** [Kong Gateway](https://konghq.com/products/kong-gateway) OSS (Apache 2.0)
@@ -247,59 +247,59 @@ flowchart TB
         user["👤 User/Client"]
         attacker["⚠️ Attacker"]
     end
-    
+
     subgraph layer1["🚪 Layer 1: Edge Security"]
         traefik["Traefik Proxy<br/>✅ TLS 1.3<br/>✅ Auto SSL<br/>✅ DDoS protection"]
         waf["ModSecurity WAF<br/>❌ TODO"]
     end
-    
+
     subgraph layer2["🔌 Layer 2: API Gateway"]
         kong["Kong Gateway<br/>⏳ Optional<br/>- Rate limiting<br/>- Auth policies<br/>- Request validation"]
     end
-    
+
     subgraph layer3["🔐 Layer 3: Application Security"]
         fastapi["FastAPI<br/>✅ CORS<br/>✅ Rate limiting<br/>✅ JWT auth"]
         chainlit["Chainlit UI<br/>✅ OAuth<br/>🔄 Session mgmt"]
     end
-    
+
     subgraph layer4["🤖 Layer 4: AI Security"]
         input["Input Validator ✅"]
         output["Output Validator ✅"]
         pii["PII Gateway ✅"]
     end
-    
+
     subgraph layer5["💾 Layer 5: Data Security"]
         vault["Hashicorp Vault<br/>❌ TODO<br/>- Secrets mgmt<br/>- Encryption"]
         postgres["PostgreSQL<br/>⏳ TDE needed"]
         redis["Redis<br/>⏳ AUTH needed"]
     end
-    
+
     subgraph layer6["📊 Layer 6: Security Operations"]
         prometheus["Prometheus<br/>⏳ Planned"]
         grafana["Grafana<br/>⏳ Planned"]
         loki["Loki (Logs)<br/>⏳ Planned"]
         wazuh["Wazuh SIEM<br/>❌ Optional"]
     end
-    
+
     user --> traefik
     attacker -.->|blocked| waf
     traefik --> kong
     kong --> fastapi
     kong --> chainlit
-    
+
     fastapi --> input
     input --> output
     output --> pii
-    
+
     fastapi --> postgres
     fastapi --> redis
     vault -.->|secrets| fastapi
-    
+
     fastapi -.->|metrics| prometheus
     prometheus --> grafana
     fastapi -.->|logs| loki
     loki --> grafana
-    
+
     style layer1 fill:#ffcdd2,stroke:#c62828,stroke-width:3px
     style layer2 fill:#fff3e0,stroke:#f57c00,stroke-width:2px
     style layer3 fill:#fff9c4,stroke:#f9a825
@@ -384,7 +384,7 @@ entryPoints:
         entryPoint:
           to: websecure
           scheme: https
-  
+
   websecure:
     address: ":443"
     http:
@@ -455,7 +455,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
@@ -463,7 +463,7 @@ jobs:
           scan-ref: '.'
           format: 'sarif'
           output: 'trivy-results.sarif'
-      
+
       - name: Upload to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         with:
@@ -487,7 +487,7 @@ networks:
     ipam:
       config:
         - subnet: 172.20.0.0/24
-  
+
   # Internal app services
   app:
     driver: bridge
@@ -495,7 +495,7 @@ networks:
     ipam:
       config:
         - subnet: 172.21.0.0/24
-  
+
   # Data layer (most restricted)
   data:
     driver: bridge
@@ -509,12 +509,12 @@ services:
     networks:
       - dmz
       - app
-  
+
   fastapi:
     networks:
       - app
       - data
-  
+
   postgres:
     networks:
       - data  # Isolated
@@ -561,7 +561,7 @@ from fastapi import Request, HTTPException
 
 async def enforce_rbac(request: Request, user: AuthenticatedUser):
     enforcer = await get_enforcer()
-    
+
     if not await enforcer.enforce(
         user.user_id,
         request.url.path,
@@ -593,14 +593,14 @@ services:
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- Encrypt sensitive columns
-ALTER TABLE user_profiles 
-  ALTER COLUMN phone_number 
-  TYPE bytea 
+ALTER TABLE user_profiles
+  ALTER COLUMN phone_number
+  TYPE bytea
   USING pgp_sym_encrypt(phone_number::text, current_setting('app.encryption_key'));
 
 -- Transparent decryption view
 CREATE VIEW user_profiles_decrypted AS
-SELECT 
+SELECT
   id,
   user_id,
   pgp_sym_decrypt(phone_number, current_setting('app.encryption_key')) AS phone_number,
@@ -758,21 +758,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       # 1. Secret scanning
       - name: Gitleaks
         uses: gitleaks/gitleaks-action@v2
-      
+
       # 2. Dependency check
       - name: Safety check
         run: |
           pip install safety
           safety check --json
-      
+
       # 3. Static analysis
       - name: Semgrep
         uses: returntocorp/semgrep-action@v1
-      
+
       # 4. Container scanning
       - name: Trivy
         uses: aquasecurity/trivy-action@master
@@ -797,8 +797,8 @@ jobs:
 
 <div align="center">
 
-**Last Updated:** January 20, 2026  
-**Owner:** Zekalab Security Team  
+**Last Updated:** January 20, 2026
+**Owner:** Zekalab Security Team
 **Review Cycle:** Quarterly
 
 </div>

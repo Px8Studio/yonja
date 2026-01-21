@@ -1,6 +1,6 @@
 # 🚀 ALEM Deployment & Pricing Guide
 
-> **ALEM** = **A**gronomical **L**ogic & **E**valuation **M**odel  
+> **ALEM** = **A**gronomical **L**ogic & **E**valuation **M**odel
 > **Purpose:** Deployment options, infrastructure tiers, and cost economics for ALEM 1.0.
 
 ---
@@ -9,9 +9,9 @@
 
 **100% Open-Source Models** with full data sovereignty:
 
-✅ Llama 4 Maverick, Llama 3.3 70B, Qwen 3 32B (Apache 2.0 / Llama Community License)  
-✅ Deploy in Azerbaijan (self-hosted or AzInTelecom Cloud)  
-✅ 200-300 tok/s performance (validated via cloud benchmarks)  
+✅ Llama 4 Maverick, Llama 3.3 70B, Qwen 3 32B (Apache 2.0 / Llama Community License)
+✅ Deploy in Azerbaijan (self-hosted or AzInTelecom Cloud)
+✅ 200-300 tok/s performance (validated via cloud benchmarks)
 ✅ Zero vendor lock-in — same models work everywhere
 
 ---
@@ -185,13 +185,13 @@ flowchart LR
         fallback["<b>Fallback</b><br/>llama-3.3-70b-versatile"]
         local["<b>Local/Edge</b><br/>qwen3:4b"]
     end
-    
+
     subgraph hash["🔐 Version Hash"]
         fingerprint["SHA256 of model identifiers<br/><code>maverick-17b+llama-70b+qwen-4b</code>"]
     end
-    
+
     alem --> hash
-    
+
     style alem fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
 ```
 

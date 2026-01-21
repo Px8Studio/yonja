@@ -7,30 +7,30 @@ for routing, context loading, specialist processing, and validation.
 
 from typing import Any
 
-from langgraph.graph import END, StateGraph
-from langgraph.checkpoint.base import BaseCheckpointSaver
 from langchain_core.runnables import RunnableConfig
+from langgraph.checkpoint.base import BaseCheckpointSaver
+from langgraph.graph import END, StateGraph
 
 from yonca.agent.memory import get_checkpointer
 from yonca.agent.nodes.agronomist import agronomist_node
 from yonca.agent.nodes.context_loader import context_loader_node, route_after_context
-from yonca.agent.nodes.supervisor import route_from_supervisor, supervisor_node
 from yonca.agent.nodes.nl_to_sql import nl_to_sql_node
 from yonca.agent.nodes.sql_executor import sql_executor_node
-from yonca.agent.nodes.vision_to_action import vision_to_action_node
+from yonca.agent.nodes.supervisor import route_from_supervisor, supervisor_node
 from yonca.agent.nodes.validator import validator_node
+from yonca.agent.nodes.vision_to_action import vision_to_action_node
 from yonca.agent.nodes.weather import weather_node
 from yonca.agent.state import AgentState, create_initial_state
 from yonca.observability.langfuse import create_langfuse_handler
-
 
 # ============================================================
 # Graph Construction
 # ============================================================
 
+
 def create_agent_graph() -> StateGraph:
     """Create the main agent graph.
-    
+
     Graph Structure:
     ```
     START
@@ -45,13 +45,13 @@ def create_agent_graph() -> StateGraph:
                  │
                  └──> weather ──────> validator ──> end
     ```
-    
+
     Returns:
         Configured StateGraph ready for execution.
     """
     # Create the graph
     graph = StateGraph(AgentState)
-    
+
     # Add nodes
     graph.add_node("supervisor", supervisor_node)
     graph.add_node("context_loader", context_loader_node)
@@ -61,10 +61,10 @@ def create_agent_graph() -> StateGraph:
     graph.add_node("sql_executor", sql_executor_node)
     graph.add_node("vision_to_action", vision_to_action_node)
     graph.add_node("validator", validator_node)
-    
+
     # Set entry point
     graph.set_entry_point("supervisor")
-    
+
     # Conditional routing from supervisor
     graph.add_conditional_edges(
         "supervisor",
@@ -78,7 +78,7 @@ def create_agent_graph() -> StateGraph:
             "vision_to_action": "vision_to_action",
         },
     )
-    
+
     # Route from context loader to specialist
     graph.add_conditional_edges(
         "context_loader",
@@ -90,35 +90,35 @@ def create_agent_graph() -> StateGraph:
             "vision_to_action": "vision_to_action",
         },
     )
-    
+
     # Specialist nodes go to validator
     graph.add_edge("agronomist", "validator")
     graph.add_edge("weather", "validator")
     graph.add_edge("nl_to_sql", "sql_executor")
     graph.add_edge("sql_executor", "validator")
     graph.add_edge("vision_to_action", "validator")
-    
+
     # Validator goes to end
     graph.add_edge("validator", END)
-    
+
     return graph
 
 
 def compile_agent_graph(checkpointer: BaseCheckpointSaver | None = None):
     """Compile the agent graph with optional checkpointing.
-    
+
     Args:
         checkpointer: LangGraph checkpointer for state persistence
                      (RedisSaver, MemorySaver, or any BaseCheckpointSaver)
-        
+
     Returns:
         Compiled graph ready for invocation.
     """
     graph = create_agent_graph()
-    
+
     if checkpointer:
         return graph.compile(checkpointer=checkpointer)
-    
+
     return graph.compile()
 
 
@@ -126,23 +126,24 @@ def compile_agent_graph(checkpointer: BaseCheckpointSaver | None = None):
 # Graph Execution
 # ============================================================
 
+
 class YoncaAgent:
     """Main Yonca AI agent interface.
-    
+
     Provides a clean API for interacting with the agent graph,
     handling thread management and state persistence.
-    
+
     Example:
         ```python
         agent = YoncaAgent()
-        
+
         # Start a new conversation
         response = await agent.chat(
             message="Pomidorları nə vaxt suvarmaq lazımdır?",
             user_id="user_123",
         )
         print(response.content)
-        
+
         # Continue the conversation
         response = await agent.chat(
             message="Bəs gübrə?",
@@ -150,17 +151,17 @@ class YoncaAgent:
         )
         ```
     """
-    
+
     def __init__(self, use_checkpointer: bool = True):
         """Initialize the agent.
-        
+
         Args:
             use_checkpointer: Whether to enable state persistence
         """
         self.use_checkpointer = use_checkpointer
         self._graph = None
         self._checkpointer = None
-    
+
     async def _get_graph(self):
         """Get or create the compiled graph."""
         if self._graph is None:
@@ -169,9 +170,9 @@ class YoncaAgent:
                 self._graph = compile_agent_graph(self._checkpointer)
             else:
                 self._graph = compile_agent_graph()
-        
+
         return self._graph
-    
+
     async def chat(
         self,
         message: str,
@@ -181,23 +182,23 @@ class YoncaAgent:
         language: str = "az",
     ) -> "AgentResponse":
         """Send a message and get a response.
-        
+
         Args:
             message: The user's message
             thread_id: Conversation thread ID (creates new if None)
             user_id: Authenticated user ID (for context loading)
             session_id: API session ID
             language: Response language (default: Azerbaijani)
-            
+
         Returns:
             AgentResponse with the response and metadata
         """
         import uuid
-        
+
         # Create or use thread ID
         if thread_id is None:
             thread_id = f"thread_{uuid.uuid4().hex[:12]}"
-        
+
         # Create initial state
         initial_state = create_initial_state(
             thread_id=thread_id,
@@ -206,16 +207,16 @@ class YoncaAgent:
             session_id=session_id,
             language=language,
         )
-        
+
         # Run the graph
         graph = await self._get_graph()
-        
+
         config: RunnableConfig = {
             "configurable": {
                 "thread_id": thread_id,
             }
         }
-        
+
         # Add Langfuse callback for self-hosted observability
         # Traces appear at: http://localhost:3001 (Langfuse dashboard)
         langfuse_handler = create_langfuse_handler(
@@ -228,15 +229,15 @@ class YoncaAgent:
             },
             trace_name=f"yonca_chat_{thread_id[:8]}",
         )
-        
+
         if langfuse_handler:
             config["callbacks"] = [langfuse_handler]
-        
+
         final_state = await graph.ainvoke(initial_state, config=config)
-        
+
         # Extract response
         response_content = final_state.get("current_response", "")
-        
+
         return AgentResponse(
             content=response_content,
             thread_id=thread_id,
@@ -247,7 +248,7 @@ class YoncaAgent:
             matched_rules=[r for r in final_state.get("matched_rules", [])],
             error=final_state.get("error"),
         )
-    
+
     async def stream_chat(
         self,
         message: str,
@@ -257,24 +258,24 @@ class YoncaAgent:
         language: str = "az",
     ):
         """Stream a response token by token.
-        
+
         Yields tokens as they are generated for real-time display.
-        
+
         Args:
             message: The user's message
             thread_id: Conversation thread ID
             user_id: Authenticated user ID
             session_id: API session ID
             language: Response language
-            
+
         Yields:
             Dict with 'type' (token/metadata/final) and content
         """
         import uuid
-        
+
         if thread_id is None:
             thread_id = f"thread_{uuid.uuid4().hex[:12]}"
-        
+
         initial_state = create_initial_state(
             thread_id=thread_id,
             user_input=message,
@@ -282,15 +283,15 @@ class YoncaAgent:
             session_id=session_id,
             language=language,
         )
-        
+
         graph = await self._get_graph()
-        
+
         config: RunnableConfig = {
             "configurable": {
                 "thread_id": thread_id,
             }
         }
-        
+
         # Add Langfuse callback for streaming observability
         langfuse_handler = create_langfuse_handler(
             session_id=thread_id,
@@ -299,10 +300,10 @@ class YoncaAgent:
             metadata={"session_id": session_id, "language": language},
             trace_name=f"yonca_stream_{thread_id[:8]}",
         )
-        
+
         if langfuse_handler:
             config["callbacks"] = [langfuse_handler]
-        
+
         # Stream execution
         async for event in graph.astream(initial_state, config=config):
             # Yield intermediate states
@@ -336,29 +337,29 @@ class YoncaAgent:
                             "content": node_output["matched_rules"],
                             "node": node_name,
                         }
-        
+
         yield {
             "type": "final",
             "thread_id": thread_id,
         }
-    
+
     async def get_conversation_history(
         self,
         thread_id: str,
     ) -> list[dict]:
         """Get conversation history for a thread.
-        
+
         Uses LangGraph's checkpointer to retrieve the latest state.
-        
+
         Args:
             thread_id: Thread ID
-            
+
         Returns:
             List of messages
         """
         if not self._checkpointer:
             return []
-        
+
         try:
             # Use LangGraph's standard interface
             config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
@@ -367,23 +368,23 @@ class YoncaAgent:
                 return checkpoint_tuple.checkpoint.get("channel_values", {}).get("messages", [])
         except Exception:
             pass
-        
+
         return []
-    
+
     async def delete_conversation(self, thread_id: str) -> bool:
         """Delete a conversation and its history.
-        
+
         Uses LangGraph's checkpointer to delete thread data.
-        
+
         Args:
             thread_id: Thread ID to delete
-            
+
         Returns:
             True if deleted successfully
         """
         if not self._checkpointer:
             return False
-        
+
         try:
             # Use LangGraph's standard interface - adelete_thread takes thread_id directly
             await self._checkpointer.adelete_thread(thread_id)
@@ -394,7 +395,7 @@ class YoncaAgent:
 
 class AgentResponse:
     """Response from the Yonca agent."""
-    
+
     def __init__(
         self,
         content: str,
@@ -414,17 +415,17 @@ class AgentResponse:
         self.alerts = alerts or []
         self.matched_rules = matched_rules or []
         self.error = error
-    
+
     @property
     def has_alerts(self) -> bool:
         """Check if there are any alerts."""
         return len(self.alerts) > 0
-    
+
     @property
     def has_errors(self) -> bool:
         """Check if there were any errors."""
         return self.error is not None
-    
+
     def to_dict(self) -> dict:
         """Convert to dictionary."""
         return {
@@ -448,10 +449,10 @@ _agent: YoncaAgent | None = None
 
 def get_agent(use_checkpointer: bool = True) -> YoncaAgent:
     """Get the singleton agent instance.
-    
+
     Args:
         use_checkpointer: Whether to use Redis checkpointing
-        
+
     Returns:
         YoncaAgent instance
     """

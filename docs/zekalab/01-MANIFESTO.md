@@ -124,18 +124,18 @@ flowchart LR
         weather["🌤️ Local Weather"]
         ndvi["📡 Latest NDVI"]
     end
-    
+
     subgraph tab["🤖 AI Köməkçi Tab"]
         direction TB
         context["📋 Context Header<br/><i>User + Active Farms Summary</i>"]
         chat["💬 Chat Interface<br/><i>Conversation with AI</i>"]
         quick["⚡ Quick Actions<br/><i>Common Tasks</i>"]
-        
+
         context --> chat --> quick
     end
-    
+
     data --> tab
-    
+
     style tab fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
     style context fill:#fff9c4,stroke:#f9a825,color:#5d4037
     style data fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
@@ -156,7 +156,7 @@ flowchart LR
 
 <div align="center">
 
-**📄 Document:** `01-MANIFESTO.md`  
+**📄 Document:** `01-MANIFESTO.md`
 **🔄 Next:** [02-SYNTHETIC-DATA-ENGINE.md](02-SYNTHETIC-DATA-ENGINE.md) — Mirror-Image Data Strategy
 
 </div>

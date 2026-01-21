@@ -37,7 +37,7 @@ from langgraph_checkpoint_postgres.aio import AsyncPostgresSaver
 
 **Error:**
 ```
-ForeignKeyViolationError: Key (chainlit_user_id)=(email@example.com) 
+ForeignKeyViolationError: Key (chainlit_user_id)=(email@example.com)
 is not present in table "users"
 ```
 
@@ -68,7 +68,7 @@ if data_layer:
 
 **Error:**
 ```
-DataError: invalid input for query argument $7: ['graph:step:1'] 
+DataError: invalid input for query argument $7: ['graph:step:1']
 ('list' object has no attribute 'encode')
 ```
 

@@ -94,4 +94,3 @@ chainlit run app.py -w --port 8501 --headless
 - **[UI_RENDERING_ISSUES.md](UI_RENDERING_ISSUES.md)** - UI rendering root causes
 
 ---
-

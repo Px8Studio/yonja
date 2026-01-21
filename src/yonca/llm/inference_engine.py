@@ -6,9 +6,11 @@ Supports three drivers:
 - LocalOllama (offline-capable)
 """
 
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
-from yonca.config import LLMProvider as LLMProviderEnum, settings
+from yonca.config import LLMProvider as LLMProviderEnum
+from yonca.config import settings
+
 from .factory import (
     create_groq_provider,
     create_ollama_provider,
@@ -45,7 +47,9 @@ class InferenceEngine:
         temperature: float = 0.7,
         max_tokens: int = 1000,
     ) -> LLMResponse:
-        return await self.provider.generate(messages, temperature=temperature, max_tokens=max_tokens)
+        return await self.provider.generate(
+            messages, temperature=temperature, max_tokens=max_tokens
+        )
 
     async def stream(
         self,
@@ -53,5 +57,7 @@ class InferenceEngine:
         temperature: float = 0.7,
         max_tokens: int = 1000,
     ) -> AsyncIterator[str]:
-        async for chunk in self.provider.stream(messages, temperature=temperature, max_tokens=max_tokens):
+        async for chunk in self.provider.stream(
+            messages, temperature=temperature, max_tokens=max_tokens
+        ):
             yield chunk

@@ -5,8 +5,8 @@ Defines the interface that all LLM providers (Ollama, Groq, etc.) must implement
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import AsyncIterator
 from enum import Enum
-from typing import AsyncIterator
 
 from pydantic import BaseModel, Field
 
@@ -53,7 +53,7 @@ class LLMResponse(BaseModel):
 
 class LLMProvider(ABC):
     """Abstract base class for LLM providers.
-    
+
     All LLM providers (Ollama, Groq, etc.) must implement this interface.
     This ensures consistent behavior across different backends.
     """
@@ -78,12 +78,12 @@ class LLMProvider(ABC):
         max_tokens: int = 1000,
     ) -> LLMResponse:
         """Generate a response from the LLM.
-        
+
         Args:
             messages: List of conversation messages.
             temperature: Sampling temperature (0.0 to 1.0).
             max_tokens: Maximum tokens to generate.
-            
+
         Returns:
             LLMResponse with the generated content.
         """
@@ -97,12 +97,12 @@ class LLMProvider(ABC):
         max_tokens: int = 1000,
     ) -> AsyncIterator[str]:
         """Stream a response from the LLM.
-        
+
         Args:
             messages: List of conversation messages.
             temperature: Sampling temperature (0.0 to 1.0).
             max_tokens: Maximum tokens to generate.
-            
+
         Yields:
             String chunks of the generated response.
         """
@@ -113,7 +113,7 @@ class LLMProvider(ABC):
     @abstractmethod
     async def health_check(self) -> bool:
         """Check if the LLM provider is healthy and reachable.
-        
+
         Returns:
             True if healthy, False otherwise.
         """

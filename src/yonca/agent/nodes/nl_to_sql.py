@@ -9,7 +9,7 @@ contains a SELECT statement.
 
 from typing import Any
 
-from yonca.agent.state import AgentState, add_assistant_message, UserIntent
+from yonca.agent.state import AgentState, UserIntent, add_assistant_message
 from yonca.llm.inference_engine import InferenceEngine
 from yonca.llm.providers.base import LLMMessage
 
@@ -19,6 +19,7 @@ SYSTEM_PROMPT = (
     "PostgreSQL dialektindən istifadə et. Cədvəl adları nümunə üçün: farms, parcels, crops, users. "
     "Tarixləri ISO formatında (YYYY-MM-DD) yaz. Lazım olduqda JOIN və WHERE istifadə et."
 )
+
 
 async def nl_to_sql_node(state: AgentState) -> dict[str, Any]:
     """Generate SQL from natural language input.
@@ -44,19 +45,19 @@ async def nl_to_sql_node(state: AgentState) -> dict[str, Any]:
         sql = resp.content.strip()
         # Minimal validation: must contain SELECT
         if "select" not in sql.lower():
-            sql = f"-- Generated SQL placeholder\nSELECT 1;"
+            sql = "-- Generated SQL placeholder\nSELECT 1;"
 
         return {
             "current_response": sql,
             "nodes_visited": nodes_visited,
-            "messages": [
-                add_assistant_message(state, sql, "nl_to_sql", UserIntent.DATA_QUERY)
-            ],
+            "messages": [add_assistant_message(state, sql, "nl_to_sql", UserIntent.DATA_QUERY)],
         }
-    except Exception as e:
+    except Exception:
         error_msg = "SQL generasiyası zamanı xəta baş verdi"
         return {
             "error": error_msg,
             "nodes_visited": nodes_visited,
-            "messages": [add_assistant_message(state, error_msg, "nl_to_sql", UserIntent.DATA_QUERY)],
+            "messages": [
+                add_assistant_message(state, error_msg, "nl_to_sql", UserIntent.DATA_QUERY)
+            ],
         }

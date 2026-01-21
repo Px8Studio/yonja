@@ -10,7 +10,7 @@ This module provides the core AI agent functionality:
 Example:
     ```python
     from yonca.agent import get_agent
-    
+
     agent = get_agent()
     response = await agent.chat(
         message="Pomidorları nə vaxt suvarmaq lazımdır?",

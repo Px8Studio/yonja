@@ -15,7 +15,7 @@ if ($python) {
     $stopped += "Python ($(@($python).Count))"
 }
 
-$chainlit = Get-Process -Name 'chainlit' -ErrorAction SilentlyContinue  
+$chainlit = Get-Process -Name 'chainlit' -ErrorAction SilentlyContinue
 if ($chainlit) {
     $chainlit | Stop-Process -Force
     $stopped += "Chainlit ($(@($chainlit).Count))"

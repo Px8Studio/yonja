@@ -45,16 +45,16 @@ flowchart LR
     subgraph current["✅ CURRENT STATE"]
         oauth["OAuth (Google)<br/>Demo Only"]
     end
-    
+
     subgraph future["🔮 FUTURE: IDDA Integration"]
         sima["SİMA Authentication<br/>(Face ID + NFC Card)"]
         asan["ASAN Login<br/>(OIDC/SAML)"]
         identity["Sovereign Identity<br/>(VOEN + FIN)"]
     end
-    
+
     oauth -.->|"Production Migration"| sima
     sima --> asan --> identity
-    
+
     style current fill:#e8f5e9,stroke:#2e7d32
     style future fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
 ```
@@ -86,23 +86,23 @@ flowchart TB
         yonca["Yonca Mobile App<br/>(Digital Umbrella)"]
         ektis_prod["EKTIS Production API<br/>(100k+ farms)"]
     end
-    
+
     subgraph current["✅ CURRENT: ALEM"]
         synthetic["Synthetic Data<br/>(Mirror-Image)"]
     end
-    
+
     subgraph future["🔮 FUTURE: ALEM Integration Options"]
         direction LR
         option_a["Option A:<br/>Via Yonca Mobile<br/>(Indirect)"]
         option_b["Option B:<br/>Direct EKTIS API<br/>(New Partnership)"]
     end
-    
+
     ektis_prod ==>|"✅ EXISTING"| yonca
     synthetic -.->|"🔮 Phase 2"| option_a
     synthetic -.->|"🔮 Phase 2"| option_b
     yonca -.->|"Option A"| option_a
     ektis_prod -.->|"Option B"| option_b
-    
+
     style existing fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
     style current fill:#e8f5e9,stroke:#2e7d32
     style future fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
@@ -141,9 +141,9 @@ flowchart LR
         etax["e-Taxes API<br/>(Subsidy Eligibility)"]
         compliance["Tax Compliance<br/>(Certificate Check)"]
     end
-    
+
     voen --> etax --> compliance
-    
+
     style future fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
 ```
 
@@ -176,25 +176,25 @@ flowchart TB
         qwac["QWAC Certificate<br/>(SİMA/AzInTelecom)"]
         compliance["Security Audit<br/>(Data Protection)"]
     end
-    
+
     subgraph sandbox["🔮 SANDBOX PHASE"]
         test["CBAR Fintech Portal<br/>(fintech.cbar.az)"]
         ais["AIS: Account Info<br/>(Read-only)"]
         pis["PIS: Payments<br/>(Pilot)"]
     end
-    
+
     subgraph production["🔮 PRODUCTION FEATURES"]
         balance["Fermer Kartı Balance"]
         transactions["Transaction History"]
         lending["Loan Eligibility"]
         autopay["Bill Payment"]
     end
-    
+
     tpp --> qwac --> compliance --> test
     test --> ais & pis
     ais --> balance & transactions & lending
     pis --> autopay
-    
+
     style certification fill:#fff3e0,stroke:#f57c00
     style sandbox fill:#e3f2fd,stroke:#1976d2,stroke-dasharray: 5 5
     style production fill:#f3e5f5,stroke:#7b1fa2,stroke-dasharray: 5 5
@@ -293,16 +293,16 @@ flowchart LR
     subgraph current["✅ CURRENT: Synthetic NDVI"]
         mock["Mock Satellite Data<br/>(Pseudo-NDVI)"]
     end
-    
+
     subgraph future["🔮 FUTURE: Azərkosmos"]
         satellite["Real Satellite Imagery<br/>(Multi-spectral)"]
         ndvi["NDVI Feeds<br/>(Vegetation Index)"]
         analysis["Visual RAG<br/>(Image Analysis)"]
     end
-    
+
     mock -.->|"Upgrade"| satellite
     satellite --> ndvi --> analysis
-    
+
     style current fill:#e8f5e9,stroke:#2e7d32
     style future fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
 ```
@@ -346,9 +346,9 @@ flowchart LR
         openweather["OpenWeather API<br/>(Backup)"]
         hyperlocal["Hyperlocal Sensors<br/>(IoT Integration)"]
     end
-    
+
     met --> openweather --> hyperlocal
-    
+
     style future fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
 ```
 
@@ -368,10 +368,10 @@ flowchart TB
         oracle["Oracle Cloud<br/>(REST Services)"]
         holdings["Agro Holdings<br/>(Agro-Dairy, Azersun)"]
     end
-    
+
     sap --> holdings
     oracle --> holdings
-    
+
     style future fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
 ```
 
@@ -399,18 +399,18 @@ flowchart LR
         maps["Satellite Maps<br/>(NDVI)"]
         notif["Push Notifications"]
     end
-    
+
     subgraph alem["🧠 ALEM (The Brain)<br/><i>ZekaLab's Intelligence</i>"]
         logic["Agronomical Logic<br/>(Llama 4 Maverick)"]
         rules["Validation Rules<br/>(Ministry Guidelines)"]
         banking["Financial Context<br/>(CBAR Open Banking)"]
     end
-    
+
     data -->|"Read: Parcel Info"| logic
     logic -->|"Write: Optimized Plan"| ui
     banking -->|"Credit Check"| logic
     logic -->|"Action: Trigger Payment"| notif
-    
+
     style yonca fill:#fff3e0,stroke:#f57c00,stroke-width:2px
     style alem fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
 ```
@@ -473,22 +473,22 @@ flowchart LR
 gantt
     title Enterprise Integration Timeline
     dateFormat YYYY-MM
-    
+
     section Phase 1: Authentication
     SİMA Test Access      :2026-02, 2026-03
     ASAN Login OIDC       :2026-03, 2026-04
     Biometric Mobile SDK  :2026-04, 2026-05
-    
+
     section Phase 2: Core Data
     EKTİS API Integration :2026-04, 2026-06
     CBAR Sandbox Access   :2026-05, 2026-07
     Weather API           :2026-06, 2026-07
-    
+
     section Phase 3: Premium Data
     Azərkosmos License    :2026-07, 2026-09
     VOEN Tax Verification :2026-08, 2026-09
     Open Banking Live     :2026-09, 2026-11
-    
+
     section Phase 4: Enterprise
     SAP Pilot             :2026-11, 2027-02
     White-Label Product   :2027-02, 2027-06
@@ -567,5 +567,5 @@ All integrations must comply with:
 
 ---
 
-**Last Updated:** January 20, 2026  
+**Last Updated:** January 20, 2026
 **Status:** 🔮 Future Roadmap (Phase 1 actions ready to start)

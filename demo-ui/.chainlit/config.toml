@@ -125,10 +125,10 @@ name = "Yonca AI"
 # ════════════════════════════════════════════════════════════════════════════
 # Chainlit UI language. Leave commented to use browser's default language.
 # Supported: en-US (default), az-AZ, ru-RU (if translations exist)
-# 
+#
 # NOTE: Custom translations require .chainlit/translations/{locale}.json
 # If the file is missing or malformed, UI text will be blank!
-# 
+#
 # For production, uncomment ONE of:
 # language = "en-US"    # English (built-in, always works)
 # language = "az-AZ"    # Azerbaijani (requires translations/az-AZ.json)
@@ -223,9 +223,9 @@ max_http_buffer_size = 5000000
     # openid: Required for OpenID Connect
     # profile: Access to name, given_name, family_name, locale
     # email: Access to email, email_verified
-    authorize_params = {
-        scope = "openid profile email"
-    }
+
+[providers.google.authorize_params]
+    scope = "openid profile email"
 
 [meta]
 generated_by = "2.9.5"

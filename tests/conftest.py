@@ -1,20 +1,18 @@
 # tests/conftest.py
 """Pytest fixtures and configuration for Yonca AI tests."""
 
-import asyncio
 from collections.abc import AsyncIterator
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
-
-from yonca.llm.providers.base import LLMMessage, LLMProvider, LLMResponse, MessageRole
-
+from yonca.llm.providers.base import LLMMessage, LLMProvider, LLMResponse
 
 # ============================================================
 # Mock LLM Provider
 # ============================================================
+
 
 class MockLLMProvider(LLMProvider):
     """Mock LLM provider for testing."""
@@ -49,15 +47,17 @@ class MockLLMProvider(LLMProvider):
         temperature: float = 0.7,
         max_tokens: int = 1000,
     ) -> LLMResponse:
-        self.generate_calls.append({
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-        })
-        
+        self.generate_calls.append(
+            {
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+        )
+
         if self._should_fail:
             raise RuntimeError("Mock provider failed")
-        
+
         return LLMResponse(
             content=self._response_content,
             model=self._model_name,
@@ -71,15 +71,17 @@ class MockLLMProvider(LLMProvider):
         temperature: float = 0.7,
         max_tokens: int = 1000,
     ) -> AsyncIterator[str]:
-        self.stream_calls.append({
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-        })
-        
+        self.stream_calls.append(
+            {
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+        )
+
         if self._should_fail:
             raise RuntimeError("Mock provider failed")
-        
+
         for chunk in self._stream_chunks:
             yield chunk
 
@@ -96,14 +98,17 @@ def mock_llm_provider():
 @pytest.fixture
 def mock_llm_provider_factory():
     """Factory fixture to create mock providers with custom settings."""
+
     def factory(**kwargs) -> MockLLMProvider:
         return MockLLMProvider(**kwargs)
+
     return factory
 
 
 # ============================================================
 # Sample Messages
 # ============================================================
+
 
 @pytest.fixture
 def sample_messages() -> list[LLMMessage]:
@@ -129,6 +134,7 @@ def sample_multi_turn_messages() -> list[LLMMessage]:
 # HTTP Mocking
 # ============================================================
 
+
 @pytest_asyncio.fixture
 async def mock_httpx_client():
     """Create a mock httpx AsyncClient."""
@@ -141,6 +147,7 @@ async def mock_httpx_client():
 # ============================================================
 # Environment Overrides
 # ============================================================
+
 
 @pytest.fixture
 def clean_env(monkeypatch):

@@ -12,14 +12,14 @@
     --yonca-green-light: #A8E6CF;  /* Emerald Mint for highlights */
     --yonca-green-dark: #1B4D1F;
     --yonca-green-accent: #4CAF50;
-    
+
     /* Neutral palette */
     --yonca-charcoal: #1F2937;     /* Soft charcoal for text */
     --yonca-earth-brown: #5D4037;
     --yonca-sky-blue: #1976D2;
     --yonca-sun-yellow: #FFC107;
     --yonca-cream: #FAFAFA;
-    
+
     /* Glassmorphism variables */
     --glass-bg: rgba(255, 255, 255, 0.7);
     --glass-bg-dark: rgba(31, 41, 55, 0.8);
@@ -410,7 +410,7 @@ body {
     .cl-message {
         padding: 12px;
     }
-    
+
     .cl-settings-panel {
         width: 100%;
     }
@@ -431,7 +431,7 @@ body {
     .cl-message[data-author="ALEM 1"] {
         border-left-width: 6px;
     }
-    
+
     .cl-step {
         border: 2px solid var(--yonca-green-dark);
     }
@@ -512,10 +512,10 @@ button.primary:hover {
 }
 
 @keyframes login-pulse {
-    0%, 100% { 
+    0%, 100% {
         box-shadow: 0 4px 15px rgba(45, 90, 39, 0.3);
     }
-    50% { 
+    50% {
         box-shadow: 0 4px 30px rgba(45, 90, 39, 0.5), 0 0 50px rgba(168, 230, 207, 0.3);
     }
 }
@@ -753,5 +753,3 @@ button.primary:hover {
 /* ============================================
  * END Spinners
  * ============================================ */
-
-

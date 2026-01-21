@@ -9,7 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class DeploymentMode(str, Enum):
     """Deployment mode enum.
-    
+
     LOCAL: Local development with Ollama or Groq
     OPEN_SOURCE: Open-source models (Llama, Qwen, Mistral) via Groq or self-hosted
     CLOUD: Proprietary cloud models (Gemini, etc.)
@@ -22,7 +22,7 @@ class DeploymentMode(str, Enum):
 
 class LLMProvider(str, Enum):
     """LLM provider enum.
-    
+
     OLLAMA: Local LLM server (for offline/development)
     GROQ: Open-source models (Llama, Qwen, Mistral) with enterprise-grade performance
     """
@@ -34,19 +34,19 @@ class LLMProvider(str, Enum):
 
 class InferenceTier(str, Enum):
     """ALEM Infrastructure Matrix — Inference deployment tiers.
-    
+
     From ALEM (Azərbaycan LLM Ekosistem Matrisi):
     - Tier I: Groq LPU (cloud benchmark — proves what's possible)
     - Tier III: DigiRella Cloud (rented GPU from AzInTelecom)
     - Tier IV: DigiRella Owned (self-hosted hardware)
-    
+
     DigiRella = "Digital Farm Relay" — brand for self-hosted LLM infrastructure.
     Groq benchmarks (200-300 tok/s) achievable with DigiRella hardware.
     """
-    
-    TIER_I_GROQ = "tier_i_groq"           # Groq LPU — Cloud Benchmark
-    TIER_III_SOVEREIGN = "tier_iii_sov"   # DigiRella Cloud — Rented GPU
-    TIER_IV_ONPREM = "tier_iv_onprem"     # DigiRella Owned — Self-Hosted
+
+    TIER_I_GROQ = "tier_i_groq"  # Groq LPU — Cloud Benchmark
+    TIER_III_SOVEREIGN = "tier_iii_sov"  # DigiRella Cloud — Rented GPU
+    TIER_IV_ONPREM = "tier_iv_onprem"  # DigiRella Owned — Self-Hosted
 
 
 # ALEM Infrastructure Matrix — Tier specifications
@@ -64,7 +64,7 @@ INFERENCE_TIER_SPECS = {
         "icon": "⚡",
         "self_hosted_equivalent": "DigiRella Standard ($6,300) or Pro ($145k)",
         "notes": "Proves performance achievable with open-source + optimized hardware. "
-                 "Same models/performance available with DigiRella self-hosted.",
+        "Same models/performance available with DigiRella self-hosted.",
     },
     InferenceTier.TIER_III_SOVEREIGN: {
         "name": "Tier III: DigiRella Cloud",
@@ -79,7 +79,7 @@ INFERENCE_TIER_SPECS = {
         "icon": "🏛️",
         "groq_equivalent": "Groq Tier I performance + Azerbaijan data residency",
         "notes": "Rented GPU capacity from AzInTelecom. Same open-source models as Groq. "
-                 "Performance target: match Groq benchmarks with local sovereignty.",
+        "Performance target: match Groq benchmarks with local sovereignty.",
     },
     InferenceTier.TIER_IV_ONPREM: {
         "name": "Tier IV: DigiRella Owned",
@@ -99,7 +99,7 @@ INFERENCE_TIER_SPECS = {
             "pro": "8× A100 ($145k) → 300+ tok/s (all models, Groq-level)",
         },
         "notes": "Owned hardware with Groq-equivalent performance. No recurring costs. "
-                 "Complete data isolation. Fine-tuning capable.",
+        "Complete data isolation. Fine-tuning capable.",
     },
 }
 
@@ -145,10 +145,10 @@ class Settings(BaseSettings):
     # Get free API key at: https://console.groq.com/
     groq_api_key: str | None = None
     groq_model: str = "meta-llama/llama-4-maverick-17b-128e-instruct"  # 2026 Gold Standard
-    
+
     # Maverick Configuration:
     # - "meta-llama/llama-4-maverick-17b-128e-instruct": 2026 Gold Standard (ALL tasks)
-    # 
+    #
     # Legacy Models (still supported):
     # - "llama-3.3-70b-versatile": Best for Azerbaijani language quality
     # - "qwen3-32b": Best for math/logic, calculations (Turkish leakage risk)

@@ -43,6 +43,7 @@ repos:
 
       - id: check-json
         name: ✅ Validate JSON files
+        exclude: ^\.vscode/  # VS Code uses JSONC (JSON with comments)
 
       - id: check-toml
         name: ✅ Validate TOML files

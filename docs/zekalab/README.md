@@ -1,6 +1,6 @@
 # 🌿 ALEM Technical Documentation
 
-> **ALEM** = **A**gronomical **L**ogic & **E**valuation **M**odel  
+> **ALEM** = **A**gronomical **L**ogic & **E**valuation **M**odel
 > Azerbaijani agricultural AI with 100% open-source models and full data sovereignty.
 
 ---
@@ -59,6 +59,7 @@ mindmap
 | [08-SECURITY](08-SECURITY.md) | Input validation, PII protection |
 | [09-PERFORMANCE-SLA](09-PERFORMANCE-SLA.md) | Latency targets, SLOs |
 | [17-SECURITY-ENHANCEMENT-PLAN](17-SECURITY-ENHANCEMENT-PLAN.md) | 🔐 **Production security roadmap** |
+| [22-QUALITY-GATE-SYSTEM](22-QUALITY-GATE-SYSTEM.md) | 🛡️ **Pre-commit hooks & quality checks** |
 
 ### Deployment
 
@@ -105,39 +106,39 @@ flowchart TB
     subgraph external["🌐 External: Yonca Mobile (Digital Umbrella)"]
         yonca_mobile["📱 Production App<br/><i>Future data source</i>"]
     end
-    
+
     subgraph yonca_ai["🤖 YONCA AI (Our System)"]
         subgraph ui["🖥️ Demo UI"]
             chainlit["Chainlit :8501"]
         end
-        
+
         subgraph brain["🧠 ALEM Agent"]
             agent["LangGraph"]
             llm["Groq/Ollama"]
         end
-        
+
         subgraph data["💾 App Data (Docker)"]
             pg["🐘 PostgreSQL :5433"]
             redis["🔴 Redis :6379"]
         end
     end
-    
+
     subgraph observe["📊 Langfuse Stack (Separate)"]
         langfuse_db["🐘 PostgreSQL<br/><i>auto-managed</i>"]
         langfuse_ui["Langfuse :3001"]
     end
-    
+
     yonca_mobile -.->|"future sync"| pg
     chainlit --> agent --> llm
     agent --> pg
     agent --> redis
     agent -.->|traces| langfuse_db
     langfuse_db --> langfuse_ui
-    
+
     style external fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
     style yonca_ai fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
     style observe fill:#f3e5f5,stroke:#7b1fa2
 ```
 
-> **Key:** Yonca AI = our system | Yonca Mobile = Digital Umbrella's production app  
+> **Key:** Yonca AI = our system | Yonca Mobile = Digital Umbrella's production app
 > See [03-ARCHITECTURE](03-ARCHITECTURE.md) for full data ecosystem + VS Code DB access.

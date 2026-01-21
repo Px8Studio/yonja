@@ -1,27 +1,31 @@
 import argparse
 import datetime
 import sys
-from typing import Dict
 
 # Try toml first (read+write). Fallback to tomllib for read and manual write.
 try:
     import toml  # type: ignore
+
     HAS_TOML = True
 except Exception:
     HAS_TOML = False
 
 try:
     import tomllib  # Python 3.11+
+
     HAS_TOMLLIB = True
 except Exception:
     HAS_TOMLLIB = False
 
 if not HAS_TOML and not HAS_TOMLLIB:
-    print("Error: Neither 'toml' nor 'tomllib' is available. Install 'toml' (pip install toml).", file=sys.stderr)
+    print(
+        "Error: Neither 'toml' nor 'tomllib' is available. Install 'toml' (pip install toml).",
+        file=sys.stderr,
+    )
     sys.exit(1)
 
 
-def load_toml(path: str) -> Dict:
+def load_toml(path: str) -> dict:
     if HAS_TOML:
         return toml.load(path)
     else:
@@ -29,7 +33,7 @@ def load_toml(path: str) -> Dict:
             return tomllib.load(f)
 
 
-def dump_toml(data: Dict, path: str) -> None:
+def dump_toml(data: dict, path: str) -> None:
     if HAS_TOML:
         with open(path, "w", encoding="utf-8") as f:
             toml.dump(data, f)
@@ -56,7 +60,7 @@ def dump_toml(data: Dict, path: str) -> None:
 
 def bump_version(current: str, bump_type: str) -> str:
     try:
-        major, minor, patch = [int(x) for x in current.split('.')]
+        major, minor, patch = (int(x) for x in current.split("."))
     except Exception:
         major, minor, patch = 0, 0, 0
     if bump_type == "major":
@@ -68,12 +72,30 @@ def bump_version(current: str, bump_type: str) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="CI auto-bump ALEM version when model identifiers change.")
-    parser.add_argument("--file", default="alem_version.toml", help="Path to the ALEM version TOML file.")
-    parser.add_argument("--component", required=True, choices=["nl_to_sql", "reasoner", "vision"], help="Target component to update.")
-    parser.add_argument("--model-id", required=True, help="New model identifier (e.g., qwen3-235b).")
-    parser.add_argument("--fingerprint", required=True, help="Model fingerprint/hash/version from provider.")
-    parser.add_argument("--bump", choices=["auto", "major", "minor", "patch"], default="auto", help="Bump strategy. 'auto' bumps minor when changes detected.")
+    parser = argparse.ArgumentParser(
+        description="CI auto-bump ALEM version when model identifiers change."
+    )
+    parser.add_argument(
+        "--file", default="alem_version.toml", help="Path to the ALEM version TOML file."
+    )
+    parser.add_argument(
+        "--component",
+        required=True,
+        choices=["nl_to_sql", "reasoner", "vision"],
+        help="Target component to update.",
+    )
+    parser.add_argument(
+        "--model-id", required=True, help="New model identifier (e.g., qwen3-235b)."
+    )
+    parser.add_argument(
+        "--fingerprint", required=True, help="Model fingerprint/hash/version from provider."
+    )
+    parser.add_argument(
+        "--bump",
+        choices=["auto", "major", "minor", "patch"],
+        default="auto",
+        help="Bump strategy. 'auto' bumps minor when changes detected.",
+    )
 
     args = parser.parse_args()
 
@@ -90,7 +112,11 @@ def main():
 
     # Determine bump
     current_version = data["alem"].get("version", "0.0.0")
-    bump_type = "minor" if (args.bump == "auto" and changed) else (args.bump if args.bump != "auto" else "patch")
+    bump_type = (
+        "minor"
+        if (args.bump == "auto" and changed)
+        else (args.bump if args.bump != "auto" else "patch")
+    )
     new_version = bump_version(current_version, bump_type)
 
     # Update timestamp

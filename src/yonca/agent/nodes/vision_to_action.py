@@ -9,7 +9,7 @@ It summarizes intent and produces a farmer-facing action plan.
 
 from typing import Any
 
-from yonca.agent.state import AgentState, add_assistant_message, UserIntent
+from yonca.agent.state import AgentState, UserIntent, add_assistant_message
 from yonca.llm.inference_engine import InferenceEngine
 from yonca.llm.providers.base import LLMMessage
 
@@ -23,6 +23,7 @@ SYSTEM_PROMPT = (
     "- Xəbərdarlıq: ehtiyac varsa xəbərdarlıq səviyyəsi (LOW/MEDIUM/HIGH)\n"
     "Azerbaycan dilində, səlis və praktik yaz."
 )
+
 
 async def vision_to_action_node(state: AgentState) -> dict[str, Any]:
     """Propose actions based on image descriptions.
@@ -41,7 +42,9 @@ async def vision_to_action_node(state: AgentState) -> dict[str, Any]:
     engine = InferenceEngine()
     messages = [
         LLMMessage.system(SYSTEM_PROMPT),
-        LLMMessage.user(f"Şəkil təsviri: {image_note}. İstifadəçi mesajı: " + state.get("current_input", "")),
+        LLMMessage.user(
+            f"Şəkil təsviri: {image_note}. İstifadəçi mesajı: " + state.get("current_input", "")
+        ),
     ]
 
     try:
@@ -50,12 +53,18 @@ async def vision_to_action_node(state: AgentState) -> dict[str, Any]:
         return {
             "current_response": content,
             "nodes_visited": nodes_visited,
-            "messages": [add_assistant_message(state, content, "vision_to_action", UserIntent.VISION_ANALYSIS)],
+            "messages": [
+                add_assistant_message(
+                    state, content, "vision_to_action", UserIntent.VISION_ANALYSIS
+                )
+            ],
         }
     except Exception:
         msg = "Şəkil analizi zamanı xəta baş verdi"
         return {
             "error": msg,
             "nodes_visited": nodes_visited,
-            "messages": [add_assistant_message(state, msg, "vision_to_action", UserIntent.VISION_ANALYSIS)],
+            "messages": [
+                add_assistant_message(state, msg, "vision_to_action", UserIntent.VISION_ANALYSIS)
+            ],
         }

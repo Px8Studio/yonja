@@ -28,10 +28,9 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from faker import Faker
-
-from yonca.data.database import Base, engine, get_db_session
-from yonca.data.models import (
+from faker import Faker  # noqa: E402
+from yonca.data.database import Base, engine, get_db_session  # noqa: E402
+from yonca.data.models import (  # noqa: E402
     CropRotationLog,
     FarmProfile,
     NDVIReading,
@@ -39,13 +38,16 @@ from yonca.data.models import (
     SowingDeclaration,
     UserProfile,
 )
-from yonca.data.models.farm import FarmType, Region
-from yonca.data.models.ndvi import HealthStatus
-from yonca.data.models.parcel import IrrigationType, SoilType
-from yonca.data.models.sowing import CropType, DeclarationStatus
-from yonca.data.models.user import EducationLevel, ExperienceLevel, NotificationPreference
-from yonca.data.providers.azerbaijani import AzerbaijaniAgrarianProvider
-
+from yonca.data.models.farm import FarmType, Region  # noqa: E402
+from yonca.data.models.ndvi import HealthStatus  # noqa: E402
+from yonca.data.models.parcel import IrrigationType, SoilType  # noqa: E402
+from yonca.data.models.sowing import CropType, DeclarationStatus  # noqa: E402
+from yonca.data.models.user import (  # noqa: E402
+    EducationLevel,
+    ExperienceLevel,
+    NotificationPreference,
+)
+from yonca.data.providers.azerbaijani import AzerbaijaniAgrarianProvider  # noqa: E402
 
 # Initialize Faker with Azerbaijani provider
 fake = Faker("az_AZ")
@@ -180,7 +182,7 @@ async def create_farm(
     possible_regions = FARM_TYPE_TO_REGION.get(farm_type, ["Aran"])
     region_name = fake.random_element(possible_regions)
     region = Region(region_name)
-    
+
     # Generate area based on farm type
     area_ranges = {
         FarmType.CROP: (5.0, 30.0),
@@ -190,11 +192,11 @@ async def create_farm(
     }
     area_range = area_ranges.get(farm_type, (3.0, 15.0))
     total_area = round(fake.pyfloat(min_value=area_range[0], max_value=area_range[1]), 2)
-    
+
     # Primary activity
     crops = REGION_CROPS.get(region_name, [CropType.WINTER_WHEAT])
     primary_activity = fake.random_element([c.value for c in crops])
-    
+
     farm = FarmProfile(
         farm_id=fake.farm_id(user_index, farm_index),
         user_id=user_id,
@@ -219,19 +221,21 @@ async def create_parcel(
     """Create a parcel within a farm."""
     region_name = farm.region.value
     lat, lon = fake.coordinates(region_name, offset_km=20.0)
-    
+
     # Soil type weighted by region (simplified)
     soil_types = [SoilType.LOAM, SoilType.CLAY, SoilType.ALLUVIAL, SoilType.CHERNOZEM]
     soil = fake.random_element(soil_types)
-    
+
     # Irrigation type based on farm type
     if farm.farm_type in [FarmType.ORCHARD, FarmType.MIXED]:
         irrigation = fake.random_element([IrrigationType.DRIP, IrrigationType.SPRINKLER])
     elif farm.farm_type == FarmType.CROP:
-        irrigation = fake.random_element([IrrigationType.PIVOT, IrrigationType.FURROW, IrrigationType.FLOOD])
+        irrigation = fake.random_element(
+            [IrrigationType.PIVOT, IrrigationType.FURROW, IrrigationType.FLOOD]
+        )
     else:
         irrigation = IrrigationType.RAINFED
-    
+
     parcel = Parcel(
         parcel_id=fake.parcel_id(region_name),
         farm_id=farm.farm_id,
@@ -240,7 +244,9 @@ async def create_parcel(
         area_hectares=area_ha,
         soil_type=soil,
         irrigation_type=irrigation,
-        elevation_m=fake.pyfloat(min_value=50, max_value=1500) if farm.region in [Region.SHEKI_ZAQATALA, Region.QUBA_QUSAR] else None,
+        elevation_m=fake.pyfloat(min_value=50, max_value=1500)
+        if farm.region in [Region.SHEKI_ZAQATALA, Region.QUBA_QUSAR]
+        else None,
     )
     session.add(parcel)
     return parcel
@@ -255,7 +261,7 @@ async def create_sowing_declaration(
     """Create a sowing declaration for a parcel."""
     crops = REGION_CROPS.get(region_name, [CropType.WINTER_WHEAT])
     crop = fake.random_element(crops)
-    
+
     # Determine sowing date based on crop
     if crop in [CropType.WINTER_WHEAT, CropType.BARLEY]:
         sowing_date = date(year - 1, 10, fake.random_int(1, 31))
@@ -265,11 +271,11 @@ async def create_sowing_declaration(
         sowing_date = date(year, 3, fake.random_int(1, 31))
     else:
         sowing_date = date(year, 3, fake.random_int(1, 31))
-    
+
     # Expected harvest (approx 4-6 months later)
     harvest_days = fake.random_int(120, 200)
     expected_harvest = sowing_date + timedelta(days=harvest_days)
-    
+
     declaration = SowingDeclaration(
         declaration_id=fake.declaration_id(year),
         parcel_id=parcel.parcel_id,
@@ -293,10 +299,10 @@ async def create_crop_rotation(
     """Create historical crop rotation log."""
     crops = REGION_CROPS.get(region_name, [CropType.WINTER_WHEAT])
     crop = fake.random_element(crops)
-    
+
     yield_per_ha = fake.yield_tons_per_ha(crop.value)
     total_yield = round(yield_per_ha * parcel.area_hectares, 2)
-    
+
     rotation = CropRotationLog(
         log_id=fake.crop_rotation_id(parcel.parcel_id, year),
         parcel_id=parcel.parcel_id,
@@ -318,7 +324,7 @@ async def create_ndvi_readings(
 ) -> list[NDVIReading]:
     """Create NDVI time series for a parcel."""
     readings = []
-    
+
     # Generate synthetic NDVI series
     ndvi_series = fake.ndvi_series(
         crop=crop_type.value,
@@ -326,7 +332,7 @@ async def create_ndvi_readings(
         days=270,
         interval_days=10,
     )
-    
+
     for i, data in enumerate(ndvi_series):
         reading = NDVIReading(
             reading_id=f"NDVI-{parcel.parcel_id.replace('AZ-', '')}-{data['date'].strftime('%Y%m%d')}",
@@ -338,39 +344,39 @@ async def create_ndvi_readings(
             data_source="synthetic",
         )
         readings.append(reading)
-    
+
     session.add_all(readings)
     return readings
 
 
 async def seed_database(reset: bool = False):
     """Main seeding function.
-    
+
     Args:
         reset: If True, drop and recreate all tables before seeding
     """
     print("🌱 Starting database seeding...")
-    
+
     if reset:
         print("⚠️  Resetting database (dropping all tables)...")
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.drop_all)
             await conn.run_sync(Base.metadata.create_all)
         print("✅ Database reset complete")
-    
+
     async with get_db_session() as session:
         current_year = date.today().year
-        
+
         for persona in PERSONAS:
             print(f"\n👤 Creating {persona['name']} (syn_user_{persona['index']:03d})")
-            
+
             # Create user
             user = await create_user(session, persona)
             print(f"   ✅ User: {user.user_id}")
-            
+
             # Create farms
             for farm_idx, farm_type in enumerate(persona["farm_types"]):
-                is_primary = (farm_idx == 0)
+                is_primary = farm_idx == 0
                 farm = await create_farm(
                     session,
                     user_id=user.user_id,
@@ -379,24 +385,33 @@ async def seed_database(reset: bool = False):
                     farm_type=farm_type,
                     is_primary=is_primary,
                 )
-                print(f"   🏠 Farm: {farm.farm_id} ({farm.farm_type.value}, {farm.region.value}, {farm.total_area_ha}ha)")
-                
+                print(
+                    f"   🏠 Farm: {farm.farm_id} ({farm.farm_type.value}, {farm.region.value}, {farm.total_area_ha}ha)"
+                )
+
                 # Determine parcel count (1-3 per farm)
                 parcel_count = min(3, max(1, int(farm.total_area_ha / 5) + 1))
                 remaining_area = farm.total_area_ha
-                
+
                 for parcel_idx in range(parcel_count):
                     # Distribute area among parcels
                     if parcel_idx == parcel_count - 1:
                         parcel_area = remaining_area
                     else:
-                        parcel_area = round(remaining_area / (parcel_count - parcel_idx) * fake.pyfloat(min_value=0.7, max_value=1.3), 2)
-                        parcel_area = min(parcel_area, remaining_area - 0.5 * (parcel_count - parcel_idx - 1))
+                        parcel_area = round(
+                            remaining_area
+                            / (parcel_count - parcel_idx)
+                            * fake.pyfloat(min_value=0.7, max_value=1.3),
+                            2,
+                        )
+                        parcel_area = min(
+                            parcel_area, remaining_area - 0.5 * (parcel_count - parcel_idx - 1)
+                        )
                     remaining_area -= parcel_area
-                    
+
                     parcel = await create_parcel(session, farm, parcel_idx, parcel_area)
                     print(f"      📍 Parcel: {parcel.parcel_id} ({parcel_area}ha)")
-                    
+
                     # Create current year sowing declaration
                     declaration = await create_sowing_declaration(
                         session,
@@ -405,12 +420,12 @@ async def seed_database(reset: bool = False):
                         current_year,
                     )
                     print(f"         🌾 Crop: {declaration.crop_type.value}")
-                    
+
                     # Create historical crop rotation (3 years)
                     for year in range(current_year - 3, current_year):
                         await create_crop_rotation(session, parcel, farm.region.value, year)
                     print(f"         📊 Rotation: {current_year - 3}-{current_year - 1}")
-                    
+
                     # Create NDVI readings
                     ndvi_readings = await create_ndvi_readings(
                         session,
@@ -419,26 +434,31 @@ async def seed_database(reset: bool = False):
                         declaration.sowing_date,
                     )
                     print(f"         🛰️  NDVI: {len(ndvi_readings)} readings")
-        
+
         # Commit all changes
         await session.commit()
-    
+
     print("\n" + "=" * 50)
     print("✅ Database seeding complete!")
     print("=" * 50)
-    
+
     # Print summary
     async with get_db_session() as session:
         from sqlalchemy import func, select
-        
+
         user_count = (await session.execute(select(func.count(UserProfile.user_id)))).scalar()
         farm_count = (await session.execute(select(func.count(FarmProfile.farm_id)))).scalar()
         parcel_count = (await session.execute(select(func.count(Parcel.parcel_id)))).scalar()
-        declaration_count = (await session.execute(select(func.count(SowingDeclaration.declaration_id)))).scalar()
-        rotation_count = (await session.execute(select(func.count(CropRotationLog.log_id)))).scalar()
+        declaration_count = (
+            await session.execute(select(func.count(SowingDeclaration.declaration_id)))
+        ).scalar()
+        rotation_count = (
+            await session.execute(select(func.count(CropRotationLog.log_id)))
+        ).scalar()
         ndvi_count = (await session.execute(select(func.count(NDVIReading.reading_id)))).scalar()
-        
-        print(f"""
+
+        print(
+            f"""
 📊 Summary:
    👤 Users:        {user_count}
    🏠 Farms:        {farm_count}
@@ -446,14 +466,17 @@ async def seed_database(reset: bool = False):
    🌾 Declarations: {declaration_count}
    📊 Rotations:    {rotation_count}
    🛰️  NDVI:        {ndvi_count}
-""")
+"""
+        )
 
 
 if __name__ == "__main__":
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="Seed database with synthetic data")
-    parser.add_argument("--reset", action="store_true", help="Drop and recreate tables before seeding")
+    parser.add_argument(
+        "--reset", action="store_true", help="Drop and recreate tables before seeding"
+    )
     args = parser.parse_args()
-    
+
     asyncio.run(seed_database(reset=args.reset))

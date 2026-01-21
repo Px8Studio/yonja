@@ -1,10 +1,7 @@
-import asyncio
-import types
-
 import pytest
-
-from yonca.agent.state import AgentState
 from yonca.agent.nodes.nl_to_sql import nl_to_sql_node
+from yonca.agent.state import AgentState
+
 
 class DummyResp:
     def __init__(self, content: str):
@@ -14,14 +11,17 @@ class DummyResp:
         self.finish_reason = "stop"
         self.metadata = {}
 
+
 class DummyEngine:
     async def generate(self, messages, temperature=0.0, max_tokens=300):
         return DummyResp("SELECT * FROM farms;")
+
 
 @pytest.mark.asyncio
 async def test_nl_to_sql_node_generates_select(monkeypatch):
     # Patch InferenceEngine to our dummy
     import yonca.agent.nodes.nl_to_sql as mod
+
     mod.InferenceEngine = lambda: DummyEngine()
 
     state: AgentState = {

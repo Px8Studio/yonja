@@ -9,12 +9,13 @@ Revises: chainlit_tables_001
 Create Date: 2026-01-19
 
 """
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
+
 # revision identifiers, used by Alembic.
-revision = 'add_defaultopen_steps'
-down_revision = 'chainlit_tables_001'
+revision = "add_defaultopen_steps"
+down_revision = "chainlit_tables_001"
 branch_labels = None
 depends_on = None
 
@@ -24,16 +25,21 @@ def upgrade() -> None:
     # Check if column exists (safe for re-runs)
     conn = op.get_bind()
     inspector = sa.inspect(conn)
-    columns = [col['name'] for col in inspector.get_columns('steps')]
-    
-    if 'defaultOpen' not in columns:
+    columns = [col["name"] for col in inspector.get_columns("steps")]
+
+    if "defaultOpen" not in columns:
         op.add_column(
-            'steps',
-            sa.Column('defaultOpen', sa.Boolean(), nullable=True, server_default='false',
-                     comment='Whether step is expanded by default (Chainlit 2.9+)')
+            "steps",
+            sa.Column(
+                "defaultOpen",
+                sa.Boolean(),
+                nullable=True,
+                server_default="false",
+                comment="Whether step is expanded by default (Chainlit 2.9+)",
+            ),
         )
 
 
 def downgrade() -> None:
     """Remove defaultOpen column from steps table."""
-    op.drop_column('steps', 'defaultOpen')
+    op.drop_column("steps", "defaultOpen")

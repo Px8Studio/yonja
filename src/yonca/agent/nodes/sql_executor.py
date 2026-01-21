@@ -7,8 +7,9 @@ returning results as formatted markdown table for display to farmer.
 
 from typing import Any
 
-from yonca.agent.state import AgentState, add_assistant_message, UserIntent
+from yonca.agent.state import AgentState, UserIntent, add_assistant_message
 from yonca.data.database import get_db_session
+
 
 async def sql_executor_node(state: AgentState) -> dict[str, Any]:
     """Execute SQL and format results.
@@ -38,15 +39,17 @@ async def sql_executor_node(state: AgentState) -> dict[str, Any]:
             cols = [c for c in result.keys()] if result.keys() else ["col"]
             header = " | ".join(cols)
             sep = " | ".join(["---"] * len(cols))
-            body_lines = [
-                " | ".join(str(v) for v in row) for row in rows
-            ]
-            formatted = f"| {header} |\n| {sep} |\n" + "\n".join(f"| {line} |" for line in body_lines)
+            body_lines = [" | ".join(str(v) for v in row) for row in rows]
+            formatted = f"| {header} |\n| {sep} |\n" + "\n".join(
+                f"| {line} |" for line in body_lines
+            )
 
         return {
             "current_response": formatted,
             "nodes_visited": nodes_visited,
-            "messages": [add_assistant_message(state, formatted, "sql_executor", UserIntent.DATA_QUERY)],
+            "messages": [
+                add_assistant_message(state, formatted, "sql_executor", UserIntent.DATA_QUERY)
+            ],
         }
     except Exception as e:
         error_msg = f"SQL xətası: {str(e)[:100]}"

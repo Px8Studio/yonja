@@ -1,6 +1,6 @@
 # Dependency & Environment Issues Analysis
 
-**Date:** January 19, 2026  
+**Date:** January 19, 2026
 **Status:** 🚨 Critical Issues Found
 
 ---
@@ -22,7 +22,7 @@
    - Has `langgraph-checkpoint-postgres = "^3.0.0"` ✅
    - Located: `C:\Users\rjjaf\_Projects\yonja\.venv\`
 
-2. **Demo UI (`demo-ui/requirements.txt`)** - pip-managed  
+2. **Demo UI (`demo-ui/requirements.txt`)** - pip-managed
    - ❌ **MISSING** both checkpoint packages!
    - Located: `C:\Users\rjjaf\_Projects\yonja\demo-ui\.venv\`
    - Dependencies install fresh each time → missing packages disappear
@@ -121,7 +121,7 @@ Project Root
 │   └── .venv/ (Backend)
 │       ├── fastapi
 │       ├── langgraph ✅
-│       ├── checkpoint-redis ✅  
+│       ├── checkpoint-redis ✅
 │       ├── checkpoint-postgres ✅
 │       └── ...
 │
@@ -153,8 +153,8 @@ Project Root
 + langgraph-checkpoint-postgres>=3.0.0
 ```
 
-**Impact:** Fixes both the "missing packages" warning AND enables PostgreSQL persistence  
-**Effort:** 2 minutes  
+**Impact:** Fixes both the "missing packages" warning AND enables PostgreSQL persistence
+**Effort:** 2 minutes
 **Risk:** None (additive only)
 
 ### Fix #2: Implement Weather Action Callback (IMMEDIATE)
@@ -164,7 +164,7 @@ Add `@cl.on_action` handler in [demo-ui/app.py](demo-ui/app.py):
 async def handle_action(action: cl.Action):
     """Handle quick-action buttons: weather, subsidy, irrigation."""
     action_type = action.payload.get("action")
-    
+
     if action_type == "weather":
         # Generate weather forecast for user's farm
         ...
@@ -178,8 +178,8 @@ async def handle_action(action: cl.Action):
         logger.warning(f"unknown_action", action=action_type)
 ```
 
-**Impact:** Fixes "No callback found" error  
-**Effort:** 30 minutes (need to implement weather/subsidy/irrigation logic)  
+**Impact:** Fixes "No callback found" error
+**Effort:** 30 minutes (need to implement weather/subsidy/irrigation logic)
 **Risk:** Low (handlers are optional until clicked)
 
 ### Fix #3: Consolidate to Single pyproject.toml (OPTIONAL - FUTURE)
@@ -229,7 +229,7 @@ yonja/
 ### What's Happening
 ```
 [error    ] save_persona_failed
-            error='(sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) ... 
+            error='(sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) ...
             violates foreign key constraint "alem_personas_chainlit_user_id_fkey"
             Key (chainlit_user_id)=(info@px8.studio) is not present in table "users".'
 ```
@@ -258,4 +258,3 @@ But apparently this isn't working. May need debugging, but secondary to checkpoi
 | Missing weather callbacks | 🟡 Medium | Handler not implemented | 30 min |
 | Environment duplication | 🟡 Medium | Two separate pyproject/requirements | 1-2 days |
 | Foreign key error | 🟡 Medium | User not persisted first | TBD |
-

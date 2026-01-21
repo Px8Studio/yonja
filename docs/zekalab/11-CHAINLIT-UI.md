@@ -32,12 +32,12 @@ flowchart TB
         sidebar["📋 Activity Dashboard"]
         actions["⚡ Quick Actions"]
     end
-    
+
     subgraph backend["⚙️ Backend"]
         agent["🧠 LangGraph Agent"]
         llm["🤖 LLM Provider"]
     end
-    
+
     subgraph appdata["💾 Yonca App Data"]
         subgraph pg_app["🐘 PostgreSQL :5433"]
             app_tables["users, threads, farms..."]
@@ -46,14 +46,14 @@ flowchart TB
             checkpoints["LangGraph checkpoints"]
         end
     end
-    
+
     subgraph observe["📊 Langfuse (Separate Stack)"]
         subgraph pg_langfuse["🐘 PostgreSQL (internal)"]
             traces["Auto-managed traces"]
         end
         langfuse_ui["Langfuse UI :3001"]
     end
-    
+
     ui <-->|"Stream"| agent
     agent --> llm
     agent <--> redis_app
@@ -107,9 +107,9 @@ from yonca.agent.memory import get_checkpointer_async
 async def on_message(message: cl.Message):
     graph = compile_agent_graph()
     checkpointer = await get_checkpointer_async()
-    
+
     config = {"configurable": {"thread_id": thread_id}}
-    
+
     async for event in graph.astream_events(
         {"messages": [HumanMessage(content=message.content)]},
         config=config,

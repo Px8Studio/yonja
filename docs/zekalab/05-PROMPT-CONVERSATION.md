@@ -15,18 +15,18 @@ graph TB
         fewshot["📚 Few-Shot Examples"]
         query["❓ User Query"]
     end
-    
+
     subgraph output["📤 Final Prompt"]
         template["Jinja2 Template"]
         final["Complete Prompt → LLM"]
     end
-    
+
     system --> template
     context --> template
     fewshot --> template
     query --> template
     template --> final
-    
+
     style system fill:#e3f2fd,stroke:#1565c0
     style context fill:#c8e6c9,stroke:#2e7d32
 ```
@@ -101,7 +101,7 @@ graph TB
         harvest["🌾 harvest_timing<br/><i>Məhsul yığımı</i>"]
         weather["🌤️ weather_inquiry<br/><i>Hava sorğusu</i>"]
     end
-    
+
     style irrigation fill:#e3f2fd,stroke:#1565c0
     style pest fill:#ffcdd2,stroke:#c62828
 ```

@@ -13,7 +13,7 @@ from typing import Any
 @dataclass
 class DemoFarm:
     """A demo farm profile."""
-    
+
     id: str
     name: str
     owner: str
@@ -25,7 +25,7 @@ class DemoFarm:
     irrigation_type: str
     experience_years: int
     last_ndvi: float | None = None
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for LangGraph state."""
         return {
@@ -115,7 +115,7 @@ DEMO_FARMS: list[DemoFarm] = [
 
 def get_demo_farms() -> list[dict[str, Any]]:
     """Get all demo farms as dictionaries.
-    
+
     Returns:
         List of farm dictionaries suitable for LangGraph state.
     """
@@ -124,10 +124,10 @@ def get_demo_farms() -> list[dict[str, Any]]:
 
 def get_demo_farm_by_id(farm_id: str) -> dict[str, Any] | None:
     """Get a specific demo farm by ID.
-    
+
     Args:
         farm_id: The farm ID to look up.
-        
+
     Returns:
         Farm dictionary or None if not found.
     """
@@ -139,10 +139,10 @@ def get_demo_farm_by_id(farm_id: str) -> dict[str, Any] | None:
 
 def get_mock_weather(region: str) -> dict[str, Any]:
     """Get mock weather data for a region.
-    
+
     Args:
         region: The region name (e.g., "Aran", "Quba-Xaçmaz").
-        
+
     Returns:
         Weather data dictionary.
     """
@@ -189,7 +189,7 @@ def get_mock_weather(region: str) -> dict[str, Any]:
             "forecast": "Həddindən artıq isti günlər gözlənilir.",
         },
     }
-    
+
     # Default weather if region not found
     default_weather = {
         "temperature_c": 30,
@@ -199,44 +199,46 @@ def get_mock_weather(region: str) -> dict[str, Any]:
         "condition": "aydın",
         "forecast": "Normal yay şəraiti gözlənilir.",
     }
-    
+
     weather = weather_by_region.get(region, default_weather)
     weather["region"] = region
     weather["timestamp"] = datetime.now().isoformat()
-    
+
     return weather
 
 
 class MockDataService:
     """Service for managing mock demo data."""
-    
+
     def __init__(self):
         """Initialize the mock data service."""
         self.farms = DEMO_FARMS
-    
+
     def get_all_farms(self) -> list[dict[str, Any]]:
         """Get all demo farms."""
         return get_demo_farms()
-    
+
     def get_farm(self, farm_id: str) -> dict[str, Any] | None:
         """Get a farm by ID."""
         return get_demo_farm_by_id(farm_id)
-    
+
     def get_weather(self, region: str) -> dict[str, Any]:
         """Get weather for a region."""
         return get_mock_weather(region)
-    
+
     def get_farm_selector_options(self) -> list[dict[str, str]]:
         """Get farm options for the selector widget.
-        
+
         Returns:
             List of {value, label} dicts for Chainlit Select widget.
         """
         options = []
         for farm in self.farms:
             label = f"{farm.name} ({farm.crop}, {farm.region})"
-            options.append({
-                "value": farm.id,
-                "label": label,
-            })
+            options.append(
+                {
+                    "value": farm.id,
+                    "label": label,
+                }
+            )
         return options

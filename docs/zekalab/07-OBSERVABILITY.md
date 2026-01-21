@@ -51,16 +51,16 @@ flowchart LR
         graph["LangGraph"]
         llm["LLM Provider"]
     end
-    
+
     subgraph observe["📊 Langfuse (:3001)"]
         traces["Traces"]
         sessions["Sessions"]
         costs["Cost Tracking"]
     end
-    
+
     graph --> |"Callbacks"| traces
     llm --> |"Token usage"| costs
-    
+
     style observe fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
 ```
 

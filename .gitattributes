@@ -1,4 +1,10 @@
-# Enforce consistent line endings
-*.ps1          text eol=crlf
-*.py           text eol=lf
+# Enforce consistent line endings (LF by default)
+*                 text eol=lf
+
+# Windows scripts that need CRLF
+*.ps1             text eol=crlf
+*.bat             text eol=crlf
+
+# Keep baseline and Python on LF
 .secrets.baseline text eol=lf
+*.py              text eol=lf

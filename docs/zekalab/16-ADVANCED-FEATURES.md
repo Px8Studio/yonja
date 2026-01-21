@@ -87,7 +87,7 @@ Output: SELECT * FROM farms WHERE total_area_ha > 50;
 ```
 Input:  "şəkil analiz et" + [uploaded_image.jpg]
 ↓
-Output: 
+Output:
 Müşahidə: Pomidor bitkilərində sarı ləkələr
 Risk: Septoria xəstəliyi
 Tövsiyə: Fungisid tətbiq et, suvarmanı azalt

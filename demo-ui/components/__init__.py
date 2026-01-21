@@ -3,25 +3,25 @@
 
 from components.farm_selector import create_farm_settings, handle_farm_change
 from components.insights_dashboard import (
-    format_response_metadata,
     add_response_metadata_element,
     create_activity_heatmap,
-    format_dashboard_summary,
     format_daily_breakdown,
+    format_dashboard_summary,
+    format_response_metadata,
+    format_welcome_stats,
     render_dashboard_sidebar,
     update_dashboard_with_day,
-    format_welcome_stats,
 )
 from components.spinners import (
-    SpinnerType,
     SPINNER_MESSAGES,
-    get_spinner_html,
+    LoadingStates,
+    SpinnerType,
+    clear_spinner,
     get_inline_spinner,
     get_progress_bar,
+    get_spinner_html,
     get_step_indicator,
-    LoadingStates,
     show_spinner,
-    clear_spinner,
 )
 
 __all__ = [

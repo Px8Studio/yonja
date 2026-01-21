@@ -25,8 +25,9 @@ Dashboard Features:
 from __future__ import annotations
 
 import logging
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Generator
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from langfuse import Langfuse
@@ -39,26 +40,26 @@ logger = logging.getLogger(__name__)
 # Langfuse Client Management
 # ============================================================
 
-_langfuse_client: "Langfuse | None" = None
+_langfuse_client: Langfuse | None = None
 
 
-def get_langfuse_client() -> "Langfuse | None":
+def get_langfuse_client() -> Langfuse | None:
     """Get or create the Langfuse client singleton.
-    
+
     Returns:
         Langfuse client if configured and enabled, None otherwise.
     """
     global _langfuse_client
-    
+
     if _langfuse_client is not None:
         return _langfuse_client
-    
+
     from yonca.config import settings
-    
+
     if not settings.langfuse_enabled:
         logger.debug("Langfuse disabled via settings")
         return None
-    
+
     if not settings.langfuse_secret_key or not settings.langfuse_public_key:
         logger.warning(
             "Langfuse enabled but API keys not configured. "
@@ -66,10 +67,10 @@ def get_langfuse_client() -> "Langfuse | None":
             "Get keys from Langfuse UI → Settings → API Keys"
         )
         return None
-    
+
     try:
         from langfuse import Langfuse
-        
+
         _langfuse_client = Langfuse(
             secret_key=settings.langfuse_secret_key,
             public_key=settings.langfuse_public_key,
@@ -77,13 +78,13 @@ def get_langfuse_client() -> "Langfuse | None":
             debug=settings.langfuse_debug,
             sample_rate=settings.langfuse_sample_rate,
         )
-        
+
         logger.info(
             f"Langfuse initialized: {settings.langfuse_host} "
             f"(sample_rate={settings.langfuse_sample_rate})"
         )
         return _langfuse_client
-        
+
     except ImportError:
         logger.error("langfuse package not installed. Run: poetry add langfuse")
         return None
@@ -94,11 +95,11 @@ def get_langfuse_client() -> "Langfuse | None":
 
 def shutdown_langfuse() -> None:
     """Flush and shutdown Langfuse client.
-    
+
     Call this on application shutdown to ensure all traces are sent.
     """
     global _langfuse_client
-    
+
     if _langfuse_client is not None:
         try:
             _langfuse_client.flush()
@@ -114,31 +115,32 @@ def shutdown_langfuse() -> None:
 # LangChain/LangGraph Callback Handler
 # ============================================================
 
+
 def create_langfuse_handler(
     session_id: str | None = None,
     user_id: str | None = None,
     tags: list[str] | None = None,
     metadata: dict[str, Any] | None = None,
     trace_name: str | None = None,
-) -> "CallbackHandler | None":
+) -> CallbackHandler | None:
     """Create a Langfuse callback handler for LangGraph tracing.
-    
+
     This handler automatically captures:
     - Every LangGraph node execution with timing
     - LLM calls (prompts, completions, tokens, costs)
     - Tool/function calls
     - Errors and exceptions
-    
+
     Args:
         session_id: Conversation thread ID (groups turns together)
         user_id: User identifier (for per-user analytics)
         tags: List of tags for filtering traces
         metadata: Additional metadata (farm_id, region, etc.)
         trace_name: Custom name for the trace
-        
+
     Returns:
         CallbackHandler if Langfuse is configured, None otherwise.
-        
+
     Example:
         ```python
         handler = create_langfuse_handler(
@@ -147,22 +149,22 @@ def create_langfuse_handler(
             tags=["production", "agronomist"],
             metadata={"farm_id": "farm_123", "region": "Baku"}
         )
-        
+
         config = {"callbacks": [handler]} if handler else {}
         result = await graph.ainvoke(state, config=config)
         ```
     """
     from yonca.config import settings
-    
+
     if not settings.langfuse_enabled:
         return None
-    
+
     if not settings.langfuse_secret_key or not settings.langfuse_public_key:
         return None
-    
+
     try:
         from langfuse.callback import CallbackHandler
-        
+
         # Merge ALEM version/fingerprint metadata
         version_meta = _get_alem_version_metadata()
         merged_meta = {**(metadata or {}), **version_meta}
@@ -179,9 +181,9 @@ def create_langfuse_handler(
             debug=settings.langfuse_debug,
             sample_rate=settings.langfuse_sample_rate,
         )
-        
+
         return handler
-        
+
     except ImportError:
         logger.warning("langfuse package not installed")
         return None
@@ -194,6 +196,7 @@ def create_langfuse_handler(
 # Trace Context Manager
 # ============================================================
 
+
 @contextmanager
 def langfuse_trace(
     name: str,
@@ -203,19 +206,19 @@ def langfuse_trace(
     metadata: dict[str, Any] | None = None,
 ) -> Generator[Any, None, None]:
     """Context manager for creating Langfuse traces.
-    
+
     Use this for tracing non-LangChain code (custom functions, API calls, etc.)
-    
+
     Args:
         name: Name of the trace/span
         session_id: Conversation thread ID
         user_id: User identifier
         input_data: Input to log
         metadata: Additional metadata
-        
+
     Yields:
         Langfuse trace object (or None if disabled)
-        
+
     Example:
         ```python
         with langfuse_trace("weather_api_call", session_id=thread_id) as trace:
@@ -225,11 +228,11 @@ def langfuse_trace(
         ```
     """
     client = get_langfuse_client()
-    
+
     if client is None:
         yield None
         return
-    
+
     try:
         version_meta = _get_alem_version_metadata()
         trace = client.trace(
@@ -240,7 +243,7 @@ def langfuse_trace(
             metadata={**(metadata or {}), **version_meta},
         )
         yield trace
-        
+
     except Exception as e:
         logger.error(f"Langfuse trace error: {e}")
         yield None
@@ -250,6 +253,7 @@ def langfuse_trace(
 # Scoring / Evaluation Helpers
 # ============================================================
 
+
 def score_trace(
     trace_id: str,
     name: str,
@@ -257,18 +261,18 @@ def score_trace(
     comment: str | None = None,
 ) -> bool:
     """Add a score to a trace for evaluation.
-    
+
     Scores are used to build evaluation datasets and track quality over time.
-    
+
     Args:
         trace_id: The Langfuse trace ID
         name: Score name (e.g., "accuracy", "relevance", "language_quality")
         value: Score value (typically 0-1 or 1-5)
         comment: Optional explanation
-        
+
     Returns:
         True if score was recorded successfully
-        
+
     Example:
         ```python
         # After getting user feedback
@@ -281,10 +285,10 @@ def score_trace(
         ```
     """
     client = get_langfuse_client()
-    
+
     if client is None:
         return False
-    
+
     try:
         client.score(
             trace_id=trace_id,
@@ -302,17 +306,18 @@ def score_trace(
 # Utility Functions
 # ============================================================
 
+
 def is_langfuse_healthy() -> bool:
     """Check if Langfuse connection is healthy.
-    
+
     Returns:
         True if Langfuse is reachable and authenticated
     """
     client = get_langfuse_client()
-    
+
     if client is None:
         return False
-    
+
     try:
         # Simple health check - auth will fail if keys are wrong
         client.auth_check()
@@ -323,24 +328,25 @@ def is_langfuse_healthy() -> bool:
 
 def get_langfuse_trace_url(trace_id: str) -> str | None:
     """Get the direct URL to a trace in the Langfuse UI.
-    
+
     Args:
         trace_id: The trace ID
-        
+
     Returns:
         URL to the trace in Langfuse dashboard
     """
     from yonca.config import settings
-    
+
     if not settings.langfuse_enabled:
         return None
-    
+
     return f"{settings.langfuse_host}/trace/{trace_id}"
 
 
 # ============================================================
 # ALEM Version Metadata Loader
 # ============================================================
+
 
 def _get_alem_version_metadata() -> dict:
     """Load ALEM version and fingerprints from alem_version.toml.
@@ -356,17 +362,20 @@ def _get_alem_version_metadata() -> dict:
     }
     """
     import os
+
     try:
         path = os.path.join(os.getcwd(), "alem_version.toml")
         if not os.path.exists(path):
             return {}
         try:
             import tomllib  # Python 3.11+
+
             with open(path, "rb") as f:
                 data = tomllib.load(f)
         except Exception:
             try:
                 import toml  # type: ignore
+
                 data = toml.load(path)
             except Exception:
                 return {}

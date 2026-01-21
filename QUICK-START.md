@@ -52,9 +52,9 @@
 $systemPrompt = Get-Content "prompts\system\master_v1.0.0_az_strict.txt" -Raw -Encoding UTF8
 
 # Call Groq API
-$headers = @{ 
+$headers = @{
     "Authorization" = "Bearer $env:YONCA_GROQ_API_KEY"
-    "Content-Type" = "application/json" 
+    "Content-Type" = "application/json"
 }
 
 $body = @{
@@ -82,11 +82,11 @@ Write-Host $response.choices[0].message.content
 
 ### Expected Good Response:
 ```
-📋 **Qısa Cavab**: Buğda əkini üçün ən yaxşı vaxt Sentyabr və Oktyabr 
+📋 **Qısa Cavab**: Buğda əkini üçün ən yaxşı vaxt Sentyabr və Oktyabr
 aylarıdır. Bu dövr torpaq rütubəti və hava şəraiti üçün idealdır.
 
-📝 **Ətraflı İzah**: Azərbaycanda buğda əkini əsasən payız mövsümündə 
-aparılır. Sentyabr ayının sonu və Oktyabr ayının əvvəli ən optimal 
+📝 **Ətraflı İzah**: Azərbaycanda buğda əkini əsasən payız mövsümündə
+aparılır. Sentyabr ayının sonu və Oktyabr ayının əvvəli ən optimal
 vaxtdır, çünki:
 
 ✅ **Tövsiyə Olunan Addımlar**:
@@ -278,7 +278,7 @@ You'll know it's working when:
 ## 🎯 Next Steps After Testing
 
 1. **If tests pass**: Deploy to production
-2. **If tests fail**: 
+2. **If tests fail**:
    - Check which words are leaking
    - Adjust system prompt in `prompts/system/master_v1.0.0_az_strict.txt`
    - Add more forbidden words to negative constraints

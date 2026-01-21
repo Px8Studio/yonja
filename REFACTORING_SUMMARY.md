@@ -1,6 +1,6 @@
 # 🚀 Refactoring Summary: Pure Chainlit Native UI
 
-**Date:** January 19, 2026  
+**Date:** January 19, 2026
 **Objective:** Remove custom JavaScript overlays and embrace pure Chainlit native UI for better maintainability and out-of-box experience.
 
 ---
@@ -209,6 +209,6 @@ The refactoring is **complete and backward compatible**:
 - Ready for production
 
 **Your app is now:**
-✨ **Pure Chainlit Native** ✨  
-✨ **Out-of-the-Box Quality** ✨  
+✨ **Pure Chainlit Native** ✨
+✨ **Out-of-the-Box Quality** ✨
 ✨ **Future-Proof** ✨

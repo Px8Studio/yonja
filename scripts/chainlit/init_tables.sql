@@ -6,7 +6,7 @@
 --
 -- Tables:
 --   users      - OAuth user identity (email from Google OAuth)
---   threads    - Conversation sessions  
+--   threads    - Conversation sessions
 --   steps      - Individual messages in conversations
 --   elements   - File attachments and media
 --   feedbacks  - User feedback (thumbs up/down)
@@ -153,8 +153,8 @@ COMMENT ON COLUMN feedbacks.value IS 'Feedback value (1=positive, -1=negative)';
 -- ============================================
 -- VERIFICATION
 -- ============================================
-SELECT 
+SELECT
     'Chainlit tables initialized successfully!' AS status,
-    (SELECT COUNT(*) FROM information_schema.tables 
+    (SELECT COUNT(*) FROM information_schema.tables
      WHERE table_name IN ('users', 'threads', 'steps', 'elements', 'feedbacks')
      AND table_schema = 'public') AS tables_created;

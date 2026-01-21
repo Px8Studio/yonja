@@ -15,7 +15,7 @@ flowchart TB
         direction TB
         ektis_db["<b>EKTIS Database</b><br/><i>Ministry of Agriculture</i><br/>━━━━━━━━━<br/>✅ Live: 100k+ farms<br/>• Crop declarations<br/>• Land registry<br/>• NDVI tracking"]
     end
-    
+
     subgraph external["🌐 YONCA MOBILE (Digital Umbrella)"]
         direction TB
         yonca_mobile["📱 <b>Yonca Mobile App</b><br/><i>Production • 100k+ users</i><br/>━━━━━━━━━<br/>✅ Existing Integrations:<br/>• EKTIS (farm data)<br/>• mygov ID (auth)<br/>• GPS tracking"]
@@ -39,21 +39,21 @@ flowchart TB
 
     %% Existing connections (solid green)
     ektis_db ==>|"✅ EXISTING<br/>Production API"| yonca_mobile
-    
+
     %% Current ALEM setup (solid)
     demo_ui --> alem
     alem --> synthetic
-    
+
     %% Future indirect path (dashed orange)
     yonca_mobile -.->|"🔮 Option A: Via Yonca Mobile<br/>Leverage existing integration"| our_system
-    
+
     %% Future direct paths (dashed purple)
     sima -.->|"🔮 Phase 1: Auth"| our_system
     ektis_direct -.->|"🔮 Option B: Direct API<br/>Separate partnership"| our_system
     cbar -.->|"🔮 Phase 2: Finance"| our_system
     azerkosmos -.->|"🔮 Phase 3: Imagery"| our_system
     weather -.->|"🔮 Phase 2: Forecasts"| our_system
-    
+
     style gov_existing fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
     style external fill:#fff3e0,stroke:#f57c00,stroke-width:2px
     style future_partners fill:#f3e5f5,stroke:#9c27b0,stroke-dasharray: 5 5,opacity:0.6
@@ -196,26 +196,26 @@ flowchart TB
         chainlit1["Chainlit UI<br/>:8501"]
         langgraph_lib1["LangGraph Library<br/>(imported directly)"]
         llm1["Ollama/Groq"]
-        
+
         chainlit1 --> langgraph_lib1
         langgraph_lib1 --> llm1
-        
+
         note1["✅ Direct Mode<br/>Fast iteration<br/>No HTTP overhead"]
     end
-    
+
     subgraph prod["🚀 PRODUCTION SIMULATION"]
         mobile["Mobile App"]
         fastapi["FastAPI<br/>:8000"]
         langgraph_lib2["LangGraph Library<br/>(imported by FastAPI)"]
         llm2["Groq API"]
-        
+
         mobile --> fastapi
         fastapi --> langgraph_lib2
         langgraph_lib2 --> llm2
-        
+
         note2["🌐 API Bridge Mode<br/>Tests production API<br/>(optional for demo)"]
     end
-    
+
     style dev fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
     style prod fill:#fff3e0,stroke:#f57c00,stroke-width:2px
 ```
@@ -277,34 +277,34 @@ There's **no duplication** — just different interfaces to the same intelligenc
 flowchart TB
     subgraph docker["🐳 Docker Compose Stack"]
         direction TB
-        
+
         subgraph yonca_ai_data["💾 YONCA AI APP DATA"]
             subgraph pg_app["🐘 PostgreSQL :5433<br/><code>yonca-postgres</code>"]
                 app_tables["📋 <b>App Tables</b><br/>━━━━━━━━━━━━━<br/>users, threads, steps<br/>user_profiles, farm_profiles<br/>parcels, alem_personas"]
             end
-            
+
             subgraph redis["🔴 Redis Stack :6379<br/><code>yonca-redis</code>"]
                 redis_data["⚡ <b>Runtime State</b><br/>━━━━━━━━━━━━━<br/>LangGraph checkpoints<br/>Session cache<br/>Rate limits"]
             end
         end
-        
+
         subgraph langfuse_stack["📊 LANGFUSE STACK (Self-Contained)"]
             subgraph pg_langfuse["🐘 PostgreSQL :5432<br/><code>yonca-langfuse-db</code><br/><i>Internal only</i>"]
                 lf_tables["🔍 <b>Auto-Managed</b><br/>━━━━━━━━━━━━━<br/>traces, generations<br/>scores, prompts<br/>sessions, users"]
             end
-            
+
             langfuse_ui["🌐 <b>Langfuse UI :3001</b><br/><code>yonca-langfuse</code>"]
         end
     end
-    
+
     subgraph external["🌐 FUTURE: External Data"]
         yonca_mobile["📱 Yonca Mobile<br/>(Digital Umbrella)"]
     end
-    
+
     pg_langfuse --> langfuse_ui
     langfuse_ui -.->|"REST API<br/>read-only"| pg_app
     yonca_mobile -.->|"Hot-swap<br/>when ready"| pg_app
-    
+
     style yonca_ai_data fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
     style langfuse_stack fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     style external fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
@@ -321,7 +321,7 @@ flowchart TB
 
 ### 🔍 Langfuse: How It Works
 
-**Q: Do we need to seed Langfuse with synthetic data?**  
+**Q: Do we need to seed Langfuse with synthetic data?**
 **A: No!** Langfuse auto-populates when you interact with ALEM:
 
 ```mermaid
@@ -331,14 +331,14 @@ sequenceDiagram
     participant A as 🧠 ALEM Agent
     participant LF as 📊 Langfuse
     participant DB as 🐘 Langfuse DB
-    
+
     U->>A: Send message
     A->>LF: Trace callback (auto)
     LF->>DB: INSERT trace, generation
     Note over DB: Auto-managed!<br/>No seeds needed
-    
+
     A->>U: Response
-    
+
     U->>LF: View dashboard :3001
     LF->>DB: Query traces
     DB->>LF: Return data
@@ -415,19 +415,19 @@ sequenceDiagram
 
     Note over F,L: 1️⃣ User sends message
     F->>C: "Pomidor nə vaxt suvarmalıyam?"
-    
+
     Note over C,P: 2️⃣ Chainlit saves to PostgreSQL
     C->>P: INSERT INTO steps (threadId, input, ...)
-    
+
     Note over C,G: 3️⃣ LangGraph processes
     C->>G: invoke(message, thread_id)
     G->>R: Load checkpoint (if exists)
     G->>P: Query farm_profiles, parcels
     G->>L: Trace: supervisor → agronomist → validator
-    
+
     Note over G,R: 4️⃣ LangGraph saves state
     G->>R: Save checkpoint (conversation memory)
-    
+
     Note over G,C: 5️⃣ Response streams back
     G-->>C: Stream tokens
     C->>P: INSERT INTO steps (output, generation, ...)

@@ -10,7 +10,7 @@ import asyncio
 import tempfile
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 
 async def main():
@@ -30,13 +30,12 @@ async def main():
         img_path = Path(tmpdir) / "crop.jpg"
         img.save(img_path)
         print(f"✅ Created test image: {img_path}")
-        
+
         # Test multimodal message creation
         from yonca.llm.multimodal import create_multimodal_message
-        
+
         msg = create_multimodal_message(
-            "This crop looks diseased. What should I do?",
-            [str(img_path)]
+            "This crop looks diseased. What should I do?", [str(img_path)]
         )
         print(f"✅ Created multimodal message: {type(msg).__name__}")
         print(f"   Content type: {type(msg.content)}")
@@ -49,14 +48,14 @@ async def main():
     print("-" * 70)
     from yonca.agent.nodes.nl_to_sql import nl_to_sql_node
     from yonca.agent.state import AgentState, UserIntent
-    
+
     state: AgentState = {
         "current_input": "Sahəsi 50 hektardan çox olan fermləri göstər",
         "nodes_visited": [],
         "intent": UserIntent.DATA_QUERY,
         "messages": [],
     }
-    
+
     result = await nl_to_sql_node(state)
     print(f"Input: {state['current_input']}")
     print(f"Generated SQL:\n  {result['current_response']}")
@@ -66,13 +65,13 @@ async def main():
     print("✨ FEATURE 3: Vision-to-Action Analysis")
     print("-" * 70)
     from yonca.agent.nodes.vision_to_action import vision_to_action_node
-    
+
     state = {
         "current_input": "Bu şəkildə pomidor bitkilərində sarı ləkələr var. Buna nə dəmir?",
         "nodes_visited": [],
         "messages": [],
     }
-    
+
     result = await vision_to_action_node(state)
     print(f"Input: {state['current_input']}")
     print(f"Analysis:\n{result['current_response']}")
@@ -100,7 +99,9 @@ async def main():
     print()
     print("Next steps:")
     print("1. Start FastAPI: poetry run uvicorn src.yonca.api.main:app")
-    print("2. Upload image: curl -X POST -F 'files=@image.jpg' http://localhost:8000/api/vision/analyze")
+    print(
+        "2. Upload image: curl -X POST -F 'files=@image.jpg' http://localhost:8000/api/vision/analyze"
+    )
     print("3. Start demo UI: cd demo-ui && chainlit run app.py")
     print()
 

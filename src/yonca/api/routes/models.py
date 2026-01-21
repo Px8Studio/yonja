@@ -90,9 +90,8 @@ async def check_model_available(
                 data = response.json()
                 available_models = [m["name"] for m in data.get("models", [])]
                 # Check both exact match and without tag
-                return (
-                    model_name in available_models
-                    or any(m.startswith(model_name.split(":")[0]) for m in available_models)
+                return model_name in available_models or any(
+                    m.startswith(model_name.split(":")[0]) for m in available_models
                 )
     except httpx.HTTPError:
         pass
@@ -128,23 +127,21 @@ async def list_models(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> ModelListResponse:
     """List all available local LLM models.
-    
+
     Returns information about all registered models including:
     - Whether they are available (pulled/imported in Ollama)
     - Whether they are currently active
     """
     models_info: list[ModelInfo] = []
     active_model = settings.ollama_model
-    
+
     for model in AVAILABLE_MODELS.values():
         is_available = await check_model_available(
             model.name,
             settings.ollama_base_url,
         )
-        models_info.append(
-            model_to_response(model, is_available, active_model)
-        )
-    
+        models_info.append(model_to_response(model, is_available, active_model))
+
     return ModelListResponse(
         models=models_info,
         active_model=active_model,
@@ -159,7 +156,7 @@ async def get_model_status(
 ) -> ModelStatusResponse:
     """Get status of a specific model."""
     model = get_model_info(model_name)
-    
+
     if not model:
         # Check if it's a valid Ollama model even if not in registry
         is_available = await check_model_available(
@@ -172,12 +169,12 @@ async def get_model_status(
             is_active=model_name == settings.ollama_model,
             error=None if is_available else "Model not found in registry or Ollama",
         )
-    
+
     is_available = await check_model_available(
         model.name,
         settings.ollama_base_url,
     )
-    
+
     return ModelStatusResponse(
         name=model.name,
         is_available=is_available,
@@ -195,7 +192,7 @@ async def get_active_model(
         active_model,
         settings.ollama_base_url,
     )
-    
+
     return ModelStatusResponse(
         name=active_model,
         is_available=is_available,
@@ -209,18 +206,18 @@ async def pull_model(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> dict:
     """Trigger model pull from Ollama Hub.
-    
+
     Note: This only works for models with source=OLLAMA_HUB.
     GGUF models must be imported using the import_model.py script.
     """
     model = get_model_info(model_name)
-    
+
     if model and model.source == ModelSource.GGUF_IMPORT:
         raise HTTPException(
             status_code=400,
             detail=f"Model '{model_name}' is a GGUF import. Use 'python scripts/import_model.py --name {model_name}' instead.",
         )
-    
+
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:  # 5 min timeout for pulling
             response = await client.post(

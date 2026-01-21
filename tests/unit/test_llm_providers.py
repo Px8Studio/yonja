@@ -5,21 +5,17 @@ Tests the LLM provider interfaces, message formatting, and response handling.
 Mocks external HTTP calls to ensure fast, reliable tests.
 """
 
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import httpx
 import pytest
-import pytest_asyncio
-
 from yonca.llm.providers.base import LLMMessage, LLMResponse, MessageRole
-from yonca.llm.providers.ollama import OllamaProvider
 from yonca.llm.providers.groq import GroqProvider, strip_thinking_tags
-
+from yonca.llm.providers.ollama import OllamaProvider
 
 # ============================================================
 # Base Provider Tests
 # ============================================================
+
 
 class TestLLMMessage:
     """Test LLMMessage model."""
@@ -79,6 +75,7 @@ class TestLLMResponse:
 # Ollama Provider Tests
 # ============================================================
 
+
 class TestOllamaProvider:
     """Test OllamaProvider implementation."""
 
@@ -96,7 +93,7 @@ class TestOllamaProvider:
         """Test message formatting for Ollama API."""
         provider = OllamaProvider()
         formatted = provider._format_messages(sample_messages)
-        
+
         assert len(formatted) == 2
         assert formatted[0]["role"] == "system"
         assert formatted[1]["role"] == "user"
@@ -106,7 +103,7 @@ class TestOllamaProvider:
     async def test_generate_success(self, sample_messages):
         """Test successful generation."""
         provider = OllamaProvider(model="qwen3:4b")
-        
+
         # Mock the HTTP response
         mock_response = MagicMock()
         mock_response.json.return_value = {
@@ -116,13 +113,13 @@ class TestOllamaProvider:
             "total_duration": 1000000,
         }
         mock_response.raise_for_status = MagicMock()
-        
+
         mock_client = AsyncMock()
         mock_client.post = AsyncMock(return_value=mock_response)
-        
+
         with patch.object(provider, "_get_client", return_value=mock_client):
             response = await provider.generate(sample_messages)
-        
+
         assert response.content == "Buğda payızda əkilir."
         assert response.model == "qwen3:4b"
         assert response.tokens_used == 5
@@ -132,44 +129,41 @@ class TestOllamaProvider:
     async def test_health_check_healthy(self):
         """Test health check when Ollama is healthy."""
         provider = OllamaProvider(model="qwen3:4b")
-        
+
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "models": [{"name": "qwen3:4b"}, {"name": "atllama"}]
-        }
-        
+        mock_response.json.return_value = {"models": [{"name": "qwen3:4b"}, {"name": "atllama"}]}
+
         mock_client = AsyncMock()
         mock_client.get = AsyncMock(return_value=mock_response)
-        
+
         with patch.object(provider, "_get_client", return_value=mock_client):
             is_healthy = await provider.health_check()
-        
+
         assert is_healthy is True
 
     @pytest.mark.asyncio
     async def test_health_check_model_not_found(self):
         """Test health check when model is not available."""
         provider = OllamaProvider(model="nonexistent:latest")
-        
+
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "models": [{"name": "qwen3:4b"}]
-        }
-        
+        mock_response.json.return_value = {"models": [{"name": "qwen3:4b"}]}
+
         mock_client = AsyncMock()
         mock_client.get = AsyncMock(return_value=mock_response)
-        
+
         with patch.object(provider, "_get_client", return_value=mock_client):
             is_healthy = await provider.health_check()
-        
+
         assert is_healthy is False
 
 
 # ============================================================
 # Groq Provider Tests
 # ============================================================
+
 
 class TestGroqProvider:
     """Test GroqProvider implementation."""
@@ -193,7 +187,7 @@ class TestGroqProvider:
         """Test message formatting for OpenAI-compatible API."""
         provider = GroqProvider(api_key="test-key")
         formatted = provider._format_messages(sample_messages)
-        
+
         assert len(formatted) == 2
         assert formatted[0]["role"] == "system"
         assert formatted[1]["role"] == "user"
@@ -202,24 +196,26 @@ class TestGroqProvider:
     async def test_generate_success(self, sample_messages):
         """Test successful generation."""
         provider = GroqProvider(api_key="test-key", model="llama-3.1-8b-instant")
-        
+
         mock_response = MagicMock()
         mock_response.json.return_value = {
-            "choices": [{
-                "message": {"content": "Cavab burada."},
-                "finish_reason": "stop",
-            }],
+            "choices": [
+                {
+                    "message": {"content": "Cavab burada."},
+                    "finish_reason": "stop",
+                }
+            ],
             "usage": {"total_tokens": 15},
             "model": "llama-3.1-8b-instant",
         }
         mock_response.raise_for_status = MagicMock()
-        
+
         mock_client = AsyncMock()
         mock_client.post = AsyncMock(return_value=mock_response)
-        
+
         with patch.object(provider, "_get_client", return_value=mock_client):
             response = await provider.generate(sample_messages)
-        
+
         assert response.content == "Cavab burada."
         assert response.tokens_used == 15
 
@@ -260,13 +256,14 @@ Here is my response."""
 # HTTP Pool Tests
 # ============================================================
 
+
 class TestHTTPClientPool:
     """Test HTTP connection pool management."""
 
     def test_pool_config_defaults(self):
         """Test default pool configuration."""
         from yonca.llm.http_pool import PoolConfig
-        
+
         config = PoolConfig()
         assert config.max_connections == 100
         assert config.max_keepalive_connections == 20
@@ -274,10 +271,10 @@ class TestHTTPClientPool:
     def test_provider_specific_configs(self):
         """Test provider-specific configurations."""
         from yonca.llm.http_pool import HTTPClientPool
-        
+
         groq_config = HTTPClientPool._get_config("groq")
         ollama_config = HTTPClientPool._get_config("ollama")
-        
+
         # Groq should be faster timeout
         assert groq_config.read_timeout < ollama_config.read_timeout
         # Ollama needs fewer connections (local)

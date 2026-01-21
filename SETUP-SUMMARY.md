@@ -2,6 +2,12 @@
 
 ## 🎯 What Was Created
 
+### Line Ending Policy (one-time setup)
+- Repo default is **LF**; Windows scripts (`*.ps1`, `*.bat`) use **CRLF** via [.gitattributes](.gitattributes).
+- Configure Git once (developer and devcontainer): `git config --global core.autocrlf input`.
+- Align your working tree after pulling policy changes: `git add --renormalize .` then commit.
+- VS Code is set to use LF via `.vscode/settings.json`.
+
 ### 1. **activate.ps1** - PowerShell Quick Activate
 ```powershell
 # Activate environment and see available commands
@@ -51,7 +57,7 @@ chainlit run demo-ui/app.py --port 8501
 # One command activation
 .\activate.ps1
 
-# Then use commands directly  
+# Then use commands directly
 uvicorn yonca.api.main:app --reload
 alembic upgrade head
 ```

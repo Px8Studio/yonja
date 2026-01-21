@@ -7,15 +7,15 @@ recommendations against established agronomic best practices.
 Example:
     ```python
     from yonca.rules import get_rules_engine, build_rule_context
-    
+
     engine = get_rules_engine()
-    
+
     context = build_rule_context(
         weather={"temperature_c": 35, "humidity_percent": 30},
         farm={"region": "aran"},
         intent="irrigation",
     )
-    
+
     matches = engine.evaluate(context)
     for match in matches:
         print(f"{match['rule_name']}: {match['recommendation_az']}")

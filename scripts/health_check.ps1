@@ -12,7 +12,7 @@ $ErrorActionPreference = "Continue"
 
 function Write-Status {
     param([string]$Service, [string]$Status, [string]$Details = "")
-    
+
     $icon = switch ($Status) {
         "OK" { "✅" }
         "FAIL" { "❌" }
@@ -20,7 +20,7 @@ function Write-Status {
         "WAIT" { "⏳" }
         default { "❓" }
     }
-    
+
     if (-not $Quiet) {
         $msg = "$icon $Service`: $Status"
         if ($Details) { $msg += " ($Details)" }
@@ -42,7 +42,7 @@ function Test-Docker {
 
 function Test-Container {
     param([string]$Name)
-    
+
     try {
         $status = docker inspect --format='{{.State.Status}}' $Name 2>&1
         if ($status -eq "running") {
@@ -60,7 +60,7 @@ function Test-Container {
 
 function Test-Endpoint {
     param([string]$Name, [string]$Url, [int]$ExpectedStatus = 200)
-    
+
     try {
         $response = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
         if ($response.StatusCode -eq $ExpectedStatus) {
@@ -130,7 +130,7 @@ try {
 # 6. FastAPI (if running)
 $apiCheck = Test-Endpoint "FastAPI" "http://localhost:8000/health"
 
-# 7. Chainlit (if running)  
+# 7. Chainlit (if running)
 $uiCheck = Test-Endpoint "Chainlit UI" "http://localhost:8501"
 
 if (-not $Quiet) {

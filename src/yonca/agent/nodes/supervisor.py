@@ -17,10 +17,8 @@ from yonca.agent.state import (
     UserIntent,
     add_assistant_message,
 )
-from yonca.config import settings
 from yonca.llm.factory import get_llm_provider
 from yonca.llm.providers.base import LLMMessage
-
 
 # ============================================================
 # Intent Classification Prompt
@@ -108,101 +106,115 @@ OFF_TOPIC_RESPONSE = (
 # Supervisor Node
 # ============================================================
 
+
 async def classify_intent(user_input: str) -> tuple[UserIntent, float, str]:
     """Classify the user's intent using LLM.
-    
+
     Args:
         user_input: The user's message
-        
+
     Returns:
         Tuple of (intent, confidence, reasoning)
     """
     # Quick pattern matching for common intents
     input_lower = user_input.lower()
-    
+
     # Greeting patterns
     if any(word in input_lower for word in ["salam", "necəsən", "xoş gördük", "sağ ol"]):
         return UserIntent.GREETING, 0.95, "Salamlama sözləri aşkarlandı"
-    
+
     # Weather patterns
     if any(word in input_lower for word in ["hava", "temperatur", "yağış", "proqnoz", "dərəcə"]):
         return UserIntent.WEATHER, 0.90, "Hava ilə bağlı sözlər aşkarlandı"
 
     # Data query / SQL patterns
-    if any(word in input_lower for word in [
-        "sql", "select", "verilənlər bazası", "sorgu", "query", "cədvəl", "filter",
-        "parsel", "parcel", "farm", "məlumat bazası"
-    ]):
+    if any(
+        word in input_lower
+        for word in [
+            "sql",
+            "select",
+            "verilənlər bazası",
+            "sorgu",
+            "query",
+            "cədvəl",
+            "filter",
+            "parsel",
+            "parcel",
+            "farm",
+            "məlumat bazası",
+        ]
+    ):
         return UserIntent.DATA_QUERY, 0.88, "Verilənlər bazası sorğusu aşkarlandı"
-    
+
     # For more complex classification, use LLM
     provider = get_llm_provider()
-    
+
     messages = [
         LLMMessage.system(INTENT_CLASSIFICATION_PROMPT),
         LLMMessage.user(user_input),
     ]
-    
+
     try:
         response = await provider.generate(messages, temperature=0.1, max_tokens=200)
-        
+
         # Parse JSON response
         content = response.content.strip()
-        
+
         # Extract JSON from response (handle markdown code blocks)
-        json_match = re.search(r'\{[^}]+\}', content, re.DOTALL)
+        json_match = re.search(r"\{[^}]+\}", content, re.DOTALL)
         if json_match:
             data = json.loads(json_match.group())
-            
+
             intent_str = data.get("intent", "general_advice")
             confidence = data.get("confidence", 0.5)
             reasoning = data.get("reasoning", "")
-            
+
             # Map string to enum
             try:
                 intent = UserIntent(intent_str)
             except ValueError:
                 intent = UserIntent.GENERAL_ADVICE
-            
+
             return intent, confidence, reasoning
-            
-    except Exception as e:
+
+    except Exception:
         # Fallback on error
         pass
-    
+
     return UserIntent.GENERAL_ADVICE, 0.5, "Standart təsnifat (LLM xətası)"
 
 
 async def supervisor_node(state: AgentState) -> dict[str, Any]:
     """Supervisor node - routes messages to appropriate handlers.
-    
+
     This is the entry point for all user messages. It:
     1. Classifies the intent
     2. Handles simple cases (greetings, off-topic) directly
     3. Routes complex cases to specialist nodes
-    
+
     Args:
         state: Current agent state
-        
+
     Returns:
         State updates with routing decision
     """
     user_input = state.get("current_input", "")
     nodes_visited = state.get("nodes_visited", []).copy()
     nodes_visited.append("supervisor")
-    
+
     # Classify intent
     intent, confidence, reasoning = await classify_intent(user_input)
-    
+
     # Determine target node
     target_node = INTENT_TO_NODE.get(intent, "agronomist")
     requires_context = INTENT_REQUIRES_CONTEXT.get(intent, [])
-    
+
     # Handle simple cases directly
     if intent == UserIntent.GREETING:
         import random
+
         response = random.choice(GREETING_RESPONSES)
-        
+
         return {
             "routing": RoutingDecision(
                 target_node="end",
@@ -216,7 +228,7 @@ async def supervisor_node(state: AgentState) -> dict[str, Any]:
             "nodes_visited": nodes_visited,
             "messages": [add_assistant_message(state, response, "supervisor", intent)],
         }
-    
+
     if intent == UserIntent.OFF_TOPIC:
         return {
             "routing": RoutingDecision(
@@ -231,7 +243,7 @@ async def supervisor_node(state: AgentState) -> dict[str, Any]:
             "nodes_visited": nodes_visited,
             "messages": [add_assistant_message(state, OFF_TOPIC_RESPONSE, "supervisor", intent)],
         }
-    
+
     if intent == UserIntent.CLARIFICATION:
         clarification_response = (
             "Zəhmət olmasa daha konkret ola bilərsinizmi? "
@@ -248,9 +260,11 @@ async def supervisor_node(state: AgentState) -> dict[str, Any]:
             "intent_confidence": confidence,
             "current_response": clarification_response,
             "nodes_visited": nodes_visited,
-            "messages": [add_assistant_message(state, clarification_response, "supervisor", intent)],
+            "messages": [
+                add_assistant_message(state, clarification_response, "supervisor", intent)
+            ],
         }
-    
+
     # Route to specialist
     return {
         "routing": RoutingDecision(
@@ -270,22 +284,23 @@ async def supervisor_node(state: AgentState) -> dict[str, Any]:
 # Conditional Edge Functions
 # ============================================================
 
+
 def route_from_supervisor(state: AgentState) -> str:
     """Determine next node based on supervisor's routing decision.
-    
+
     Used as a conditional edge in the graph.
     """
     routing = state.get("routing")
-    
+
     if routing is None:
         return "agronomist"  # Default
-    
+
     # If response already generated (greeting/off-topic), end
     if routing.target_node == "end":
         return "end"
-    
+
     # Check if context loading is needed
     if routing.requires_context:
         return "context_loader"
-    
+
     return routing.target_node

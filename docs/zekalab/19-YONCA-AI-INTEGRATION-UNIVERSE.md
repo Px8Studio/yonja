@@ -24,53 +24,53 @@ flowchart LR
         redis["⚡ Redis<br/><i>checkpoints</i>"]
         lf["📊 Langfuse<br/><i>traces</i>"]
     end
-    
+
     subgraph existing["✅ EXISTING (Via Yonca Mobile)"]
         ektis["🏛️ EKTIS<br/><i>100k farms</i>"]
         yonca["📱 Yonca Mobile<br/><i>DigiRella</i>"]
     end
-    
+
     subgraph p1["🔮 Phase 1"]
         sima["🔐 SİMA/ASAN<br/><i>Auth</i>"]
     end
-    
+
     subgraph p2["🔮 Phase 2"]
         ektis_d["🏛️ EKTIS Direct<br/><i>Option B</i>"]
         cbar["💰 CBAR<br/><i>Banking</i>"]
         weather["🌡️ Weather"]
         azintel["🖥️ AzInTelecom<br/><i>GPU</i>"]
     end
-    
+
     subgraph p3["🔮 Phase 3"]
         satellite["🛰️ Azərkosmos"]
         tax["🏛️ Tax Service"]
     end
-    
+
     subgraph p4["🔮 Phase 4"]
         pasha["💰 PASHA"]
         abb["💰 ABB"]
     end
-    
+
     subgraph p5["🔮 Phase 5+"]
         sap["🏢 SAP"]
         oracle["🏢 Oracle"]
     end
-    
+
     %% Existing (green solid)
     ektis ==>|"✅"| yonca
-    
+
     %% Current ALEM internal connections (blue solid)
     ui --> alem
     alem --> db & groq & redis & lf
-    
+
     %% Future via Yonca (orange dashed)
     yonca -.->|"🔮 A"| db
-    
+
     %% Future direct (purple dashed)
     sima -.->|"🔮"| ui
     ektis_d & cbar & weather & satellite & tax & pasha & abb & sap & oracle -.->|"🔮"| alem
     azintel -.->|"🔮 host"| alem
-    
+
     %% Styling
     style current fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     style existing fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
@@ -83,9 +83,9 @@ flowchart LR
 
 **Legend:**
 - ✅ **Solid green** = Yonca Mobile's existing integrations
-- ✅ **Solid blue** = ALEM currently implemented  
+- ✅ **Solid blue** = ALEM currently implemented
 - 🔮 **Dashed A** = Future via Yonca Mobile (Option A)
-- 🔮 **Dashed purple** = Future direct partnerships  
+- 🔮 **Dashed purple** = Future direct partnerships
 - **Phases** = Priority order (see timeline below)
 
 ---
@@ -127,7 +127,7 @@ flowchart LR
     db["💾 PostgreSQL<br/>(Synthetic)"]
     redis["⚡ Redis"]
     langfuse["📊 Langfuse"]
-    
+
     farmer -->|"Ask question"| chainlit
     chainlit -->|"Invoke graph"| alem
     alem -->|"LLM inference"| groq
@@ -137,7 +137,7 @@ flowchart LR
     groq -->|"Response"| alem
     alem -->|"Answer"| chainlit
     chainlit -->|"Display"| farmer
-    
+
     style alem fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     style db fill:#e8f5e9,stroke:#2e7d32
     style groq fill:#fff3e0,stroke:#f57c00
@@ -153,38 +153,38 @@ flowchart TB
     subgraph user["👤 USER LAYER"]
         farmer["Authenticated Farmer<br/>(SİMA Face ID)"]
     end
-    
+
     subgraph presentation["🖥️ PRESENTATION"]
         mobile["📱 Yonca Mobile<br/>(Digital Umbrella)"]
         web["🌐 Chainlit UI<br/>(ZekaLab)"]
     end
-    
+
     subgraph intelligence["🧠 INTELLIGENCE"]
         alem["ALEM Agent<br/>(AzInTelecom GPU)"]
     end
-    
+
     subgraph data_sources["📊 DATA SOURCES"]
         ektis["EKTIS<br/>(Real Farms)"]
         bank["CBAR Banking<br/>(Fermer Kartı)"]
         satellite["Azərkosmos<br/>(NDVI)"]
         weather_svc["Weather APIs"]
     end
-    
+
     subgraph auth["🔐 AUTHENTICATION"]
         sima["SİMA/ASAN<br/>(IDDA)"]
     end
-    
+
     farmer -->|"Login"| sima
     sima -->|"JWT"| mobile
     sima -->|"JWT"| web
     mobile --> alem
     web --> alem
-    
+
     alem <--> ektis
     alem <--> bank
     alem <--> satellite
     alem <--> weather_svc
-    
+
     style alem fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     style data_sources fill:#f3e5f5,stroke:#7b1fa2,stroke-dasharray: 5 5
     style auth fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
@@ -321,6 +321,6 @@ See [08-SECURITY](08-SECURITY.md) and [17-SECURITY-ENHANCEMENT-PLAN](17-SECURITY
 
 ---
 
-**Last Updated:** January 20, 2026  
-**Version:** 1.0  
+**Last Updated:** January 20, 2026
+**Version:** 1.0
 **Status:** 🌐 Strategic Roadmap

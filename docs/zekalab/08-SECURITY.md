@@ -47,26 +47,26 @@ flowchart TB
         rate["Rate Limiter<br/>30 req/min"]
         cors["CORS Policy"]
     end
-    
+
     subgraph layer2["🔍 Layer 2: Input"]
         length["Length Check<br/>≤2000 chars"]
         injection["Injection Scan"]
     end
-    
+
     subgraph layer3["🛡️ Layer 3: PII"]
         pii["PII Gateway"]
     end
-    
+
     subgraph layer4["🤖 Layer 4: AI Safety"]
         guardrails["Output Guardrails"]
     end
-    
+
     subgraph core["✅ Safe Zone"]
         llm["LLM Processing"]
     end
-    
+
     layer1 --> layer2 --> layer3 --> layer4 --> core
-    
+
     style layer1 fill:#ffcdd2,stroke:#c62828
     style layer2 fill:#fff3e0,stroke:#f57c00
     style layer3 fill:#e3f2fd,stroke:#1565c0
@@ -93,7 +93,7 @@ flowchart TB
 # src/yonca/security/input_validator.py
 class InputValidator:
     MAX_LENGTH = 2000
-    
+
     def validate(self, text: str) -> ValidationResult:
         # 1. Length check
         # 2. UTF-8 encoding check
@@ -115,7 +115,7 @@ class InputValidator:
 # src/yonca/security/pii_gateway.py
 class PIIGateway:
     """Strip or anonymize PII before LLM processing."""
-    
+
     PATTERNS = {
         "fin": r"\b[A-Z0-9]{7}\b",  # Azerbaijani FİN
         "phone": r"\+994\d{9}",
@@ -151,7 +151,7 @@ sequenceDiagram
     participant C as Chainlit
     participant G as Google OAuth
     participant DB as PostgreSQL
-    
+
     U->>C: Access /
     C->>G: Redirect to OAuth
     G->>C: Return token

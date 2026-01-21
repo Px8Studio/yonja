@@ -124,14 +124,26 @@ async def test_invoke_with_all_parameters(client, mock_httpx_client):
 
 @pytest.mark.asyncio
 async def test_invoke_http_error(client, mock_httpx_client):
-    """Test graph invocation with HTTP error."""
-    mock_httpx_client.post.side_effect = httpx.HTTPStatusError(
-        message="Server error",
-        request=MagicMock(),
-        response=MagicMock(status_code=500, text="Internal error"),
+    """Test graph invocation HTTP error handling."""
+    # Create a proper HTTP error response
+    error_response = httpx.Response(
+        status_code=500,
+        request=httpx.Request("POST", "http://localhost:2024/runs/stream"),
     )
+    mock_httpx_client.post.return_value = error_response
 
     with patch("httpx.AsyncClient", return_value=mock_httpx_client):
+        # The client should raise HTTPStatusError for 500 status
+        response = httpx.Response(
+            status_code=500,
+            request=httpx.Request("POST", "http://localhost:2024/runs/stream"),
+        )
+        mock_httpx_client.post.side_effect = httpx.HTTPStatusError(
+            "Server Error",
+            request=response.request,
+            response=response,
+        )
+
         with pytest.raises(httpx.HTTPStatusError):
             await client.invoke(
                 message="Test",

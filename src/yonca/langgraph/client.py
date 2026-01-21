@@ -54,6 +54,11 @@ class LangGraphClient:
             raise RuntimeError("LangGraphClient not initialized. Use 'async with'.")
         return self._client
 
+    @property
+    def _runs_url(self) -> str:
+        """Get the runs endpoint URL."""
+        return f"/runs/{self.graph_id}"
+
     async def aclose(self) -> None:
         """Close the underlying HTTP client."""
         if self._client:
@@ -87,47 +92,25 @@ class LangGraphClient:
     async def invoke(
         self,
         message: str,
-        thread_id: str | None = None,
+        thread_id: str,
         user_id: str | None = None,
-        session_id: str | None = None,
-        language: str = "az",
-    ) -> dict:
+        inputs: dict[str, Any] | None = None,
+        config: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Invoke the LangGraph agent."""
-        import uuid
-
-        from yonca.agent.state import create_initial_state
-
-        # Create or use thread ID
-        if thread_id is None:
-            thread_id = f"thread_{uuid.uuid4().hex[:12]}"
-
-        # Create initial state
-        initial_state = create_initial_state(
-            thread_id=thread_id,
-            user_input=message,
-            user_id=user_id,
-            session_id=session_id,
-            language=language,
-        )
-
-        # Prepare config and payload
-        config = {"configurable": {"thread_id": thread_id}}
         payload = {
-            "graph_id": self.graph_id,
-            "input": dict(initial_state),
-            "config": config,
-            "stream": False,
+            "input": {"messages": [{"role": "user", "content": message}]},
+            "config": {"configurable": {"thread_id": thread_id, "user_id": user_id}},
         }
+        if inputs:
+            payload["input"].update(inputs)
+        if config:
+            payload["config"].update(config)
 
-        # Build endpoint URL
-        url = f"{self.base_url}/runs/stream"
-
-        async with httpx.AsyncClient(transport=self._transport, timeout=self.timeout) as client:
-            response = await client.post(url, json=payload, timeout=self.timeout)
-
-            # Handle sync httpx.Response and AsyncMock in tests
-            await _await_if_needed(response.raise_for_status())
-            return await _await_if_needed(response.json())
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            response = await client.post(self._runs_url, json=payload)
+            response.raise_for_status()  # ensure HTTP errors propagate
+            return await response.json()
 
     async def stream(
         self,

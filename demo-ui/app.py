@@ -2365,14 +2365,17 @@ async def on_chat_resume(thread: ThreadDict):
 # ============================================
 @cl.on_message
 async def on_message(message: cl.Message):
-    """Handle incoming user messages with direct LangGraph integration.
+    """Handle incoming user messages with dual-mode support.
 
-    This is the CORE message handler - uses Direct Mode for simplicity.
-    For mobile app testing, use FastAPI directly (http://localhost:8000/docs).
+    Supports two integration modes:
+    - 'direct': In-process LangGraph execution (development)
+    - 'api': HTTP calls to FastAPI graph API (production-like)
+
+    Set via INTEGRATION_MODE environment variable.
     """
     # Get session data
     user_id = cl.user_session.get("user_id", "anonymous")
-    cl.user_session.get("farm_id")
+    farm_id = cl.user_session.get("farm_id")
     thread_id = cl.user_session.get("thread_id")
 
     # Get user preferences for response customization
@@ -2384,6 +2387,7 @@ async def on_message(message: cl.Message):
 
     # Get expertise-enhanced system prompt
     profile_prompt = cl.user_session.get("profile_prompt", "")
+    scenario_context = cl.user_session.get("scenario_context", None)
 
     logger.info(
         "message_received",
@@ -2391,6 +2395,7 @@ async def on_message(message: cl.Message):
         message_length=len(message.content),
         has_profile_prompt=bool(profile_prompt),
         expertise_areas=cl.user_session.get("expertise_areas", []),
+        integration_mode=demo_settings.integration_mode,
     )
 
     # Create response message
@@ -2399,174 +2404,314 @@ async def on_message(message: cl.Message):
 
     try:
         # ═══════════════════════════════════════════════════════
-        # DIRECT MODE — Native LangGraph Integration (Simplified)
+        # ROUTE TO APPROPRIATE HANDLER BASED ON INTEGRATION MODE
         # ═══════════════════════════════════════════════════════
-        agent = cl.user_session.get("agent")
-        model_info = cl.user_session.get("active_model") or resolve_active_model()
 
-        if not agent:
-            logger.error("agent_not_initialized")
-            await response_msg.stream_token(
-                "❌ Agent yüklənməyib. Zəhmət olmasa səhifəni yeniləyin."
-            )
-            await response_msg.update()
-            return
-
-        # Configure LangGraph execution
-        config: RunnableConfig = {
-            "configurable": {
-                "thread_id": thread_id,
-            },
-            "metadata": {
-                "model": model_info.get("model"),
-                "provider": model_info.get("provider"),
-                "location": model_info.get("location"),
-                "integration_mode": model_info.get("integration_mode"),
-                "source": model_info.get("source"),
-                "base_url": model_info.get("base_url"),
-            },
-        }
-
-        # Add Chainlit callback for native step visualization
-        # Also add Langfuse callback for observability
-        callbacks = []
-
-        if enable_thinking_steps:
-            # Chainlit's native LangChain callback handler
-            # This automatically creates steps for LangGraph nodes
-            cb = cl.LangchainCallbackHandler()
-            callbacks.append(cb)
-
-        # Add Langfuse tracing (always enabled for observability)
-        try:
-            from yonca.observability.langfuse import create_langfuse_handler
-
-            langfuse_handler = create_langfuse_handler(
-                session_id=thread_id,  # ✅ Maps to Langfuse session
+        if demo_settings.use_api_bridge:
+            # ─────────────────────────────────────────────────────
+            # API MODE — HTTP calls to FastAPI graph API
+            # ─────────────────────────────────────────────────────
+            await _handle_message_api_mode(
+                message=message,
+                response_msg=response_msg,
                 user_id=user_id,
-                tags=["alem", "chat-ui", "direct-mode"],
-                metadata={
-                    "model": model_info.get("model"),
-                    "provider": model_info.get("provider"),
-                    "has_profile": bool(profile_prompt),
-                },
-                trace_name=f"alem_chat_{thread_id[:8]}",
+                farm_id=farm_id,
+                thread_id=thread_id,
+                profile_prompt=profile_prompt,
+                scenario_context=scenario_context,
+                enable_thinking_steps=enable_thinking_steps,
+                enable_feedback=enable_feedback,
             )
-
-            if langfuse_handler:
-                callbacks.append(langfuse_handler)
-                logger.debug("langfuse_handler_attached", thread_id=thread_id)
-        except Exception as e:
-            logger.warning("langfuse_handler_failed", error=str(e))
-
-        if callbacks:
-            config["callbacks"] = callbacks
-
-        # Prepare initial state with profile-specific system prompt
-        from yonca.agent.state import create_initial_state
-
-        # Get scenario context from session
-        scenario_context = cl.user_session.get("scenario_context", None)
-
-        initial_state = create_initial_state(
-            thread_id=thread_id,
-            user_input=message.content,
-            user_id=user_id,
-            language="az",
-            system_prompt_override=profile_prompt if profile_prompt else None,
-            scenario_context=scenario_context,
-        )
-
-        # Stream response from LangGraph with step visualization
-        try:
-            # Import step visualization utilities
-            from services.step_visualization import (
-                _summarize_node_output,
-                create_step_for_node,
-                update_step_output,
-            )
-
-            current_step = None
-
-            async for event in agent.astream(initial_state, config=config):
-                # Extract response from final state
-                for node_name, node_output in event.items():
-                    if isinstance(node_output, dict):
-                        # Create step visualization if enabled
-                        if enable_thinking_steps and node_name != "__start__":
-                            # Close previous step if exists
-                            if current_step:
-                                try:
-                                    summary = _summarize_node_output(node_name, node_output)
-                                    await update_step_output(current_step, summary, "done")
-                                except Exception as e:
-                                    logger.warning(
-                                        "step_update_failed", node=node_name, error=str(e)
-                                    )
-
-                            # Create new step for current node
-                            try:
-                                current_step = await create_step_for_node(node_name)
-                            except Exception as e:
-                                logger.warning("step_creation_failed", node=node_name, error=str(e))
-                                current_step = None
-
-                        # Check for response content
-                        if "current_response" in node_output:
-                            response_content = node_output["current_response"]
-                            await response_msg.stream_token(response_content)
-
-                        # Log node execution
-                        logger.debug(
-                            "node_executed",
-                            node=node_name,
-                            has_response="current_response" in node_output,
-                        )
-
-            # Close final step
-            if current_step and enable_thinking_steps:
-                try:
-                    await update_step_output(current_step, "✓ Tamamlandı", "done")
-                except Exception:
-                    pass
-
-            logger.info(
-                "message_processed_direct",
+        else:
+            # ─────────────────────────────────────────────────────
+            # DIRECT MODE — Native LangGraph Integration
+            # ─────────────────────────────────────────────────────
+            await _handle_message_direct_mode(
+                message=message,
+                response_msg=response_msg,
                 user_id=user_id,
                 thread_id=thread_id,
+                profile_prompt=profile_prompt,
+                scenario_context=scenario_context,
+                enable_thinking_steps=enable_thinking_steps,
+                enable_feedback=enable_feedback,
             )
-
-        except Exception as e:
-            logger.error("langgraph_execution_error", error=str(e), exc_info=True)
-            await response_msg.stream_token(f"\n\n❌ Xəta: {str(e)}")
-
-        # Finalize response
-        await response_msg.update()
-
-        # Add feedback buttons if enabled
-        if enable_feedback:
-            actions = [
-                cl.Action(
-                    name="feedback_positive",
-                    value="positive",
-                    label="👍 Kömək etdi",
-                    payload={"type": "feedback", "sentiment": "positive"},
-                ),
-                cl.Action(
-                    name="feedback_negative",
-                    value="negative",
-                    label="👎 Təkmilləşdirmək olar",
-                    payload={"type": "feedback", "sentiment": "negative"},
-                ),
-            ]
-            await response_msg.send()
-            for action in actions:
-                await action.send(for_id=response_msg.id)
 
     except Exception as e:
         logger.error("message_handler_error", error=str(e), exc_info=True)
         await response_msg.stream_token(f"\n\n❌ Gözlənilməz xəta: {str(e)}")
         await response_msg.update()
+
+
+# ============================================
+# API MODE HANDLER
+# ============================================
+async def _handle_message_api_mode(
+    message: cl.Message,
+    response_msg: cl.Message,
+    user_id: str,
+    farm_id: str | None,
+    thread_id: str,
+    profile_prompt: str,
+    scenario_context: dict | None,
+    enable_thinking_steps: bool,
+    enable_feedback: bool,
+):
+    """Handle message via HTTP API calls to FastAPI graph routes.
+
+    This mode mirrors production behavior - all graph execution happens
+    in a separate FastAPI process, accessed via HTTP.
+    """
+    import httpx
+
+    try:
+        async with httpx.AsyncClient(
+            base_url=demo_settings.yonca_api_url,
+            timeout=120.0,
+        ) as client:
+            # Prepare request payload
+            payload = {
+                "message": message.content,
+                "thread_id": thread_id,
+                "user_id": user_id,
+                "farm_id": farm_id,
+                "language": "az",
+                "system_prompt_override": profile_prompt if profile_prompt else None,
+                "scenario_context": scenario_context,
+            }
+
+            # Call graph API
+            logger.info(
+                "calling_graph_api",
+                endpoint=f"{demo_settings.yonca_api_url}/api/v1/graph/invoke",
+                thread_id=thread_id,
+            )
+
+            response = await client.post(
+                "/api/v1/graph/invoke",
+                json=payload,
+            )
+            response.raise_for_status()
+
+            # Parse response
+            result = response.json()
+            response_text = result.get("response", "")
+
+            # Display response
+            await response_msg.stream_token(response_text)
+
+            logger.info(
+                "message_processed_api",
+                user_id=user_id,
+                thread_id=thread_id,
+                response_length=len(response_text),
+            )
+
+    except httpx.HTTPStatusError as e:
+        error_detail = e.response.text if e.response else str(e)
+        logger.error(
+            "graph_api_error",
+            status_code=e.response.status_code if e.response else None,
+            detail=error_detail,
+        )
+        await response_msg.stream_token(
+            f"\n\n❌ API xətası: {e.response.status_code if e.response else 'Unknown'}\n{error_detail}"
+        )
+    except httpx.RequestError as e:
+        logger.error("graph_api_connection_error", error=str(e))
+        await response_msg.stream_token(f"\n\n❌ API bağlantı xətası. FastAPI işləyir?\n{str(e)}")
+    except Exception as e:
+        logger.error("api_mode_error", error=str(e), exc_info=True)
+        raise
+
+    # Finalize response
+    await response_msg.update()
+
+    # Add feedback buttons if enabled
+    if enable_feedback:
+        await _add_feedback_buttons(response_msg)
+
+
+# ============================================
+# DIRECT MODE HANDLER
+# ============================================
+async def _handle_message_direct_mode(
+    message: cl.Message,
+    response_msg: cl.Message,
+    user_id: str,
+    thread_id: str,
+    profile_prompt: str,
+    scenario_context: dict | None,
+    enable_thinking_steps: bool,
+    enable_feedback: bool,
+):
+    """Handle message via in-process LangGraph execution.
+
+    This is the original implementation - graph runs in the same
+    process as Chainlit UI. Good for development, not scalable.
+    """
+    agent = cl.user_session.get("agent")
+    model_info = cl.user_session.get("active_model") or resolve_active_model()
+
+    if not agent:
+        logger.error("agent_not_initialized")
+        await response_msg.stream_token("❌ Agent yüklənməyib. Zəhmət olmasa səhifəni yeniləyin.")
+        await response_msg.update()
+        return
+
+    # Configure LangGraph execution
+    config: RunnableConfig = {
+        "configurable": {
+            "thread_id": thread_id,
+        },
+        "metadata": {
+            "model": model_info.get("model"),
+            "provider": model_info.get("provider"),
+            "location": model_info.get("location"),
+            "integration_mode": model_info.get("integration_mode"),
+            "source": model_info.get("source"),
+            "base_url": model_info.get("base_url"),
+        },
+    }
+
+    # Add Chainlit callback for native step visualization
+    # Also add Langfuse callback for observability
+    callbacks = []
+
+    if enable_thinking_steps:
+        # Chainlit's native LangChain callback handler
+        # This automatically creates steps for LangGraph nodes
+        cb = cl.LangchainCallbackHandler()
+        callbacks.append(cb)
+
+    # Add Langfuse tracing (always enabled for observability)
+    try:
+        from yonca.observability.langfuse import create_langfuse_handler
+
+        langfuse_handler = create_langfuse_handler(
+            session_id=thread_id,  # ✅ Maps to Langfuse session
+            user_id=user_id,
+            tags=["alem", "chat-ui", "direct-mode"],
+            metadata={
+                "model": model_info.get("model"),
+                "provider": model_info.get("provider"),
+                "has_profile": bool(profile_prompt),
+            },
+            trace_name=f"alem_chat_{thread_id[:8]}",
+        )
+
+        if langfuse_handler:
+            callbacks.append(langfuse_handler)
+            logger.debug("langfuse_handler_attached", thread_id=thread_id)
+    except Exception as e:
+        logger.warning("langfuse_handler_failed", error=str(e))
+
+    if callbacks:
+        config["callbacks"] = callbacks
+
+    # Prepare initial state with profile-specific system prompt
+    from yonca.agent.state import create_initial_state
+
+    initial_state = create_initial_state(
+        thread_id=thread_id,
+        user_input=message.content,
+        user_id=user_id,
+        language="az",
+        system_prompt_override=profile_prompt if profile_prompt else None,
+        scenario_context=scenario_context,
+    )
+
+    # Stream response from LangGraph with step visualization
+    try:
+        # Import step visualization utilities
+        from services.step_visualization import (
+            _summarize_node_output,
+            create_step_for_node,
+            update_step_output,
+        )
+
+        current_step = None
+
+        async for event in agent.astream(initial_state, config=config):
+            # Extract response from final state
+            for node_name, node_output in event.items():
+                if isinstance(node_output, dict):
+                    # Create step visualization if enabled
+                    if enable_thinking_steps and node_name != "__start__":
+                        # Close previous step if exists
+                        if current_step:
+                            try:
+                                summary = _summarize_node_output(node_name, node_output)
+                                await update_step_output(current_step, summary, "done")
+                            except Exception as e:
+                                logger.warning("step_update_failed", node=node_name, error=str(e))
+
+                        # Create new step for current node
+                        try:
+                            current_step = await create_step_for_node(node_name)
+                        except Exception as e:
+                            logger.warning("step_creation_failed", node=node_name, error=str(e))
+                            current_step = None
+
+                    # Check for response content
+                    if "current_response" in node_output:
+                        response_content = node_output["current_response"]
+                        await response_msg.stream_token(response_content)
+
+                    # Log node execution
+                    logger.debug(
+                        "node_executed",
+                        node=node_name,
+                        has_response="current_response" in node_output,
+                    )
+
+        # Close final step
+        if current_step and enable_thinking_steps:
+            try:
+                await update_step_output(current_step, "✓ Tamamlandı", "done")
+            except Exception:
+                pass
+
+        logger.info(
+            "message_processed_direct",
+            user_id=user_id,
+            thread_id=thread_id,
+        )
+
+    except Exception as e:
+        logger.error("langgraph_execution_error", error=str(e), exc_info=True)
+        await response_msg.stream_token(f"\n\n❌ Xəta: {str(e)}")
+
+    # Finalize response
+    await response_msg.update()
+
+    # Add feedback buttons if enabled
+    if enable_feedback:
+        await _add_feedback_buttons(response_msg)
+
+
+# ============================================
+# SHARED UTILITIES
+# ============================================
+async def _add_feedback_buttons(response_msg: cl.Message):
+    """Add feedback action buttons to a message."""
+    actions = [
+        cl.Action(
+            name="feedback_positive",
+            value="positive",
+            label="👍 Kömək etdi",
+            payload={"type": "feedback", "sentiment": "positive"},
+        ),
+        cl.Action(
+            name="feedback_negative",
+            value="negative",
+            label="👎 Təkmilləşdirmək olar",
+            payload={"type": "feedback", "sentiment": "negative"},
+        ),
+    ]
+    await response_msg.send()
+    for action in actions:
+        await action.send(for_id=response_msg.id)
 
 
 # ============================================

@@ -149,6 +149,64 @@ services:
       - setup  # Only runs with: docker-compose --profile setup up model-setup
 
   # ================================================
+  # LangGraph Dev Server (Production-like API)
+  # ================================================
+  langgraph:
+    build:
+      context: .
+      dockerfile: Dockerfile.langgraph
+    container_name: yonca-langgraph
+    ports:
+      - "2024:2024"
+    volumes:
+      # Mount source code for hot reload
+      - ./src:/app/src
+      - ./langgraph.json:/app/langgraph.json
+    environment:
+      # Python path (CRITICAL for imports)
+      - PYTHONPATH=/app/src
+
+      # LangGraph server settings
+      - LANGGRAPH_DEV_HOST=0.0.0.0
+      - LANGGRAPH_DEV_PORT=2024
+      - LANGGRAPH_API_LOG_LEVEL=INFO
+
+      # LLM Provider
+      - LLM_PROVIDER=ollama
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=qwen3:4b
+
+      # Database
+      - DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
+
+      # Redis for checkpointing
+      - REDIS_URL=redis://redis:6379/0
+
+      # Langfuse observability
+      - LANGFUSE_ENABLED=true
+      - LANGFUSE_SECRET_KEY=${YONCA_LANGFUSE_SECRET_KEY:-}
+      - LANGFUSE_PUBLIC_KEY=${YONCA_LANGFUSE_PUBLIC_KEY:-}
+      - LANGFUSE_HOST=http://langfuse-server:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    networks:
+      - yonca-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2024/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    profiles:
+      - langgraph  # Only runs with: docker-compose --profile langgraph up
+
+  # ================================================
   # Redis Stack (Caching, Session Storage & LangGraph Checkpointing)
   # Includes: RedisJSON, RediSearch (required for langgraph-checkpoint-redis)
   # ================================================

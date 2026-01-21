@@ -164,6 +164,12 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     redis_max_connections: int = 50
 
+    # ===== LangGraph Dev Server =====
+    # HTTP endpoint for decoupled graph execution (async/scalable)
+    # Dev server runs graph in separate process - critical for multi-user concurrency
+    langgraph_base_url: str = "http://127.0.0.1:2024"
+    langgraph_graph_id: str = "yonca_agent"  # From langgraph.json
+
     # ===== Security =====
     jwt_secret: str = "dev-secret-change-in-production"
     jwt_algorithm: str = "HS256"

@@ -107,11 +107,21 @@ async def init_chainlit_data_layer():
         return None
 
 
-# Initialize before importing chainlit
+# Initialize data layer before importing chainlit (but only if Postgres is configured)
+# This must happen BEFORE @cl.data_layer decorator runs
+_data_layer_initialized = False
 try:
-    asyncio.run(init_chainlit_data_layer())
+    from config import settings as demo_settings_early
+
+    if demo_settings_early.data_persistence_enabled:
+        asyncio.run(init_chainlit_data_layer())
+        _data_layer_initialized = True
+        logger.info("✅ Data layer pre-initialized for Chainlit registration")
+    else:
+        logger.info("⏩ Skipping data layer init (SQLite/no Postgres configured)")
 except Exception as e:
     logger.error(f"Failed to initialize data layer: {e}")
+    _data_layer_initialized = False
 
 # Now safe to import chainlit  # noqa: E402
 import chainlit as cl  # noqa: E402
@@ -313,11 +323,18 @@ print_startup_complete("🌿 Yonca Demo UI")
 # Requires Postgres database. SQLite falls back to session-only storage.
 # Set DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/yonca
 # ============================================
-if demo_settings.enable_data_persistence and demo_settings.data_persistence_enabled:
-
+if demo_settings.data_persistence_enabled:
+    # Register data layer with Chainlit when Postgres is available
     @cl.data_layer
     def _get_data_layer():
-        """Register Chainlit data layer for persistence."""
+        """Register Chainlit data layer for persistence.
+
+        This decorator tells Chainlit to use our SQLAlchemy data layer
+        for persisting users, threads, and settings.
+
+        Only registered when Postgres is configured (data_persistence_enabled=True).
+        SQLite falls back to session-only storage.
+        """
         return get_data_layer()
 
 

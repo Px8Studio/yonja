@@ -1354,6 +1354,12 @@ async def setup_chat_settings(user: cl.User | None = None):
                 initial=persisted.get("show_sources", False),
                 description="Tövsiyələrin mənbəyini göstər",
             ),
+            Switch(
+                id="show_thinking_steps",
+                label="🧠 Düşüncə prosesini göstər / Show Thinking Steps",
+                initial=persisted.get("show_thinking_steps", demo_settings.enable_thinking_steps),
+                description="ALEM-in hər addımını göstər (kontekst yükləmə, təhlil, cavab hazırlama)",
+            ),
         ]
     ).send()
 
@@ -2422,9 +2428,39 @@ async def on_message(message: cl.Message):
         }
 
         # Add Chainlit callback for native step visualization
+        # Also add Langfuse callback for observability
+        callbacks = []
+
         if enable_thinking_steps:
+            # Chainlit's native LangChain callback handler
+            # This automatically creates steps for LangGraph nodes
             cb = cl.LangchainCallbackHandler()
-            config["callbacks"] = [cb]
+            callbacks.append(cb)
+
+        # Add Langfuse tracing (always enabled for observability)
+        try:
+            from yonca.observability.langfuse import create_langfuse_handler
+
+            langfuse_handler = create_langfuse_handler(
+                session_id=thread_id,  # ✅ Maps to Langfuse session
+                user_id=user_id,
+                tags=["alem", "chat-ui", "direct-mode"],
+                metadata={
+                    "model": model_info.get("model"),
+                    "provider": model_info.get("provider"),
+                    "has_profile": bool(profile_prompt),
+                },
+                trace_name=f"alem_chat_{thread_id[:8]}",
+            )
+
+            if langfuse_handler:
+                callbacks.append(langfuse_handler)
+                logger.debug("langfuse_handler_attached", thread_id=thread_id)
+        except Exception as e:
+            logger.warning("langfuse_handler_failed", error=str(e))
+
+        if callbacks:
+            config["callbacks"] = callbacks
 
         # Prepare initial state with profile-specific system prompt
         from yonca.agent.state import create_initial_state
@@ -2441,12 +2477,40 @@ async def on_message(message: cl.Message):
             scenario_context=scenario_context,
         )
 
-        # Stream response from LangGraph
+        # Stream response from LangGraph with step visualization
         try:
+            # Import step visualization utilities
+            from services.step_visualization import (
+                _summarize_node_output,
+                create_step_for_node,
+                update_step_output,
+            )
+
+            current_step = None
+
             async for event in agent.astream(initial_state, config=config):
                 # Extract response from final state
                 for node_name, node_output in event.items():
                     if isinstance(node_output, dict):
+                        # Create step visualization if enabled
+                        if enable_thinking_steps and node_name != "__start__":
+                            # Close previous step if exists
+                            if current_step:
+                                try:
+                                    summary = _summarize_node_output(node_name, node_output)
+                                    await update_step_output(current_step, summary, "done")
+                                except Exception as e:
+                                    logger.warning(
+                                        "step_update_failed", node=node_name, error=str(e)
+                                    )
+
+                            # Create new step for current node
+                            try:
+                                current_step = await create_step_for_node(node_name)
+                            except Exception as e:
+                                logger.warning("step_creation_failed", node=node_name, error=str(e))
+                                current_step = None
+
                         # Check for response content
                         if "current_response" in node_output:
                             response_content = node_output["current_response"]
@@ -2458,6 +2522,13 @@ async def on_message(message: cl.Message):
                             node=node_name,
                             has_response="current_response" in node_output,
                         )
+
+            # Close final step
+            if current_step and enable_thinking_steps:
+                try:
+                    await update_step_output(current_step, "✓ Tamamlandı", "done")
+                except Exception:
+                    pass
 
             logger.info(
                 "message_processed_direct",

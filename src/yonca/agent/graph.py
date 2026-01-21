@@ -238,12 +238,14 @@ class YoncaAgent:
 
         # Add Langfuse callback for self-hosted observability
         # Traces appear at: http://localhost:3001 (Langfuse dashboard)
+        # ✅ CRITICAL: session_id parameter maps to thread_id for correlation
+        #    This ensures Langfuse traces are grouped by conversation thread
         langfuse_handler = create_langfuse_handler(
-            session_id=thread_id,
+            session_id=thread_id,  # ✅ Maps thread_id → Langfuse session
             user_id=user_id,
             tags=["yonca", "chat", language],
             metadata={
-                "session_id": session_id,
+                "session_id": session_id,  # API session ID (different from thread)
                 "language": language,
             },
             trace_name=f"yonca_chat_{thread_id[:8]}",
@@ -312,8 +314,9 @@ class YoncaAgent:
         }
 
         # Add Langfuse callback for streaming observability
+        # ✅ CRITICAL: session_id=thread_id for conversation tracking
         langfuse_handler = create_langfuse_handler(
-            session_id=thread_id,
+            session_id=thread_id,  # ✅ Maps thread_id → Langfuse session
             user_id=user_id,
             tags=["yonca", "stream", language],
             metadata={"session_id": session_id, "language": language},

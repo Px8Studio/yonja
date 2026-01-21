@@ -1469,25 +1469,25 @@ redisvl = ">=0.11.0,<1.0.0"
 
 [[package]]
 name = "langgraph-cli"
-version = "0.2.12"
+version = "0.4.11"
 description = "CLI for interacting with LangGraph API"
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "langgraph_cli-0.2.12-py3-none-any.whl", hash = "sha256:ee38475233056c6e033d8cee0053d1d82c24b50054d8a77facbce2f416a05b32"},
-    {file = "langgraph_cli-0.2.12.tar.gz", hash = "sha256:1b3ec6017c80bdde833451d4372f5681909f73964f9cf5c84e344099faf0de09"},
+    {file = "langgraph_cli-0.4.11-py3-none-any.whl", hash = "sha256:807cd6e8c5d4fd7160bd44be67f3b5621cb34ec309658072f75852b639b41ca0"},
+    {file = "langgraph_cli-0.4.11.tar.gz", hash = "sha256:c38c531510ace1c2d90f8a15f4bb5b874ca9d07c0564cbda7590730da2b0dff3"},
 ]
 
 [package.dependencies]
 click = ">=8.1.7"
-langgraph-api = {version = ">=0.1.20", optional = true, markers = "python_version >= \"3.11\" and extra == \"inmem\""}
-langgraph-runtime-inmem = {version = ">=0.0.8", optional = true, markers = "python_version >= \"3.11\" and extra == \"inmem\""}
+langgraph-api = {version = ">=0.5.35,<0.7.0", optional = true, markers = "python_version >= \"3.11\" and extra == \"inmem\""}
+langgraph-runtime-inmem = {version = ">=0.7", optional = true, markers = "python_version >= \"3.11\" and extra == \"inmem\""}
 langgraph-sdk = {version = ">=0.1.0", markers = "python_version >= \"3.11\""}
 python-dotenv = {version = ">=0.8.0", optional = true, markers = "extra == \"inmem\""}
 
 [package.extras]
-inmem = ["langgraph-api (>=0.1.20) ; python_version >= \"3.11\"", "langgraph-runtime-inmem (>=0.0.8) ; python_version >= \"3.11\"", "python-dotenv (>=0.8.0)"]
+inmem = ["langgraph-api (>=0.5.35,<0.7.0) ; python_version >= \"3.11\"", "langgraph-runtime-inmem (>=0.7) ; python_version >= \"3.11\"", "python-dotenv (>=0.8.0)"]
 
 [[package]]
 name = "langgraph-prebuilt"
@@ -3937,4 +3937,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.13"
-content-hash = "3950223d8c79f6c1c747193a7ae8d0f8e96b3c8ff801133e423dad4459830147"
+content-hash = "58e9aa08f25f40a7c26bab58f7294bc4cb7b10c202ab880d28a7943b187ab849"

@@ -143,7 +143,12 @@ from components.spinners import (  # noqa: E402
 
 # Import demo-ui config and API client  # noqa: E402
 from config import settings as demo_settings  # noqa: E402
-from data_layer import get_data_layer, load_user_settings, save_user_settings  # noqa: E402
+from data_layer import (  # noqa: E402
+    get_data_layer,
+    load_user_settings,
+    save_farm_scenario,
+    save_user_settings,
+)
 from langchain_core.runnables import RunnableConfig  # noqa: E402
 
 # Import insights dashboard components  # noqa: E402
@@ -1129,46 +1134,46 @@ async def setup_chat_settings(user: cl.User | None = None):
                 id="crop_type",
                 label="Əsas məhsul / Primary Crop",
                 values=[
-                    # Danli (Grains)
-                    "Buğda (Wheat)",
-                    "Arpa (Barley)",
-                    "Çəltik (Rice)",
-                    "Vələmir (Oats)",
-                    "Çovdar (Rye)",
-                    # Taravaz (Vegetables)
-                    "Pomidor (Tomato)",
-                    "Xıyar (Cucumber)",
-                    "Kartof (Potato)",
-                    "Kələm (Cabbage)",
-                    "Badımcan (Eggplant)",
-                    "Bibər (Pepper)",
-                    "Soğan (Onion)",
-                    "Sarımsaq (Garlic)",
-                    # Texniki (Technical)
-                    "Pambıq (Cotton)",
-                    "Tütün (Tobacco)",
-                    "Şəkər çuğunduru (Sugar Beet)",
-                    "Günəbaxan (Sunflower)",
-                    "Qarğıdalı (Corn)",
-                    "Çay (Tea)",
-                    # Yem (Feed)
-                    "Yonca (Alfalfa)",
-                    "Gülül (Vetch)",
-                    # Meyva (Fruits)
-                    "Üzüm (Grape)",
-                    "Nar (Pomegranate)",
-                    "Gilas (Cherry)",
-                    "Alma (Apple)",
-                    "Armud (Pear)",
-                    "Heyva (Quince)",
-                    "Qoz (Walnut)",
-                    "Fındıq (Hazelnut)",
-                    "Zeytun (Olive)",
-                    "Sitrus (Citrus)",
-                    # Bostan (Melons)
-                    "Qarpız (Watermelon)",
-                    "Yemiş (Melon)",
-                    "Boranı (Pumpkin)",
+                    # Danli (Grains) - 🌾
+                    "Buğda (Wheat) [Dənli]",
+                    "Arpa (Barley) [Dənli]",
+                    "Çəltik (Rice) [Dənli]",
+                    "Vələmir (Oats) [Dənli]",
+                    "Çovdar (Rye) [Dənli]",
+                    # Taravaz (Vegetables) - 🥬
+                    "Pomidor (Tomato) [Tərəvəz]",
+                    "Xıyar (Cucumber) [Tərəvəz]",
+                    "Kartof (Potato) [Tərəvəz]",
+                    "Kələm (Cabbage) [Tərəvəz]",
+                    "Badımcan (Eggplant) [Tərəvəz]",
+                    "Bibər (Pepper) [Tərəvəz]",
+                    "Soğan (Onion) [Tərəvəz]",
+                    "Sarımsaq (Garlic) [Tərəvəz]",
+                    # Texniki (Technical) - 🏭
+                    "Pambıq (Cotton) [Texniki]",
+                    "Tütün (Tobacco) [Texniki]",
+                    "Şəkər çuğunduru (Sugar Beet) [Texniki]",
+                    "Günəbaxan (Sunflower) [Texniki]",
+                    "Qarğıdalı (Corn) [Texniki]",
+                    "Çay (Tea) [Texniki]",
+                    # Yem (Feed) - 🌿
+                    "Yonca (Alfalfa) [Yem]",
+                    "Gülül (Vetch) [Yem]",
+                    # Meyva (Fruits) - 🍎
+                    "Üzüm (Grape) [Meyvə]",
+                    "Nar (Pomegranate) [Meyvə]",
+                    "Gilas (Cherry) [Meyvə]",
+                    "Alma (Apple) [Meyvə]",
+                    "Armud (Pear) [Meyvə]",
+                    "Heyva (Quince) [Meyvə]",
+                    "Qoz (Walnut) [Meyvə]",
+                    "Fındıq (Hazelnut) [Meyvə]",
+                    "Zeytun (Olive) [Meyvə]",
+                    "Sitrus (Citrus) [Meyvə]",
+                    # Bostan (Melons) - 🍉
+                    "Qarpız (Watermelon) [Bostan]",
+                    "Yemiş (Melon) [Bostan]",
+                    "Boranı (Pumpkin) [Bostan]",
                 ],
                 initial_index=0
                 if not alem_persona
@@ -1396,8 +1401,13 @@ async def on_settings_update(settings: dict):
     # ═══════════════════════════════════════════════════════════════
     # FARM PROFILE FIELDS — Extract and normalize
     # ═══════════════════════════════════════════════════════════════
-    crop_type_raw = settings.get("crop_type", "Pambıq (Cotton)")
-    crop_type = crop_type_raw.split("(")[0].strip()  # "Pambıq (Cotton)" → "Pambıq"
+    crop_type_raw = settings.get("crop_type", "Pambıq (Cotton) [Texniki]")
+    # Extract crop name: "Pambıq (Cotton) [Texniki]" → "Pambıq"
+    crop_type = (
+        crop_type_raw.split("(")[0].strip()
+        if "(" in crop_type_raw
+        else crop_type_raw.split("[")[0].strip()
+    )
 
     region = settings.get("region", "Aran")
     farm_size_ha = settings.get("farm_size_ha", 5.0)
@@ -1555,6 +1565,44 @@ async def on_settings_update(settings: dict):
         cl.user_session.set("scenario_context", scenario)
         cl.user_session.set("profile_prompt", combined_prompt)
 
+        logger.info(
+            "scenario_context_updated",
+            crop_category=crop_category,
+            specific_crop=crop_type,
+            region=region,
+            month=planning_month,
+            conversation_stage=scenario["conversation_stage"],
+            settings_version=cl.user_session.get("settings_version", 1),
+        )
+
+        # Increment settings version to track evolution
+        current_version = cl.user_session.get("settings_version", 0)
+        cl.user_session.set("settings_version", current_version + 1)
+
+        # Persist scenario to database for session resumption
+        user_id = cl.user_session.get("user_id", "anonymous")
+        thread_id = cl.user_session.get("thread_id")
+        if thread_id:
+            await save_farm_scenario(
+                user_id=user_id,
+                thread_id=thread_id,
+                scenario=scenario,
+            )
+
+        logger.info(
+            "scenario_context_updated",
+            crop_category=crop_category,
+            specific_crop=crop_type,
+            region=region,
+            month=planning_month,
+            conversation_stage=scenario["conversation_stage"],
+            settings_version=cl.user_session.get("settings_version", 1),
+        )
+
+        # Increment settings version to track evolution
+        current_version = cl.user_session.get("settings_version", 0)
+        cl.user_session.set("settings_version", current_version + 1)
+
     except ImportError:
         logger.warning("agro_calendar_prompts not found, using basic farm context")
         # Fallback to basic farm context
@@ -1579,6 +1627,12 @@ When providing recommendations, consider these farm-specific details.
         saved = await save_user_settings(user, normalized_settings)
         if saved:
             logger.info("settings_persisted", user=user.identifier)
+
+    # TODO: Save scenario to farm_scenario_plans table
+    # This enables scenario retrieval on chat resume and tracking evolution
+    # await save_farm_scenario(user_id=user.identifier if user else None,
+    #                          thread_id=cl.user_session.get("thread_id"),
+    #                          scenario=scenario)
 
     # ═══════════════════════════════════════════════════════════════
     # PLANNING TRIGGER — Generate month-by-month actions if requested
@@ -2240,12 +2294,23 @@ async def on_chat_resume(thread: ThreadDict):
             logger.warning("persona_not_found_on_resume", email=user_email)
 
     # 4. Restore chat settings
-    from data_layer import load_user_settings
+    from data_layer import load_farm_scenario, load_user_settings
 
     user_settings = await load_user_settings(user)
     cl.user_session.set("user_preferences", user_settings)
 
-    # 5. Restore expertise areas (from metadata or regenerate from persona)
+    # 5. Restore farm scenario from database
+    scenario = await load_farm_scenario(user_id=user_id, thread_id=thread["id"])
+    if scenario:
+        cl.user_session.set("scenario_context", scenario)
+        cl.user_session.set("settings_version", scenario.get("settings_version", 1))
+        logger.info(
+            "scenario_restored",
+            crop=scenario.get("specific_crop"),
+            stage=scenario.get("conversation_stage"),
+        )
+
+    # 6. Restore expertise areas (from metadata or regenerate from persona)
     alem_persona_dict = cl.user_session.get("alem_persona")
     expertise = metadata.get("expertise_areas")
     if not expertise and alem_persona_dict:
@@ -2259,17 +2324,17 @@ async def on_chat_resume(thread: ThreadDict):
     profile_prompt = build_combined_system_prompt(expertise)
     cl.user_session.set("profile_prompt", profile_prompt)
 
-    # 6. Get active model metadata
+    # 7. Get active model metadata
     active_model = resolve_active_model()
     cl.user_session.set("active_model", active_model)
 
-    # 7. Reinitialize LangGraph agent with SAME thread_id
+    # 8. Reinitialize LangGraph agent with SAME thread_id
     # This allows LangGraph to load conversation history from checkpoint
     checkpointer = await get_app_checkpointer()
     agent = compile_agent_graph(checkpointer=checkpointer)
     cl.user_session.set("agent", agent)
 
-    # 8. Restore chat settings UI
+    # 9. Restore chat settings UI
     await setup_chat_settings(user=user)
 
     logger.info(
@@ -2278,10 +2343,11 @@ async def on_chat_resume(thread: ThreadDict):
         user_id=user_id,
         has_persona=bool(alem_persona_dict),
         has_settings=bool(user_settings),
+        has_scenario=bool(scenario),
         expertise=expertise,
     )
 
-    # 9. Send a subtle "conversation resumed" indicator
+    # 10. Send a subtle "conversation resumed" indicator
     await cl.Message(
         content="🔄 Söhbət bərpa olundu. Sualınızı davam etdirə bilərsiniz.",
         author="system",

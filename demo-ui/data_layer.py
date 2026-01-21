@@ -351,3 +351,198 @@ async def save_user_settings(user: cl.User | None, settings: dict) -> bool:
     except Exception as e:
         logger.error("save_settings_error", error=str(e))
         return False
+
+
+async def save_conversation_context(
+    user_id: str,
+    thread_id: str,
+    context: dict,
+) -> bool:
+    """Persist conversation context to database.
+
+    Stores the conversation parameters that define agent behavior:
+    crop type, region, expertise level, etc. These are NOT physical
+    farm plans but rather agent acting instructions.
+
+    Called when chat settings change to track conversation evolution.
+
+    Args:
+        user_id: User identifier (email)
+        thread_id: Chainlit thread ID
+        context: ConversationContext dict with parameters
+
+    Returns:
+        True if saved successfully
+    """
+    data_layer = get_data_layer()
+    if not data_layer:
+        logger.debug("save_context_skipped_no_datalayer")
+        return False
+
+    try:
+        async with data_layer.async_session() as session:
+            # Generate UUID for new context
+            scenario_id = str(uuid.uuid4())
+
+            # Insert into conversation_contexts (or view for backward compat)
+            await session.execute(
+                text(
+                    """
+                    INSERT INTO conversation_contexts (
+                        scenario_id, user_id, thread_id,
+                        crop_category, specific_crop, region,
+                        farm_size_ha, experience_level,
+                        soil_type, irrigation_type, current_month,
+                        action_categories, expertise_areas,
+                        smart_question, user_confirmed,
+                        conversation_stage, settings_version
+                    ) VALUES (
+                        :scenario_id, :user_id, :thread_id,
+                        :crop_category, :specific_crop, :region,
+                        :farm_size_ha, :experience_level,
+                        :soil_type, :irrigation_type, :current_month,
+                        :action_categories, :expertise_areas,
+                        :smart_question, :user_confirmed,
+                        :conversation_stage, :settings_version
+                    )
+                    ON CONFLICT (user_id, thread_id)
+                    DO UPDATE SET
+                        crop_category = EXCLUDED.crop_category,
+                        specific_crop = EXCLUDED.specific_crop,
+                        region = EXCLUDED.region,
+                        farm_size_ha = EXCLUDED.farm_size_ha,
+                        experience_level = EXCLUDED.experience_level,
+                        soil_type = EXCLUDED.soil_type,
+                        irrigation_type = EXCLUDED.irrigation_type,
+                        current_month = EXCLUDED.current_month,
+                        action_categories = EXCLUDED.action_categories,
+                        expertise_areas = EXCLUDED.expertise_areas,
+                        smart_question = EXCLUDED.smart_question,
+                        conversation_stage = EXCLUDED.conversation_stage,
+                        settings_version = EXCLUDED.settings_version,
+                        updated_at = CURRENT_TIMESTAMP
+                    """
+                ),
+                {
+                    "scenario_id": scenario_id,
+                    "user_id": user_id,
+                    "thread_id": thread_id,
+                    "crop_category": context.get("crop_category"),
+                    "specific_crop": context.get("specific_crop"),
+                    "region": context.get("region"),
+                    "farm_size_ha": context.get("farm_size_ha"),
+                    "experience_level": context.get("experience_level"),
+                    "soil_type": context.get("soil_type"),
+                    "irrigation_type": context.get("irrigation_type"),
+                    "current_month": context.get("current_month"),
+                    "action_categories": json.dumps(context.get("action_categories", [])),
+                    "expertise_areas": json.dumps(context.get("expertise_areas", [])),
+                    "smart_question": context.get("smart_question"),
+                    "user_confirmed": context.get("user_confirmed", False),
+                    "conversation_stage": context.get("conversation_stage", "initial"),
+                    "settings_version": context.get("settings_version", 1),
+                },
+            )
+            await session.commit()
+
+            logger.info(
+                "conversation_context_saved",
+                scenario_id=scenario_id,
+                user_id=user_id,
+                thread_id=thread_id,
+                crop=context.get("specific_crop"),
+                stage=context.get("conversation_stage"),
+            )
+            return True
+
+    except Exception as e:
+        logger.error("save_scenario_error", error=str(e), exc_info=True)
+        return False
+
+
+async def load_conversation_context(user_id: str, thread_id: str) -> dict | None:
+    """Load conversation context from database.
+
+    Retrieves the conversation parameters that define agent behavior.
+    These parameters include crop type, region, expertise level, etc.
+
+    Called on chat resume to restore conversation context.
+
+    Args:
+        user_id: User identifier (email)
+        thread_id: Chainlit thread ID
+
+    Returns:
+        ConversationContext dict or None if not found
+    """
+    data_layer = get_data_layer()
+    if not data_layer:
+        return None
+
+    try:
+        async with data_layer.async_session() as session:
+            result = await session.execute(
+                text(
+                    """
+                    SELECT
+                        crop_category, specific_crop, region,
+                        farm_size_ha, experience_level,
+                        soil_type, irrigation_type, current_month,
+                        action_categories, expertise_areas,
+                        smart_question, user_confirmed,
+                        conversation_stage, settings_version
+                    FROM conversation_contexts
+                    WHERE user_id = :user_id AND thread_id = :thread_id
+                    ORDER BY updated_at DESC
+                    LIMIT 1
+                    """
+                ),
+                {"user_id": user_id, "thread_id": thread_id},
+            )
+            row = result.fetchone()
+
+            if not row:
+                logger.debug("no_context_found", user_id=user_id, thread_id=thread_id)
+                return None
+
+            # Convert Row to dict
+            context = {
+                "crop_category": row[0],
+                "specific_crop": row[1],
+                "region": row[2],
+                "farm_size_ha": row[3],
+                "experience_level": row[4],
+                "soil_type": row[5],
+                "irrigation_type": row[6],
+                "current_month": row[7],
+                "action_categories": json.loads(row[8]) if row[8] else [],
+                "expertise_areas": json.loads(row[9]) if row[9] else [],
+                "smart_question": row[10],
+                "user_confirmed": row[11],
+                "conversation_stage": row[12],
+                "settings_version": row[13],
+            }
+
+            logger.info(
+                "conversation_context_loaded",
+                user_id=user_id,
+                thread_id=thread_id,
+                crop=context["specific_crop"],
+                stage=context["conversation_stage"],
+            )
+            return context
+
+    except Exception as e:
+        logger.error("load_context_error", error=str(e), exc_info=True)
+        return None
+
+
+# Backward compatibility aliases
+async def save_farm_scenario(user_id: str, thread_id: str, scenario: dict) -> bool:
+    """Deprecated: Use save_conversation_context instead."""
+    return await save_conversation_context(user_id, thread_id, scenario)
+
+
+async def load_farm_scenario(user_id: str, thread_id: str) -> dict | None:
+    """Deprecated: Use load_conversation_context instead."""
+    return await load_conversation_context(user_id, thread_id)

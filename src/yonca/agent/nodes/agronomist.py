@@ -8,11 +8,14 @@ for irrigation, fertilization, pest control, planting, and harvesting.
 from pathlib import Path
 from typing import Any
 
+import structlog
 from langchain_core.messages import AIMessage, HumanMessage
 
 from yonca.agent.state import AgentState, UserIntent, add_assistant_message
 from yonca.llm.factory import get_llm_provider
 from yonca.llm.providers.base import LLMMessage
+
+logger = structlog.get_logger(__name__)
 
 # ============================================================
 # Prompt Templates
@@ -161,8 +164,18 @@ async def agronomist_node(state: AgentState) -> dict[str, Any]:
     nodes_visited = state.get("nodes_visited", []).copy()
     nodes_visited.append("agronomist")
 
-    state.get("current_input", "")
+    user_input = state.get("current_input", "")
     intent = state.get("intent")
+    conversation_context = state.get("conversation_context", {})
+
+    logger.info(
+        "agronomist_node_start",
+        message=user_input[:100],
+        intent=intent.value if intent else "unknown",
+        has_farm_context=bool(state.get("farm_context")),
+        has_weather=bool(state.get("weather")),
+        conversation_stage=conversation_context.get("conversation_stage"),
+    )
 
     # Build the full prompt
     system_prompt = load_system_prompt()
@@ -219,6 +232,11 @@ async def agronomist_node(state: AgentState) -> dict[str, Any]:
         }
 
     except Exception as e:
+        logger.error(
+            "agronomist_node_error",
+            error=str(e),
+            intent=intent.value if intent else "unknown",
+        )
         error_response = (
             "Bağışlayın, texniki problem yarandı. "
             "Zəhmət olmasa sualınızı bir az sonra təkrar yoxlayın."

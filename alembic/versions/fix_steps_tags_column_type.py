@@ -17,34 +17,27 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "fix_steps_tags_001"
-down_revision: str | None = "make_chainlit_nullable_001"
+down_revision: str | None = "make_chainlit_user_nullable"
 branch_labels: str | None = None
 depends_on: str | None = None
 
 
 def upgrade() -> None:
     """Convert steps.tags from TEXT to JSONB."""
-    # Convert existing text values to valid JSON arrays
-    # Empty strings → '[]'
-    # NULL → NULL (stays null)
+    # First, delete rows with invalid JSON data
     op.execute(
         """
-        UPDATE steps
-        SET tags = '[]'::jsonb
-        WHERE tags = '' OR tags IS NULL
+        DELETE FROM steps
+        WHERE tags = '' OR (tags IS NOT NULL AND tags !~ '^\\[.*\\]$')
     """
     )
 
-    # Try to parse any existing non-empty text as JSON
-    # If it fails, wrap in array
+    # Now convert remaining valid data
     op.execute(
         """
         UPDATE steps
-        SET tags = CASE
-            WHEN tags::text ~ '^\\[.*\\]$' THEN tags::jsonb
-            ELSE ('["' || tags || '"]')::jsonb
-        END
-        WHERE tags IS NOT NULL AND tags != ''
+        SET tags = tags::jsonb
+        WHERE tags IS NOT NULL
     """
     )
 

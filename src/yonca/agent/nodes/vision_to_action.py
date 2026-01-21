@@ -9,9 +9,13 @@ It summarizes intent and produces a farmer-facing action plan.
 
 from typing import Any
 
+import structlog
+
 from yonca.agent.state import AgentState, UserIntent, add_assistant_message
 from yonca.llm.inference_engine import InferenceEngine
 from yonca.llm.providers.base import LLMMessage
+
+logger = structlog.get_logger(__name__)
 
 SYSTEM_PROMPT = (
     "Sən aqronomik görüntü analiz köməkçisisən. İstifadəçi tərəfindən "
@@ -36,6 +40,13 @@ async def vision_to_action_node(state: AgentState) -> dict[str, Any]:
     nodes_visited = state.get("nodes_visited", []).copy()
     nodes_visited.append("vision_to_action")
 
+    user_input = state.get("current_input", "")
+
+    logger.info(
+        "vision_to_action_node_start",
+        message=user_input[:100],
+    )
+
     # NOTE: For now, we only read a textual hint. Future: multimodal payloads.
     image_note = "(Şəkil faylları UI tərəfindən yüklənib; gələcəkdə multimodal analiz)"
 
@@ -50,6 +61,12 @@ async def vision_to_action_node(state: AgentState) -> dict[str, Any]:
     try:
         resp = await engine.generate(messages, temperature=0.1, max_tokens=400)
         content = resp.content.strip()
+
+        logger.info(
+            "vision_to_action_node_complete",
+            response_length=len(content),
+        )
+
         return {
             "current_response": content,
             "nodes_visited": nodes_visited,
@@ -59,7 +76,11 @@ async def vision_to_action_node(state: AgentState) -> dict[str, Any]:
                 )
             ],
         }
-    except Exception:
+    except Exception as e:
+        logger.error(
+            "vision_to_action_node_error",
+            error=str(e),
+        )
         msg = "Şəkil analizi zamanı xəta baş verdi"
         return {
             "error": msg,

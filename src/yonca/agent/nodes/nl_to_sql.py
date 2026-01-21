@@ -9,9 +9,13 @@ contains a SELECT statement.
 
 from typing import Any
 
+import structlog
+
 from yonca.agent.state import AgentState, UserIntent, add_assistant_message
 from yonca.llm.inference_engine import InferenceEngine
 from yonca.llm.providers.base import LLMMessage
+
+logger = structlog.get_logger(__name__)
 
 SYSTEM_PROMPT = (
     "Sən verilənlər bazası sorğusu generatorusan. Verilən təsvirə uyğun olaraq "
@@ -33,6 +37,11 @@ async def nl_to_sql_node(state: AgentState) -> dict[str, Any]:
     nodes_visited = state.get("nodes_visited", []).copy()
     nodes_visited.append("nl_to_sql")
 
+    logger.info(
+        "nl_to_sql_node_start",
+        message=user_input[:100],
+    )
+
     engine = InferenceEngine()
 
     messages = [
@@ -47,12 +56,22 @@ async def nl_to_sql_node(state: AgentState) -> dict[str, Any]:
         if "select" not in sql.lower():
             sql = "-- Generated SQL placeholder\nSELECT 1;"
 
+        logger.info(
+            "nl_to_sql_node_complete",
+            sql_length=len(sql),
+            has_select=bool("select" in sql.lower()),
+        )
+
         return {
             "current_response": sql,
             "nodes_visited": nodes_visited,
             "messages": [add_assistant_message(state, sql, "nl_to_sql", UserIntent.DATA_QUERY)],
         }
-    except Exception:
+    except Exception as e:
+        logger.error(
+            "nl_to_sql_node_error",
+            error=str(e),
+        )
         error_msg = "SQL generasiyası zamanı xəta baş verdi"
         return {
             "error": error_msg,

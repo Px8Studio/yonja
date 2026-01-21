@@ -7,7 +7,11 @@ returning to user. Ensures advice is safe and accurate.
 
 from typing import Any
 
+import structlog
+
 from yonca.agent.state import AgentState
+
+logger = structlog.get_logger(__name__)
 
 # ============================================================
 # Validation Rules (Inline for MVP, will move to YAML)
@@ -108,6 +112,12 @@ async def validator_node(state: AgentState) -> dict[str, Any]:
     nodes_visited = state.get("nodes_visited", []).copy()
     nodes_visited.append("validator")
 
+    logger.info(
+        "validator_node_start",
+        has_response=bool(state.get("current_response")),
+        intent=state.get("intent").value if state.get("intent") else "unknown",
+    )
+
     matched_rules: list[dict] = []
     additional_warnings: list[str] = []
 
@@ -154,11 +164,23 @@ async def validator_node(state: AgentState) -> dict[str, Any]:
         warnings_text = "\n\n---\n**⚠️ Vacib Xəbərdarlıqlar:**\n" + "\n".join(additional_warnings)
         current_response = current_response + warnings_text
 
+        logger.info(
+            "validator_node_complete",
+            matched_rules_count=len(matched_rules),
+            warnings_added=len(additional_warnings),
+        )
+
         return {
             "matched_rules": matched_rules,
             "current_response": current_response,
             "nodes_visited": nodes_visited,
         }
+
+    logger.info(
+        "validator_node_complete",
+        matched_rules_count=len(matched_rules),
+        warnings_added=0,
+    )
 
     return {
         "matched_rules": matched_rules,

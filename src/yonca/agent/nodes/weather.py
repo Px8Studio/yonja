@@ -7,9 +7,13 @@ and forecasted weather conditions.
 
 from typing import Any
 
+import structlog
+
 from yonca.agent.state import AgentState, add_assistant_message
 from yonca.llm.factory import get_llm_provider
 from yonca.llm.providers.base import LLMMessage
+
+logger = structlog.get_logger(__name__)
 
 # ============================================================
 # Weather Analysis Prompt
@@ -94,6 +98,14 @@ async def weather_node(state: AgentState) -> dict[str, Any]:
 
     user_input = state.get("current_input", "")
     intent = state.get("intent")
+    weather = state.get("weather")
+
+    logger.info(
+        "weather_node_start",
+        message=user_input[:100],
+        has_weather_data=bool(weather),
+        temperature=weather.temperature_c if weather else None,
+    )
 
     # Build messages
     weather_context = build_weather_context(state)
@@ -151,12 +163,23 @@ async def weather_node(state: AgentState) -> dict[str, Any]:
                 )
 
             if alerts_to_add:
+                logger.info(
+                    "weather_node_complete",
+                    response_length=len(response_text),
+                    alerts_count=len(alerts_to_add),
+                )
                 return {
                     "current_response": response_text,
                     "nodes_visited": nodes_visited,
                     "messages": [add_assistant_message(state, response_text, "weather", intent)],
                     "alerts": alerts_to_add,
                 }
+
+        logger.info(
+            "weather_node_complete",
+            response_length=len(response_text),
+            alerts_count=0,
+        )
 
         return {
             "current_response": response_text,
@@ -165,6 +188,10 @@ async def weather_node(state: AgentState) -> dict[str, Any]:
         }
 
     except Exception as e:
+        logger.error(
+            "weather_node_error",
+            error=str(e),
+        )
         error_response = (
             "Hava məlumatlarını yükləyərkən xəta baş verdi. Zəhmət olmasa sonra yenidən cəhd edin."
         )

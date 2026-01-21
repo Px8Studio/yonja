@@ -29,7 +29,8 @@ the same, just reading from government claims instead of generating synthetic on
 import random
 import secrets
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Any
+
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -40,61 +41,62 @@ logger = structlog.get_logger(__name__)
 
 # Azerbaijani agricultural regions
 AZERBAIJANI_REGIONS = [
-    "Sabirabad",      # Major cotton, vegetables
-    "Quba",           # Apple orchards, mountainous
-    "Gəncə",          # Wheat, barley
-    "Şəki",           # Cherry, hazelnut
-    "Lənkəran",       # Tea, citrus
-    "Muğan",          # Cotton, grain
-    "Karabakh",       # Recently liberated, grain focus
-    "Siyəzən",        # Livestock, grain
-    "Masallı",        # Vegetables, tea
-    "Aran",           # Mixed farming, cotton
+    "Sabirabad",  # Major cotton, vegetables
+    "Quba",  # Apple orchards, mountainous
+    "Gəncə",  # Wheat, barley
+    "Şəki",  # Cherry, hazelnut
+    "Lənkəran",  # Tea, citrus
+    "Muğan",  # Cotton, grain
+    "Karabakh",  # Recently liberated, grain focus
+    "Siyəzən",  # Livestock, grain
+    "Masallı",  # Vegetables, tea
+    "Aran",  # Mixed farming, cotton
 ]
 
 # Primary crops in Azerbaijan
 AZERBAIJANI_CROPS = {
-    "Pambıq": "Cotton",           # Primary export
-    "Buğda": "Wheat",             # Staple grain
-    "Alma": "Apple",              # High-value orchards
-    "Üzüm": "Grape",              # Vineyards
-    "Pomidor": "Tomato",          # High-value vegetables
-    "Fındıq": "Hazelnut",         # Premium crop
-    "Çay": "Tea",                 # Specialty (Lənkəran)
-    "Sitrus": "Citrus",           # Modern expansion
-    "Qarğıdalı": "Corn",          # Animal feed, ethanol
-    "Soya": "Soybean",            # Emerging crop
+    "Pambıq": "Cotton",  # Primary export
+    "Buğda": "Wheat",  # Staple grain
+    "Alma": "Apple",  # High-value orchards
+    "Üzüm": "Grape",  # Vineyards
+    "Pomidor": "Tomato",  # High-value vegetables
+    "Fındıq": "Hazelnut",  # Premium crop
+    "Çay": "Tea",  # Specialty (Lənkəran)
+    "Sitrus": "Citrus",  # Modern expansion
+    "Qarğıdalı": "Corn",  # Animal feed, ethanol
+    "Soya": "Soybean",  # Emerging crop
 }
 
 # Farm sizes (hectares) — typical Azerbaijani farm distribution
 FARM_SIZE_RANGES = {
-    "small": (2.0, 10.0),         # Small family farm
-    "medium": (10.0, 30.0),       # Cooperative/commercial
-    "large": (30.0, 100.0),       # Commercial enterprise
+    "small": (2.0, 10.0),  # Small family farm
+    "medium": (10.0, 30.0),  # Cooperative/commercial
+    "large": (30.0, 100.0),  # Commercial enterprise
 }
 
 # Farmer experience levels
 FARMER_EXPERIENCE = ["novice", "intermediate", "expert"]
 
+
 # Mock FIN code format: 1-9 (first digit) + XYZ + 000-999
 # Simulates Azerbaijani FIN (Fərdi İdentifikasiya Nömrəsi)
 def generate_mock_fin() -> str:
     """Generate a mock FIN code (7 characters).
-    
+
     Format: DXXXXXXX where:
     - D: 1-9 (first digit)
     - X: Random alphanumeric (avoiding similar chars)
-    
+
     Example: 5XYZ123, 2ABC456
     """
     first_digit = random.randint(1, 9)
-    rest = ''.join(secrets.choice('ABCDEFGHJKLMNPQRSTUVWXYZ0123456789') for _ in range(6))
+    rest = "".join(secrets.choice("ABCDEFGHJKLMNPQRSTUVWXYZ0123456789") for _ in range(6))
     return f"{first_digit}{rest}"
 
 
 def generate_mock_phone() -> str:
     """Generate a mock Azerbaijani phone number.
-    
+
     Format: +994XX-XXX-XXXX (using real Baku area code 12)
     """
     area_code = 12  # Baku area code
@@ -105,27 +107,27 @@ def generate_mock_phone() -> str:
 
 class ALEMPersona:
     """Synthetic Agricultural Persona for a farmer.
-    
+
     Generated on first login if not already present in database.
     Provides rich context for personalized recommendations.
     """
-    
+
     def __init__(
         self,
         user_id: str,
         full_name: str,
         email: str,
-        fin_code: Optional[str] = None,
-        phone: Optional[str] = None,
-        region: Optional[str] = None,
-        crop_type: Optional[str] = None,
-        total_area_ha: Optional[float] = None,
-        experience_level: Optional[str] = None,
+        fin_code: str | None = None,
+        phone: str | None = None,
+        region: str | None = None,
+        crop_type: str | None = None,
+        total_area_ha: float | None = None,
+        experience_level: str | None = None,
         ektis_verified: bool = True,
-        created_at: Optional[datetime] = None,
+        created_at: datetime | None = None,
     ):
         """Initialize ALEM Persona.
-        
+
         Args:
             user_id: Unique user identifier (Google 'sub' or mygov ID)
             full_name: User's full name from OAuth
@@ -147,22 +149,22 @@ class ALEMPersona:
         self.region = region or random.choice(AZERBAIJANI_REGIONS)
         self.crop_type = crop_type or random.choice(list(AZERBAIJANI_CROPS.keys()))
         self.experience_level = experience_level or random.choice(FARMER_EXPERIENCE)
-        
+
         # Farm size distribution favors medium farms (most common)
         size_dist = random.choices(
             ["small", "medium", "large"],
             weights=[20, 60, 20],  # 20% small, 60% medium, 20% large
-            k=1
+            k=1,
         )[0]
         min_ha, max_ha = FARM_SIZE_RANGES[size_dist]
         self.total_area_ha = total_area_ha or round(random.uniform(min_ha, max_ha), 1)
-        
+
         self.ektis_verified = ektis_verified
         self.created_at = created_at or datetime.utcnow()
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert persona to dictionary for JSON serialization.
-        
+
         Useful for:
         - Storing in Chainlit session
         - Sending to LangGraph agent
@@ -182,10 +184,10 @@ class ALEMPersona:
             "ektis_verified": self.ektis_verified,
             "created_at": self.created_at.isoformat(),
         }
-    
+
     def to_sidebar_display(self) -> str:
         """Format persona for Chainlit sidebar display.
-        
+
         Returns a markdown-formatted string showing:
         - FIN Code (verified)
         - Region
@@ -199,9 +201,9 @@ class ALEMPersona:
             "expert": "🌾",
         }
         emoji = experience_emoji.get(self.experience_level, "🌿")
-        
+
         crop_en = AZERBAIJANI_CROPS.get(self.crop_type, self.crop_type)
-        
+
         return (
             f"**🔐 ALEM Təsdiqlənmiş Profil**\n\n"
             f"**FIN Kodu:** {self.fin_code}\n"
@@ -215,28 +217,28 @@ class ALEMPersona:
 
 class PersonaProvisioner:
     """JIT Provisioning Engine — Auto-generates personas on first login.
-    
+
     This is the core logic that bridges the gap between:
     - Minimal Google OAuth claims
     - Rich agricultural context required for ALEM demonstrations
     """
-    
+
     @staticmethod
     def provision_from_oauth(
         user_id: str,
-        oauth_claims: Dict[str, Any],
-        existing_persona: Optional[ALEMPersona] = None,
+        oauth_claims: dict[str, Any],
+        existing_persona: ALEMPersona | None = None,
     ) -> ALEMPersona:
         """Generate or return ALEM persona from OAuth claims.
-        
+
         Args:
             user_id: Unique identifier (typically Google 'sub')
             oauth_claims: Dict with 'name', 'email', etc. from OAuth provider
             existing_persona: If persona already exists, return it unchanged
-        
+
         Returns:
             ALEMPersona instance (new or existing)
-        
+
         Logic:
             If persona exists → return unchanged
             If persona missing → generate synthetic one from Google claims
@@ -248,18 +250,18 @@ class PersonaProvisioner:
                 fin_code=existing_persona.fin_code,
             )
             return existing_persona
-        
+
         # Extract available data from OAuth
         full_name = oauth_claims.get("name", "Unknown Farmer")
         email = oauth_claims.get("email", f"{user_id}@gmail.com")
-        
+
         # Generate new persona
         persona = ALEMPersona(
             user_id=user_id,
             full_name=full_name,
             email=email,
         )
-        
+
         logger.info(
             "persona_provisioned_jit",
             user_id=user_id,
@@ -269,34 +271,34 @@ class PersonaProvisioner:
             farm_size_ha=persona.total_area_ha,
             experience_level=persona.experience_level,
         )
-        
+
         return persona
-    
+
     @staticmethod
     def provision_from_mygov(
         user_id: str,
-        mygov_claims: Dict[str, Any],
+        mygov_claims: dict[str, Any],
     ) -> ALEMPersona:
         """Generate persona from mygov ID claims (future integration).
-        
+
         When mygov ID is available, extract actual government data:
         - FIN code (real, not mocked)
         - Phone (real)
         - Region (from address or registration)
         - EKTIS data (from government database)
-        
+
         For now, this is a placeholder that shows the intended flow.
         """
         fin_code = mygov_claims.get("fin")  # Real FIN from government
-        phone = mygov_claims.get("phone")    # Real phone from government
+        phone = mygov_claims.get("phone")  # Real phone from government
         full_name = mygov_claims.get("name")
         email = mygov_claims.get("email")
-        
+
         # Region/crop could come from EKTIS lookup using FIN
         region = mygov_claims.get("region")  # Or lookup from EKTIS
         crop_type = mygov_claims.get("crop")  # Or lookup from EKTIS
         total_area_ha = mygov_claims.get("farm_area_ha")  # Or lookup from EKTIS
-        
+
         persona = ALEMPersona(
             user_id=user_id,
             full_name=full_name,
@@ -308,23 +310,23 @@ class PersonaProvisioner:
             total_area_ha=total_area_ha,
             ektis_verified=True,  # Explicitly verified by government
         )
-        
+
         logger.info(
             "persona_provisioned_from_mygov",
             user_id=user_id,
             fin_code=fin_code,
             ektis_verified=True,
         )
-        
+
         return persona
-    
+
     @staticmethod
     def generate_gold_standard_scenario(scenario_name: str) -> ALEMPersona:
         """Generate a pre-configured "Gold Standard" persona for demos.
-        
+
         These are high-quality farmer scenarios used in video calls to show
         how ALEM adapts advice based on farmer profile.
-        
+
         Examples:
             - "cotton_farmer_sabirabad" → Large cotton farmer, 40ha, expert
             - "apple_grower_quba" → Medium apple grower, 8ha, intermediate
@@ -367,15 +369,17 @@ class PersonaProvisioner:
                 "experience_level": "expert",
             },
         }
-        
+
         if scenario_name not in scenarios:
-            raise ValueError(f"Unknown scenario: {scenario_name}. Available: {list(scenarios.keys())}")
-        
+            raise ValueError(
+                f"Unknown scenario: {scenario_name}. Available: {list(scenarios.keys())}"
+            )
+
         config = scenarios[scenario_name]
         persona = ALEMPersona(
             user_id=f"demo_{scenario_name}",
             full_name=config["full_name"],
-            email=f"demo_{scenario_name}@zekalab.az",
+            email=f"demo_{scenario_name}@zekalab.info",
             fin_code=generate_mock_fin(),  # Still mock for demo
             phone=generate_mock_phone(),
             region=config["region"],
@@ -384,12 +388,12 @@ class PersonaProvisioner:
             experience_level=config["experience_level"],
             ektis_verified=True,
         )
-        
+
         logger.info(
             "gold_standard_scenario_loaded",
             scenario=scenario_name,
             farmer_name=persona.full_name,
             region=persona.region,
         )
-        
+
         return persona

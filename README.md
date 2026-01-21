@@ -1,6 +1,6 @@
 # 🌿 Yonca AI - Farm Planning Assistant
 
-> **AI-powered daily farm recommendations for Azerbaijani farmers.**  
+> **AI-powered daily farm recommendations for Azerbaijani farmers.**
 > 100% offline-capable. 100% synthetic data. 100% rule-validated.
 
 ## 🎯 What This Is
@@ -101,7 +101,7 @@ source .venv/bin/activate   # Linux/Mac
 pip install -e ".[dev]"     # Install in editable mode
 ```
 
-**💡 Can't run `uvicorn` or `alembic` directly?** 
+**💡 Can't run `uvicorn` or `alembic` directly?**
 → See [COMMANDS.md](COMMANDS.md) for three ways to run commands without path issues.
 
 ### 🎮 Start Yonca AI

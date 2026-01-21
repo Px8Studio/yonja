@@ -7,7 +7,7 @@ Fermerlər üçün analizlərə əlçatanlıq: Fermerlər sistem vasitəsilə as
 Torpaq və məhsul keyfiyyətinin artırılması: Toplanan analiz məlumatları fermerlərə torpaqlarının vəziyyətini başa düşməyə və məhsuldarlığı artırmaq üçün lazımi tədbirləri görməyə imkan verir.
 Rəqəmsallaşmış məlumat mübadiləsi: Laboratoriya nəticələri elektron formada sistemə daxil edilir və fermerlərə şəffaf və operativ məlumat ötürülür.
 Səmərəlilik və dəqiqlik: Nümunələrin coğrafi koordinatlara əsasən götürülməsi və analizlərin dəqiq nəticələr verməsi fermerlərin torpaqlarını daha yaxşı idarə etməsinə və məhsuldarlığı artırmaq üçün düzgün qərarlar qəbul etməsinə kömək edir.
- 
+
 
 Sistemin istifadəçiləri
 

@@ -125,10 +125,10 @@ name = "Yonca AI"
 # ════════════════════════════════════════════════════════════════════════════
 # Chainlit UI language. Leave commented to use browser's default language.
 # Supported: en-US (default), az-AZ, ru-RU (if translations exist)
-# 
+#
 # NOTE: Custom translations require .chainlit/translations/{locale}.json
 # If the file is missing or malformed, UI text will be blank!
-# 
+#
 # For production, uncomment ONE of:
 # language = "en-US"    # English (built-in, always works)
 # language = "az-AZ"    # Azerbaijani (requires translations/az-AZ.json)
@@ -156,7 +156,9 @@ custom_css = "/public/custom.css"
 # Specify a JavaScript file that can be used to customize the user interface.
 # The JavaScript file can be served from the public directory.
 # Loads the enhanced profile dropdown with Google OAuth user data
-custom_js = "/public/profile-enhancer.js"
+# Custom JavaScript has been removed - using pure Chainlit native UI
+# Farm context is stored in session and influences responses implicitly
+# through expertise detection and system prompt customization
 
 # The style of alert boxes. Can be "classic" or "modern".
 alert_style = "classic"
@@ -200,6 +202,30 @@ default_avatar_file_url = ""
 [server]
 # Increase socket buffer to handle more packets
 max_http_buffer_size = 5000000
+
+# ════════════════════════════════════════════════════════════════════════════
+# OAUTH PROVIDERS (Google Login)
+# ════════════════════════════════════════════════════════════════════════════
+# This enables the login page with Google OAuth
+# Set OAUTH_GOOGLE_CLIENT_ID and OAUTH_GOOGLE_CLIENT_SECRET in .env
+[providers.google]
+    id = "google"
+    name = "Google"
+    # The environment variables are automatically read by Chainlit
+    # See: https://docs.chainlit.io/authentication/oauth
+    client_id = "${OAUTH_GOOGLE_CLIENT_ID}"
+    client_secret = "${OAUTH_GOOGLE_CLIENT_SECRET}"
+    # Authorization endpoint
+    authorize_url = "https://accounts.google.com/o/oauth2/v2/auth"
+    # Token endpoint
+    access_token_url = "https://oauth2.googleapis.com/token"
+    # Scopes for user profile information (FREE, no verification needed)
+    # openid: Required for OpenID Connect
+    # profile: Access to name, given_name, family_name, locale
+    # email: Access to email, email_verified
+
+[providers.google.authorize_params]
+    scope = "openid profile email"
 
 [meta]
 generated_by = "2.9.5"

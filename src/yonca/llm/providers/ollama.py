@@ -6,17 +6,18 @@ Supports both qwen3 and atllama (imported GGUF) models.
 """
 
 import json
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
 import httpx
 
-from .base import LLMMessage, LLMProvider, LLMResponse
 from yonca.llm.http_pool import HTTPClientPool
+
+from .base import LLMMessage, LLMProvider, LLMResponse
 
 
 class OllamaProvider(LLMProvider):
     """Ollama provider for local LLM inference.
-    
+
     Example:
         ```python
         async with OllamaProvider(model="qwen3:4b") as llm:
@@ -35,7 +36,7 @@ class OllamaProvider(LLMProvider):
         timeout: float = 120.0,
     ):
         """Initialize Ollama provider.
-        
+
         Args:
             base_url: Ollama server URL (default: http://localhost:11434)
             model: Model name (e.g., "qwen3:4b", "atllama")
@@ -58,7 +59,7 @@ class OllamaProvider(LLMProvider):
         return await HTTPClientPool.get_pool(
             provider="ollama",
             base_url=self.base_url,
-            headers={"Content-Type": "application/json"},
+            headers={"Content-Type": "application/json", "X-Sovereign-Data": "sovereign-local"},
         )
 
     async def __aenter__(self) -> "OllamaProvider":
@@ -84,15 +85,15 @@ class OllamaProvider(LLMProvider):
         max_tokens: int = 1000,
     ) -> LLMResponse:
         """Generate a response from Ollama.
-        
+
         Args:
             messages: Conversation messages.
             temperature: Sampling temperature (0.0 to 1.0).
             max_tokens: Maximum tokens to generate.
-            
+
         Returns:
             LLMResponse with the generated content.
-            
+
         Raises:
             httpx.HTTPError: If the request fails.
         """
@@ -133,12 +134,12 @@ class OllamaProvider(LLMProvider):
         max_tokens: int = 1000,
     ) -> AsyncIterator[str]:
         """Stream a response from Ollama.
-        
+
         Args:
             messages: Conversation messages.
             temperature: Sampling temperature (0.0 to 1.0).
             max_tokens: Maximum tokens to generate.
-            
+
         Yields:
             String chunks of the generated response.
         """
@@ -166,7 +167,7 @@ class OllamaProvider(LLMProvider):
 
     async def health_check(self) -> bool:
         """Check if Ollama server is healthy.
-        
+
         Returns:
             True if Ollama is reachable and the model is available.
         """
@@ -182,16 +183,13 @@ class OllamaProvider(LLMProvider):
 
             # Match model name (with or without tag)
             model_base = self.model.split(":")[0]
-            return any(
-                m == self.model or m.startswith(f"{model_base}:")
-                for m in available_models
-            )
+            return any(m == self.model or m.startswith(f"{model_base}:") for m in available_models)
         except httpx.HTTPError:
             return False
 
     async def list_models(self) -> list[str]:
         """List available models in Ollama.
-        
+
         Returns:
             List of model names.
         """

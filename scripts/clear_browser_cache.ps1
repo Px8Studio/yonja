@@ -18,7 +18,7 @@ foreach ($browser in $browsers.GetEnumerator()) {
         "$env:LOCALAPPDATA\$($browser.Value)\Cache",
         "$env:LOCALAPPDATA\$($browser.Value)\Code Cache"
     )
-    
+
     foreach ($path in $paths) {
         if (Test-Path $path) {
             Remove-Item $path -Recurse -Force

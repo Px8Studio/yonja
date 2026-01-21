@@ -7,27 +7,24 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from yonca.api.middleware.rate_limit import RateLimiter, RateLimitExceeded, RateLimitMiddleware
+from yonca.api.routes import auth, chat, health, models, vision
 from yonca.config import settings
-from yonca.api.routes import health, chat, models
-from yonca.api.middleware.rate_limit import RateLimitMiddleware, RateLimiter, RateLimitExceeded
 from yonca.data.redis_client import RedisClient
 from yonca.llm.http_pool import HTTPClientPool
 from yonca.observability import (
-    print_startup_banner,
-    print_section_header,
-    print_status_line,
     print_endpoints,
-    print_quick_links,
-    print_shutdown_message,
-    print_startup_complete,
-    print_llm_info,
-    print_database_info,
-    print_infrastructure_summary,
-    print_model_capabilities,
-    print_security_info,
-    print_observability_info,
     print_infrastructure_tier,
-    is_langfuse_healthy,
+    print_llm_info,
+    print_model_capabilities,
+    print_observability_info,
+    print_quick_links,
+    print_section_header,
+    print_security_info,
+    print_shutdown_message,
+    print_startup_banner,
+    print_startup_complete,
+    print_status_line,
 )
 
 
@@ -37,10 +34,10 @@ async def lifespan(app: FastAPI):
     # ═══════════════════════════════════════════════════════════════
     # STARTUP
     # ═══════════════════════════════════════════════════════════════
-    
+
     # Main banner
     print_startup_banner("api", settings.app_version, settings.environment)
-    
+
     # ─────────────────────────────────────────────────────────────
     # LLM Configuration (with detailed info)
     # ─────────────────────────────────────────────────────────────
@@ -50,22 +47,28 @@ async def lifespan(app: FastAPI):
         "gemini": "Google Gemini",
     }
     provider_display = provider_names.get(settings.llm_provider.value, settings.llm_provider.value)
-    
+
     # Determine mode and API key status
-    mode = "local" if settings.llm_provider.value == "ollama" else "open_source" if settings.llm_provider.value == "groq" else "cloud"
-    api_key_set = bool(
-        (settings.llm_provider.value == "groq" and settings.groq_api_key) or
-        (settings.llm_provider.value == "gemini" and settings.gemini_api_key) or
-        settings.llm_provider.value == "ollama"
+    mode = (
+        "local"
+        if settings.llm_provider.value == "ollama"
+        else "open_source"
+        if settings.llm_provider.value == "groq"
+        else "cloud"
     )
-    
+    api_key_set = bool(
+        (settings.llm_provider.value == "groq" and settings.groq_api_key)
+        or (settings.llm_provider.value == "gemini" and settings.gemini_api_key)
+        or settings.llm_provider.value == "ollama"
+    )
+
     # Get base URL for the provider
     base_urls = {
         "ollama": settings.ollama_base_url,
         "groq": "https://api.groq.com/openai/v1",
         "gemini": "https://generativelanguage.googleapis.com",
     }
-    
+
     print_llm_info(
         provider=provider_display,
         model=settings.active_llm_model,
@@ -73,83 +76,91 @@ async def lifespan(app: FastAPI):
         base_url=base_urls.get(settings.llm_provider.value),
         api_key_set=api_key_set,
     )
-    
+
     # Show model-specific capabilities
     print_model_capabilities(settings.active_llm_model)
-    
+
     # ─────────────────────────────────────────────────────────────
     # ALEM Infrastructure Tier
     # ─────────────────────────────────────────────────────────────
     print_infrastructure_tier(settings.inference_tier_spec)
-    
+
     # ─────────────────────────────────────────────────────────────
     # Infrastructure Status
     # ─────────────────────────────────────────────────────────────
     print_section_header("🔌 Infrastructure")
-    
+
     # Redis connectivity
     redis_ok = False
     try:
         redis_ok = await RedisClient.health_check()
     except Exception:
         pass
-    
+
     # Build services list
     services = []
-    
+
     # Database info
     if "postgresql" in settings.database_url:
         try:
             db_host = settings.database_url.split("@")[-1].split("/")[0]
         except Exception:
             db_host = "configured"
-        services.append({
-            "name": "PostgreSQL",
-            "status": "Connected",
-            "style": "success",
-            "port": db_host.split(":")[-1] if ":" in db_host else "5432",
-            "detail": "user data & sessions",
-        })
-    
+        services.append(
+            {
+                "name": "PostgreSQL",
+                "status": "Connected",
+                "style": "success",
+                "port": db_host.split(":")[-1] if ":" in db_host else "5432",
+                "detail": "user data & sessions",
+            }
+        )
+
     # Redis
     if redis_ok:
-        services.append({
-            "name": "Redis",
-            "status": "Connected",
-            "style": "success",
-            "port": "6379",
-            "detail": "LangGraph checkpointing",
-        })
+        services.append(
+            {
+                "name": "Redis",
+                "status": "Connected",
+                "style": "success",
+                "port": "6379",
+                "detail": "LangGraph checkpointing",
+            }
+        )
     else:
-        services.append({
-            "name": "Redis",
-            "status": "Not Available",
-            "style": "warning",
-            "detail": "sessions will be stateless",
-        })
-    
+        services.append(
+            {
+                "name": "Redis",
+                "status": "Not Available",
+                "style": "warning",
+                "detail": "sessions will be stateless",
+            }
+        )
+
     # Ollama (if local mode)
     if settings.llm_provider.value == "ollama":
-        services.append({
-            "name": "Ollama",
-            "status": "Configured",
-            "style": "info",
-            "port": "11434",
-            "detail": f"model: {settings.ollama_model}",
-        })
-    
+        services.append(
+            {
+                "name": "Ollama",
+                "status": "Configured",
+                "style": "info",
+                "port": "11434",
+                "detail": f"model: {settings.ollama_model}",
+            }
+        )
+
     for svc in services:
-        port_info = f":{svc.get('port')}" if svc.get('port') else ""
-        detail = svc.get('detail', '')
+        port_info = f":{svc.get('port')}" if svc.get("port") else ""
+        detail = svc.get("detail", "")
         if port_info and detail:
             full_detail = f"localhost{port_info} — {detail}"
         elif port_info:
             full_detail = f"localhost{port_info}"
         else:
             full_detail = detail
-            
-        print_status_line(svc['name'], svc['status'], svc.get('style', 'info'), full_detail)
-    
+
+        print_status_line(svc["name"], svc["status"], svc.get("style", "info"), full_detail)
+
     # ─────────────────────────────────────────────────────────────
     # Security Configuration
     # ─────────────────────────────────────────────────────────────
@@ -160,7 +171,7 @@ async def lifespan(app: FastAPI):
         jwt_configured=jwt_configured,
         cors_origins=settings.cors_origins,
     )
-    
+
     # ─────────────────────────────────────────────────────────────
     # Observability
     # ─────────────────────────────────────────────────────────────
@@ -171,50 +182,54 @@ async def lifespan(app: FastAPI):
         prometheus_enabled=settings.prometheus_enabled,
         log_level=settings.log_level,
     )
-    
+
     # ─────────────────────────────────────────────────────────────
     # Endpoints with clickable links
     # ─────────────────────────────────────────────────────────────
     display_host = "localhost" if settings.api_host == "0.0.0.0" else settings.api_host
     base_url = f"http://{display_host}:{settings.api_port}"
-    
-    print_endpoints([
-        ("API", base_url, "REST API base"),
-        ("Swagger", f"{base_url}/docs", "Interactive API documentation"),
-        ("ReDoc", f"{base_url}/redoc", "Alternative API docs"),
-        ("Health", f"{base_url}/health", "Readiness & liveness probes"),
-        ("Langfuse UI", settings.langfuse_host, "LLM tracing & analytics dashboard"),
-        ("Langfuse API", f"{settings.langfuse_host}/api/public", "Langfuse Public API"),
-        ("LangGraph API", "http://127.0.0.1:2024", "LangGraph development server"),
-        ("LangGraph Docs", "http://127.0.0.1:2024/docs", "LangGraph API documentation"),
-    ])
-    
-    print_quick_links([
-        ("Swagger", f"{base_url}/docs"),
-        ("Chat", f"{base_url}/api/v1/chat"),
-        ("Traces", f"{settings.langfuse_host}/traces"),
-        ("LangGraph", "http://127.0.0.1:2024"),
-        ("Studio", "https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024"),
-    ])
-    
+
+    print_endpoints(
+        [
+            ("API", base_url, "REST API base"),
+            ("Swagger", f"{base_url}/docs", "Interactive API documentation"),
+            ("ReDoc", f"{base_url}/redoc", "Alternative API docs"),
+            ("Health", f"{base_url}/health", "Readiness & liveness probes"),
+            ("Langfuse UI", settings.langfuse_host, "LLM tracing & analytics dashboard"),
+            ("Langfuse API", f"{settings.langfuse_host}/api/public", "Langfuse Public API"),
+            ("LangGraph API", "http://127.0.0.1:2024", "LangGraph development server"),
+            ("LangGraph Docs", "http://127.0.0.1:2024/docs", "LangGraph API documentation"),
+        ]
+    )
+
+    print_quick_links(
+        [
+            ("Swagger", f"{base_url}/docs"),
+            ("Chat", f"{base_url}/api/v1/chat"),
+            ("Traces", f"{settings.langfuse_host}/traces"),
+            ("LangGraph", "http://127.0.0.1:2024"),
+            ("Studio", "https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024"),
+        ]
+    )
+
     print_startup_complete("Yonca AI API")
-    
+
     yield
-    
+
     # ═══════════════════════════════════════════════════════════════
     # SHUTDOWN
     # ═══════════════════════════════════════════════════════════════
-    
+
     print_shutdown_message()
-    
+
     # Close HTTP connection pools
     await HTTPClientPool.close_all()
     print_status_line("HTTP Pools", "Closed", "success")
-    
+
     # Close Redis connections
     await RedisClient.close()
     print_status_line("Redis", "Closed", "success")
-    
+
     print()
     print_status_line("Yonca AI", "Shutdown complete", "success")
     print()
@@ -310,8 +325,10 @@ app.add_middleware(
 # ===== Routes =====
 
 app.include_router(health.router, tags=["Health"])
+app.include_router(auth.router, prefix="/api", tags=["Authentication"])
 app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
 app.include_router(models.router, prefix="/api", tags=["Models"])
+app.include_router(vision.router, prefix="/api/v1", tags=["Vision"])
 
 
 # ===== Root Endpoint =====
@@ -328,16 +345,14 @@ async def root():
             "docs": "/docs",
             "redoc": "/redoc",
             "health": "/health",
+            "auth_test": "/api/v1/auth/test",
             "chat": "/api/v1/chat",
-            "models": "/api/models"
+            "vision": "/api/v1/vision/analyze",
+            "models": "/api/models",
         },
-        "methods": {
-            "/api/v1/chat": {
-                "GET": "Get chat endpoint information",
-                "POST": "Send messages to AI assistant"
-            },
-            "/api/models": {
-                "GET": "List available models"
-            }
-        }
+        "integration": {
+            "primary_endpoint": "http://localhost:8000",
+            "quick_test": "POST /api/v1/auth/test with 'Authorization: Bearer <token>'",
+            "swagger_ui": "http://localhost:8000/docs",
+        },
     }

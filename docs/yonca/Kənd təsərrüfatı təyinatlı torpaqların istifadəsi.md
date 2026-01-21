@@ -7,7 +7,7 @@ EKTİS-in Kənd təsərrüfatı təyinatlı torpaqların istifadəsi alt sistemi
 
 TİS-in yaratdığı imkanlar
 
-Fermerlər dövlət mülkiyyətində olan istifadəsiz kənd təsərrüfatı təyinatlı torpaqlarla tanış olmaq, xəritə üzrə yerini və digər məlumatları əldə etmək imkanına malikdir; 
+Fermerlər dövlət mülkiyyətində olan istifadəsiz kənd təsərrüfatı təyinatlı torpaqlarla tanış olmaq, xəritə üzrə yerini və digər məlumatları əldə etmək imkanına malikdir;
 İstifadədə olmayan torpaqların təyinatı üzrə istifadə məqsədi ilə sistem üzərindən müraciət edə və optimallaşmış elektron xidmət üzərindən asanlıqla torpağı icarəyə götürərək kənd təsərrüfatı ilə məşğul ola bilər;
 İstifadədə olmayan torpaqları istifadə etmək üçün müraciət etmək və tam elektron qaydada asanlıqla müqavilə bağlayaraq kənd təsərrüfatı ilə məşğul ola bilər;
 Əkinçilik fəaliyyəti üzrə dövlət subsidiyasından faydalana bilər;

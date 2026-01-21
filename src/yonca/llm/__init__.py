@@ -6,10 +6,10 @@ Provides abstracted access to multiple LLM backends (Ollama, Groq).
 Usage:
     ```python
     from yonca.llm import get_llm_provider, LLMMessage
-    
+
     # Get the configured provider
     llm = get_llm_provider()
-    
+
     # Generate a response
     response = await llm.generate([
         LLMMessage.system("You are a helpful farming assistant."),

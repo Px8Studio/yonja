@@ -1,14 +1,85 @@
-# ⚙️ Yonca AI — Technical Architecture
+# ⚙️ ALEM Technical Architecture
 
-> **Purpose:** Complete technical reference for the Sidecar Intelligence Module—components, APIs, deployment, and roadmap.
+> **Purpose:** Complete technical reference for ALEM (Agronomical Logic & Evaluation Model) — components, data flow, and operational guidance.
 
 ---
 
-## 🧩 Component Architecture Overview (Implemented)
+## 🌍 System Context: Yonca Ecosystem
 
-> **The Big Picture:** How Chainlit, PostgreSQL, Redis, Langfuse, and LangGraph interconnect in the actual implementation.
+> **Important Distinction:** We are building **Yonca AI** (ALEM-powered assistant) as a sidecar to the existing **Yonca Mobile App** (Digital Umbrella's production platform).
 
-### Five-Component System
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+flowchart TB
+    subgraph gov_existing["🏛️ GOVERNMENT SYSTEMS (Existing)"]
+        direction TB
+        ektis_db["<b>EKTIS Database</b><br/><i>Ministry of Agriculture</i><br/>━━━━━━━━━<br/>✅ Live: 100k+ farms<br/>• Crop declarations<br/>• Land registry<br/>• NDVI tracking"]
+    end
+
+    subgraph external["🌐 YONCA MOBILE (Digital Umbrella)"]
+        direction TB
+        yonca_mobile["📱 <b>Yonca Mobile App</b><br/><i>Production • 100k+ users</i><br/>━━━━━━━━━<br/>✅ Existing Integrations:<br/>• EKTIS (farm data)<br/>• mygov ID (auth)<br/>• GPS tracking"]
+    end
+
+    subgraph future_partners["🔮 FUTURE DIRECT INTEGRATIONS (Phase 1-3)"]
+        direction TB
+        sima["🔐 <b>SİMA/ASAN</b><br/><i>IDDA</i><br/>Phase 1"]
+        ektis_direct["🏛️ <b>EKTIS Direct API</b><br/><i>Ministry of Agriculture</i><br/>Phase 2"]
+        cbar["💰 <b>CBAR Banking</b><br/><i>Central Bank</i><br/>Phase 2"]
+        azerkosmos["🛰️ <b>Azərkosmos</b><br/><i>Space Agency</i><br/>Phase 3"]
+        weather["🌡️ <b>Weather APIs</b><br/><i>Azerbaijan Meteorology</i><br/>Phase 2"]
+    end
+
+    subgraph our_system["🤖 YONCA AI (Our System)"]
+        direction TB
+        alem["🧠 <b>ALEM</b><br/><i>AI Model Stack</i>"]
+        demo_ui["🖥️ <b>Demo UI</b><br/><i>Chainlit :8501</i>"]
+        synthetic["💾 <b>Synthetic Data</b><br/><i>Current: Mirror-image</i>"]
+    end
+
+    %% Existing connections (solid green)
+    ektis_db ==>|"✅ EXISTING<br/>Production API"| yonca_mobile
+
+    %% Current ALEM setup (solid)
+    demo_ui --> alem
+    alem --> synthetic
+
+    %% Future indirect path (dashed orange)
+    yonca_mobile -.->|"🔮 Option A: Via Yonca Mobile<br/>Leverage existing integration"| our_system
+
+    %% Future direct paths (dashed purple)
+    sima -.->|"🔮 Phase 1: Auth"| our_system
+    ektis_direct -.->|"🔮 Option B: Direct API<br/>Separate partnership"| our_system
+    cbar -.->|"🔮 Phase 2: Finance"| our_system
+    azerkosmos -.->|"🔮 Phase 3: Imagery"| our_system
+    weather -.->|"🔮 Phase 2: Forecasts"| our_system
+
+    style gov_existing fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style external fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style future_partners fill:#f3e5f5,stroke:#9c27b0,stroke-dasharray: 5 5,opacity:0.6
+    style our_system fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style alem fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+```
+
+**Legend:**
+- **Solid green arrows** (⇒) = Existing production integrations
+- **Dashed orange arrows** (⇢) = Future integration via existing Yonca Mobile
+- **Dashed purple arrows** (⇢) = Future direct integrations (new partnerships)
+
+| System | Owner | Purpose | Status | ALEM Integration Path |
+|:-------|:------|:--------|:-------|:----------------------|
+| **EKTIS** | Ministry of Agriculture | Official farm registry (100k+ farms) | ✅ Live | 🔮 **Option A**: Via Yonca Mobile (indirect)<br/>🔮 **Option B**: Direct API (new partnership) |
+| **Yonca Mobile App** | Digital Umbrella | Production farming app | ✅ Live | 🔮 Data sync partner |
+| **Yonca AI (ALEM)** | Zekalab | AI assistant sidecar | 🔄 Development | — |
+| **SİMA/ASAN** | IDDA (Gov) | Sovereign authentication | 🔮 Planned (Phase 1) | 🔮 Direct integration |
+| **CBAR Open Banking** | Central Bank | Financial integration | 🔮 Planned (Phase 2) | 🔮 Direct integration |
+| **Azərkosmos** | Space Agency | Satellite imagery | 🔮 Planned (Phase 3) | 🔮 Direct integration |
+
+> **See:** [18-ENTERPRISE-INTEGRATION-ROADMAP](18-ENTERPRISE-INTEGRATION-ROADMAP.md) for full partnership strategy.
+
+---
+
+## 🧩 Five-Component System
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
@@ -23,28 +94,27 @@ flowchart TB
 
     subgraph brain["🧠 INTELLIGENCE LAYER"]
         langgraph["<b>LangGraph Agent</b><br/>━━━━━━━━━<br/>• Supervisor node<br/>• Agronomist node<br/>• Weather node<br/>• Validator node"]
-        llm["<b>LLM Providers</b><br/>━━━━━━━━━<br/>• Groq (cloud)<br/>• Ollama (local)<br/>• Gemini (fallback)"]
+        llm["<b>LLM Providers</b><br/>━━━━━━━━━<br/>• Groq (cloud)<br/>• Ollama (local)"]
     end
 
-    subgraph data["💾 PERSISTENCE LAYER"]
+    subgraph data["💾 APP DATA LAYER"]
         direction LR
-        postgres["<b>PostgreSQL</b><br/>:5433<br/>━━━━━━━━━<br/>🟢 Domain Data:<br/>• user_profiles<br/>• farms, parcels<br/>• crop_rotation<br/>━━━━━━━━━<br/>🔵 Chainlit Data:<br/>• users (OAuth)<br/>• threads<br/>• steps, feedbacks"]
-        redis["<b>Redis Stack</b><br/>:6379<br/>━━━━━━━━━<br/>• LangGraph checkpoints<br/>• Session state<br/>• Rate limiting<br/>• Caching"]
+        postgres["<b>Yonca App DB</b><br/>:5433<br/>━━━━━━━━━<br/>📋 App Tables:<br/>• users (OAuth)<br/>• threads, steps<br/>• user_profiles<br/>• farms, parcels<br/>• alem_personas"]
+        redis["<b>Redis</b><br/>:6379<br/>━━━━━━━━━<br/>• LangGraph checkpoints<br/>• Session state<br/>• Rate limiting"]
     end
 
-    subgraph observe["📊 OBSERVABILITY LAYER"]
-        langfuse["<b>Langfuse</b><br/>:3001<br/>━━━━━━━━━<br/>• LLM traces<br/>• Token costs<br/>• Latency metrics<br/>• Prompt versions"]
-        langfusedb["<b>Langfuse DB</b><br/>(PostgreSQL)<br/>━━━━━━━━━<br/>• Traces storage<br/>• Evaluations"]
+    subgraph observe["📊 OBSERVABILITY (Separate DB)"]
+        langfuse["<b>Langfuse</b><br/>:3001<br/>━━━━━━━━━<br/>Own database<br/>• LLM traces<br/>• Token costs<br/>• Latencies"]
     end
 
     farmer --> chainlit
     chainlit --> |"Direct Mode"| langgraph
     langgraph --> llm
     langgraph --> |"State checkpoints"| redis
-    chainlit --> |"Conversation history"| postgres
+    chainlit --> |"App data"| postgres
     langgraph --> |"Farm context"| postgres
-    langgraph --> |"Traces"| langfuse
-    langfuse --> langfusedb
+    langgraph -.-> |"Traces"| langfuse
+    langfuse -.-> |"Insights API"| postgres
 
     style chainlit fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     style langgraph fill:#fff3e0,stroke:#f57c00,stroke-width:2px
@@ -55,52 +125,283 @@ flowchart TB
 
 ### Component Responsibility Matrix
 
-| Component | Purpose | What It Stores | Lifecycle |
-|:----------|:--------|:---------------|:----------|
-| **Chainlit** | Chat UI + thread display | UI state only (delegates storage) | Per-session |
-| **PostgreSQL (Yonca)** | Domain data + Chainlit persistence | Users, farms, threads, messages | Permanent |
-| **Redis** | Fast state + checkpoints | LangGraph state, sessions, cache | TTL-based |
-| **Langfuse** | LLM observability | Traces, costs, latencies | Permanent |
-| **LangGraph** | Agent orchestration | In-memory graph execution | Per-request |
+| Component | Purpose | What It Stores | Key File |
+|:----------|:--------|:---------------|:---------|
+| **Chainlit** | Chat UI + thread display | UI state (delegates to App DB) | `demo-ui/app.py` |
+| **Yonca App DB** | All app data | Users, farms, threads, personas | `demo-ui/data_layer.py` |
+| **Redis** | Fast state + checkpoints | LangGraph state, sessions | `src/yonca/agent/memory.py` |
+| **Langfuse** | LLM observability (separate DB) | Traces, costs, latencies | `src/yonca/observability/langfuse.py` |
+| **LangGraph** | Agent orchestration | In-memory graph execution | `src/yonca/agent/graph.py` |
 
-### Three Storage Concerns
+### 🎯 Architecture Clarification: Three Different "LangGraphs"
+
+> **Common Confusion:** The term "LangGraph" appears in three contexts. Understanding these distinctions is critical for navigating the codebase.
+
+| What It Is | Type | Port | Purpose | Required? |
+|:-----------|:-----|:-----|:--------|:----------|
+| **LangGraph Library** | Python package | — | Agent orchestration framework (like React) | ✅ **Core dependency** |
+| **LangGraph Dev Server** | Development tool | 2024 | Visual debugger (LangGraph Studio) | ❌ **Optional** |
+| **FastAPI Backend** | Production API | 8000 | REST endpoints for mobile app | ✅ **Production critical** |
+
+#### 1️⃣ LangGraph Library (The Brain)
+
+```python
+from langgraph.graph import StateGraph  # ← This is the library
+agent = StateGraph(AgentState)
+agent.add_node("supervisor", supervisor_node)
+```
+
+- **What**: Python library you import and use in code
+- **Where**: `src/yonca/agent/` — all agent logic
+- **Analogy**: Like React — you build your app with it
+- **Status**: ✅ **Required** — this is your agent's foundation
+
+#### 2️⃣ LangGraph Dev Server (Optional Debugger)
+
+```bash
+langgraph dev  # Starts on http://127.0.0.1:2024
+```
+
+- **What**: Visual debugger for LangGraph applications
+- **Where**: Started separately via CLI command
+- **Analogy**: Like React DevTools — helpful for debugging
+- **Status**: ❌ **Optional** — you can safely ignore this for development
+
+> 💡 **Decision**: We **don't use** the LangGraph Dev Server. Chainlit provides built-in step visualization, making this redundant.
+
+#### 3️⃣ FastAPI Backend (Production API)
+
+```python
+# src/yonca/api/main.py
+@app.post("/api/v1/chat")
+async def chat(request: ChatMessage):
+    # Imports LangGraph library internally
+    agent = get_agent()
+    response = await agent.chat(request.message)
+```
+
+- **What**: REST API server exposing agent functionality
+- **Where**: `src/yonca/api/` — all HTTP endpoints
+- **Analogy**: Express.js server for your React app
+- **Status**: ✅ **Required** — mobile app calls these endpoints
+
+### 🔄 Integration Modes: Direct vs API Bridge
+
+The Chainlit demo UI supports **two integration patterns** for flexibility:
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
-graph LR
-    subgraph yonca_db["🐘 PostgreSQL: yonca (:5433)"]
-        direction TB
-        domain["<b>Domain Tables</b><br/>user_profiles<br/>farm_profiles<br/>parcels<br/>ndvi_readings"]
-        chainlit_tables["<b>Chainlit Tables</b><br/>users (OAuth)<br/>threads<br/>steps<br/>feedbacks"]
+flowchart TB
+    subgraph dev["🔧 DEVELOPMENT MODE (Current)"]
+        chainlit1["Chainlit UI<br/>:8501"]
+        langgraph_lib1["LangGraph Library<br/>(imported directly)"]
+        llm1["Ollama/Groq"]
+
+        chainlit1 --> langgraph_lib1
+        langgraph_lib1 --> llm1
+
+        note1["✅ Direct Mode<br/>Fast iteration<br/>No HTTP overhead"]
     end
 
-    subgraph redis_db["🔴 Redis Stack (:6379)"]
-        direction TB
-        checkpoints["<b>LangGraph</b><br/>langgraph:checkpoint:{thread_id}"]
-        sessions["<b>Sessions</b><br/>session:{user_id}"]
-        cache["<b>Rate Limits</b><br/>rate_limit:{ip}:{window}"]
+    subgraph prod["🚀 PRODUCTION SIMULATION"]
+        mobile["Mobile App"]
+        fastapi["FastAPI<br/>:8000"]
+        langgraph_lib2["LangGraph Library<br/>(imported by FastAPI)"]
+        llm2["Groq API"]
+
+        mobile --> fastapi
+        fastapi --> langgraph_lib2
+        langgraph_lib2 --> llm2
+
+        note2["🌐 API Bridge Mode<br/>Tests production API<br/>(optional for demo)"]
     end
 
-    subgraph langfuse_db["🐘 PostgreSQL: langfuse"]
-        direction TB
-        traces["<b>Traces</b><br/>LLM calls"]
-        evals["<b>Evaluations</b><br/>quality scores"]
-    end
-
-    style yonca_db fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-    style redis_db fill:#ffebee,stroke:#c62828,stroke-width:2px
-    style langfuse_db fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    style dev fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style prod fill:#fff3e0,stroke:#f57c00,stroke-width:2px
 ```
 
-| Storage | Tables/Keys | Purpose |
-|:--------|:------------|:--------|
-| **PostgreSQL (yonca)** | `users`, `threads`, `steps`, `feedbacks` | Chainlit conversation persistence |
-| **PostgreSQL (yonca)** | `user_profiles`, `farm_profiles`, `parcels` | Domain/farm data |
-| **Redis** | `langgraph:checkpoint:{thread_id}` | LangGraph state between turns |
-| **Redis** | `session:{user_id}`, `rate_limit:{ip}` | Sessions & rate limiting |
-| **Langfuse DB** | `traces`, `generations`, `spans` | LLM observability data |
+| Mode | How It Works | When to Use |
+|:-----|:-------------|:------------|
+| **Direct Mode** | Chainlit → LangGraph Library (in-process) | ✅ **Development** — Faster, simpler |
+| **API Bridge Mode** | Chainlit → FastAPI → LangGraph Library | ⚙️ **Testing** — Validates API contract |
 
-### Data Flow: Message Lifecycle
+> 🎯 **Recommendation**: Use **Direct Mode** for daily development. The "API Bridge" exists to test the same HTTP endpoints the mobile app will use, but it's not required for building the agent.
+
+**Configuration** (`.env` or `demo-ui/.env`):
+```env
+# Simple setup (recommended)
+INTEGRATION_MODE=direct
+```
+
+### 🧠 Mental Model: One Backend, Two Entry Points
+
+```
+┌─────────────────────────────────────────────────────┐
+│         🧠 LANGGRAPH AGENT (Core Logic)             │
+│                                                      │
+│  • Supervisor node (routes intent)                 │
+│  • Agronomist node (agricultural advice)           │
+│  • Weather node (weather queries)                  │
+│  • Validator node (safety checks)                  │
+│                                                      │
+│         Location: src/yonca/agent/                  │
+└─────────────────────────────────────────────────────┘
+            ▲                        ▲
+            │                        │
+    ┌───────┴────────┐      ┌────────┴────────┐
+    │                │      │                 │
+    │  Entry Point 1 │      │  Entry Point 2  │
+    │                │      │                 │
+    │   📱 Chainlit  │      │   🌐 FastAPI    │
+    │   (Direct)     │      │   (HTTP API)    │
+    │                │      │                 │
+    │   For: Demo    │      │   For: Mobile   │
+    │        Testing │      │        App      │
+    └────────────────┘      └─────────────────┘
+```
+
+**Key Insight**: Both entry points use the **same LangGraph agent code**. The only difference is how they access it:
+- **Chainlit**: Imports directly (`from yonca.agent import get_agent`)
+- **FastAPI**: Also imports directly, but exposes via HTTP endpoints
+
+There's **no duplication** — just different interfaces to the same intelligence layer.
+
+---
+
+## 💾 Data Ecosystem
+
+> **Key Architecture:** THREE storage systems running in Docker — two PostgreSQL instances + Redis.
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+flowchart TB
+    subgraph docker["🐳 Docker Compose Stack"]
+        direction TB
+
+        subgraph yonca_ai_data["💾 YONCA AI APP DATA"]
+            subgraph pg_app["🐘 PostgreSQL :5433<br/><code>yonca-postgres</code>"]
+                app_tables["📋 <b>App Tables</b><br/>━━━━━━━━━━━━━<br/>users, threads, steps<br/>user_profiles, farm_profiles<br/>parcels, alem_personas"]
+            end
+
+            subgraph redis["🔴 Redis Stack :6379<br/><code>yonca-redis</code>"]
+                redis_data["⚡ <b>Runtime State</b><br/>━━━━━━━━━━━━━<br/>LangGraph checkpoints<br/>Session cache<br/>Rate limits"]
+            end
+        end
+
+        subgraph langfuse_stack["📊 LANGFUSE STACK (Self-Contained)"]
+            subgraph pg_langfuse["🐘 PostgreSQL :5432<br/><code>yonca-langfuse-db</code><br/><i>Internal only</i>"]
+                lf_tables["🔍 <b>Auto-Managed</b><br/>━━━━━━━━━━━━━<br/>traces, generations<br/>scores, prompts<br/>sessions, users"]
+            end
+
+            langfuse_ui["🌐 <b>Langfuse UI :3001</b><br/><code>yonca-langfuse</code>"]
+        end
+    end
+
+    subgraph external["🌐 FUTURE: External Data"]
+        yonca_mobile["📱 Yonca Mobile<br/>(Digital Umbrella)"]
+    end
+
+    pg_langfuse --> langfuse_ui
+    langfuse_ui -.->|"REST API<br/>read-only"| pg_app
+    yonca_mobile -.->|"Hot-swap<br/>when ready"| pg_app
+
+    style yonca_ai_data fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style langfuse_stack fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style external fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
+```
+
+### 📦 Complete Storage Inventory
+
+| Container | Type | Port | Database/Purpose | You Manage? |
+|:----------|:-----|:-----|:-----------------|:------------|
+| `yonca-postgres` | PostgreSQL 15 | **:5433** | Yonca App tables | ✅ **Yes** — migrations, seeds |
+| `yonca-redis` | Redis Stack | **:6379** | LangGraph checkpoints, sessions | ✅ **Yes** — ephemeral |
+| `yonca-langfuse-db` | PostgreSQL 15 | *internal* | Langfuse traces (auto-managed) | ❌ **No** — Langfuse handles |
+| `yonca-langfuse` | Next.js app | **:3001** | Observability dashboard | ❌ **No** — just view it |
+
+### 🔍 Langfuse: How It Works
+
+**Q: Do we need to seed Langfuse with synthetic data?**
+**A: No!** Langfuse auto-populates when you interact with ALEM:
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+sequenceDiagram
+    participant U as 👤 Demo User
+    participant A as 🧠 ALEM Agent
+    participant LF as 📊 Langfuse
+    participant DB as 🐘 Langfuse DB
+
+    U->>A: Send message
+    A->>LF: Trace callback (auto)
+    LF->>DB: INSERT trace, generation
+    Note over DB: Auto-managed!<br/>No seeds needed
+
+    A->>U: Response
+
+    U->>LF: View dashboard :3001
+    LF->>DB: Query traces
+    DB->>LF: Return data
+    LF->>U: Show analytics
+```
+
+**Key Points:**
+1. **Traces auto-populate** — Every LLM call creates a trace automatically
+2. **No synthetic Langfuse data needed** — Just use the app normally
+3. **Read via API** — Dashboard queries Langfuse's own DB, we read via REST API
+4. **Caching optional** — We can cache aggregated insights in our App DB
+
+### 🔑 VS Code Database Access
+
+To view databases directly from VS Code, install these extensions:
+
+| Extension | ID | Purpose |
+|:----------|:---|:--------|
+| **Database Client** | `cweijan.vscode-database-client2` | PostgreSQL, Redis, SQLite GUI |
+| **Redis** | `cweijan.vscode-redis-client` | Redis key browser |
+
+**Connection strings:**
+```bash
+# Yonca App DB (your data)
+postgresql://yonca:yonca_dev_password@localhost:5433/yonca
+
+# Redis
+redis://localhost:6379
+
+# Langfuse DB (just for viewing, don't modify!)
+postgresql://langfuse:langfuse_secret@localhost:5432/langfuse
+# Note: Langfuse DB runs on internal port, map it in docker-compose if needed
+```
+
+> ⚠️ **Warning:** The Langfuse DB port (5432) is internal only by default. To browse it, temporarily add port mapping: `- "5434:5432"` to `langfuse-db` in docker-compose.
+
+### Storage Responsibilities
+
+| Storage | Type | Tables/Keys | Purpose | Access |
+|:--------|:-----|:------------|:--------|:-------|
+| **Yonca App DB** | PostgreSQL :5433 | `users`, `threads`, `steps`, `feedbacks` | Conversation history | Read/Write |
+| **Yonca App DB** | PostgreSQL :5433 | `user_profiles`, `farm_profiles`, `parcels` | Farm data (synthetic → real) | Read/Write |
+| **Langfuse DB** | PostgreSQL (internal) | `traces`, `generations`, `scores` | LLM observability | **Auto-managed** |
+| **Redis** | Redis Stack :6379 | `langgraph:checkpoint:*` | LangGraph state | Read/Write |
+| **Redis** | Redis Stack :6379 | `session:*`, `rate_limit:*` | Runtime cache | Read/Write |
+
+> 💡 **Langfuse is self-contained** — it manages its own PostgreSQL database. We query it via REST API for dashboard insights, but all trace data stays in Langfuse's DB. We can optionally cache aggregated insights in our App DB for faster access.
+
+### Hot-Swap Strategy: Synthetic → Real Data
+
+The Yonca mobile platform (Digital Umbrella) already serves many users with real farm data from EKTIS. Our architecture is designed for seamless integration:
+
+| Phase | Data Source | Status |
+|:------|:------------|:-------|
+| **Now** | Synthetic profiles (schema-matched) | ✅ Active |
+| **Pilot** | Real users, synced from Yonca mobile | ⏳ Pending handoff |
+| **Production** | Full EKTIS integration | 🔜 Future |
+
+> **No code changes required** — same `user_profiles`, `farm_profiles`, `parcels` tables, just different data source.
+
+---
+
+## 🔄 Message Lifecycle
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
@@ -114,1277 +415,258 @@ sequenceDiagram
 
     Note over F,L: 1️⃣ User sends message
     F->>C: "Pomidor nə vaxt suvarmalıyam?"
-    
+
     Note over C,P: 2️⃣ Chainlit saves to PostgreSQL
     C->>P: INSERT INTO steps (threadId, input, ...)
-    
+
     Note over C,G: 3️⃣ LangGraph processes
     C->>G: invoke(message, thread_id)
     G->>R: Load checkpoint (if exists)
     G->>P: Query farm_profiles, parcels
     G->>L: Trace: supervisor → agronomist → validator
-    
+
     Note over G,R: 4️⃣ LangGraph saves state
     G->>R: Save checkpoint (conversation memory)
-    
+
     Note over G,C: 5️⃣ Response streams back
     G-->>C: Stream tokens
     C->>P: INSERT INTO steps (output, generation, ...)
     C-->>F: Display response
-
-    Note over F,L: 🔄 On refresh: Chainlit loads threads from PostgreSQL
-    Note over F,L: 🔄 LangGraph loads state from Redis checkpoint
 ```
 
 ---
 
-## 📐 Architecture at a Glance (Original Design)
+## 🧠 LangGraph Agent Structure
 
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-flowchart TB
-    subgraph external["📱 External Systems"]
-        yonca["Yonca Mobile App"]
-        mygov["mygov ID Gateway"]
-    end
-    
-    subgraph container["🐳 Yonca AI Sidecar"]
-        api["🔌 FastAPI Gateway"]
-        pii["🛡️ PII Gateway"]
-        graph["🧠 LangGraph Brain"]
-        rules["📚 Rules Engine"]
-        llm["🤖 LLM Provider"]
-    end
-    
-    subgraph data["💾 Data Layer"]
-        pg["🐘 PostgreSQL<br/>Synthetic Profiles"]
-        redis["⚡ Redis<br/>Sessions + Memory"]
-    end
-    
-    yonca -->|"JWT + Message"| api
-    mygov -.->|"Token Validation"| api
-    api --> pii --> graph
-    graph <--> rules
-    graph --> llm
-    graph <--> redis
-    graph <--> pg
-    
-    style container fill:#e8f5e9,stroke:#388e3c,stroke-width:3px
-    style data fill:#fff3e0,stroke:#f57c00
+```
+START
+  │
+  ▼
+supervisor ──┬──> end (greeting/off-topic handled)
+             │
+             ▼
+       context_loader
+             │
+             ├──> agronomist ──> validator ──> end
+             │
+             └──> weather ──────> validator ──> end
+```
+
+**Graph nodes** (see `src/yonca/agent/graph.py`):
+- `supervisor` — Routes intent, handles greetings
+- `context_loader` — Loads farm/user context from PostgreSQL
+- `agronomist` — Core agricultural reasoning
+- `weather` — Weather-related queries
+- `validator` — Output validation + safety checks
+
+---
+
+## 🚀 Operational Quick Reference
+
+### 🎯 Essential vs Optional Components
+
+Before diving into service URLs and commands, understand what you actually need:
+
+| Component | Status | Why |
+|:----------|:-------|:----|
+| **Docker Services** | ✅ **Required** | PostgreSQL, Redis, Langfuse, Ollama |
+| **FastAPI Backend** | ✅ **Required** | Mobile app integration point |
+| **Chainlit UI (Direct Mode)** | ✅ **Required** | Primary testing interface |
+| **LangGraph Library** | ✅ **Required** | Agent brain (imported by both above) |
+| **LangGraph Dev Server** | ❌ **Optional** | Visual debugger (redundant with Chainlit) |
+| **API Bridge Mode** | ❌ **Optional** | Tests FastAPI contract (use Swagger instead) |
+
+### 🎬 Simplified Startup Sequence
+
+```powershell
+# 1. Start Docker services
+docker-compose -f docker-compose.local.yml up -d
+
+# 2. Run migrations (first time only)
+$env:DATABASE_URL = "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
+alembic upgrade head
+
+# 3. Start Chainlit UI (development testing)
+cd demo-ui
+.\.venv\Scripts\Activate.ps1
+chainlit run app.py -w --port 8501
+
+# 4. Start FastAPI (mobile app testing - separate terminal)
+cd C:\Users\rjjaf\_Projects\yonja
+.\.venv\Scripts\Activate.ps1
+uvicorn yonca.api.main:app --reload
+
+# That's it! No LangGraph dev server needed.
+```
+
+> 💡 **Pro Tip**: Chainlit and FastAPI can run simultaneously. Test the agent in Chainlit, then validate the HTTP API via Swagger UI (http://localhost:8000/docs).
+
+### Service URLs
+
+| Service | URL | Purpose | Health Check |
+|:--------|:----|:--------|:-------------|
+| **Chainlit UI** | http://localhost:8501 | Demo testing interface | Visual check |
+| **FastAPI Backend** | http://localhost:8000 | Mobile app API | http://localhost:8000/health |
+| **Swagger UI** | http://localhost:8000/docs | Interactive API testing | N/A |
+| **ReDoc** | http://localhost:8000/redoc | API documentation | N/A |
+| **PostgreSQL** | localhost:5433 | App database | `pg_isready -h localhost -p 5433` |
+| **Redis** | localhost:6379 | State persistence | `redis-cli ping` |
+| **Langfuse** | http://localhost:3001 | LLM observability | Dashboard loads |
+| **Ollama** | http://localhost:11434 | Local LLM (dev) | `curl http://localhost:11434/api/tags` |
+
+> 🎯 **Testing Workflow**: Develop in Chainlit → Test API via Swagger → Mobile app uses FastAPI endpoints
+
+### Common Commands
+
+```powershell
+# ═══════════════════════════════════════════════════════
+# DOCKER SERVICES
+# ═══════════════════════════════════════════════════════
+
+# Start all services (PostgreSQL, Redis, Langfuse, Ollama)
+docker-compose -f docker-compose.local.yml up -d
+
+# Check service health
+docker ps
+docker-compose -f docker-compose.local.yml ps
+
+# View logs
+docker-compose -f docker-compose.local.yml logs -f
+
+# Stop all services
+docker-compose -f docker-compose.local.yml down
+
+# ═══════════════════════════════════════════════════════
+# DATABASE MANAGEMENT
+# ═══════════════════════════════════════════════════════
+
+# Run migrations (first time setup)
+$env:DATABASE_URL = "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
+$env:PYTHONPATH = "C:\Users\rjjaf\_Projects\yonja\src"
+alembic upgrade head
+
+# Create new migration (after model changes)
+alembic revision --autogenerate -m "description"
+
+# Seed database with synthetic data
+python scripts/seed_database.py
+
+# Verify Redis checkpoints
+docker exec yonca-redis redis-cli KEYS "langgraph:*"
+
+# ═══════════════════════════════════════════════════════
+# DEVELOPMENT SERVERS
+# ═══════════════════════════════════════════════════════
+
+# Start Chainlit UI (primary testing interface)
+cd demo-ui
+.\.venv\Scripts\Activate.ps1
+chainlit run app.py -w --port 8501
+
+# Start FastAPI Backend (for mobile app testing)
+cd C:\Users\rjjaf\_Projects\yonja
+.\.venv\Scripts\Activate.ps1
+uvicorn yonca.api.main:app --reload --port 8000
+
+# Test FastAPI endpoints
+curl http://localhost:8000/health
+# or visit http://localhost:8000/docs for Swagger UI
+
+# ═══════════════════════════════════════════════════════
+# TESTING & VERIFICATION
+# ═══════════════════════════════════════════════════════
+
+# Run tests
+pytest tests/ -v
+
+# Check code quality
+ruff check src/ tests/
+
+# View Langfuse traces
+# Open http://localhost:3001 in browser
+```
+
+### Verification Checklist
+
+```sql
+-- Verify Chainlit is persisting threads
+SELECT id, name, "createdAt" FROM threads ORDER BY "createdAt" DESC LIMIT 5;
+
+-- Verify messages are saved
+SELECT id, type, "threadId", LEFT(output, 50) as preview FROM steps ORDER BY "createdAt" DESC LIMIT 10;
 ```
 
 ---
 
-## 🏗️ Dual-Reality Data Architecture
+## 🌐 Enterprise Integration Strategy
 
-To integrate seamlessly with the **Yonca** ecosystem while respecting its government-grade security, we adopt a "dual-reality" data architecture. This ensures our AI agent operates in a safe synthetic environment during the prototype phase, while the infrastructure is technically ready to handle complex authentication methods (mygov ID, SİMA, Asan İmza) when moved to production.
+ALEM's roadmap includes strategic partnerships with Azerbaijan's digital infrastructure ecosystem. See dedicated documentation for full details:
 
-### Multi-Layered Data Stack
-
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-graph TB
-    subgraph docker["🐳 DOCKER CONTAINER"]
-        direction TB
-        subgraph services["🧠 Microservices"]
-            api["🔌 API Gateway<br/><i>FastAPI + Token Validation</i>"]
-            brain["🧠 Agent Brain<br/><i>LangGraph Orchestrator</i>"]
-            data["💾 Data Engine<br/><i>SQLAlchemy + Redis</i>"]
-        end
-        
-        subgraph storage["📊 Persistence Layer"]
-            pg["🐘 PostgreSQL<br/><i>Synthetic Profiles</i>"]
-            redis["⚡ Redis<br/><i>Agent Memory + Cache</i>"]
-        end
-        
-        api --> brain
-        brain --> data
-        brain --> redis
-        data --> pg
-    end
-    
-    subgraph external["🌐 External"]
-        yonca["📱 Yonca App"]
-        mygov["🔐 mygov ID"]
-    end
-    
-    yonca -->|"JWT Token"| api
-    mygov -.->|"Validation"| api
-```
-
-### A. PostgreSQL: The Persistence Layer ✅ IMPLEMENTED
-
-| Aspect | Description |
-|:-------|:------------|
-| **Purpose** | Single database for domain data + Chainlit conversation persistence |
-| **Domain Tables** | `user_profiles`, `farm_profiles`, `parcels`, `ndvi_readings`, `crop_rotation_logs` |
-| **Chainlit Tables** | `users` (OAuth), `threads`, `steps`, `elements`, `feedbacks` |
-| **Migrations** | Managed via Alembic — see `alembic/versions/` |
-| **Port** | `:5433` (mapped from container's `:5432`) |
-
-> **Key Insight:** Chainlit's `SQLAlchemyDataLayer` stores conversation history in the **same database** as domain data. This enables:
-> - Thread history sidebar in Chainlit UI
-> - Conversation persistence across browser refreshes
-> - OAuth user storage (Google login)
-
-### B. Redis: The Context & Speed Layer ✅ IMPLEMENTED
-
-| Aspect | Description |
-|:-------|:------------|
-| **Purpose** | LangGraph checkpointing + fast lookups + rate limiting |
-| **LangGraph Checkpoints** | `langgraph:checkpoint:{thread_id}` — agent state between conversation turns |
-| **Session Storage** | `session:{user_id}` — user preferences, farm_id cache |
-| **Rate Limiting** | `rate_limit:{ip}:{window}` — sliding window counters |
-| **Connection Pooling** | ✅ 50 max connections via `redis.asyncio` — see `src/yonca/data/redis_client.py` |
-| **Image** | `redis/redis-stack-server` (includes RediSearch for checkpoint queries) |
-
-> **Key Insight:** Redis stores **agent memory** (what was discussed), while PostgreSQL stores **conversation display** (what to show in UI). Both are needed for full persistence.
-
-### C. Langfuse: The Observability Layer ✅ IMPLEMENTED
-
-| Aspect | Description |
-|:-------|:------------|
-| **Purpose** | Self-hosted LLM observability (open-source LangSmith alternative) |
-| **Database** | Separate PostgreSQL instance (`:langfuse-db`) |
-| **Traces** | Every LLM call, token count, latency, cost |
-| **Sessions** | Conversations grouped by `thread_id` |
-| **Port** | `:3001` for dashboard |
-| **Integration** | `src/yonca/observability/langfuse.py` with LangChain callback handler |
-
-### D. Docker Compose Services Map
+### Key Integration Partners
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
-graph TB
-    subgraph compose["docker-compose.local.yml"]
-        postgres["🐘 postgres<br/>:5433"]
-        redis["🔴 redis<br/>:6379"]
-        ollama["🤖 ollama<br/>:11434"]
-        langfuse["📊 langfuse-server<br/>:3001"]
-        langfusedb["🐘 langfuse-db<br/>(internal)"]
-        api["🔌 api<br/>:8000"]
-        demoui["🖥️ demo-ui<br/>:8501"]
-    end
-    
-    api --> postgres
-    api --> redis
-    api --> ollama
-    demoui --> postgres
-    demoui --> redis
-    demoui --> ollama
-    demoui -.-> api
-    langfuse --> langfusedb
-    
-    style postgres fill:#e8f5e9,stroke:#388e3c
-    style redis fill:#ffebee,stroke:#c62828
-    style ollama fill:#fff3e0,stroke:#f57c00
-    style langfuse fill:#f3e5f5,stroke:#7b1fa2
-    style demoui fill:#e3f2fd,stroke:#1976d2
+mindmap
+  root((🌐 Integration<br/>Partners))
+    🏛️ Government
+      SİMA/ASAN
+      EKTİS
+      State Tax
+    💰 Financial
+      CBAR Banking
+      PASHA Bank
+      ABB
+    🛰️ Data Services
+      Azərkosmos
+      AzInTelecom
+      Weather APIs
+    🏢 Enterprise
+      SAP/Oracle
+      Agro Holdings
 ```
 
-| Service | Port | Purpose | Profile |
-|:--------|:-----|:--------|:--------|
-| `postgres` | 5433 | Yonca DB (domain + Chainlit tables) | default |
-| `redis` | 6379 | LangGraph checkpoints, sessions | default |
-| `ollama` | 11434 | Local LLM inference | default |
-| `langfuse-server` | 3001 | Observability dashboard | default |
-| `langfuse-db` | — | Langfuse PostgreSQL | default |
-| `api` | 8000 | FastAPI backend | default |
-| `demo-ui` | 8501 | Chainlit chat UI | `--profile demo` |
-| `model-setup` | — | One-time model pull | `--profile setup` |
+### Implementation Phases
+
+| Phase | Timeline | Focus | Key Partners |
+|:------|:---------|:------|:-------------|
+| **Phase 1** | Q1-Q2 2026 | Authentication | SİMA/ASAN (IDDA) |
+| **Phase 2** | Q2-Q3 2026 | Core Data | EKTİS, CBAR, Weather, AzInTelecom |
+| **Phase 3** | Q3-Q4 2026 | Premium Intelligence | Azərkosmos, State Tax |
+| **Phase 4** | Q4 2026 - Q1 2027 | Commercial Banking | PASHA Bank, ABB |
+| **Phase 5** | Q1 2027+ | Enterprise B2B | SAP, Oracle |
+
+### Architecture Impact
+
+**Current (Development):**
+- OAuth authentication (Google)
+- Synthetic farm data
+- Cloud LLM (Groq benchmark)
+- Local PostgreSQL + Redis
+
+**Future (Production):**
+- SİMA biometric authentication
+- Real EKTIS farm data ("hot-swap ready")
+- Self-hosted LLM (AzInTelecom GPU)
+- Real satellite imagery (Azərkosmos)
+- Fermer Kartı integration (CBAR Open Banking)
+
+### Documentation References
+
+| Document | Purpose |
+|:---------|:--------|
+| [18-ENTERPRISE-INTEGRATION-ROADMAP](18-ENTERPRISE-INTEGRATION-ROADMAP.md) | Detailed partnership strategy, technical specs, action items |
+| [19-YONCA-AI-INTEGRATION-UNIVERSE](19-YONCA-AI-INTEGRATION-UNIVERSE.md) | Visual integration landscape, data flows, phased timeline |
+| [00-IMPLEMENTATION-BACKLOG](00-IMPLEMENTATION-BACKLOG.md) | Prioritized integration tasks (items 0.1-0.7) |
+| [14-DISCOVERY-QUESTIONS](14-DISCOVERY-QUESTIONS.md) | Schema validation questions for Digital Umbrella |
 
 ---
 
-## 🔐 Government Authentication Integration
-
-The Yonca platform uses **mygov ID** (formerly *digital.login*), the standard gateway for Azerbaijani e-services supporting **SİMA** and **Asan İmza**.
-
-### The Token Bridge Strategy
-
-Our sidecar module does **NOT** directly handle Asan İmza or SİMA login. Instead, it leverages the existing security of the main Yonca app:
-
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-sequenceDiagram
-    participant F as 🧑‍🌾 Farmer
-    participant Y as 📱 Yonca App
-    participant M as 🔐 mygov ID
-    participant S as 🧠 AI Sidecar
-    participant P as 🛡️ Privacy Gateway
-    
-    F->>Y: Open App
-    Y->>M: Redirect to Login
-    F->>M: Authenticate (SİMA/Asan İmza)
-    M-->>Y: Identity Token (JWT)
-    Y->>S: API Request + JWT Header
-    S->>S: Validate Token
-    S->>P: Map Real ID → Synthetic Profile
-    P-->>S: syn_user_xxx
-    S->>S: Process with Synthetic Data Only
-    S-->>Y: AI Response
-    Y-->>F: Personalized Advice
-```
-
-### Authentication Flow
-
-| Step | Action | Component |
-|:-----|:-------|:----------|
-| **1. Handshake** | User logs into Yonca via mygov ID (SİMA or Asan İmza) | Yonca App receives **Identity Token** |
-| **2. Stateless Validation** | Token included in header of every API request to Sidecar | Validated against Digital Umbrella's auth server |
-| **3. Privacy Guardrail** | Real user ID mapped to **Synthetic Profile ID** | AI agent only "sees" synthetic profile (100% data safety) |
-
-### Understanding Auth Methods
-
-| Method | Technology | Usage |
-|:-------|:-----------|:------|
-| **Asan İmza** | PKI-based identification via specialized SIM card | High-security government transactions |
-| **SİMA** | Cloud-based signature using face recognition + biometrics | Mobile-friendly authentication |
-| **mygov ID** | Unified platform handling redirection to auth services | Single sign-on for all e-services |
-
----
-
-## 🧠 Core Technology: LangGraph Agentic Framework
-
-We propose building the Yonca AI Sidecar using **LangGraph**—an enterprise-grade agentic framework that transforms the system from a simple "input-output" advisor into a **Stateful Farming Orchestrator** that reasons, remembers, and self-corrects.
-
-### Why LangGraph?
-
-| Capability | Benefit for Digital Umbrella |
-|:-----------|:-----------------------------|
-| **Graph-Based Logic** | Visual flowchart of AI decision-making—auditable by non-technical agronomists |
-| **Native Checkpointing** | Farmer loses connection mid-chat? LangGraph saves the exact conversation state |
-| **Vendor Agnostic** | Deployable on any cloud (Azure, AWS) or local Baku servers—meets Data Safety requirements |
-| **Human-in-the-Loop** | Built-in interrupt nodes for verifying risky agricultural advice before delivery |
-| **Cycles & Loops** | Validation loops catch incorrect recommendations *before* the farmer sees them |
-
-### Agentic Architecture: The Supervisor Pattern
-
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-graph TB
-    subgraph supervisor["🎯 Supervisor Agent"]
-        sup["Orchestrator<br/><i>Routes tasks to specialists</i>"]
-    end
-    
-    subgraph specialists["👥 Specialist Sub-Agents"]
-        agro["🌾 Agronomist<br/><i>Crops, sowing dates</i>"]
-        weather["⛅ Weather<br/><i>Forecasts, alerts</i>"]
-        validator["✅ Validator<br/><i>Rules engine</i>"]
-    end
-    
-    subgraph memory["💾 Memory Layer"]
-        short["Short-Term<br/><i>Current session</i>"]
-        long["Long-Term<br/><i>Redis Checkpointer</i>"]
-    end
-    
-    sup --> agro
-    sup --> weather
-    agro --> validator
-    weather --> validator
-    agro --> short
-    short <--> long
-```
-
-The system **remembers context**—if a farmer mentioned a pest issue three days ago, the assistant recalls it in subsequent sessions, even when using synthetic profiles.
-
----
-
-## ✅ Actual Implementation Status (January 2026)
-
-> This section reflects what has **actually been built** vs. the original design.
-
-### Implemented LangGraph Flow
-
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-stateDiagram-v2
-    [*] --> supervisor: User Message
-    
-    supervisor --> context_loader: needs_context
-    supervisor --> greeting: is_greeting
-    supervisor --> off_topic: off_topic
-    
-    context_loader --> agronomist: farming_query
-    context_loader --> weather: weather_query
-    
-    agronomist --> validator: validate
-    weather --> validator: validate
-    
-    validator --> [*]: ✅ Response Ready
-    validator --> agronomist: 🔄 Retry (low confidence)
-    
-    greeting --> [*]: Direct response
-    off_topic --> [*]: Polite decline
-    
-    note right of supervisor
-        11 Intent Types:
-        irrigation, fertilization,
-        pest_control, harvest,
-        planting, crop_rotation,
-        greeting, weather,
-        general_advice, off_topic,
-        clarification
-    end note
-```
-
-### Component Implementation Matrix
-
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-block-beta
-    columns 3
-    
-    block:layer1["🔌 API Layer"]:1
-        space:1
-        api1["FastAPI ✅"]
-        api2["Rate Limit ✅"]
-        api3["CORS ✅"]
-    end
-    
-    block:layer2["🧠 Agent Layer"]:1
-        space:1
-        ag1["Supervisor ✅"]
-        ag2["Agronomist ✅"]
-        ag3["Validator ✅"]
-    end
-    
-    block:layer3["🤖 LLM Layer"]:1
-        space:1
-        llm1["Groq ✅"]
-        llm2["Ollama ✅"]
-        llm3["Gemini ✅"]
-    end
-```
-
-### Database Schema (Implemented)
-
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-erDiagram
-    USER_PROFILES ||--o{ FARM_PROFILES : owns
-    FARM_PROFILES ||--o{ PARCELS : contains
-    PARCELS ||--o{ SOWING_DECLARATIONS : has
-    PARCELS ||--o{ NDVI_READINGS : monitors
-    PARCELS ||--o{ CROP_ROTATION_LOGS : tracks
-    
-    USER_PROFILES {
-        uuid id PK
-        string display_name
-        string experience_level
-        string region_code
-        json preferences
-    }
-    
-    FARM_PROFILES {
-        uuid id PK
-        uuid user_id FK
-        string name
-        string farm_type
-        float total_area_ha
-        string region
-    }
-    
-    PARCELS {
-        uuid id PK
-        uuid farm_id FK
-        string parcel_code
-        float area_ha
-        string soil_type
-        point gps_center
-    }
-    
-    SOWING_DECLARATIONS {
-        uuid id PK
-        uuid parcel_id FK
-        string crop_name
-        date sowing_date
-        string status
-    }
-    
-    NDVI_READINGS {
-        uuid id PK
-        uuid parcel_id FK
-        date reading_date
-        float ndvi_value
-    }
-```
-
----
-
-## 🌍 Ecosystem Context
-
-### The Current Landscape
-
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-graph TB
-    subgraph farmer["🧑‍🌾 Farmer"]
-        phone["📱 Smartphone<br/><i>Low-bandwidth</i>"]
-    end
-    
-    subgraph platform["🏛️ Yonca Platform"]
-        app["Yonca App"]
-        ektis["EKTIS<br/><i>Gov System</i>"]
-        satellite["🛰️ Satellite<br/>Monitoring"]
-    end
-    
-    subgraph gov["🇦🇿 Government"]
-        subsidy["💰 Subsidy<br/>Processing"]
-        registry["📋 Land<br/>Registry"]
-    end
-    
-    phone --> app
-    app <--> ektis
-    app --> satellite
-    ektis <--> subsidy
-    ektis <--> registry
-```
-
-| Aspect | Current State |
-|:-------|:--------------|
-| **Platform Role** | Primary digital gateway to EKTIS for Azerbaijani farmers |
-| **User Persona** | Small-to-medium holders (~1.6 ha average), mobile-first |
-| **Tech Maturity** | Modern stack with Data Engineering & Satellite Monitoring |
-| **Critical Constraint** | Data Privacy — government-linked subsidy/land data |
-
-### Technical Discovery Gaps
-
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-graph LR
-    subgraph gaps["❓ Questions for Digital Umbrella"]
-        q1["📱 Mobile Framework?<br/><i>Flutter/React Native/Native</i>"]
-        q2["📶 Offline Handling?<br/><i>State persistence strategy</i>"]
-        q3["🎨 Design System?<br/><i>Figma, hex codes, typography</i>"]
-        q4["☁️ Hosting?<br/><i>Their infra vs standalone Docker</i>"]
-    end
-    
-    style gaps fill:#fff3e0,stroke:#ef6c00,color:#e65100
-```
-
----
-
-## � Integration Bridge: FastAPI + LangGraph Server
-
-Since Yonca is a mobile app and LangGraph is a Python-based framework, we provide a robust API bridge ensuring smooth handoff between systems.
-
-### Request Flow Architecture
-
-```mermaid
-sequenceDiagram
-    participant M as 📱 Yonca Mobile App
-    participant F as 🔌 FastAPI Gateway
-    participant L as 🧠 LangGraph Server
-    participant S as 📊 Synthetic Data
-    participant R as 📚 Rulebook
-    
-    M->>F: POST /yonca-ai/chat
-    F->>L: Start Thread (farmer_id)
-    L->>L: Load Graph State
-    L->>S: Fetch Weather/Soil Data
-    S-->>L: Synthetic Scenario
-    L->>R: Validate Against Rules
-    R-->>L: Rule Matches
-    L->>L: Execute Nodes
-    L-->>F: SSE Stream Response
-    F-->>M: Real-time "typing" effect
-```
-
-### Server-Sent Events (SSE) Streaming
-
-The farmer sees the AI "typing" its reasoning in real-time—creating a premium, responsive experience:
-
-```python
-# Streaming endpoint example
-@app.post("/yonca-ai/chat")
-async def chat_endpoint(request: ChatRequest):
-    thread_id = f"farmer_{request.farm_id}"
-    
-    async def generate():
-        async for event in graph.astream(
-            {"messages": request.messages},
-            config={"configurable": {"thread_id": thread_id}}
-        ):
-            yield f"data: {json.dumps(event)}\n\n"
-    
-    return StreamingResponse(generate(), media_type="text/event-stream")
-```
-
-### Single Endpoint Simplicity
-
-Digital Umbrella's IT team doesn't need to understand LangGraph internals—they simply call:
-
-```
-POST /yonca-ai/chat
-```
-
-The entire intelligence module is a **Dockerized Microservice** ready to deploy.
-
----
-
-## �📐 System Architecture
-
-### Level 0: Context Diagram
-
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-graph TB
-    subgraph platform["🏛️ YONCA PLATFORM"]
-        restapi["EXISTING REST API<br/><code>/api/v1/farms</code><br/><code>/api/v1/recommendations</code><br/><code>/api/v1/chatbot</code>"]
-        
-        subgraph sidecar["🧠 SIDECAR INTELLIGENCE MODULE"]
-            api["🔌 /sidecar/recommendations"]
-            pii["🛡️ PII Gateway<br/><i>Sanitize</i>"]
-            rag["🤖 RAG Engine<br/><i>Qwen3</i>"]
-            lite["⚡ Lite-Inference<br/><i>GGUF</i>"]
-            rules["📚 Agronomy<br/>Rulebook"]
-            
-            api --> pii
-            pii --> rag
-            lite --> rag
-            rag --> rules
-        end
-        
-        subgraph synthetic["🧪 SYNTHETIC DATA LAYER"]
-            weather["☁️ Weather<br/>Generator"]
-            soil["🏜️ Soil<br/>Generator"]
-            profiles["🧑‍🌾 Farm<br/>Profiles"]
-            scenarios["📋 Scenario<br/>Farms"]
-        end
-        
-        restapi -->|"No DB Access"| api
-        rag --> synthetic
-    end
-    
-    subgraph future["🔮 FUTURE: National Ecosystem"]
-        asan["ASAN Kənd API"]
-        azerstat["AzerStat Data"]
-        agribank["AgriBank Subsidy"]
-        egov["e-Gov Identity"]
-    end
-    
-    sidecar -.->|"Ready-to-Plug"| future
-    
-    style sidecar fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px,color:#1b5e20
-    style synthetic fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
-    style rules fill:#fff9c4,stroke:#f9a825,stroke-width:2px,color:#5d4037
-```
-
-### Data Flow
-
-```mermaid
-sequenceDiagram
-    participant F as 🧑‍🌾 Farmer
-    participant A as 📱 Yonca App
-    participant P as 🛡️ PII Gateway
-    participant R as 🤖 RAG Engine
-    participant L as 📚 Rulebook
-    participant M as 🧠 LLM
-    
-    F->>A: Query (Azerbaijani)
-    A->>P: Raw Request
-    P->>P: Sanitize PII
-    P->>R: Safe Request
-    R->>L: Check Rules
-    L-->>R: Matching Rules
-    R->>M: Generate Response
-    M-->>R: LLM Output
-    R->>R: Validate (>90%)
-    R-->>P: Verified Advice
-    P->>P: Re-personalize
-    P-->>A: Final Response
-    A-->>F: Localized Advice
-```
-
----
-
-## 🧩 Architecture Components
-
-### 1. PII-Stripping Gateway
-
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-flowchart LR
-    subgraph ingest["① INGEST"]
-        raw["Raw Request"]
-        sanitize["sanitize()"]
-        safe["Safe Request"]
-        raw --> sanitize --> safe
-    end
-    
-    subgraph process["② PROCESS"]
-        rag["RAG Engine"]
-        safeRes["Safe Response"]
-        safe --> rag --> safeRes
-    end
-    
-    subgraph egress["③ EGRESS"]
-        personal["personalize()"]
-        final["Final Response"]
-        safeRes --> personal --> final
-    end
-    
-    style ingest fill:#ffcdd2,stroke:#c62828,color:#b71c1c
-    style process fill:#fff9c4,stroke:#f9a825,color:#5d4037
-    style egress fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
-```
-
-**Location:** `src/yonca/sidecar/pii_gateway.py`
-
-| Feature | Treatment |
-|:--------|:----------|
-| Azerbaijani name patterns | "Əli Məmmədov oğlu" → `[ŞƏXS_1]` |
-| Phone numbers (+994) | Stripped → SHA-256 hash only |
-| GPS coordinates | Anonymized → Region code only |
-| Farm/Farmer IDs | Tokenized → `syn_abc123` |
-
----
-
-### 2. LangGraph Orchestration Engine
-
-**Location:** `src/yonca/sidecar/graph_engine.py`
-
-The heart of the system—a **stateful graph** that orchestrates all AI decision-making with built-in safety and memory.
-
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-flowchart TB
-    subgraph graph["🧠 LangGraph State Machine"]
-        state["📋 State<br/><i>TypedDict: farm_profile,<br/>weather, chat_history</i>"]
-        
-        subgraph nodes["Processing Nodes"]
-            analyze["🔍 Scenario Analyzer<br/><i>Parse farmer context</i>"]
-            recommend["💡 Recommendation Engine<br/><i>Generate advice</i>"]
-            guard["🛡️ Safety Guardrail<br/><i>Validate output</i>"]
-            redline["🚫 Redline Scanner<br/><i>Zero real data check</i>"]
-        end
-        
-        subgraph edges["Conditional Routing"]
-            cond1{"Risk Level?"}
-            cond2{"Data Leak?"}
-        end
-        
-        state --> analyze
-        analyze --> recommend
-        recommend --> cond1
-        cond1 -->|"High"| guard
-        cond1 -->|"Low/Medium"| cond2
-        guard --> cond2
-        cond2 -->|"Clean"| output["✅ Response"]
-        cond2 -->|"Detected"| redline
-        redline -->|"Retry"| recommend
-    end
-    
-    style nodes fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
-    style guard fill:#fff9c4,stroke:#f9a825,stroke-width:2px,color:#5d4037
-    style redline fill:#ffcdd2,stroke:#c62828,stroke-width:2px,color:#b71c1c
-```
-
-#### State Schema
-
-```python
-from typing import TypedDict, Annotated
-from langgraph.graph import StateGraph
-from langgraph.checkpoint.memory import MemorySaver
-
-class FarmingState(TypedDict):
-    """Complete state for farming advisory session."""
-    farm_profile: dict          # Synthetic farm data
-    weather_data: list[dict]    # Recent/forecast weather
-    soil_conditions: dict       # Current soil metrics
-    chat_history: list[dict]    # Conversation memory
-    current_query: str          # User's question
-    recommendations: list[dict] # Generated advice
-    risk_level: str             # low | medium | high
-    confidence_score: float     # 0.0 - 1.0
-    validation_notes: list[str] # Audit trail
-```
-
-#### Graph Definition
-
-```python
-# Build the LangGraph
-graph = StateGraph(FarmingState)
-
-# Add processing nodes
-graph.add_node("scenario_analyzer", analyze_scenario)
-graph.add_node("recommendation_engine", generate_recommendations)
-graph.add_node("safety_guardrail", validate_safety)
-graph.add_node("redline_scanner", scan_for_real_data)
-
-# Add conditional edges
-graph.add_conditional_edges(
-    "recommendation_engine",
-    route_by_risk,
-    {"high": "safety_guardrail", "low": "redline_scanner", "medium": "redline_scanner"}
-)
-
-# Compile with persistence
-checkpointer = MemorySaver()  # Or PostgresSaver for production
-app = graph.compile(checkpointer=checkpointer)
-```
-
-#### The "Redline" Compliance Node
-
-Digital Umbrella's top priority is **Data Safety**. The Redline Scanner automatically:
-
-- Scans every AI response for real data patterns
-- Blocks any hallucinated PII or actual farm IDs
-- Ensures **zero real data** leakage
-- Acts as an automated compliance officer
-
-```python
-def scan_for_real_data(state: FarmingState) -> FarmingState:
-    """Compliance node: ensures no real data in responses."""
-    response_text = state["recommendations"][-1]["description"]
-    
-    violations = []
-    # Check for real phone patterns
-    if re.search(r'\+994\d{9}', response_text):
-        violations.append("Phone number detected")
-    # Check for real farm ID patterns
-    if re.search(r'FARM-\d{6}', response_text):
-        violations.append("Real farm ID detected")
-    
-    if violations:
-        state["validation_notes"].extend(violations)
-        # Route back to recommendation engine for retry
-        return {**state, "retry_required": True}
-    
-    return {**state, "retry_required": False}
-```
-
----
-
-### 3. RAG Engine with Rulebook
-
-**Location:** `src/yonca/sidecar/rag_engine.py`
-
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-flowchart TB
-    subgraph pipeline["🤖 RAG Pipeline"]
-        step1["① Intent Detection<br/><i>Azerbaijani → category</i>"]
-        step2["② Knowledge Retrieval<br/><i>Semantic search</i>"]
-        step3["③ Rule Evaluation<br/><i>Deterministic</i>"]
-        step4["④ LLM Generation<br/><i>Qwen3-4B</i>"]
-        step5["⑤ Validation<br/><i>>90% accuracy</i>"]
-        
-        step1 --> step2 --> step3 --> step4 --> step5
-    end
-    
-    style step3 fill:#fff9c4,stroke:#f9a825,stroke-width:2px,color:#5d4037
-    style step5 fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
-```
-
-**Rulebook Categories:**
-
-| Category | # Rules | Purpose | Example Rule |
-|:---------|:--------|:--------|:-------------|
-| 💧 Irrigation | 4 | Water management | moisture < 30% → irrigate |
-| 🧪 Fertilization | 3 | Nutrient application | N < 20 kg/ha → add nitrogen |
-| 🐛 Pest Control | 2 | Disease prevention | humidity > 80% → fungicide alert |
-| 🌾 Harvest | 2 | Optimal timing | maturity + dry weather = harvest |
-| 🐄 Livestock | 2 | Animal care | temperature > 35°C → shade/water |
-| 🏜️ Soil Management | 2 | pH/nutrient correction | pH < 6 → lime application |
-
----
-
-### 4. Lite-Inference Engine
-
-**Location:** `src/yonca/sidecar/lite_inference.py`
-
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-graph LR
-    subgraph modes["⚡ Inference Modes"]
-        standard["🖥️ STANDARD<br/><i>Full Qwen3-4B</i><br/><i>Ollama</i>"]
-        lite["📱 LITE<br/><i>Quantized GGUF</i><br/><i><4.5GB RAM</i>"]
-        offline["📶 OFFLINE<br/><i>Pure Rules</i><br/><i><50ms latency</i>"]
-    end
-    
-    style standard fill:#bbdefb,stroke:#1565c0,color:#0d47a1
-    style lite fill:#fff9c4,stroke:#f9a825,color:#5d4037
-    style offline fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
-```
-
-**GGUF Model Options:**
-
-| Model | Quantization | Memory | Speed | Use Case |
-|:------|:-------------|:-------|:------|:---------|
-| qwen3-4b | Q4_K_M | 2.6GB | 22 tok/s | **Recommended** |
-| qwen3-4b | Q5_K_M | 3.0GB | 18 tok/s | Quality priority |
-| qwen3-1.7b | Q4_K_M | 1.2GB | 40 tok/s | Edge device |
-
----
-
-## 🛤️ Dummy-to-Real Roadmap
-
-### Three-Phase Transition
-
-```mermaid
-timeline
-    title Data Transition Roadmap
-    
-    section Phase 1: Prototype
-        0-6 months : 100% Synthetic Data
-                   : Scenario farms
-                   : Generated weather
-                   : LOW risk
-    
-    section Phase 2: Hybrid  
-        6-12 months : Real + Synthetic Blend
-                    : Regional statistics
-                    : Anonymized farms
-                    : MEDIUM risk
-    
-    section Phase 3: Production
-        12-24 months : Real Data (PII Protected)
-                     : ASAN Kənd API
-                     : Federated learning
-                     : HIGH risk (managed)
-```
-
-### Phase Details
-
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-flowchart LR
-    subgraph phase1["📦 Phase 1: Prototype<br/><i>Current</i>"]
-        syn["100% Synthetic<br/>• Scenario farms<br/>• Generated weather<br/>• PII Gateway"]
-    end
-    
-    subgraph phase2["🔀 Phase 2: Hybrid"]
-        blend["Real + Synthetic<br/>• AzerStat regional<br/>• k-anonymity (k≥10)<br/>• IoT aggregates"]
-    end
-    
-    subgraph phase3["🚀 Phase 3: Production"]
-        real["Real Data<br/>• ASAN Kənd API<br/>• OAuth 2.0<br/>• Federated Learning"]
-    end
-    
-    phase1 -->|"6 months"| phase2 -->|"12 months"| phase3
-    
-    style phase1 fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px,color:#1b5e20
-    style phase2 fill:#fff9c4,stroke:#f9a825,color:#5d4037
-    style phase3 fill:#e1f5fe,stroke:#0288d1,color:#01579b
-```
-
-### Hot-Swap Interface
-
-```python
-# src/yonca/sidecar/data_adapter.py
-# Prepared for seamless Phase 2 transition
-
-class DataAdapter(Protocol):
-    """Interface for swappable data sources.
-    
-    Phase 1: SyntheticDataAdapter (current)
-    Phase 2: HybridDataAdapter (real weather + synthetic farms)
-    Phase 3: EKTISDataAdapter (full production)
-    """
-    def get_farm_profile(self, farm_id: str) -> FarmProfile: ...
-    def get_weather(self, region: str, days: int) -> list[WeatherData]: ...
-    def get_ndvi_history(self, parcel_id: str, days: int) -> list[NDVIReading]: ...
-    def get_soil_data(self, farm_id: str) -> SoilData: ...
-
-# Current implementation
-class SyntheticDataAdapter:
-    """Phase 1: All data from mirror-image synthetic engine."""
-    
-    def get_farm_profile(self, farm_id: str) -> FarmProfile:
-        return self._synthetic_db.query(farm_id)
-
-# Future implementation (same interface!)
-class EKTISDataAdapter:
-    """Phase 3: Real data from EKTIS API."""
-    
-    def get_farm_profile(self, farm_id: str) -> FarmProfile:
-        return self._ektis_client.fetch_farm(farm_id)
-```
-
----
-
-## 🤝 The API Handshake
-
-Our module exposes a single, secure REST endpoint that Digital Umbrella can consume immediately. The API is **user-centric**—pass the user ID, and the system automatically loads all their farms.
-
-### Why This Wins the Handoff
-
-The biggest fear for an IT team is **"Integration Debt"**—the fear that they will have to rewrite their app to fit our AI.
-
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-graph LR
-    subgraph fears["😰 IT Team Fears"]
-        rewrite["Rewrite app code"]
-        access["Give DB access"]
-        maintain["Maintain AI state"]
-        mismatch["Schema mismatch"]
-        auth["Handle gov auth"]
-    end
-    
-    subgraph solutions["✅ Our Solutions"]
-        docker["Dockerized self-contained"]
-        synthetic["Pre-loaded synthetic DB"]
-        stateless["LangGraph + Redis handles state"]
-        mirror["Mirror-image schema"]
-        token["Token Bridge (JWT validation)"]
-    end
-    
-    fears -->|"Eliminated by"| solutions
-    
-    style fears fill:#ffcdd2,stroke:#c62828,color:#b71c1c
-    style solutions fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
-```
-
-| Fear | Our Solution |
-|:-----|:-------------|
-| **"We'll have to rewrite our app"** | Single REST endpoint, standard JSON |
-| **"They need our database access"** | Docker image pre-loaded with synthetic DB—zero access needed |
-| **"Managing AI conversation state"** | LangGraph + Redis handles memory inside the container |
-| **"Their schema won't match ours"** | Mirror-image engine—we replicate YOUR structure |
-| **"Authentication complexity"** | Token Bridge—we validate your existing mygov ID JWTs |
-
-### Primary Endpoint Contract
-
-```
-POST /v1/ai/assistant/chat
-```
-
-**Request:**
-```json
-{
-  "user_id": "syn_user_002",
-  "active_farm_id": "syn_farm_002a",
-  "message": "Suvarma vaxtıdır?",
-  "context": {
-    "include_ndvi": true,
-    "include_weather": true,
-    "include_all_farms": false
-  }
-}
-```
-
-| Field | Required | Description |
-|:------|:---------|:------------|
-| `user_id` | ✅ | Identifies WHO is asking (loads persona) |
-| `active_farm_id` | ⚪ | Which farm the question is about (optional—defaults to primary) |
-| `message` | ✅ | The farmer's question in Azerbaijani |
-| `context.include_all_farms` | ⚪ | If `true`, AI considers ALL user's farms for cross-farm advice |
-
-**Response:**
-```json
-{
-  "request_id": "req_abc123",
-  "agent_reasoning": "NDVI 0.55 göstərir ki, bitki sağlamdır. Hava proqnozu: növbəti 3 gün yağış yoxdur. Torpaq nəmliyi 28% (kritik həddə yaxın).",
-  "message": "Bəli, növbəti 2 gün ərzində suvarma məsləhətdir. Səhər tezdən suvarmaq daha effektivdir.",
-  "confidence": 0.92,
-  "rule_matched": "AZ-IRR-001",
-  "source_citation": "Torpaq nəmliyi < 30% olduqda suvarma tələb olunur."
-}
-```
-
----
-
-## ✅ Logical Accuracy Framework
-
-### Target: ≥90% Accuracy
-
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-flowchart LR
-    subgraph pipeline["Accuracy Assurance Pipeline"]
-        llm["🤖 LLM Output<br/><i>0.5 base</i>"]
-        validate["📚 Rulebook<br/>Validator<br/><i>+0.4 match</i>"]
-        resolve["⚖️ Conflict<br/>Resolver<br/><i>+0.1 multi</i>"]
-        score["🎯 Final Score<br/><i>≥0.7 accept</i>"]
-        
-        llm --> validate --> resolve --> score
-    end
-    
-    style validate fill:#fff9c4,stroke:#f9a825,stroke-width:2px,color:#5d4037
-    style score fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
-```
-
-### Scoring Logic
-
-| Component | Score Impact | Condition |
-|:----------|:-------------|:----------|
-| Base LLM confidence | 0.5 | Always |
-| Rule match bonus | +0.4 | LLM matches rulebook |
-| Multi-rule agreement | +0.1 | Multiple rules agree |
-| No coverage | ×0.7 | No applicable rules |
-| Contradiction | ×0.5 | LLM conflicts with rules |
-
-### Example Validation Flow
-
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-flowchart TB
-    subgraph query["📝 User Query"]
-        q["Torpaq nəmliyi 25%,<br/>bu gün suvarmaq lazımdır?"]
-    end
-    
-    subgraph step1["① LLM Generation"]
-        out["Bəli, dərhal suvarma lazımdır.<br/>Səhər tezdən suvarın."]
-        conf1["Base: 0.5"]
-    end
-    
-    subgraph step2["② Rulebook Check"]
-        rule["✅ AZ-IRR-001 triggered:<br/>moisture < 30% → irrigate"]
-        conf2["Rule: 0.95<br/>Bonus: +0.40"]
-    end
-    
-    subgraph step3["③ Context Validation"]
-        check1["Rain expected? ❌ No ✓"]
-        check2["Temp extreme? ❌ No ✓"]
-        no_conflict["No conflicts"]
-    end
-    
-    subgraph step4["④ Final Score"]
-        calc["0.5 + 0.40 = 0.90"]
-        status["✅ HIGH CONFIDENCE"]
-        cite["Matches AZ-IRR-001:<br/>Critical Low Moisture"]
-    end
-    
-    query --> step1 --> step2 --> step3 --> step4
-    
-    style step4 fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
-```
-
----
-
-## 📡 API Schema
-
-### REST Endpoints
-
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-graph LR
-    subgraph core["🔌 Core Endpoints"]
-        chat["POST /yonca-ai/chat<br/><i>Main advisory endpoint</i>"]
-        rec["POST /recommendations<br/><i>Get AI advice</i>"]
-        status["GET /status<br/><i>Service health</i>"]
-        caps["GET /capabilities<br/><i>Inference mode</i>"]
-    end
-    
-    subgraph graph_ep["🧠 LangGraph"]
-        threads["GET /threads/{id}<br/><i>Session state</i>"]
-        history["GET /threads/{id}/history<br/><i>Conversation memory</i>"]
-    end
-    
-    subgraph rules_ep["📚 Rulebook"]
-        rulebook["GET /rulebook<br/><i>All rules</i>"]
-        cats["GET /rulebook/categories<br/><i>Categories</i>"]
-    end
-    
-    subgraph admin["⚙️ Admin"]
-        mode["POST /mode/{mode}<br/><i>Switch mode</i>"]
-        audit["GET /audit<br/><i>PII audit log</i>"]
-        health["GET /health<br/><i>Health check</i>"]
-    end
-```
-
-**Base URL:** `/api/v1/sidecar`
-
-| Endpoint | Method | Description |
-|:---------|:-------|:------------|
-| `/yonca-ai/chat` | POST | **Primary streaming chat endpoint** (SSE) |
-| `/recommendations` | POST | Get AI recommendations (batch) |
-| `/threads/{thread_id}` | GET | Retrieve LangGraph session state |
-| `/threads/{thread_id}/history` | GET | Get conversation memory |
-| `/status` | GET | Service health & stats |
-| `/capabilities` | GET | Current inference mode |
-| `/models` | GET | Available model info |
-| `/mode/{mode}` | POST | Switch inference mode |
-| `/rulebook` | GET | Get agronomy rules |
-| `/rulebook/categories` | GET | Rule categories |
-| `/audit` | GET | PII audit summary |
-| `/health` | GET | Health check |
-
-### Request Schema (POST /recommendations)
-
-```json
-{
-  "farm_id": "string (required)",
-  "region": "string (required, e.g., 'Aran')",
-  "farm_type": "string (required: wheat|vegetable|orchard|livestock|mixed)",
-  "crops": ["string"],
-  "area_hectares": "number (>0)",
-  "soil_type": "string (clay|sandy|loamy|silty)",
-  "soil_moisture_percent": "integer (0-100)",
-  "temperature_max": "number (°C)",
-  "precipitation_expected": "boolean",
-  "query": "string (user question in Azerbaijani/English)",
-  "language": "string (default: 'az')",
-  "inference_mode": "string (standard|lite|offline)"
-}
-```
-
-### Response Schema
-
-```json
-{
-  "request_id": "string",
-  "farm_id": "string",
-  "recommendations": [
-    {
-      "id": "string",
-      "type": "irrigation|fertilization|pest_control|...",
-      "priority": "critical|high|medium|low",
-      "confidence": 0.92,
-      "title": "string",
-      "title_az": "string",
-      "description": "string",
-      "description_az": "string",
-      "source": "llm|rulebook|hybrid",
-      "rule_id": "AZ-IRR-001"
-    }
-  ],
-  "overall_confidence": 0.90,
-  "accuracy_score": 0.92,
-  "validation_notes": ["Matches rule AZ-IRR-001"],
-  "inference_mode": "standard",
-  "processing_time_ms": 245
-}
-```
-
----
-
-## 🚀 Strategic Enhancements
-
-### Five Enhancement Modules
-
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-graph TB
-    subgraph enhancements["🎯 Strategic Enhancement Modules"]
-        direction TB
-        
-        subgraph row1["Input Processing"]
-            expert["👨‍🔬 Agronomist<br/>in-the-Loop"]
-            dialect["🗣️ Dialect<br/>Handler"]
-            temporal["⏰ Temporal<br/>State Mgmt"]
-        end
-        
-        subgraph core["Core RAG Engine"]
-            rag["🤖 RAG + Rulebook"]
-        end
-        
-        subgraph row2["Output Enhancement"]
-            trust["✅ Trust Score<br/>& Citations"]
-            twin["🌱 Digital Twin<br/>Simulator"]
-            response["📦 Enhanced<br/>API Response"]
-        end
-        
-        row1 --> core --> row2
-    end
-    
-    style expert fill:#e1bee7,stroke:#7b1fa2,color:#4a148c
-    style dialect fill:#b2dfdb,stroke:#00796b,color:#004d40
-    style temporal fill:#ffccbc,stroke:#e64a19,color:#bf360c
-    style trust fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
-    style twin fill:#bbdefb,stroke:#1565c0,color:#0d47a1
-```
-
-### Module Summary
-
-| Module | Location | Purpose |
-|:-------|:---------|:--------|
-| **Agronomist-in-the-Loop** | `sidecar/validation.py` | 3-tier expert validation system |
-| **Dialect Handler** | `sidecar/dialect.py` | Azerbaijani regional term normalization |
-| **Temporal State** | `sidecar/temporal.py` | Farm timeline memory & context |
-| **Trust & Citations** | `sidecar/trust.py` | Confidence breakdown & source citations |
-| **Digital Twin** | `sidecar/digital_twin.py` | Farm simulation engine |
-
-### Validation Tiers
-
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-flowchart LR
-    subgraph tier1["🟢 Tier 1: Automatic"]
-        auto["Pre-approved<br/>Rules match<br/>>90% confidence"]
-        badge1["✅ Expert Verified"]
-    end
-    
-    subgraph tier2["🟡 Tier 2: Async"]
-        queue["Expert Queue<br/><24h review<br/>High priority"]
-        badge2["⏳ Pending Review"]
-    end
-    
-    subgraph tier3["🔴 Tier 3: Sync"]
-        block["Real-time<br/>approval required<br/>Critical advice"]
-        badge3["🔒 Blocked"]
-    end
-    
-    auto --> badge1
-    queue --> badge2
-    block --> badge3
-    
-    style tier1 fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
-    style tier2 fill:#fff9c4,stroke:#f9a825,color:#5d4037
-    style tier3 fill:#ffcdd2,stroke:#c62828,color:#b71c1c
-```
-
-### Digital Twin Simulation
-
-```mermaid
-pie showData
-    title Simulation Modes - Yield Impact
-    "OPTIMAL (125%)" : 125
-    "BASELINE (100%)" : 100
-    "DROUGHT_STRESS (65%)" : 65
-    "PEST_OUTBREAK (70%)" : 70
-    "WORST_CASE (40%)" : 40
-```
-
----
-
-## 🔐 Security Summary
-
-> **📖 Full details:** See [08-SECURITY-HARDENING.md](08-SECURITY-HARDENING.md) for complete security implementation.
-
-### PII Protection Matrix
-
-| Data Type | Treatment | Storage |
-|:----------|:----------|:--------|
-| Farmer Name | `[ŞƏXS_1]` | Never stored |
-| Phone | `[TELEFON]` | SHA-256 hash only |
-| GPS Coords | `[KOORDİNAT]` | Region code only |
-| Farm ID | `syn_abc123` | Token mapping |
-| Soil/Weather | Passed through | No PII risk |
-| **Chat History** | Anonymized in Checkpointer | Thread ID only |
-
----
-
-## 🚀 Deployment
-
-> **📖 Full deployment guide:** See [10-DEVOPS-RUNBOOK.md](10-DEVOPS-RUNBOOK.md) for CI/CD, Docker configs, and operational procedures.
-
-### Quick Start
-
-```bash
-# 1. Install dependencies
-poetry install --all-extras
-
-# 2. Start Ollama with Qwen3
-ollama pull qwen3:4b
-
-# 3. Run Yonca with Sidecar
-python -m yonca.startup
-```
-
----
-
-<div align="center">
-
-**📄 Document:** `03-ARCHITECTURE.md`  
-**⬅️ Previous:** [02-SYNTHETIC-DATA-ENGINE.md](02-SYNTHETIC-DATA-ENGINE.md) — Mirror-Image Data Strategy  
-**🏠 Index:** [README.md](README.md) — Documentation Hub
-
----
-
-*ZekaLab — Headless Intelligence as a Service*  
-*Built with 🌿 LangGraph for Azerbaijan's agricultural future*
-
-</div>
+## 📋 Implementation Gaps
+
+| Gap | Priority | Effort |
+|:----|:---------|:-------|
+| Evaluation test suite | 🔴 High | 5 days |
+| Prometheus metrics | 🟡 Medium | 1 day |
+| Enterprise integrations | 🔴 High | See [18-ENTERPRISE-INTEGRATION-ROADMAP](18-ENTERPRISE-INTEGRATION-ROADMAP.md) |
+
+> See [04-TESTING-STRATEGY.md](04-TESTING-STRATEGY.md) for evaluation framework.

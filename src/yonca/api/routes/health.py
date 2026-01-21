@@ -1,7 +1,7 @@
 # src/yonca/api/routes/health.py
 """Health check endpoints with scalability metrics."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -9,7 +9,6 @@ from pydantic import BaseModel
 from yonca.config import settings
 from yonca.data.redis_client import RedisClient
 from yonca.llm.http_pool import HTTPClientPool
-
 
 router = APIRouter()
 
@@ -36,7 +35,7 @@ class ReadinessResponse(BaseModel):
 async def health_check():
     """
     Health check endpoint.
-    
+
     Returns basic application health status and configuration.
     """
     return HealthResponse(
@@ -45,7 +44,7 @@ async def health_check():
         llm_provider=settings.llm_provider.value,
         llm_model=settings.active_llm_model,
         version=settings.app_version,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
 
@@ -53,34 +52,34 @@ async def health_check():
 async def readiness_check():
     """
     Readiness check endpoint.
-    
+
     Checks if the application is ready to serve traffic.
     Verifies LLM provider, Redis, and other critical services.
     """
     from yonca.llm.factory import check_llm_health
-    
+
     # Check LLM provider health
     try:
         llm_health = await check_llm_health()
         llm_ready = llm_health.get("healthy", False)
     except Exception:
         llm_ready = False
-    
+
     # Check Redis health
     try:
         redis_ready = await RedisClient.health_check()
     except Exception:
         redis_ready = False
-    
+
     checks = {
         "config_loaded": True,
         "llm_provider": llm_ready,
         "redis": redis_ready,
     }
-    
+
     # Core readiness requires LLM, Redis is optional (graceful degradation)
     core_ready = checks["config_loaded"] and checks["llm_provider"]
-    
+
     return ReadinessResponse(
         ready=core_ready,
         checks=checks,
@@ -91,12 +90,12 @@ async def readiness_check():
 async def check_providers():
     """
     Check health of all configured LLM providers.
-    
+
     Returns status for each provider (Ollama, Groq, Gemini).
     Useful for debugging and selecting the fastest available provider.
     """
     from yonca.llm.factory import check_all_providers_health
-    
+
     return await check_all_providers_health()
 
 
@@ -104,7 +103,7 @@ async def check_providers():
 async def liveness_check():
     """
     Liveness check endpoint.
-    
+
     Simple endpoint to verify the application is running.
     Used by Kubernetes for liveness probes.
     """
@@ -115,7 +114,7 @@ async def liveness_check():
 async def scalability_status():
     """
     Scalability and resource status endpoint.
-    
+
     Returns information about connection pools, rate limits,
     and multi-user capacity for monitoring.
     """
@@ -124,10 +123,10 @@ async def scalability_status():
         redis_healthy = await RedisClient.health_check()
     except Exception:
         redis_healthy = False
-    
+
     # HTTP pool stats
     pool_stats = HTTPClientPool.get_pool_stats()
-    
+
     return {
         "redis": {
             "healthy": redis_healthy,

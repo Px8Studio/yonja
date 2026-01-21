@@ -3,7 +3,7 @@
     // ════════════════════════════════════════════════════════════════════════
     // BRANDING & NAMING GUIDELINES (ZekaLab IP Protection)
     // ════════════════════════════════════════════════════════════════════════
-    // 
+    //
     // Product Name: YONCA AI — Kənd Təsərrüfatı Köməkçisi
     //               (YONCA AI — Agricultural Assistant)
     //
@@ -315,7 +315,7 @@
             "args": ["run", "app.py", "-w", "--port", "8501"],
             "options": {
                 "cwd": "${workspaceFolder}/demo-ui",
-                "env": { 
+                "env": {
                     "PYTHONPATH": "${workspaceFolder}/src;${workspaceFolder}/demo-ui",
                     "INTEGRATION_MODE": "direct",
                     "LLM_PROVIDER": "ollama",
@@ -342,7 +342,7 @@
             "args": ["run", "app.py", "-w", "--port", "8501"],
             "options": {
                 "cwd": "${workspaceFolder}/demo-ui",
-                "env": { 
+                "env": {
                     "PYTHONPATH": "${workspaceFolder}/src;${workspaceFolder}/demo-ui",
                     "INTEGRATION_MODE": "api",
                     "YONCA_API_URL": "http://localhost:8000",

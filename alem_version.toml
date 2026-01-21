@@ -1,0 +1,18 @@
+# Yonca ALEM Version Fingerprint
+# Bumped automatically by scripts/ci_bump_alem_version.py when model IDs/fingerprints change.
+
+[alem]
+version = "0.1.0"
+updated_at = "2026-01-20T00:00:00Z"
+
+[models.nl_to_sql]
+id = "qwen3-235b"
+fingerprint = "unset"
+
+[models.reasoner]
+id = "llama-4-maverick"
+fingerprint = "unset"
+
+[models.vision]
+id = "llama-4-maverick-vision"
+fingerprint = "unset"

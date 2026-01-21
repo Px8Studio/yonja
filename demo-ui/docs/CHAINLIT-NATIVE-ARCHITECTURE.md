@@ -4,10 +4,10 @@
 
 ## Why Native Architecture?
 
-✅ **Reduces complexity** — Use Chainlit's built-in features instead of custom UI code  
-✅ **Better UX** — Users get expected Chainlit behaviors automatically  
-✅ **Maintainability** — Less custom code to maintain  
-✅ **Performance** — Chainlit's features are optimized  
+✅ **Reduces complexity** — Use Chainlit's built-in features instead of custom UI code
+✅ **Better UX** — Users get expected Chainlit behaviors automatically
+✅ **Maintainability** — Less custom code to maintain
+✅ **Performance** — Chainlit's features are optimized
 
 ---
 

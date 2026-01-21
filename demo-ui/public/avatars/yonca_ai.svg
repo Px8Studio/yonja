@@ -13,7 +13,7 @@
   <circle cx="64" cy="64" r="62" fill="url(#yonca-bg)" filter="url(#shadow)"/>
   <!-- Inner ring -->
   <circle cx="64" cy="64" r="56" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
-  
+
   <!-- Clover/Yonca leaf design - stylized 4-leaf clover -->
   <g transform="translate(64,64)">
     <!-- Top leaf -->

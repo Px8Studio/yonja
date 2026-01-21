@@ -109,24 +109,14 @@ def get_available_model_names() -> list[str]:
 
 def get_models_for_language(language: str) -> list[LocalModel]:
     """Get models that support a specific language."""
-    return [
-        model for model in AVAILABLE_MODELS.values() if language in model.languages
-    ]
+    return [model for model in AVAILABLE_MODELS.values() if language in model.languages]
 
 
 def get_gguf_models() -> list[LocalModel]:
     """Get models that require GGUF import."""
-    return [
-        model
-        for model in AVAILABLE_MODELS.values()
-        if model.source == ModelSource.GGUF_IMPORT
-    ]
+    return [model for model in AVAILABLE_MODELS.values() if model.source == ModelSource.GGUF_IMPORT]
 
 
 def get_pullable_models() -> list[LocalModel]:
     """Get models that can be pulled from Ollama Hub."""
-    return [
-        model
-        for model in AVAILABLE_MODELS.values()
-        if model.source == ModelSource.OLLAMA_HUB
-    ]
+    return [model for model in AVAILABLE_MODELS.values() if model.source == ModelSource.OLLAMA_HUB]

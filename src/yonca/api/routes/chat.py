@@ -9,11 +9,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from yonca.config import Settings, get_settings
-from yonca.llm import LLMMessage, check_llm_health, get_llm_provider
-from yonca.data.redis_client import SessionStorage, RedisClient
 from yonca.api.middleware.rate_limit import chat_limiter, check_rate_limit
-
+from yonca.config import Settings, get_settings
+from yonca.data.redis_client import RedisClient, SessionStorage
+from yonca.llm import LLMMessage, check_llm_health, get_llm_provider
 
 router = APIRouter()
 
@@ -50,20 +49,21 @@ class ChatResponse(BaseModel):
 # System Prompt Management
 # ============================================================
 
+
 def load_system_prompt(prompt_name: str = "master_v1.0.0_az_strict") -> str:
     """
     Load system prompt from file.
-    
+
     Args:
         prompt_name: Name of the prompt file (without .txt extension)
-    
+
     Returns:
         System prompt content as string
     """
     # Get project root (3 levels up from this file)
     project_root = Path(__file__).parent.parent.parent.parent
     prompt_path = project_root / "prompts" / "system" / f"{prompt_name}.txt"
-    
+
     try:
         return prompt_path.read_text(encoding="utf-8")
     except FileNotFoundError:
@@ -101,12 +101,12 @@ async def _build_messages_with_history(
     user_id: str | None = None,
 ) -> tuple[list[LLMMessage], dict]:
     """Build messages list including conversation history.
-    
+
     Args:
         session_id: Session identifier.
         user_message: Current user message.
         user_id: Optional user identifier.
-        
+
     Returns:
         Tuple of (messages list, session data).
     """
@@ -115,10 +115,10 @@ async def _build_messages_with_history(
         session_id=session_id,
         user_id=user_id,
     )
-    
+
     # Start with system prompt
     messages = [LLMMessage.system(SYSTEM_PROMPT_AZ)]
-    
+
     # Add conversation history (excluding system messages)
     for msg in session.get("messages", []):
         role = msg.get("role")
@@ -127,10 +127,10 @@ async def _build_messages_with_history(
             messages.append(LLMMessage.user(content))
         elif role == "assistant":
             messages.append(LLMMessage.assistant(content))
-    
+
     # Add current user message
     messages.append(LLMMessage.user(user_message))
-    
+
     return messages, session
 
 
@@ -142,7 +142,7 @@ async def chat(
 ):
     """
     Chat endpoint for Yonca AI with multi-turn conversation support.
-    
+
     Accepts a message and returns an AI-generated response.
     Maintains conversation history in Redis for multi-turn interactions.
     Supports 100+ concurrent users with session isolation.
@@ -153,7 +153,7 @@ async def chat(
     except Exception:
         # Rate limiter may fail if Redis is down - fail open for availability
         pass
-    
+
     # Generate session ID if not provided
     session_id = request.session_id or str(uuid.uuid4())
 
@@ -167,7 +167,7 @@ async def chat(
             user_message=request.message,
             user_id=request.user_id,
         )
-        
+
         # Generate response
         response = await llm.generate(
             messages=messages,
@@ -179,7 +179,7 @@ async def chat(
         try:
             await SessionStorage.add_message(session_id, "user", request.message)
             await SessionStorage.add_message(session_id, "assistant", response.content)
-            
+
             # Get updated message count
             updated_session = await SessionStorage.get(session_id)
             message_count = len(updated_session.get("messages", [])) if updated_session else 0
@@ -211,7 +211,7 @@ async def chat_stream(
 ):
     """
     Streaming chat endpoint for Yonca AI with multi-turn support.
-    
+
     Returns a streaming response with incremental text chunks.
     Maintains conversation history in Redis.
     """
@@ -220,7 +220,7 @@ async def chat_stream(
         await check_rate_limit(http_request, chat_limiter)
     except Exception:
         pass  # Fail open
-    
+
     session_id = request.session_id or str(uuid.uuid4())
     llm = get_llm_provider()
 
@@ -248,14 +248,14 @@ async def chat_stream(
             ):
                 full_response.append(chunk)
                 yield chunk
-            
+
             # Store conversation in session after streaming completes
             try:
                 await SessionStorage.add_message(session_id, "user", request.message)
                 await SessionStorage.add_message(session_id, "assistant", "".join(full_response))
             except Exception:
                 pass  # Don't fail stream for session storage issues
-                
+
         except Exception as e:
             yield f"\n\n[Xəta: {str(e)}]"
 
@@ -270,11 +270,11 @@ async def chat_stream(
 async def chat_status():
     """
     Chat service status endpoint.
-    
+
     Returns the current status of the chat service and LLM health.
     """
     llm_health = await check_llm_health()
-    
+
     # Check Redis health
     try:
         redis_healthy = await RedisClient.health_check()
@@ -299,17 +299,17 @@ async def chat_status():
 async def get_session(session_id: str):
     """
     Get session history for a given session ID.
-    
+
     Args:
         session_id: The session UUID.
-        
+
     Returns:
         Session data including conversation history.
     """
     session = await SessionStorage.get(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     return {
         "session_id": session_id,
         "message_count": len(session.get("messages", [])),
@@ -323,17 +323,17 @@ async def get_session(session_id: str):
 async def delete_session(session_id: str):
     """
     Delete a session and its conversation history.
-    
+
     Args:
         session_id: The session UUID.
-        
+
     Returns:
         Deletion confirmation.
     """
     deleted = await SessionStorage.delete(session_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     return {"status": "deleted", "session_id": session_id}
 
 
@@ -343,11 +343,11 @@ async def get_chat_info(
     settings: Annotated[Settings, Depends(get_settings)],
 ):
     """Get chat endpoint information and usage instructions.
-    
+
     This endpoint provides API discovery and documentation for external clients.
     Authenticated applications can use this to understand available methods,
     request/response formats, and current service configuration.
-    
+
     Returns:
         API contract information including:
         - Available HTTP methods
@@ -357,7 +357,7 @@ async def get_chat_info(
         - Documentation links
     """
     base_url = str(request.base_url).rstrip("/")
-    
+
     return {
         "service": "yonca-chat",
         "version": settings.app_version,

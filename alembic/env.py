@@ -12,10 +12,10 @@ from alembic import context
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-# Import models and config
-from yonca.config import settings
-from yonca.data.database import Base
-from yonca.data.models import (  # noqa: F401
+# Import models and config  # noqa: E402
+from yonca.config import settings  # noqa: E402
+from yonca.data.database import Base  # noqa: E402
+from yonca.data.models import (  # noqa: E402, F401
     CropRotationLog,
     FarmProfile,
     NDVIReading,

@@ -352,8 +352,8 @@ For questions about this document or to schedule a technical discussion:
 
 <div align="center">
 
-**📄 Document:** `14-DISCOVERY-QUESTIONS.md`  
-**🔗 Part of:** Yonca AI Sidecar Technical Documentation  
+**📄 Document:** `14-DISCOVERY-QUESTIONS.md`
+**🔗 Part of:** Yonca AI Sidecar Technical Documentation
 **📚 See also:** [01-MANIFESTO.md](01-MANIFESTO.md) | [03-ARCHITECTURE.md](03-ARCHITECTURE.md)
 
 </div>

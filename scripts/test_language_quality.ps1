@@ -4,7 +4,7 @@
 param(
     [Parameter(Mandatory=$false)]
     [string]$Provider = "both",  # "groq", "ollama", or "both"
-    
+
     [Parameter(Mandatory=$false)]
     [string]$GroqApiKey = $env:YONCA_GROQ_API_KEY
 )
@@ -47,20 +47,20 @@ if (-not (Test-Path $promptPath)) {
 # Function to test Groq
 function Test-GroqProvider {
     param($TestCase)
-    
+
     if (-not $GroqApiKey) {
         Write-Host "⚠️  Groq API key not found. Set YONCA_GROQ_API_KEY environment variable." -ForegroundColor Yellow
         return $null
     }
-    
+
     Write-Host "`n🌩️  Testing Groq (llama-3.3-70b-versatile)..." -ForegroundColor Cyan
     Write-Host "Question: $($TestCase.Question)" -ForegroundColor White
-    
-    $headers = @{ 
+
+    $headers = @{
         "Authorization" = "Bearer $GroqApiKey"
-        "Content-Type" = "application/json" 
+        "Content-Type" = "application/json"
     }
-    
+
     $body = @{
         model = "llama-3.3-70b-versatile"
         messages = @(
@@ -76,7 +76,7 @@ function Test-GroqProvider {
         temperature = 0.7
         max_tokens = 500
     } | ConvertTo-Json -Depth 10
-    
+
     try {
         $response = Invoke-RestMethod `
             -Uri "https://api.groq.com/openai/v1/chat/completions" `
@@ -84,9 +84,9 @@ function Test-GroqProvider {
             -Headers $headers `
             -Body ([System.Text.Encoding]::UTF8.GetBytes($body)) `
             -TimeoutSec 30
-        
+
         $answer = $response.choices[0].message.content
-        
+
         return @{
             Provider = "Groq"
             Model = "llama-3.3-70b-versatile"
@@ -102,14 +102,14 @@ function Test-GroqProvider {
 # Function to test Ollama
 function Test-OllamaProvider {
     param($TestCase)
-    
+
     Write-Host "`n🏠 Testing Ollama (atllama)..." -ForegroundColor Cyan
     Write-Host "Question: $($TestCase.Question)" -ForegroundColor White
-    
-    $headers = @{ 
-        "Content-Type" = "application/json" 
+
+    $headers = @{
+        "Content-Type" = "application/json"
     }
-    
+
     $body = @{
         model = "atllama"
         messages = @(
@@ -124,7 +124,7 @@ function Test-OllamaProvider {
         )
         stream = $false
     } | ConvertTo-Json -Depth 10
-    
+
     try {
         $response = Invoke-RestMethod `
             -Uri "http://localhost:11434/api/chat" `
@@ -132,7 +132,7 @@ function Test-OllamaProvider {
             -Headers $headers `
             -Body ([System.Text.Encoding]::UTF8.GetBytes($body)) `
             -TimeoutSec 120
-        
+
         return @{
             Provider = "Ollama"
             Model = "atllama"
@@ -149,7 +149,7 @@ function Test-OllamaProvider {
 # Function to validate response
 function Test-LanguageQuality {
     param($Response, $TestCase)
-    
+
     if (-not $Response) {
         return @{
             Passed = $false
@@ -157,11 +157,11 @@ function Test-LanguageQuality {
             Issues = @("No response received")
         }
     }
-    
+
     $answer = $Response.Answer
     $issues = @()
     $score = 100
-    
+
     # Check for forbidden Turkish words
     foreach ($forbidden in $TestCase.ForbiddenWords) {
         if ($answer -match $forbidden) {
@@ -169,7 +169,7 @@ function Test-LanguageQuality {
             $score -= 25
         }
     }
-    
+
     # Check for expected Azerbaijani words
     $foundExpected = 0
     foreach ($expected in $TestCase.ExpectedWords) {
@@ -177,15 +177,15 @@ function Test-LanguageQuality {
             $foundExpected++
         }
     }
-    
+
     if ($foundExpected -eq 0) {
         $issues += "⚠️  None of the expected Azerbaijani words found"
         $score -= 10
     }
-    
+
     # Overall assessment
     $passed = $issues.Count -eq 0
-    
+
     return @{
         Passed = $passed
         Score = [Math]::Max(0, $score)
@@ -207,7 +207,7 @@ foreach ($testCase in $testCases) {
     Write-Host "`n─────────────────────────────────────────────────────────" -ForegroundColor Gray
     Write-Host "📋 Test: $($testCase.Description)" -ForegroundColor White
     Write-Host "─────────────────────────────────────────────────────────" -ForegroundColor Gray
-    
+
     # Test Groq
     if ($Provider -in @("groq", "both")) {
         $groqResponse = Test-GroqProvider -TestCase $testCase
@@ -215,9 +215,9 @@ foreach ($testCase in $testCases) {
             Write-Host "`n📄 Response:" -ForegroundColor Gray
             Write-Host $groqResponse.Answer -ForegroundColor White
             Write-Host "`n🔍 Validation:" -ForegroundColor Gray
-            
+
             $validation = Test-LanguageQuality -Response $groqResponse -TestCase $testCase
-            
+
             if ($validation.Passed) {
                 Write-Host "✅ PASSED - Score: $($validation.Score)/100" -ForegroundColor Green
             } else {
@@ -226,7 +226,7 @@ foreach ($testCase in $testCases) {
                     Write-Host "   $issue" -ForegroundColor Yellow
                 }
             }
-            
+
             $results += @{
                 Test = $testCase.Description
                 Provider = "Groq"
@@ -235,7 +235,7 @@ foreach ($testCase in $testCases) {
             }
         }
     }
-    
+
     # Test Ollama
     if ($Provider -in @("ollama", "both")) {
         $ollamaResponse = Test-OllamaProvider -TestCase $testCase
@@ -243,9 +243,9 @@ foreach ($testCase in $testCases) {
             Write-Host "`n📄 Response:" -ForegroundColor Gray
             Write-Host $ollamaResponse.Answer -ForegroundColor White
             Write-Host "`n🔍 Validation:" -ForegroundColor Gray
-            
+
             $validation = Test-LanguageQuality -Response $ollamaResponse -TestCase $testCase
-            
+
             if ($validation.Passed) {
                 Write-Host "✅ PASSED - Score: $($validation.Score)/100" -ForegroundColor Green
             } else {
@@ -254,7 +254,7 @@ foreach ($testCase in $testCases) {
                     Write-Host "   $issue" -ForegroundColor Yellow
                 }
             }
-            
+
             $results += @{
                 Test = $testCase.Description
                 Provider = "Ollama"
@@ -277,7 +277,7 @@ if ($groqResults) {
     $groqPassed = ($groqResults | Where-Object { $_.Passed }).Count
     $groqTotal = $groqResults.Count
     $groqAvgScore = ($groqResults | Measure-Object -Property Score -Average).Average
-    
+
     Write-Host "`n🌩️  Groq (llama-3.3-70b-versatile):" -ForegroundColor Cyan
     Write-Host "   Tests Passed: $groqPassed / $groqTotal" -ForegroundColor White
     Write-Host "   Average Score: $([Math]::Round($groqAvgScore, 1))/100" -ForegroundColor White
@@ -287,7 +287,7 @@ if ($ollamaResults) {
     $ollamaPassed = ($ollamaResults | Where-Object { $_.Passed }).Count
     $ollamaTotal = $ollamaResults.Count
     $ollamaAvgScore = ($ollamaResults | Measure-Object -Property Score -Average).Average
-    
+
     Write-Host "`n🏠 Ollama (atllama):" -ForegroundColor Cyan
     Write-Host "   Tests Passed: $ollamaPassed / $ollamaTotal" -ForegroundColor White
     Write-Host "   Average Score: $([Math]::Round($ollamaAvgScore, 1))/100" -ForegroundColor White

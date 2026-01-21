@@ -9,13 +9,13 @@ Free tier: https://console.groq.com/
 
 import json
 import re
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
 import httpx
 
-from .base import LLMMessage, LLMProvider, LLMResponse
 from yonca.llm.http_pool import HTTPClientPool
 
+from .base import LLMMessage, LLMProvider, LLMResponse
 
 # Qwen3 models have a "thinking mode" that outputs <think>...</think> tags.
 # We need to strip these from the response.
@@ -29,10 +29,10 @@ def strip_thinking_tags(content: str) -> str:
 
 class GroqProvider(LLMProvider):
     """Groq provider for ultra-fast cloud LLM inference.
-    
+
     Groq offers free tier access to Llama 3, Mixtral, and other models
     with exceptionally fast inference (200-300 tokens/sec).
-    
+
     Example:
         ```python
         async with GroqProvider(api_key="gsk_...") as llm:
@@ -71,7 +71,7 @@ class GroqProvider(LLMProvider):
         timeout: float = 30.0,
     ):
         """Initialize Groq provider.
-        
+
         Args:
             api_key: Groq API key (get free at https://console.groq.com/)
             model: Model name (default: llama-3.1-8b-instant)
@@ -80,7 +80,7 @@ class GroqProvider(LLMProvider):
         """
         if not api_key:
             raise ValueError("Groq API key is required. Get one at https://console.groq.com/")
-        
+
         self.api_key = api_key
         self.model = model
         self.base_url = base_url.rstrip("/")
@@ -98,7 +98,7 @@ class GroqProvider(LLMProvider):
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Get HTTP client from the shared connection pool.
-        
+
         Uses HTTPClientPool for proper connection management across
         multiple concurrent users.
         """
@@ -108,6 +108,7 @@ class GroqProvider(LLMProvider):
             headers={
                 "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json",
+                "X-Sovereign-Data": "cloud",
             },
         )
 
@@ -136,12 +137,12 @@ class GroqProvider(LLMProvider):
         max_tokens: int = 1000,
     ) -> LLMResponse:
         """Generate a response from Groq (ultra-fast!).
-        
+
         Args:
             messages: Conversation messages.
             temperature: Sampling temperature (0.0 to 1.0).
             max_tokens: Maximum tokens to generate.
-            
+
         Returns:
             LLMResponse with the generated content.
         """
@@ -160,7 +161,7 @@ class GroqProvider(LLMProvider):
         data = response.json()
         choice = data["choices"][0]
         content = choice["message"]["content"]
-        
+
         # Strip Qwen3 thinking tags if present
         if self.model.startswith("qwen"):
             content = strip_thinking_tags(content)
@@ -184,15 +185,15 @@ class GroqProvider(LLMProvider):
         max_tokens: int = 1000,
     ) -> AsyncIterator[str]:
         """Stream responses from Groq.
-        
+
         Args:
             messages: Conversation messages.
             temperature: Sampling temperature.
             max_tokens: Maximum tokens to generate.
-            
+
         Yields:
             Content chunks as they arrive.
-            
+
         Note:
             For Qwen3 models, thinking tags are accumulated and stripped
             before yielding content.
@@ -223,11 +224,11 @@ class GroqProvider(LLMProvider):
                         delta = data["choices"][0].get("delta", {})
                         if "content" in delta:
                             content = delta["content"]
-                            
+
                             # Handle Qwen3 thinking tags in streaming
                             if is_qwen:
                                 buffer += content
-                                
+
                                 # Check for start of thinking block
                                 if "<think>" in buffer and not in_thinking_block:
                                     in_thinking_block = True
@@ -235,8 +236,8 @@ class GroqProvider(LLMProvider):
                                     before_think = buffer.split("<think>")[0]
                                     if before_think:
                                         yield before_think
-                                    buffer = buffer[buffer.index("<think>"):]
-                                    
+                                    buffer = buffer[buffer.index("<think>") :]
+
                                 # Check for end of thinking block
                                 if "</think>" in buffer and in_thinking_block:
                                     in_thinking_block = False
@@ -246,11 +247,11 @@ class GroqProvider(LLMProvider):
                                         yield buffer
                                     buffer = ""
                                     continue
-                                    
+
                                 # If in thinking block, don't yield
                                 if in_thinking_block:
                                     continue
-                                    
+
                                 # Not in thinking block, yield accumulated buffer
                                 if buffer:
                                     yield buffer

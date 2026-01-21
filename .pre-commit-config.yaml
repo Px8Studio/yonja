@@ -1,0 +1,91 @@
+# Yonca AI — Pre-commit Quality Gate
+
+# Install: Run this once to set up the hook
+#   pwsh scripts/setup-git-hooks.ps1
+#
+# Or manually:
+#   pip install pre-commit
+#   pre-commit install
+
+repos:
+  # ════════════════════════════════════════════════════════════════
+  # 🔍 Code Quality (Fast checks - run every commit)
+  # ════════════════════════════════════════════════════════════════
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.15
+    hooks:
+      - id: ruff
+        name: 🔍 Ruff Linter
+        args: [--fix, --exit-non-zero-on-fix]
+        types_or: [python, pyi]
+
+      - id: ruff-format
+        name: 🎨 Ruff Format
+        types_or: [python, pyi]
+
+  # ════════════════════════════════════════════════════════════════
+  # 🧹 File Hygiene (Prevent common mistakes)
+  # ════════════════════════════════════════════════════════════════
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        name: 🧹 Remove trailing whitespace
+
+      - id: end-of-file-fixer
+        name: 🧹 Ensure EOF newline
+
+      - id: check-yaml
+        name: ✅ Validate YAML files
+        exclude: ^\.github/workflows/
+
+      - id: check-json
+        name: ✅ Validate JSON files
+        exclude: ^\.vscode/  # VS Code uses JSONC (JSON with comments)
+
+      - id: check-toml
+        name: ✅ Validate TOML files
+
+      - id: check-added-large-files
+        name: 🚫 Block large files (>500KB)
+        args: ['--maxkb=500']
+
+      - id: check-merge-conflict
+        name: 🚫 Block merge conflict markers
+
+      - id: detect-private-key
+        name: 🔐 Block private keys
+
+      - id: mixed-line-ending
+        name: 🧹 Fix mixed line endings
+        args: ['--fix=lf']
+
+  # ════════════════════════════════════════════════════════════════
+  # 🔐 Security (Critical checks)
+  # ════════════════════════════════════════════════════════════════
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0            # upgrade to match .secrets.baseline "version": "1.5.0"
+    hooks:
+      - id: detect-secrets
+        name: 🔐 Detect secrets/credentials
+        args: ['--baseline', '.secrets.baseline']
+        exclude: package.lock.json
+
+# ════════════════════════════════════════════════════════════════
+# ⚡ Fast-Only Mode (Optional - skip slow checks)
+# ════════════════════════════════════════════════════════════════
+#
+# To skip heavy checks during rapid iteration:
+#   SKIP=mypy,pytest pre-commit run --all-files
+#
+# To run full validation before PR:
+#   pre-commit run --all-files --hook-stage push
+# ════════════════════════════════════════════════════════════════
+
+ci:
+  autofix_commit_msg: |
+    🤖 [pre-commit.ci] Auto-fixes from hooks
+  autoupdate_commit_msg: '🤖 [pre-commit.ci] Auto-update hooks'

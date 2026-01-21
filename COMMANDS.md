@@ -14,7 +14,7 @@ chainlit run demo-ui/app.py --port 8501
 pytest tests/
 ```
 
-**Pros:** Clean, familiar command names  
+**Pros:** Clean, familiar command names
 **Cons:** Need to activate in each new terminal
 
 ---
@@ -28,7 +28,7 @@ poetry run seed       # Seed database
 poetry run pytest     # Run tests
 ```
 
-**Pros:** Works in any terminal, no activation  
+**Pros:** Works in any terminal, no activation
 **Cons:** Extra `poetry run` prefix each time
 
 ---
@@ -43,7 +43,7 @@ uvicorn yonca.api.main:app --reload
 alembic upgrade head
 ```
 
-**Pros:** One-command activation with guidance  
+**Pros:** One-command activation with guidance
 **Cons:** Requires script execution permissions
 
 ---

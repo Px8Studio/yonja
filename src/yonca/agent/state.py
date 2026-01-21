@@ -9,46 +9,52 @@ from datetime import datetime
 from enum import Enum
 from typing import Annotated, Literal
 
-from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
-
 
 # ============================================================
 # Intent Classification
 # ============================================================
 
+
 class UserIntent(str, Enum):
     """Classified intent of the user's message.
-    
+
     The supervisor node classifies each message into one of these intents
     to route to the appropriate specialist node.
     """
-    
+
     # Farming advice intents
-    IRRIGATION = "irrigation"           # Suvarma - watering questions
-    FERTILIZATION = "fertilization"     # Gübrələmə - fertilizer questions
-    PEST_CONTROL = "pest_control"       # Zərərverici - pest/disease questions
-    HARVEST = "harvest"                 # Məhsul yığımı - harvest timing
-    PLANTING = "planting"               # Əkin - planting/sowing questions
-    CROP_ROTATION = "crop_rotation"     # Növbəli əkin - rotation planning
-    
+    IRRIGATION = "irrigation"  # Suvarma - watering questions
+    FERTILIZATION = "fertilization"  # Gübrələmə - fertilizer questions
+    PEST_CONTROL = "pest_control"  # Zərərverici - pest/disease questions
+    HARVEST = "harvest"  # Məhsul yığımı - harvest timing
+    PLANTING = "planting"  # Əkin - planting/sowing questions
+    CROP_ROTATION = "crop_rotation"  # Növbəli əkin - rotation planning
+
     # Weather-related
-    WEATHER = "weather"                 # Hava - weather questions
-    
+    WEATHER = "weather"  # Hava - weather questions
+
     # General
-    GREETING = "greeting"               # Salam - greetings
-    GENERAL_ADVICE = "general_advice"   # Ümumi - general farming advice
-    OFF_TOPIC = "off_topic"             # Mövzudan kənar
-    
+    GREETING = "greeting"  # Salam - greetings
+    GENERAL_ADVICE = "general_advice"  # Ümumi - general farming advice
+    OFF_TOPIC = "off_topic"  # Mövzudan kənar
+
     # Clarification
-    CLARIFICATION = "clarification"     # Dəqiqləşdirmə - need more info
+    CLARIFICATION = "clarification"  # Dəqiqləşdirmə - need more info
+
+    # Data query (NL → SQL)
+    DATA_QUERY = "data_query"  # Verilənlər bazası sorğuları / NL-to-SQL
+
+    # Vision analysis (image → action)
+    VISION_ANALYSIS = "vision_analysis"  # Şəkil analizi / təsir təklifi
 
 
 class Severity(str, Enum):
     """Severity level for alerts and recommendations."""
-    
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -59,18 +65,19 @@ class Severity(str, Enum):
 # Message Types
 # ============================================================
 
+
 class Message(BaseModel):
     """A single message in the conversation.
-    
+
     Includes metadata for observability and audit trails.
     """
-    
+
     model_config = {"use_enum_values": True}
-    
+
     role: Literal["user", "assistant", "system"]
     content: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
-    
+
     # Metadata
     intent: UserIntent | None = None
     confidence: float | None = None
@@ -79,10 +86,10 @@ class Message(BaseModel):
 
 class Alert(BaseModel):
     """An alert requiring user attention.
-    
+
     Generated from NDVI readings, weather, or rule engine.
     """
-    
+
     alert_type: str
     parcel_id: str | None = None
     severity: Severity = Severity.MEDIUM
@@ -95,12 +102,13 @@ class Alert(BaseModel):
 # Context Types
 # ============================================================
 
+
 class UserContext(BaseModel):
     """User profile context for personalization.
-    
+
     Loaded from database via UserRepository.get_context_for_ai()
     """
-    
+
     user_id: str
     display_name: str
     experience_level: str  # "novice", "intermediate", "expert"
@@ -112,10 +120,10 @@ class UserContext(BaseModel):
 
 class FarmContext(BaseModel):
     """Farm context for recommendations.
-    
+
     Loaded from database via FarmRepository.get_context_for_ai()
     """
-    
+
     farm_id: str
     farm_name: str
     farm_type: str
@@ -130,10 +138,10 @@ class FarmContext(BaseModel):
 
 class WeatherContext(BaseModel):
     """Weather data for recommendations.
-    
+
     Will be populated from weather API or synthetic data.
     """
-    
+
     temperature_c: float | None = None
     humidity_percent: float | None = None
     precipitation_mm: float | None = None
@@ -146,12 +154,13 @@ class WeatherContext(BaseModel):
 # Routing State
 # ============================================================
 
+
 class RoutingDecision(BaseModel):
     """Supervisor's routing decision.
-    
+
     Determines which specialist node handles the request.
     """
-    
+
     target_node: str  # "agronomist", "weather", "validator", "end"
     intent: UserIntent
     confidence: float
@@ -163,9 +172,10 @@ class RoutingDecision(BaseModel):
 # Rule Engine Results
 # ============================================================
 
+
 class RuleMatch(BaseModel):
     """A matched rule from the agronomy rules engine."""
-    
+
     rule_id: str
     rule_name: str
     category: str  # "irrigation", "fertilization", etc.
@@ -179,6 +189,7 @@ class RuleMatch(BaseModel):
 # ============================================================
 # Main Agent State (TypedDict for LangGraph)
 # ============================================================
+
 
 def _merge_alerts(
     existing: list[dict],
@@ -202,10 +213,10 @@ def _merge_rules(
 
 class AgentState(TypedDict, total=False):
     """Main state that flows through the LangGraph agent.
-    
+
     This TypedDict defines all state that can be accessed and modified
     by agent nodes. Uses LangGraph's Annotated type for reducers.
-    
+
     State Flow:
     1. User sends message -> messages updated
     2. Supervisor classifies intent -> routing set
@@ -213,52 +224,53 @@ class AgentState(TypedDict, total=False):
     4. Specialist processes -> generates response
     5. Validator checks rules -> matched_rules populated
     6. Response sent -> messages updated with assistant reply
-    
+
     Thread-Based Memory:
     - Each conversation has a unique thread_id
     - State is checkpointed to Redis after each step
     - Farmer can resume conversation even after app close
     """
-    
+
     # ===== Session Identity =====
-    thread_id: str                          # Unique conversation ID
-    user_id: str | None                     # Authenticated user ID (if available)
-    session_id: str | None                  # Session ID from API
-    
+    thread_id: str  # Unique conversation ID
+    user_id: str | None  # Authenticated user ID (if available)
+    session_id: str | None  # Session ID from API
+
     # ===== Conversation =====
     messages: Annotated[list, add_messages]  # Full conversation history (HumanMessage/AIMessage)
-    current_input: str                      # Latest user input
-    current_response: str | None            # Generated response (before sending)
-    
+    current_input: str  # Latest user input
+    current_response: str | None  # Generated response (before sending)
+
     # ===== Intent & Routing =====
-    routing: RoutingDecision | None         # Supervisor's routing decision
-    intent: UserIntent | None               # Classified intent
-    intent_confidence: float                # Intent classification confidence
-    
+    routing: RoutingDecision | None  # Supervisor's routing decision
+    intent: UserIntent | None  # Classified intent
+    intent_confidence: float  # Intent classification confidence
+
     # ===== Context (Loaded on Demand) =====
-    user_context: UserContext | None        # User profile
-    farm_context: FarmContext | None        # Active farm data
-    weather: WeatherContext | None          # Current weather
-    
+    user_context: UserContext | None  # User profile
+    farm_context: FarmContext | None  # Active farm data
+    weather: WeatherContext | None  # Current weather
+
     # ===== Rule Engine =====
     matched_rules: Annotated[list[dict], _merge_rules]  # Matched agronomy rules
-    
+
     # ===== Alerts =====
     alerts: Annotated[list[dict], _merge_alerts]  # Active alerts
-    
+
     # ===== Processing Metadata =====
-    processing_start: datetime | None       # When processing started
-    nodes_visited: list[str]                # Audit trail of nodes
-    error: str | None                       # Error message if any
-    
+    processing_start: datetime | None  # When processing started
+    nodes_visited: list[str]  # Audit trail of nodes
+    error: str | None  # Error message if any
+
     # ===== Output Control =====
-    should_stream: bool                     # Whether to stream response
-    language: str                           # Response language (default: "az")
+    should_stream: bool  # Whether to stream response
+    language: str  # Response language (default: "az")
 
 
 # ============================================================
 # State Helpers
 # ============================================================
+
 
 def create_initial_state(
     thread_id: str,
@@ -268,14 +280,14 @@ def create_initial_state(
     language: str = "az",
 ) -> AgentState:
     """Create initial state for a new conversation turn.
-    
+
     Args:
         thread_id: Unique conversation identifier
         user_input: The user's message
         user_id: Authenticated user ID (optional)
         session_id: API session ID (optional)
         language: Response language (default Azerbaijani)
-        
+
     Returns:
         Initialized AgentState ready for graph execution.
     """
@@ -309,10 +321,10 @@ def add_assistant_message(
     intent: UserIntent | None = None,
 ) -> AIMessage:
     """Create an assistant message to add to state.
-    
+
     Returns an AIMessage that will be merged by langgraph's add_messages reducer.
     Metadata is stored in the message's additional_kwargs.
-    
+
     Args:
         state: Current agent state (unused, kept for API compatibility)
         content: Response text
@@ -331,11 +343,11 @@ def add_assistant_message(
 
 def get_conversation_summary(state: AgentState, max_messages: int = 10) -> str:
     """Get a summary of recent conversation for context.
-    
+
     Useful for providing context to LLM without overwhelming token limit.
     """
     messages = state.get("messages", [])[-max_messages:]
-    
+
     lines = []
     for msg in messages:
         if isinstance(msg, HumanMessage):
@@ -346,5 +358,5 @@ def get_conversation_summary(state: AgentState, max_messages: int = 10) -> str:
             role = "unknown"
         content = (msg.content if isinstance(msg, BaseMessage) else str(msg))[:200]
         lines.append(f"{role}: {content}")
-    
+
     return "\n".join(lines)

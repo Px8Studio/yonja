@@ -1,0 +1,72 @@
+[
+  {
+    "user_id": "demo_cotton_farmer_sabirabad",
+    "full_name": "Həsən Quliyev",
+    "email": "demo_cotton_farmer_sabirabad@zekalab.info",
+    "fin_code": "52GL1MN",
+    "phone": "+994129158482",
+    "region": "Sabirabad",
+    "crop_type": "Pambıq",
+    "crop_name_en": "Cotton",
+    "total_area_ha": 42.5,
+    "experience_level": "expert",
+    "ektis_verified": true,
+    "created_at": "2026-01-19T18:28:49.402727"
+  },
+  {
+    "user_id": "demo_apple_grower_quba",
+    "full_name": "Aynur Əliyeva",
+    "email": "demo_apple_grower_quba@zekalab.info",
+    "fin_code": "759E45Z",
+    "phone": "+994127916498",
+    "region": "Quba",
+    "crop_type": "Alma",
+    "crop_name_en": "Apple",
+    "total_area_ha": 8.3,
+    "experience_level": "intermediate",
+    "ektis_verified": true,
+    "created_at": "2026-01-19T18:28:49.406530"
+  },
+  {
+    "user_id": "demo_novice_vegetables_gence",
+    "full_name": "Vasif Hüseynov",
+    "email": "demo_novice_vegetables_gence@zekalab.info",
+    "fin_code": "7SKSEJT",
+    "phone": "+994127553948",
+    "region": "Gəncə",
+    "crop_type": "Pomidor",
+    "crop_name_en": "Tomato",
+    "total_area_ha": 3.2,
+    "experience_level": "novice",
+    "ektis_verified": true,
+    "created_at": "2026-01-19T18:28:49.411141"
+  },
+  {
+    "user_id": "demo_wheat_farmer_aran",
+    "full_name": "Zeynəb Mustafayeva",
+    "email": "demo_wheat_farmer_aran@zekalab.info",
+    "fin_code": "3KAWJSF",
+    "phone": "+994121133769",
+    "region": "Aran",
+    "crop_type": "Buğda",
+    "crop_name_en": "Wheat",
+    "total_area_ha": 25.0,
+    "experience_level": "intermediate",
+    "ektis_verified": true,
+    "created_at": "2026-01-19T18:28:49.415908"
+  },
+  {
+    "user_id": "demo_hazelnut_farmer_shaki",
+    "full_name": "Rəfiq Məhərrəmov",
+    "email": "demo_hazelnut_farmer_shaki@zekalab.info",
+    "fin_code": "5QMG6U8",
+    "phone": "+994129472222",
+    "region": "Şəki",
+    "crop_type": "Fındıq",
+    "crop_name_en": "Hazelnut",
+    "total_area_ha": 15.7,
+    "experience_level": "expert",
+    "ektis_verified": true,
+    "created_at": "2026-01-19T18:28:49.419968"
+  }
+]

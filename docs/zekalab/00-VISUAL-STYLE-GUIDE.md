@@ -78,12 +78,12 @@ flowchart TB
         a1["Component A"]
         a2["Component B"]
     end
-    
+
     subgraph layer2["⚙️ Layer 2"]
         b1["Component C"]
         b2["Component D"]
     end
-    
+
     layer1 --> layer2
 ```
 
@@ -95,7 +95,7 @@ sequenceDiagram
     participant U as 👤 User
     participant A as 🔌 API
     participant S as 🧠 Service
-    
+
     U->>A: Request
     A->>S: Process
     S-->>A: Response
@@ -121,16 +121,16 @@ stateDiagram-v2
 %%{init: {'theme': 'neutral'}}%%
 block-beta
     columns 3
-    
+
     block:done["✅ Done"]:1
         d1["Feature A"]
         d2["Feature B"]
     end
-    
+
     block:progress["🔄 In Progress"]:1
         p1["Feature C"]
     end
-    
+
     block:planned["⏳ Planned"]:1
         pl1["Feature D"]
     end
@@ -263,7 +263,7 @@ end note
 
 <div align="center">
 
-**📄 Document:** `00-VISUAL-STYLE-GUIDE.md`  
+**📄 Document:** `00-VISUAL-STYLE-GUIDE.md`
 **🔄 Last Updated:** January 2026
 
 </div>

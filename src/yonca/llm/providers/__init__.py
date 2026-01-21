@@ -16,7 +16,7 @@ from .ollama import OllamaProvider
 
 __all__ = [
     "LLMMessage",
-    "LLMProvider", 
+    "LLMProvider",
     "LLMResponse",
     "MessageRole",
     "OllamaProvider",

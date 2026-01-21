@@ -1,7 +1,7 @@
 # ════════════════════════════════════════════════════════════════════════════
 # 🌿 YONCA AI — Start All (CLI fallback)
 # ════════════════════════════════════════════════════════════════════════════
-# 
+#
 # NOTE: Prefer using VS Code tasks (Ctrl+Shift+P → "Run Task" → "🚀 Start All")
 #       for better experience with live logs in separate terminal panels.
 #
@@ -20,7 +20,7 @@ docker-compose -f "$projectRoot\docker-compose.local.yml" up -d postgres ollama 
 Write-Host "✅ Docker services started" -ForegroundColor Green
 
 # 2. Clear cache
-Get-ChildItem -Path $projectRoot -Recurse -Directory -Filter '__pycache__' -ErrorAction SilentlyContinue | 
+Get-ChildItem -Path $projectRoot -Recurse -Directory -Filter '__pycache__' -ErrorAction SilentlyContinue |
     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 Write-Host "🧹 Cache cleared" -ForegroundColor Green
 
@@ -32,7 +32,7 @@ $env:DATABASE_URL = "postgresql+asyncpg://yonca:yonca_dev_password@localhost:543
 Write-Host "🎨 Starting LangGraph..." -ForegroundColor Yellow
 Start-Process -FilePath "$venvPath\langgraph.exe" -ArgumentList "dev" -WorkingDirectory $projectRoot -WindowStyle Hidden
 
-Write-Host "🌿 Starting FastAPI..." -ForegroundColor Yellow  
+Write-Host "🌿 Starting FastAPI..." -ForegroundColor Yellow
 Start-Process -FilePath "$venvPath\python.exe" -ArgumentList "-m uvicorn yonca.api.main:app --host localhost --port 8000 --reload" -WorkingDirectory $projectRoot -WindowStyle Hidden
 
 Write-Host "🖥️ Starting Chainlit..." -ForegroundColor Yellow

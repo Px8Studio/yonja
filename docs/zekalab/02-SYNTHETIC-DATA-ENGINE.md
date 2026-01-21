@@ -16,15 +16,15 @@ graph LR
         disconnect["Schema mismatch"]
         risk["Integration risk"]
     end
-    
+
     subgraph target["🎯 TARGET STATE<br/><i>Mirror-Image Engine</i>"]
         mirror["Schema-synchronized"]
         behavior["Statistical behavior match"]
         seamless["Zero-friction handoff"]
     end
-    
+
     current -->|"🔄 Strategic Shift"| target
-    
+
     style current fill:#ffcdd2,stroke:#c62828,color:#b71c1c
     style target fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
 ```
@@ -57,7 +57,7 @@ erDiagram
         boolean receives_subsidies "true"
         string notification_pref "sms"
     }
-    
+
     FARM_PROFILE {
         string farm_id PK "syn_farm_001"
         string user_id FK
@@ -67,7 +67,7 @@ erDiagram
         string primary_activity "wheat_cotton"
         boolean is_primary "true"
     }
-    
+
     PARCEL {
         string parcel_id PK "syn_parcel_001"
         string farm_id FK
@@ -78,7 +78,7 @@ erDiagram
         string region "Aran"
         float area_hectares "5.2"
     }
-    
+
     SOWING_DECLARATION {
         string declaration_id PK "syn_decl_2026_001"
         string parcel_id FK
@@ -86,7 +86,7 @@ erDiagram
         date sowing_date "2025-10-15"
         string status "CONFIRMED"
     }
-    
+
     CROP_ROTATION_LOG {
         string log_id PK
         string parcel_id FK
@@ -94,7 +94,7 @@ erDiagram
         string crop "Cotton"
         float yield_tons "3.2"
     }
-    
+
     NDVI_READING {
         string reading_id PK
         string parcel_id FK
@@ -102,7 +102,7 @@ erDiagram
         float ndvi_value "0.72"
         string health_status "HEALTHY"
     }
-    
+
     USER_PROFILE ||--o{ FARM_PROFILE : "owns"
     FARM_PROFILE ||--o{ PARCEL : "contains"
     PARCEL ||--o{ SOWING_DECLARATION : "declares"
@@ -118,23 +118,23 @@ graph TB
     subgraph user["👤 USER PROFILE<br/><i>WHO is asking?</i>"]
         persona["Experience: Intermediate<br/>Years: 12<br/>Language: Azerbaijani<br/>Subsidies: Yes"]
     end
-    
+
     subgraph farms["🌾 FARM PROFILES<br/><i>WHAT do they own?</i>"]
         farm1["🌾 Farm 1<br/>Wheat/Cotton<br/>5.2 ha"]
         farm2["🍎 Farm 2<br/>Orchard<br/>2.3 ha"]
         farm3["🐄 Farm 3<br/>Livestock<br/>1.0 ha"]
     end
-    
+
     subgraph ai["🤖 AI Response"]
         how["HOW to explain<br/><i>Based on experience</i>"]
         what["WHAT to recommend<br/><i>Based on farms</i>"]
     end
-    
+
     user --> how
     farms --> what
     how --> response["💬 Personalized<br/>Recommendation"]
     what --> response
-    
+
     style user fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
     style farms fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
     style ai fill:#fff9c4,stroke:#f9a825,color:#5d4037
@@ -168,7 +168,7 @@ graph TB
         sheki["🐄 Şəki-Zaqatala<br/><i>Livestock, Hazelnuts</i><br/>41.19°N, 47.17°E"]
         lenkeran["🌻 Lənkəran<br/><i>Vegetables, Citrus</i><br/>38.75°N, 48.85°E"]
     end
-    
+
     style quba fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
     style aran fill:#fff9c4,stroke:#f9a825,color:#5d4037
     style mil fill:#e1f5fe,stroke:#0288d1,color:#01579b
@@ -215,14 +215,14 @@ graph TB
         sagda["<b>SAGDA</b><br/><i>Agriculture Time-Series</i><br/>Soil moisture, growth"]
         faker["<b>Faker + Custom</b><br/><i>Azerbaijani Providers</i><br/>Names, districts, parcels"]
     end
-    
+
     subgraph quality["✅ Quality Assurance"]
         ge["<b>Great Expectations</b><br/><i>Data Contracts</i><br/>Schema validation"]
         numpy["<b>Pandas + NumPy</b><br/><i>Weather Events</i><br/>Heatwaves, droughts"]
     end
-    
+
     tools --> quality
-    
+
     style sdv fill:#bbdefb,stroke:#1565c0,color:#0d47a1
     style sagda fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
     style faker fill:#fff9c4,stroke:#f9a825,color:#5d4037
@@ -246,20 +246,20 @@ from faker.providers import BaseProvider
 
 class AzerbaijaniAgrarianProvider(BaseProvider):
     """Custom Faker provider for Azerbaijani agricultural data."""
-    
+
     REGIONS = ["Aran", "Quba-Qusar", "Şəki-Zaqatala", "Mil-Muğan", "Lənkəran"]
     CROPS = ["Buğda", "Pambıq", "Üzüm", "Alma", "Pomidor", "Qarğıdalı"]
     SOIL_TYPES = ["Gilli", "Qumlu", "Münbit", "Şoranlıq"]
-    
+
     def parcel_id(self) -> str:
         """Generate EKTIS-format parcel ID."""
         region_code = self.random_element(["ABS", "ARN", "MUG", "LNK", "SKI"])
         return f"AZ-{region_code}-{self.random_int(1000, 9999)}"
-    
+
     def declaration_id(self, year: int = 2026) -> str:
         """Generate sowing declaration ID."""
         return f"DECL-{year}-{self.random_int(100000, 999999)}"
-    
+
     def farm_description_az(self) -> str:
         """Generate farm description in Azerbaijani."""
         crop = self.random_element(self.CROPS)
@@ -285,7 +285,7 @@ graph TB
         traditional["👴 <b>Traditional Farmer</b><br/>syn_user_004<br/><i>30 years, 1 farm</i><br/>Respects local methods"]
         diversified["🌈 <b>Diversified Owner</b><br/>syn_user_005<br/><i>8 years, 3 farms</i><br/>Mixed crop + livestock"]
     end
-    
+
     style novice fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
     style experienced fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
     style commercial fill:#fff9c4,stroke:#f9a825,color:#5d4037
@@ -305,7 +305,7 @@ graph TB
         livestock["🐄 <b>Livestock</b><br/>50 cattle, Pasture<br/>Şəki"]
         mixed["🌻 <b>Mixed/Vegetable</b><br/>3ha Veg + Poultry<br/>Lənkəran"]
     end
-    
+
     style wheat fill:#fff9c4,stroke:#f9a825,color:#5d4037
     style cotton fill:#e1f5fe,stroke:#0288d1,color:#01579b
     style orchard fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
@@ -321,16 +321,16 @@ graph TB
     subgraph user["👤 syn_user_003 (Commercial Operator)"]
         profile["Experience: 10 years<br/>Education: University<br/>Subsidies: Yes<br/>Notification: App + SMS"]
     end
-    
+
     subgraph owned["🌾 Owned Farm Profiles"]
         f1["Farm 1: Wheat<br/>syn_farm_003a<br/>12 ha, Aran"]
         f2["Farm 2: Cotton<br/>syn_farm_003b<br/>8 ha, Mil-Muğan"]
         f3["Farm 3: Vineyard<br/>syn_farm_003c<br/>3 ha, Şəmkir"]
         f4["Farm 4: Vegetables<br/>syn_farm_003d<br/>2 ha, Lənkəran"]
     end
-    
+
     user --> owned
-    
+
     style user fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
     style owned fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
 ```
@@ -611,8 +611,8 @@ expectation_suite.add_expectation(
 
 <div align="center">
 
-**📄 Document:** `02-SYNTHETIC-DATA-ENGINE.md`  
-**⬅️ Previous:** [01-MANIFESTO.md](01-MANIFESTO.md) — Vision & Principles  
+**📄 Document:** `02-SYNTHETIC-DATA-ENGINE.md`
+**⬅️ Previous:** [01-MANIFESTO.md](01-MANIFESTO.md) — Vision & Principles
 **➡️ Next:** [03-ARCHITECTURE.md](03-ARCHITECTURE.md) — Technical Deep-Dive (includes API contracts & transition roadmap)
 
 </div>

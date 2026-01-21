@@ -8,10 +8,10 @@ making them available for use with the Yonca AI application.
 Usage:
     # Import ATLLaMA model (default)
     python scripts/import_model.py
-    
+
     # Import specific model
     python scripts/import_model.py --name mymodel --path models/mymodel.gguf
-    
+
     # Import into Docker container
     python scripts/import_model.py --docker
 """
@@ -25,6 +25,7 @@ from pathlib import Path
 # Try to import ollama, but make it optional for Docker mode
 try:
     import ollama
+
     OLLAMA_AVAILABLE = True
 except ImportError:
     OLLAMA_AVAILABLE = False
@@ -53,7 +54,7 @@ def import_gguf_local(
 
     # Get absolute path for Windows compatibility
     abs_path = os.path.abspath(gguf_path)
-    
+
     if not os.path.exists(abs_path):
         print(f"❌ GGUF file not found: {abs_path}")
         return False
@@ -82,7 +83,7 @@ def import_gguf_docker(
     system_prompt: str = DEFAULT_SYSTEM_PROMPT,
 ) -> bool:
     """Import GGUF model into Ollama running in Docker container.
-    
+
     This requires the GGUF file to be mounted into the container.
     The docker-compose.local.yml should mount ./models:/app/models
     """
@@ -99,41 +100,50 @@ def import_gguf_docker(
 
     # Path inside the container (assuming ./models is mounted to /app/models)
     container_gguf_path = f"/app/models/{Path(gguf_path).name}"
-    
+
     # Create a temporary Modelfile
     modelfile_content = f"""FROM {container_gguf_path}
 SYSTEM "{system_prompt}"
 PARAMETER temperature 0.7
 PARAMETER num_ctx 4096
 """
-    
+
     # Write Modelfile to a temp location and copy to container
     temp_modelfile = get_project_root() / "models" / f"Modelfile.{model_name}"
     temp_modelfile.write_text(modelfile_content)
-    
+
     print(f"📦 Importing '{model_name}' into Docker container...")
-    
+
     try:
         # Copy Modelfile to container
         subprocess.run(
             ["docker", "cp", str(temp_modelfile), f"{container_name}:/tmp/Modelfile"],
             check=True,
         )
-        
+
         # Create model in container
         result = subprocess.run(
-            ["docker", "exec", container_name, "ollama", "create", model_name, "-f", "/tmp/Modelfile"],
+            [
+                "docker",
+                "exec",
+                container_name,
+                "ollama",
+                "create",
+                model_name,
+                "-f",
+                "/tmp/Modelfile",
+            ],
             capture_output=True,
             text=True,
         )
-        
+
         if result.returncode == 0:
             print(f"✅ Model '{model_name}' imported successfully!")
             return True
         else:
             print(f"❌ Failed to import model: {result.stderr}")
             return False
-            
+
     except subprocess.CalledProcessError as e:
         print(f"❌ Docker command failed: {e}")
         return False
@@ -159,7 +169,7 @@ def list_models_local() -> None:
     if not OLLAMA_AVAILABLE:
         print("❌ Ollama Python package not installed")
         return
-    
+
     try:
         models = ollama.list()
         print("\n📋 Available local models:")
@@ -177,13 +187,13 @@ def main():
 Examples:
     # Import ATLLaMA (default)
     python scripts/import_model.py
-    
+
     # Import into Docker container
     python scripts/import_model.py --docker
-    
+
     # Import custom model
     python scripts/import_model.py --name mymodel --path models/custom.gguf
-    
+
     # List available models
     python scripts/import_model.py --list
 """,
@@ -218,19 +228,19 @@ Examples:
         default=DEFAULT_SYSTEM_PROMPT,
         help="System prompt for the model",
     )
-    
+
     args = parser.parse_args()
-    
+
     # Change to project root
     os.chdir(get_project_root())
-    
+
     if args.list:
         if args.docker:
             list_models_docker(args.container)
         else:
             list_models_local()
         return
-    
+
     # Import the model
     if args.docker:
         success = import_gguf_docker(
@@ -245,7 +255,7 @@ Examples:
             args.path,
             args.system_prompt,
         )
-    
+
     if success:
         print("\n🎉 You can now use this model:")
         if args.docker:
@@ -253,7 +263,7 @@ Examples:
         else:
             print(f"   ollama run {args.name}")
         print(f"\n   Or set YONCA_OLLAMA_MODEL={args.name} in your .env file")
-    
+
     sys.exit(0 if success else 1)
 
 

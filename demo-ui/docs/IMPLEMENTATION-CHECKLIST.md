@@ -1,8 +1,8 @@
 # 🛠️ ALEM Persona Persistence — Implementation Checklist
 
-**Goal:** Make personas persist across browser refresh + display in UI  
-**Status:** Phase 1 & 2 ready for implementation  
-**Estimated Time:** 2-3 hours  
+**Goal:** Make personas persist across browser refresh + display in UI
+**Status:** Phase 1 & 2 ready for implementation
+**Estimated Time:** 2-3 hours
 
 ---
 
@@ -33,7 +33,7 @@ def upgrade():
         sa.Column('chainlit_user_id', sa.String(36), nullable=False, comment='FK to users.id'),
         sa.Column('email', sa.String(255), nullable=False, unique=True, comment='User email (from OAuth)'),
         sa.Column('user_profile_id', sa.String(20), nullable=True, comment='FK to user_profiles.user_id'),
-        
+
         # Persona Data
         sa.Column('full_name', sa.String(100), nullable=False),
         sa.Column('fin_code', sa.String(20), nullable=True, unique=True),
@@ -43,13 +43,13 @@ def upgrade():
         sa.Column('total_area_ha', sa.Float(), nullable=False),
         sa.Column('experience_level', sa.String(20), nullable=True),
         sa.Column('ektis_verified', sa.Boolean(), default=False),
-        
+
         # Metadata
         sa.Column('data_source', sa.String(20), default='synthetic', comment='synthetic/oauth/mygov'),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.Column('last_login_at', sa.DateTime(timezone=True)),
-        
+
         sa.PrimaryKeyConstraint('alem_persona_id'),
         sa.ForeignKeyConstraint(['chainlit_user_id'], ['users.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['user_profile_id'], ['user_profiles.user_id'], ondelete='SET NULL'),
@@ -83,12 +83,12 @@ from yonca.data.database import Base
 class ALEMPersonaDB(Base):
     """ALEM Persona ORM model for database persistence."""
     __tablename__ = 'alem_personas'
-    
+
     alem_persona_id = Column(String(36), primary_key=True)
     chainlit_user_id = Column(String(36), ForeignKey('users.id', ondelete='CASCADE'), nullable=False, unique=True)
     email = Column(String(255), nullable=False, unique=True, index=True)
     user_profile_id = Column(String(20), ForeignKey('user_profiles.user_id', ondelete='SET NULL'), nullable=True, index=True)
-    
+
     # Persona Data
     full_name = Column(String(100), nullable=False)
     fin_code = Column(String(20), nullable=True, unique=True)
@@ -98,13 +98,13 @@ class ALEMPersonaDB(Base):
     total_area_ha = Column(Float(), nullable=False)
     experience_level = Column(String(20), nullable=True)
     ektis_verified = Column(Boolean(), default=False)
-    
+
     # Metadata
     data_source = Column(String(20), default='synthetic')
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
     last_login_at = Column(DateTime(timezone=True), nullable=True)
-    
+
     def to_dict(self):
         """Convert to dictionary for session storage."""
         return {
@@ -138,7 +138,7 @@ from typing import Optional
 import structlog
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from yonca.data.database import get_async_session
+from yonca.data.database import get_db_session
 
 logger = structlog.get_logger(__name__)
 
@@ -147,12 +147,11 @@ async def load_alem_persona_from_db(
 ) -> Optional[dict]:
     """Load persona from database by email."""
     try:
-        async_session = await get_async_session()
-        async with async_session() as session:
+        async with get_db_session() as session:
             result = await session.execute(
                 text("""
-                    SELECT alem_persona_id, email, full_name, fin_code, phone, 
-                           region, crop_type, total_area_ha, experience_level, 
+                    SELECT alem_persona_id, email, full_name, fin_code, phone,
+                           region, crop_type, total_area_ha, experience_level,
                            ektis_verified, data_source, created_at, last_login_at
                     FROM alem_personas
                     WHERE email = :email
@@ -160,7 +159,7 @@ async def load_alem_persona_from_db(
                 {"email": email}
             )
             row = result.fetchone()
-            
+
             if row:
                 logger.info("persona_loaded_from_db", email=email)
                 return {
@@ -181,7 +180,7 @@ async def load_alem_persona_from_db(
             else:
                 logger.debug("persona_not_found_in_db", email=email)
                 return None
-                
+
     except Exception as e:
         logger.error("load_persona_failed", email=email, error=str(e))
         return None
@@ -195,10 +194,9 @@ async def save_alem_persona_to_db(
 ) -> bool:
     """Save generated persona to database for persistence."""
     try:
-        async_session = await get_async_session()
-        async with async_session() as session:
+        async with get_db_session() as session:
             persona_id = str(uuid.uuid4())
-            
+
             await session.execute(
                 text("""
                     INSERT INTO alem_personas (
@@ -232,10 +230,9 @@ async def save_alem_persona_to_db(
                     'login': datetime.utcnow(),
                 }
             )
-            await session.commit()
             logger.info("persona_saved_to_db", email=email, persona_id=persona_id)
             return True
-            
+
     except Exception as e:
         logger.error("save_persona_failed", email=email, error=str(e))
         return False
@@ -260,10 +257,10 @@ alem_persona: Optional[ALEMPersona] = None
 
 if user and user.metadata:
     user_email = user.metadata.get("email")
-    
+
     # TIER 1: Try to load from database (persistent)
     persona_dict = await load_alem_persona_from_db(user_email)
-    
+
     if persona_dict:
         # ✅ Found in database - use it
         alem_persona = ALEMPersona(
@@ -290,7 +287,7 @@ if user and user.metadata:
             oauth_claims=oauth_claims,
             existing_persona=None,
         )
-        
+
         # Save to database for next time
         await save_alem_persona_to_db(
             alem_persona=alem_persona.to_dict(),
@@ -298,7 +295,7 @@ if user and user.metadata:
             email=user_email,
         )
         logger.info("persona_generated_and_saved", user_id=user.identifier)
-    
+
     # Store in session for this conversation
     cl.user_session.set("alem_persona", alem_persona.to_dict())
 ```
@@ -317,7 +314,7 @@ if user and user.metadata:
 if alem_persona:
     # Create sidebar element showing persona
     persona_display = alem_persona.to_sidebar_display()
-    
+
     sidebar_element = cl.Markdown(
         content=f"""
 ### 🔐 ALEM Təsdiqlənmiş Profil
@@ -331,7 +328,7 @@ if alem_persona:
         display="side"
     )
     await sidebar_element.send()
-    
+
     logger.info(
         "persona_displayed_in_sidebar",
         user_id=user_id,
@@ -349,11 +346,11 @@ The `to_sidebar_display()` method should look like:
 def to_sidebar_display(self) -> str:
     """Format persona for Chainlit sidebar display."""
     return f"""
-**FIN Kodu:** `{self.fin_code}`  
-**Bölgə:** {self.region}  
-**Məhsul:** {self.crop_type}  
-**Sahə:** {self.total_area_ha} ha  
-**Təcrübə:** {self.experience_level}  
+**FIN Kodu:** `{self.fin_code}`
+**Bölgə:** {self.region}
+**Məhsul:** {self.crop_type}
+**Sahə:** {self.total_area_ha} ha
+**Təcrübə:** {self.experience_level}
 **Təsdiqlənmiş:** {'✅ Bəli' if self.ektis_verified else '⏳ Demo'}
 """
 ```
@@ -379,7 +376,7 @@ psql -h localhost -p 5433 -U yonca -d yonca -c "SELECT * FROM alem_personas;"
    ```bash
    # Docker
    docker-compose -f docker-compose.local.yml up -d
-   
+
    # LangGraph
    # UI
    ```
@@ -389,8 +386,8 @@ psql -h localhost -p 5433 -U yonca -d yonca -c "SELECT * FROM alem_personas;"
 3. **Check database:**
    ```bash
    psql -h localhost -p 5433 -U yonca -d yonca -c """
-   SELECT email, fin_code, region, crop_type, data_source 
-   FROM alem_personas 
+   SELECT email, fin_code, region, crop_type, data_source
+   FROM alem_personas
    LIMIT 5;
    """
    ```
@@ -433,26 +430,26 @@ Refresh browser → Reload from DB ✅
 
 ### Check if persona table exists
 ```sql
-SELECT * FROM information_schema.tables 
+SELECT * FROM information_schema.tables
 WHERE table_name = 'alem_personas';
 ```
 
 ### See all personas
 ```sql
-SELECT email, fin_code, region, crop_type, data_source, created_at 
+SELECT email, fin_code, region, crop_type, data_source, created_at
 FROM alem_personas;
 ```
 
 ### See persona for specific user
 ```sql
-SELECT * FROM alem_personas 
+SELECT * FROM alem_personas
 WHERE email = 'your-email@example.com';
 ```
 
 ### Update persona (if needed)
 ```sql
-UPDATE alem_personas 
-SET region = 'Quba', crop_type = 'Alma' 
+UPDATE alem_personas
+SET region = 'Quba', crop_type = 'Alma'
 WHERE email = 'your-email@example.com';
 ```
 
@@ -478,7 +475,7 @@ WHERE email = 'your-email@example.com';
    ```
 
 ### Issue: "Getting duplicate key error"
-**Reason:** FIN code or email already exists  
+**Reason:** FIN code or email already exists
 **Fix:**
 ```sql
 -- Find duplicate

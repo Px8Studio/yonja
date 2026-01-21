@@ -23,33 +23,33 @@ services:
       - DEPLOYMENT_MODE=local
       - ENVIRONMENT=development
       - DEBUG=true
-      
+
       # API settings
       - API_HOST=0.0.0.0
       - API_PORT=8000
       - CORS_ORIGINS=http://localhost:3000,http://localhost:8501
-      
+
       # LLM Provider (use Ollama for local)
       - LLM_PROVIDER=ollama
       - OLLAMA_BASE_URL=http://ollama:11434
       - OLLAMA_MODEL=qwen3:4b
-      
+
       # Database (PostgreSQL for production parity)
       - DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
-      
+
       # Redis
       - REDIS_URL=redis://redis:6379/0
-      
+
       # Security (development only - change in production!)
       - JWT_SECRET=dev-secret-change-in-production
       - JWT_ALGORITHM=HS256
       - JWT_EXPIRY_HOURS=24
-      
+
       # Observability
       - LOG_LEVEL=DEBUG
       - LOG_FORMAT=console
       - PROMETHEUS_ENABLED=true
-      
+
       # Rate limiting
       - RATE_LIMIT_REQUESTS_PER_MINUTE=100
       - RATE_LIMIT_BURST=150
@@ -122,11 +122,11 @@ services:
     command:
       - |
         echo "🚀 Setting up models..."
-        
+
         # Pull Qwen3 (primary model)
         echo "📥 Pulling qwen3:4b..."
         ollama pull qwen3:4b
-        
+
         # Import ATLLaMA from GGUF if file exists
         if [ -f /app/models/atllama.v3.5.Q4_K_M.gguf ]; then
           echo "📦 Importing ATLLaMA from GGUF..."
@@ -141,7 +141,7 @@ services:
         else
           echo "⚠️ ATLLaMA GGUF not found, skipping..."
         fi
-        
+
         echo "📋 Available models:"
         ollama list
         echo "✅ Model setup complete!"
@@ -182,18 +182,18 @@ services:
       # Database connection
       - DATABASE_URL=postgresql://langfuse:langfuse_secret@langfuse-db:5432/langfuse
       - DIRECT_URL=postgresql://langfuse:langfuse_secret@langfuse-db:5432/langfuse
-      
+
       # Security (CHANGE IN PRODUCTION!)
       - NEXTAUTH_SECRET=yonca-langfuse-secret-change-in-prod
       - SALT=yonca-langfuse-salt-change-in-prod
       - NEXTAUTH_URL=http://localhost:3001
-      
+
       # Telemetry (disable for air-gapped)
       - TELEMETRY_ENABLED=false
-      
+
       # Optional: Enable public sign-up for first user
       - AUTH_DISABLE_SIGNUP=false
-      
+
       # ClickHouse for high-volume tracing (optional)
       # - CLICKHOUSE_URL=http://langfuse-clickhouse:8123
     depends_on:
@@ -276,18 +276,18 @@ services:
       - LLM_PROVIDER=ollama
       - OLLAMA_BASE_URL=http://ollama:11434
       - OLLAMA_MODEL=qwen3:4b
-      
+
       # Redis for checkpointing
       - REDIS_URL=redis://redis:6379/0
-      
+
       # Database (PostgreSQL for data persistence)
       - DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
       - CHAINLIT_DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
       - ENABLE_DATA_PERSISTENCE=true
-      
+
       # Yonca API (optional, for API client pattern)
       - YONCA_API_URL=http://api:8000
-      
+
       # Python path
       - PYTHONPATH=/app/src:/app/demo-ui
     depends_on:

@@ -1,3 +1,5 @@
 {
   "google": {
-        "scopes": ["openid", "email", "profile"]
+    "scopes": ["openid", "email", "profile"]
+  }
+}

@@ -7,10 +7,9 @@ and forecasted weather conditions.
 
 from typing import Any
 
-from yonca.agent.state import AgentState, UserIntent, WeatherContext, add_assistant_message
+from yonca.agent.state import AgentState, add_assistant_message
 from yonca.llm.factory import get_llm_provider
 from yonca.llm.providers.base import LLMMessage
-
 
 # ============================================================
 # Weather Analysis Prompt
@@ -46,26 +45,30 @@ def build_weather_context(state: AgentState) -> str:
     """Build weather context for the prompt."""
     weather = state.get("weather")
     farm_context = state.get("farm_context")
-    
+
     parts = []
-    
+
     if weather:
-        parts.append(f"""CARİ HAVA:
+        parts.append(
+            f"""CARİ HAVA:
 - Temperatur: {weather.temperature_c}°C
 - Rütubət: {weather.humidity_percent}%
 - Yağış: {weather.precipitation_mm} mm
 - Külək: {weather.wind_speed_kmh} km/saat
-- Proqnoz: {weather.forecast_summary}""")
-    
+- Proqnoz: {weather.forecast_summary}"""
+        )
+
     if farm_context:
-        parts.append(f"""TƏSƏRRÜFAT:
+        parts.append(
+            f"""TƏSƏRRÜFAT:
 - Region: {farm_context.region}
-- Sahə: {farm_context.total_area_ha} hektar""")
-        
+- Sahə: {farm_context.total_area_ha} hektar"""
+        )
+
         if farm_context.active_crops:
             crops = ", ".join(c["crop"] for c in farm_context.active_crops[:5])
             parts.append(f"- Aktiv məhsullar: {crops}")
-    
+
     return "\n\n".join(parts)
 
 
@@ -73,73 +76,80 @@ def build_weather_context(state: AgentState) -> str:
 # Weather Node
 # ============================================================
 
+
 async def weather_node(state: AgentState) -> dict[str, Any]:
     """Weather analyst node.
-    
+
     Analyzes weather conditions and provides farming-related
     weather advice.
-    
+
     Args:
         state: Current agent state
-        
+
     Returns:
         State updates with weather analysis
     """
     nodes_visited = state.get("nodes_visited", []).copy()
     nodes_visited.append("weather")
-    
+
     user_input = state.get("current_input", "")
     intent = state.get("intent")
-    
+
     # Build messages
     weather_context = build_weather_context(state)
-    
+
     full_system = WEATHER_SYSTEM_PROMPT
     if weather_context:
         full_system += f"\n\n<KONTEKST>\n{weather_context}\n</KONTEKST>"
-    
+
     messages = [
         LLMMessage.system(full_system),
         LLMMessage.user(user_input),
     ]
-    
+
     # Generate response
     provider = get_llm_provider()
-    
+
     try:
         response = await provider.generate(
             messages,
             temperature=0.5,
             max_tokens=600,
         )
-        
+
         response_text = response.content.strip()
-        
+
         # Add weather-specific alerts if temperature is extreme
         weather = state.get("weather")
         if weather:
             alerts_to_add = []
-            
+
             if weather.temperature_c and weather.temperature_c < 0:
-                alerts_to_add.append({
-                    "alert_type": "frost_warning",
-                    "severity": "high",
-                    "message_az": f"⚠️ Şaxta xəbərdarlığı! Temperatur {weather.temperature_c}°C",
-                })
+                alerts_to_add.append(
+                    {
+                        "alert_type": "frost_warning",
+                        "severity": "high",
+                        "message_az": f"⚠️ Şaxta xəbərdarlığı! Temperatur {weather.temperature_c}°C",
+                    }
+                )
             elif weather.temperature_c and weather.temperature_c > 35:
-                alerts_to_add.append({
-                    "alert_type": "heat_warning",
-                    "severity": "high",
-                    "message_az": f"⚠️ İsti xəbərdarlığı! Temperatur {weather.temperature_c}°C - suvarma artırın",
-                })
-            
+                alerts_to_add.append(
+                    {
+                        "alert_type": "heat_warning",
+                        "severity": "high",
+                        "message_az": f"⚠️ İsti xəbərdarlığı! Temperatur {weather.temperature_c}°C - suvarma artırın",
+                    }
+                )
+
             if weather.precipitation_mm and weather.precipitation_mm > 20:
-                alerts_to_add.append({
-                    "alert_type": "heavy_rain",
-                    "severity": "medium",
-                    "message_az": f"🌧️ Güclü yağış gözlənilir ({weather.precipitation_mm}mm)",
-                })
-            
+                alerts_to_add.append(
+                    {
+                        "alert_type": "heavy_rain",
+                        "severity": "medium",
+                        "message_az": f"🌧️ Güclü yağış gözlənilir ({weather.precipitation_mm}mm)",
+                    }
+                )
+
             if alerts_to_add:
                 return {
                     "current_response": response_text,
@@ -147,16 +157,18 @@ async def weather_node(state: AgentState) -> dict[str, Any]:
                     "messages": [add_assistant_message(state, response_text, "weather", intent)],
                     "alerts": alerts_to_add,
                 }
-        
+
         return {
             "current_response": response_text,
             "nodes_visited": nodes_visited,
             "messages": [add_assistant_message(state, response_text, "weather", intent)],
         }
-        
+
     except Exception as e:
-        error_response = "Hava məlumatlarını yükləyərkən xəta baş verdi. Zəhmət olmasa sonra yenidən cəhd edin."
-        
+        error_response = (
+            "Hava məlumatlarını yükləyərkən xəta baş verdi. Zəhmət olmasa sonra yenidən cəhd edin."
+        )
+
         return {
             "current_response": error_response,
             "error": str(e),

@@ -16,15 +16,15 @@ from yonca.data.repositories.user_repo import UserRepository
 
 async def context_loader_node(state: AgentState) -> dict[str, Any]:
     """Load required context from database and cache.
-    
+
     Checks the routing decision for what context is needed:
     - "user": Load user profile
     - "farm": Load farm data with parcels
     - "weather": Load weather data (synthetic for now)
-    
+
     Args:
         state: Current agent state
-        
+
     Returns:
         State updates with loaded context
     """
@@ -32,21 +32,21 @@ async def context_loader_node(state: AgentState) -> dict[str, Any]:
     user_id = state.get("user_id")
     nodes_visited = state.get("nodes_visited", []).copy()
     nodes_visited.append("context_loader")
-    
+
     updates: dict[str, Any] = {"nodes_visited": nodes_visited}
-    
+
     if routing is None:
         return updates
-    
+
     requires_context = routing.requires_context or []
-    
+
     async with get_db_session() as session:
         # Load user context
         if "user" in requires_context and user_id:
             base_user_repo = UserRepository(session)
             user_repo = CachedUserRepository(base_user_repo)
             user_context = await user_repo.get_context_for_ai(user_id)
-            
+
             if user_context:
                 updates["user_context"] = UserContext(
                     user_id=user_context["user_id"],
@@ -57,22 +57,22 @@ async def context_loader_node(state: AgentState) -> dict[str, Any]:
                     total_area_ha=user_context.get("total_area_ha", 0.0),
                     primary_activities=user_context.get("primary_activities", []),
                 )
-        
+
         # Load farm context
         if "farm" in requires_context and user_id:
             base_farm_repo = FarmRepository(session)
             farm_repo = CachedFarmRepository(base_farm_repo)
-            
+
             # Get primary farm for user
             primary_farm = await base_farm_repo.get_primary_farm(user_id)
-            
+
             if primary_farm:
                 farm_context = await farm_repo.get_context_for_ai(primary_farm.farm_id)
-                
+
                 if farm_context:
                     # Collect alerts from context
                     alerts = farm_context.get("alerts", [])
-                    
+
                     updates["farm_context"] = FarmContext(
                         farm_id=farm_context["farm_id"],
                         farm_name=farm_context["farm_name"],
@@ -85,17 +85,17 @@ async def context_loader_node(state: AgentState) -> dict[str, Any]:
                         alerts=alerts,
                         center_coordinates=farm_context.get("center_coordinates"),
                     )
-                    
+
                     # Merge alerts into state
                     if alerts:
                         updates["alerts"] = alerts
-        
+
         # Load weather context (synthetic for now)
         if "weather" in requires_context:
             # TODO: Integrate with real weather API
             # For now, generate synthetic weather based on region
             farm_context = updates.get("farm_context") or state.get("farm_context")
-            
+
             if farm_context:
                 weather = await _get_synthetic_weather(farm_context.region)
                 updates["weather"] = weather
@@ -108,27 +108,27 @@ async def context_loader_node(state: AgentState) -> dict[str, Any]:
                     wind_speed_kmh=10.0,
                     forecast_summary="Açıq hava, yağış gözlənilmir",
                 )
-    
+
     return updates
 
 
 async def _get_synthetic_weather(region: str) -> WeatherContext:
     """Generate synthetic weather data for a region.
-    
+
     TODO: Replace with real weather API integration
-    
+
     Args:
         region: Agricultural region name
-        
+
     Returns:
         Synthetic weather context
     """
     import random
     from datetime import datetime
-    
+
     # Regional temperature variations (January)
     regional_temps = {
-        "aran": (5, 12),      # Aran - warmer lowlands
+        "aran": (5, 12),  # Aran - warmer lowlands
         "ganja_gazakh": (0, 8),
         "shaki_zagatala": (-2, 6),
         "lankaran": (6, 14),  # Subtropical
@@ -136,14 +136,14 @@ async def _get_synthetic_weather(region: str) -> WeatherContext:
         "mountainous_shirvan": (-2, 5),
         "upper_karabakh": (-4, 3),
     }
-    
+
     temp_range = regional_temps.get(region.lower(), (3, 10))
     temperature = random.uniform(*temp_range)
-    
+
     # Humidity and precipitation
     humidity = random.uniform(50, 80)
     precipitation = random.choice([0, 0, 0, 2, 5, 10])  # Mostly dry
-    
+
     # Generate summary in Azerbaijani
     if precipitation > 5:
         summary = "Yağışlı hava gözlənilir"
@@ -153,7 +153,7 @@ async def _get_synthetic_weather(region: str) -> WeatherContext:
         summary = "İsti hava, suvarma tövsiyə olunur"
     else:
         summary = "Müvafiq hava şəraiti"
-    
+
     return WeatherContext(
         temperature_c=round(temperature, 1),
         humidity_percent=round(humidity, 1),
@@ -166,12 +166,12 @@ async def _get_synthetic_weather(region: str) -> WeatherContext:
 
 def route_after_context(state: AgentState) -> str:
     """Determine next node after context loading.
-    
+
     Routes to the target node specified in the routing decision.
     """
     routing = state.get("routing")
-    
+
     if routing is None:
         return "agronomist"
-    
+
     return routing.target_node

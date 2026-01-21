@@ -27,6 +27,7 @@ from typing import TYPE_CHECKING, Optional
 import chainlit as cl
 import structlog
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
+from chainlit.step import Step
 from chainlit.user import PersistedUser, User
 from sqlalchemy import text
 
@@ -182,6 +183,15 @@ class YoncaDataLayer(SQLAlchemyDataLayer):
         except Exception as e:
             logger.error("update_metadata_error", error=str(e), identifier=identifier)
             return False
+
+    async def upsert_step(self, step: "Step"):
+        """Serialize tags to JSON string for JSONB column compatibility with asyncpg."""
+        if isinstance(step.tags, list):
+            # asyncpg requires JSON-serialized string for JSONB columns, not Python list
+            step.tags = json.dumps(step.tags) if step.tags else "[]"
+        elif step.tags is None:
+            step.tags = "[]"
+        return await super().upsert_step(step)
 
 
 # ============================================

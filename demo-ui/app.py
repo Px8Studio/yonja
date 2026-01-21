@@ -1870,7 +1870,7 @@ async def on_message(message: cl.Message):
             ]
             await response_msg.send()
             for action in actions:
-                await action.send()
+                await action.send(for_id=response_msg.id)
 
     except Exception as e:
         logger.error("message_handler_error", error=str(e), exc_info=True)

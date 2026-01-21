@@ -155,10 +155,8 @@ custom_css = "/public/custom.css"
 
 # Specify a JavaScript file that can be used to customize the user interface.
 # The JavaScript file can be served from the public directory.
-# Loads the enhanced profile dropdown with Google OAuth user data
-# Custom JavaScript has been removed - using pure Chainlit native UI
-# Farm context is stored in session and influences responses implicitly
-# through expertise detection and system prompt customization
+# Loads PWA bootstrap (manifest link + service worker registration)
+custom_js = "/public/custom.js"
 
 # The style of alert boxes. Can be "classic" or "modern".
 alert_style = "classic"

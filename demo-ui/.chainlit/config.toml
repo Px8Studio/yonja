@@ -157,8 +157,8 @@ name = "Yonca AI"
 # layout = "wide"
 
 # Sidebar open by default for settings access
-# RECOMMENDED: Collapsed to maximize mobile screen space
-default_sidebar_state = "collapsed"
+# RECOMMENDED: Closed to maximize mobile screen space
+default_sidebar_state = "closed"
 
 # Description of the assistant. This is used for HTML tags and SEO.
 description = "ALEM 1 — Yonca AI Assistant | Sizin ağıllı kənd təsərrüfatı köməkçiniz"

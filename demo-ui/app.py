@@ -1375,12 +1375,6 @@ async def setup_chat_settings(user: cl.User | None = None):
     unit_values = ["Metrik (ha, kg)", "Yerli (sotka, pud)"]
     currency_values = ["₼ AZN (Manat)", "$ USD (Dollar)", "€ EUR (Euro)"]
     mode_values = ["Ask", "Plan", "Agent"]
-    model_values = [
-        demo_settings.ollama_model,
-        "llama3.1",
-        "qwen2.5",
-        "mixtral-8x7b",
-    ]
 
     # Expertise area values with Azerbaijani labels
     expertise_values = [
@@ -1420,14 +1414,18 @@ async def setup_chat_settings(user: cl.User | None = None):
         else 0
     )
 
-    model_idx = (
-        model_values.index(persisted.get("llm_model", demo_settings.ollama_model))
-        if persisted.get("llm_model") in model_values
-        else 0
-    )
-
     settings = await cl.ChatSettings(
         [
+            # ═══════════════════════════════════════════════════════════════
+            # INTERACTION MODE (Primary Setting)
+            # ═══════════════════════════════════════════════════════════════
+            Select(
+                id="interaction_mode",
+                label="💬 Rejim / Interaction Mode",
+                values=mode_values,
+                initial_index=mode_idx,
+                description="Ask: Sürətli cavab | Plan: Addım-addım planlaşdırma | Agent: Ətraflı avtomatik əməliyyat",
+            ),
             # ═══════════════════════════════════════════════════════════════
             # FARM PROFILE (Yonca Mobile App Fields)
             # ═══════════════════════════════════════════════════════════════
@@ -1660,20 +1658,6 @@ async def setup_chat_settings(user: cl.User | None = None):
                 label="🧠 Düşüncə prosesini göstər / Show Thinking Steps",
                 initial=persisted.get("show_thinking_steps", demo_settings.enable_thinking_steps),
                 description="ALEM-in hər addımını göstər (kontekst yükləmə, təhlil, cavab hazırlama)",
-            ),
-            Select(
-                id="interaction_mode",
-                label="Rejim / Mode",
-                values=mode_values,
-                initial_index=mode_idx,
-                description="Ask (sürətli cavab), Plan (addım-addım), Agent (ətraflı əməliyyat)",
-            ),
-            Select(
-                id="llm_model",
-                label="Model",
-                values=model_values,
-                initial_index=model_idx,
-                description="İstifadə ediləcək model (placeholder seçim — hazırkı sessiyada eyni model istifadə olunur)",
             ),
         ]
     ).send()

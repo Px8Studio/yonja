@@ -184,7 +184,7 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:3000", "http://localhost:8501"]
 
     # ===== LLM Provider =====
-    llm_provider: LLMProvider = LLMProvider.GROQ
+    llm_provider: LLMProvider = LLMProvider.OLLAMA  # Explicit default instead of relying on env
 
     # ===== Ollama (Local) =====
     ollama_base_url: str = "http://localhost:11434"

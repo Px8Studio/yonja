@@ -51,21 +51,30 @@ mindmap
 | [04-TESTING-STRATEGY](04-TESTING-STRATEGY.md) | Evaluation framework, golden dataset |
 | [05-PROMPT-CONVERSATION](05-PROMPT-CONVERSATION.md) | System prompts, intent taxonomy |
 
-### Operations
+### Operations & Infrastructure
 
 | Doc | Purpose |
 |:----|:--------|
+| [LANGGRAPH_ARCHITECTURE_GUIDE](LANGGRAPH_ARCHITECTURE_GUIDE.md) | **⭐ START HERE:** Dev vs Production, component relationships, multi-channel design, production stack |
+| [LANGGRAPH_TESTING_GUIDE](LANGGRAPH_TESTING_GUIDE.md) | Testing LangGraph execution and graph client |
+| [LANGGRAPH_DOCKER_DEPLOYMENT](LANGGRAPH_DOCKER_DEPLOYMENT.md) | Docker Compose setup and containerization |
 | [07-OBSERVABILITY](07-OBSERVABILITY.md) | Langfuse tracing, metrics |
 | [08-SECURITY](08-SECURITY.md) | Input validation, PII protection |
 | [09-PERFORMANCE-SLA](09-PERFORMANCE-SLA.md) | Latency targets, SLOs |
 | [17-SECURITY-ENHANCEMENT-PLAN](17-SECURITY-ENHANCEMENT-PLAN.md) | 🔐 **Production security roadmap** |
 | [22-QUALITY-GATE-SYSTEM](22-QUALITY-GATE-SYSTEM.md) | 🛡️ **Pre-commit hooks & quality checks** |
 
+### UI & Frontend
+
+| Doc | Purpose |
+|:----|:--------|
+| [CHAT_UI_MODEL_AND_INTERACTION](CHAT_UI_MODEL_AND_INTERACTION.md) | 🎯 **Model selection (header) & interaction mode (sidebar) architecture** |
+| [11-CHAINLIT-UI](11-CHAINLIT-UI.md) | Demo UI implementation |
+
 ### Deployment
 
 | Doc | Purpose |
 |:----|:--------|
-| [11-CHAINLIT-UI](11-CHAINLIT-UI.md) | Demo UI implementation |
 | [12-DEPLOYMENT-PRICING](12-DEPLOYMENT-PRICING.md) | DigiRella options, costs, ALEM versioning |
 | [14-DISCOVERY-QUESTIONS](14-DISCOVERY-QUESTIONS.md) | Integration questions for Digital Umbrella |
 | [15-IMPLEMENTATION-BACKLOG](15-IMPLEMENTATION-BACKLOG.md) | 📋 Unimplemented features tracker |
@@ -73,6 +82,22 @@ mindmap
 | [18-ENTERPRISE-INTEGRATION-ROADMAP](18-ENTERPRISE-INTEGRATION-ROADMAP.md) | 🌐 **Partnership strategy & phased roadmap** |
 | [19-YONCA-AI-INTEGRATION-UNIVERSE](19-YONCA-AI-INTEGRATION-UNIVERSE.md) | 🌌 **Complete integration landscape & data flows** |
 | [20-INTEGRATION-API](20-INTEGRATION-API.md) | 🔌 **API contract for Yonca Mobile integration** |
+
+---
+
+## 🗺️ Finding What You Need
+
+**Start here:** [QUICK_NAVIGATION.md](QUICK_NAVIGATION.md) — Find docs by your question or role
+
+---
+
+## 🧹 Documentation Maintenance
+
+**Recently Consolidated:** [DOCUMENTATION_CONSOLIDATION_SUMMARY.md](DOCUMENTATION_CONSOLIDATION_SUMMARY.md)
+- Merged 5 redundant LangGraph docs into 1 master guide
+- Added UI clarity documentation
+- Removed stale/theoretical recommendations
+- Updated all references
 
 ---
 

@@ -4,7 +4,11 @@
     "graphs": {
         "yonca_agent": "./src/yonca/agent/graph.py:create_agent_graph"
     },
-    "env": ".env",
+    "env": {
+        "YONCA_LLM_PROVIDER": "YONCA_LLM_PROVIDER",
+        "YONCA_OLLAMA_BASE_URL": "YONCA_OLLAMA_BASE_URL",
+        "PYTHONPATH": "src"
+    },
     "python_version": "3.12",
     "store": {
         "postgres": {

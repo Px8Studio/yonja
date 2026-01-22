@@ -4,11 +4,11 @@ These tests verify the client's HTTP communication with the LangGraph Dev Server
 including request formatting, error handling, and response parsing.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
-from yonca.langgraph.client import LangGraphClient
+from yonca.langgraph.client import LangGraphClient, LangGraphClientError
 
 # ============================================
 # FIXTURES
@@ -25,11 +25,9 @@ def client():
 
 
 @pytest.fixture
-def mock_httpx_client():
-    """Mock httpx.AsyncClient."""
+def mock_async_client():
+    """Mock httpx.AsyncClient with proper context manager support."""
     mock = AsyncMock(spec=httpx.AsyncClient)
-    mock.__aenter__ = AsyncMock(return_value=mock)
-    mock.__aexit__ = AsyncMock()
     return mock
 
 
@@ -67,227 +65,42 @@ def test_client_strips_trailing_slash():
     assert client.base_url == "http://localhost:2024"
 
 
-# ============================================
-# INVOKE TESTS
-# ============================================
-
-
-@pytest.mark.asyncio
-async def test_invoke_success(client, mock_httpx_client):
-    """Test successful graph invocation."""
-    mock_response = AsyncMock()
-    mock_response.json = AsyncMock(
-        return_value={"messages": [{"content": "Response text", "role": "assistant"}]}
-    )
-    mock_httpx_client.post.return_value = mock_response
-
-    with patch("httpx.AsyncClient", return_value=mock_httpx_client):
-        result = await client.invoke(
-            message="Test message",
-            thread_id="test-thread",
-            user_id="test-user",
-        )
-
-    assert isinstance(result, dict)
-    assert "messages" in result
-    assert result["messages"][0]["content"] == "Response text"
-    assert result["messages"][0]["role"] == "assistant"
-
-
-@pytest.mark.skip(reason="Test API mismatch: parameters session_id, language not in invoke()")
-@pytest.mark.asyncio
-async def test_invoke_with_all_parameters(client, mock_httpx_client):
-    """Test graph invocation with all optional parameters."""
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"messages": [{"role": "assistant", "content": "Response"}]}
-    mock_httpx_client.post.return_value = mock_response
-
-    with patch("httpx.AsyncClient", return_value=mock_httpx_client):
-        result = await client.invoke(
-            message="Test message",
-            thread_id="test-thread",
-            user_id="test-user",
-            session_id="test-session",
-            language="az",
-        )
-
-    assert result["messages"][0]["content"] == "Response"
-
-    # Verify all parameters were passed
-    call_args = mock_httpx_client.post.call_args
-    payload = call_args[1]["json"]["input"]
-    assert payload["current_input"] == "Test message"
-    assert payload["user_id"] == "test-user"
-    assert payload["session_id"] == "test-session"
-    assert payload["language"] == "az"
-
-
-@pytest.mark.skip(reason="Test uses direct httpx.AsyncClient instead of context manager")
-@pytest.mark.asyncio
-async def test_invoke_http_error(client, mock_httpx_client):
-    """Test graph invocation HTTP error handling."""
-    # Create a proper HTTP error response
-    error_response = httpx.Response(
-        status_code=500,
-        request=httpx.Request("POST", "http://localhost:2024/runs/stream"),
-    )
-    mock_httpx_client.post.return_value = error_response
-
-    with patch("httpx.AsyncClient", return_value=mock_httpx_client):
-        # The client should raise HTTPStatusError for 500 status
-        response = httpx.Response(
-            status_code=500,
-            request=httpx.Request("POST", "http://localhost:2024/runs/stream"),
-        )
-        mock_httpx_client.post.side_effect = httpx.HTTPStatusError(
-            "Server Error",
-            request=response.request,
-            response=response,
-        )
-
-        with pytest.raises(httpx.HTTPStatusError):
-            await client.invoke(
-                message="Test",
-                thread_id="test-thread",
-                user_id="test-user",
-            )
-
-
-@pytest.mark.skip(reason="Test uses direct httpx.AsyncClient instead of context manager")
-@pytest.mark.asyncio
-async def test_invoke_connection_error(client, mock_httpx_client):
-    """Test graph invocation with connection error."""
-    mock_httpx_client.post.side_effect = httpx.ConnectError("Connection failed")
-
-    with patch("httpx.AsyncClient", return_value=mock_httpx_client):
-        with pytest.raises(httpx.ConnectError):
-            await client.invoke(
-                message="Test",
-                thread_id="test-thread",
-                user_id="test-user",
-            )
-
-
-@pytest.mark.skip(reason="Test expects string return, but invoke() returns dict")
-@pytest.mark.asyncio
-async def test_invoke_no_messages(client, mock_httpx_client):
-    """Test graph invocation when response has no messages."""
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"messages": []}
-    mock_httpx_client.post.return_value = mock_response
-
-    with patch("httpx.AsyncClient", return_value=mock_httpx_client):
-        result = await client.invoke(
-            message="Test",
-            thread_id="test-thread",
-            user_id="test-user",
-        )
-
-    assert result == ""
+def test_generate_thread_id():
+    """Test thread ID generation."""
+    thread_id = LangGraphClient.generate_thread_id()
+    assert thread_id.startswith("thread_")
+    assert len(thread_id) == 19  # "thread_" + 12 hex chars
 
 
 # ============================================
-# STREAM TESTS
+# CONTEXT MANAGER TESTS
 # ============================================
 
 
-@pytest.mark.skip(reason="Test API mismatch: stream() uses input_state, not message parameter")
 @pytest.mark.asyncio
-async def test_stream_success(client, mock_httpx_client):
-    """Test successful graph streaming."""
+async def test_context_manager_creates_client():
+    """Test async context manager initializes HTTP client."""
+    client = LangGraphClient()
+    assert client._client is None
 
-    # Mock streaming response
-    async def mock_stream_iter():
-        yield b'data: {"messages": [{"content": "Chunk 1"}]}\n\n'
-        yield b'data: {"messages": [{"content": "Chunk 2"}]}\n\n'
-
-    mock_response = MagicMock()
-    mock_response.__aenter__ = AsyncMock(return_value=mock_response)
-    mock_response.__aexit__ = AsyncMock()
-    mock_response.aiter_bytes = mock_stream_iter
-
-    mock_httpx_client.stream.return_value = mock_response
-
-    with patch("httpx.AsyncClient", return_value=mock_httpx_client):
-        chunks = []
-        async for chunk in client.stream(
-            message="Test",
-            thread_id="test-thread",
-            user_id="test-user",
-        ):
-            chunks.append(chunk)
-
-    assert len(chunks) == 2
-    assert "Chunk 1" in chunks[0]
-    assert "Chunk 2" in chunks[1]
+    async with client:
+        assert client._client is not None
 
 
-@pytest.mark.skip(reason="Test API mismatch: stream() uses input_state, not message parameter")
 @pytest.mark.asyncio
-async def test_stream_empty_response(client, mock_httpx_client):
-    """Test graph streaming with empty response."""
-
-    async def mock_stream_iter():
-        return
-        yield  # Make it a generator
-
-    mock_response = MagicMock()
-    mock_response.__aenter__ = AsyncMock(return_value=mock_response)
-    mock_response.__aexit__ = AsyncMock()
-    mock_response.aiter_bytes = mock_stream_iter
-
-    mock_httpx_client.stream.return_value = mock_response
-
-    with patch("httpx.AsyncClient", return_value=mock_httpx_client):
-        chunks = []
-        async for chunk in client.stream(
-            message="Test",
-            thread_id="test-thread",
-            user_id="test-user",
-        ):
-            chunks.append(chunk)
-
-    assert len(chunks) == 0
+async def test_context_manager_closes_client():
+    """Test async context manager closes HTTP client on exit."""
+    client = LangGraphClient()
+    async with client:
+        pass  # HTTP client was created
+    assert client._client is None
 
 
-# ============================================
-# THREAD MANAGEMENT TESTS
-# ============================================
-
-
-@pytest.mark.skip(reason="Test API mismatch: ensure_thread() does not accept user_id or farm_id")
-@pytest.mark.asyncio
-async def test_ensure_thread_success(client, mock_httpx_client):
-    """Test successful thread creation."""
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"thread_id": "new-thread-123"}
-    mock_httpx_client.post.return_value = mock_response
-
-    with patch("httpx.AsyncClient", return_value=mock_httpx_client):
-        thread_id = await client.ensure_thread(
-            user_id="test-user",
-            farm_id="test-farm",
-        )
-
-    assert thread_id == "new-thread-123"
-
-
-@pytest.mark.skip(reason="Test API mismatch: ensure_thread() does not accept user_id parameter")
-@pytest.mark.asyncio
-async def test_ensure_thread_minimal(client, mock_httpx_client):
-    """Test thread creation with minimal parameters."""
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"thread_id": "new-thread-456"}
-    mock_httpx_client.post.return_value = mock_response
-
-    with patch("httpx.AsyncClient", return_value=mock_httpx_client):
-        thread_id = await client.ensure_thread(user_id="test-user")
-
-    assert thread_id == "new-thread-456"
+def test_client_property_raises_without_context():
+    """Test accessing client property without context raises error."""
+    client = LangGraphClient()
+    with pytest.raises(RuntimeError, match="not initialized"):
+        _ = client.client
 
 
 # ============================================
@@ -295,47 +108,341 @@ async def test_ensure_thread_minimal(client, mock_httpx_client):
 # ============================================
 
 
-@pytest.mark.skip(reason="Test needs context manager usage (async with)")
 @pytest.mark.asyncio
-async def test_health_success(client, mock_httpx_client):
+async def test_health_success(client, mock_async_client):
     """Test successful health check."""
     mock_response = MagicMock()
     mock_response.status_code = 200
-    mock_response.json.return_value = {"status": "healthy"}
-    mock_httpx_client.get.return_value = mock_response
+    mock_response.json.return_value = {"status": "ok"}
+    mock_response.raise_for_status = MagicMock()
+    mock_async_client.get = AsyncMock(return_value=mock_response)
 
-    with patch("httpx.AsyncClient", return_value=mock_httpx_client):
-        is_healthy = await client.health()
+    client._client = mock_async_client
 
-    assert is_healthy is True
+    result = await client.health()
+    assert result == {"status": "ok"}
+    mock_async_client.get.assert_called_once_with("/health")
 
 
-@pytest.mark.skip(reason="Test needs context manager usage (async with)")
 @pytest.mark.asyncio
-async def test_health_unhealthy(client, mock_httpx_client):
-    """Test health check when server is unhealthy."""
-    mock_httpx_client.get.side_effect = httpx.ConnectError("Connection failed")
+async def test_is_healthy_returns_true(client, mock_async_client):
+    """Test is_healthy returns True when status is ok."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"status": "ok"}
+    mock_response.raise_for_status = MagicMock()
+    mock_async_client.get = AsyncMock(return_value=mock_response)
 
-    with patch("httpx.AsyncClient", return_value=mock_httpx_client):
-        is_healthy = await client.health()
+    client._client = mock_async_client
 
-    assert is_healthy is False
+    result = await client.is_healthy()
+    assert result is True
 
 
-@pytest.mark.skip(reason="Test needs context manager usage (async with)")
 @pytest.mark.asyncio
-async def test_health_http_error(client, mock_httpx_client):
-    """Test health check with HTTP error."""
-    mock_httpx_client.get.side_effect = httpx.HTTPStatusError(
-        message="Server error",
+async def test_is_healthy_returns_false_on_error(client, mock_async_client):
+    """Test is_healthy returns False on connection error."""
+    mock_async_client.get = AsyncMock(side_effect=httpx.ConnectError("Connection refused"))
+    client._client = mock_async_client
+
+    result = await client.is_healthy()
+    assert result is False
+
+
+@pytest.mark.asyncio
+async def test_health_raises_on_http_error(client, mock_async_client):
+    """Test health() raises LangGraphClientError on HTTP error."""
+    mock_response = MagicMock()
+    mock_response.status_code = 500
+    mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+        "Server Error",
         request=MagicMock(),
         response=MagicMock(status_code=500),
     )
+    mock_async_client.get = AsyncMock(return_value=mock_response)
+    client._client = mock_async_client
 
-    with patch("httpx.AsyncClient", return_value=mock_httpx_client):
-        is_healthy = await client.health()
+    with pytest.raises(LangGraphClientError, match="Health check failed"):
+        await client.health()
 
-    assert is_healthy is False
+
+# ============================================
+# THREAD MANAGEMENT TESTS
+# ============================================
+
+
+@pytest.mark.asyncio
+async def test_create_thread_success(client, mock_async_client):
+    """Test successful thread creation."""
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {"thread_id": "new-thread-123"}
+    mock_response.raise_for_status = MagicMock()
+    mock_async_client.post = AsyncMock(return_value=mock_response)
+
+    client._client = mock_async_client
+
+    thread_id = await client.create_thread()
+    assert thread_id == "new-thread-123"
+    mock_async_client.post.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_create_thread_with_metadata(client, mock_async_client):
+    """Test thread creation with metadata."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"id": "thread-with-meta"}
+    mock_response.raise_for_status = MagicMock()
+    mock_async_client.post = AsyncMock(return_value=mock_response)
+
+    client._client = mock_async_client
+
+    thread_id = await client.create_thread(metadata={"user_id": "test-user"})
+    assert thread_id == "thread-with-meta"
+
+    # Verify metadata was passed
+    call_args = mock_async_client.post.call_args
+    assert call_args[1]["json"]["metadata"]["user_id"] == "test-user"
+
+
+@pytest.mark.asyncio
+async def test_ensure_thread_returns_existing(client, mock_async_client):
+    """Test ensure_thread returns existing thread ID without API call."""
+    client._client = mock_async_client
+
+    thread_id = await client.ensure_thread("existing-thread-123")
+    assert thread_id == "existing-thread-123"
+    mock_async_client.post.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_ensure_thread_creates_new_when_none(client, mock_async_client):
+    """Test ensure_thread creates new thread when None."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"id": "new-thread-456"}
+    mock_response.raise_for_status = MagicMock()
+    mock_async_client.post = AsyncMock(return_value=mock_response)
+
+    client._client = mock_async_client
+
+    thread_id = await client.ensure_thread(None)
+    assert thread_id == "new-thread-456"
+    mock_async_client.post.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_get_thread_state_success(client, mock_async_client):
+    """Test getting thread state."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"messages": [], "user_id": "test"}
+    mock_response.raise_for_status = MagicMock()
+    mock_async_client.get = AsyncMock(return_value=mock_response)
+
+    client._client = mock_async_client
+
+    state = await client.get_thread_state("thread-123")
+    assert state == {"messages": [], "user_id": "test"}
+    mock_async_client.get.assert_called_once_with("/threads/thread-123/state")
+
+
+@pytest.mark.asyncio
+async def test_get_thread_state_not_found(client, mock_async_client):
+    """Test getting state for non-existent thread."""
+    mock_response = MagicMock()
+    mock_response.status_code = 404
+    mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+        "Not Found", request=MagicMock(), response=MagicMock(status_code=404)
+    )
+    mock_async_client.get = AsyncMock(return_value=mock_response)
+
+    client._client = mock_async_client
+
+    with pytest.raises(LangGraphClientError, match="Thread not found"):
+        await client.get_thread_state("nonexistent-thread")
+
+
+@pytest.mark.asyncio
+async def test_delete_thread_success(client, mock_async_client):
+    """Test successful thread deletion."""
+    mock_response = MagicMock()
+    mock_response.raise_for_status = MagicMock()
+    mock_async_client.delete = AsyncMock(return_value=mock_response)
+
+    client._client = mock_async_client
+
+    result = await client.delete_thread("thread-to-delete")
+    assert result is True
+    mock_async_client.delete.assert_called_once_with("/threads/thread-to-delete")
+
+
+@pytest.mark.asyncio
+async def test_delete_thread_not_found_returns_false(client, mock_async_client):
+    """Test deleting non-existent thread returns False."""
+    mock_response = MagicMock()
+    mock_response.status_code = 404
+    mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+        "Not Found", request=MagicMock(), response=MagicMock(status_code=404)
+    )
+    mock_async_client.delete = AsyncMock(return_value=mock_response)
+
+    client._client = mock_async_client
+
+    result = await client.delete_thread("nonexistent")
+    assert result is False
+
+
+# ============================================
+# INVOKE TESTS
+# ============================================
+
+
+@pytest.mark.asyncio
+async def test_invoke_success(client, mock_async_client):
+    """Test successful graph invocation."""
+    # Mock create_thread response
+    create_thread_response = MagicMock()
+    create_thread_response.json.return_value = {"id": "test-thread"}
+    create_thread_response.raise_for_status = MagicMock()
+
+    # Mock invoke response
+    invoke_response = MagicMock()
+    invoke_response.json.return_value = {
+        "messages": [{"role": "assistant", "content": "Hello!"}],
+        "current_response": "Hello!",
+    }
+    invoke_response.raise_for_status = MagicMock()
+
+    mock_async_client.post = AsyncMock(side_effect=[create_thread_response, invoke_response])
+    client._client = mock_async_client
+
+    result = await client.invoke(
+        input_state={"messages": [{"role": "user", "content": "Hi"}]},
+        thread_id=None,
+    )
+
+    assert result["current_response"] == "Hello!"
+
+
+@pytest.mark.asyncio
+async def test_invoke_with_existing_thread(client, mock_async_client):
+    """Test invoke with existing thread ID."""
+    invoke_response = MagicMock()
+    invoke_response.json.return_value = {"current_response": "Response text"}
+    invoke_response.raise_for_status = MagicMock()
+
+    mock_async_client.post = AsyncMock(return_value=invoke_response)
+    client._client = mock_async_client
+
+    result = await client.invoke(
+        input_state={"messages": []},
+        thread_id="existing-thread",
+    )
+
+    assert result["current_response"] == "Response text"
+    # Only one POST call (invoke), no thread creation
+    assert mock_async_client.post.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_invoke_with_config(client, mock_async_client):
+    """Test invoke passes config correctly."""
+    invoke_response = MagicMock()
+    invoke_response.json.return_value = {}
+    invoke_response.raise_for_status = MagicMock()
+
+    mock_async_client.post = AsyncMock(return_value=invoke_response)
+    client._client = mock_async_client
+
+    await client.invoke(
+        input_state={"messages": []},
+        thread_id="thread-123",
+        config={"metadata": {"user_id": "test-user"}},
+    )
+
+    call_args = mock_async_client.post.call_args
+    assert call_args[1]["json"]["config"]["metadata"]["user_id"] == "test-user"
+
+
+@pytest.mark.asyncio
+async def test_invoke_http_error(client, mock_async_client):
+    """Test invoke raises LangGraphClientError on HTTP error."""
+    mock_response = MagicMock()
+    mock_response.status_code = 500
+    mock_response.text = "Internal Server Error"
+    mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+        "Server Error",
+        request=MagicMock(),
+        response=mock_response,
+    )
+    mock_async_client.post = AsyncMock(return_value=mock_response)
+    client._client = mock_async_client
+
+    with pytest.raises(LangGraphClientError, match="Graph invocation failed"):
+        await client.invoke(
+            input_state={"messages": []},
+            thread_id="thread-123",
+        )
+
+
+# ============================================
+# CHAT CONVENIENCE METHODS TESTS
+# ============================================
+
+
+@pytest.mark.asyncio
+async def test_chat_convenience_method(client, mock_async_client):
+    """Test high-level chat method."""
+    create_thread_response = MagicMock()
+    create_thread_response.json.return_value = {"id": "chat-thread"}
+    create_thread_response.raise_for_status = MagicMock()
+
+    invoke_response = MagicMock()
+    invoke_response.json.return_value = {"current_response": "Chat response"}
+    invoke_response.raise_for_status = MagicMock()
+
+    mock_async_client.post = AsyncMock(side_effect=[create_thread_response, invoke_response])
+    client._client = mock_async_client
+
+    result = await client.chat(
+        message="Hello, ALEM!",
+        user_id="farmer-123",
+    )
+
+    assert result["current_response"] == "Chat response"
+
+
+# ============================================
+# THREAD ID EXTRACTION TESTS
+# ============================================
+
+
+class TestExtractThreadId:
+    """Test thread ID extraction from various response formats."""
+
+    def test_extract_from_thread_id_key(self):
+        """Test extraction from thread_id key."""
+        data = {"thread_id": "abc123"}
+        assert LangGraphClient._extract_thread_id(data) == "abc123"
+
+    def test_extract_from_id_key(self):
+        """Test extraction from id key."""
+        data = {"id": "xyz789"}
+        assert LangGraphClient._extract_thread_id(data) == "xyz789"
+
+    def test_extract_from_nested_thread_object(self):
+        """Test extraction from nested thread object."""
+        data = {"thread": {"id": "nested-id"}}
+        assert LangGraphClient._extract_thread_id(data) == "nested-id"
+
+    def test_extract_from_nested_thread_id(self):
+        """Test extraction from nested thread_id."""
+        data = {"thread": {"thread_id": "nested-thread-id"}}
+        assert LangGraphClient._extract_thread_id(data) == "nested-thread-id"
+
+    def test_raises_on_missing_id(self):
+        """Test raises error when no ID found."""
+        data = {"other": "data"}
+        with pytest.raises(LangGraphClientError, match="Could not extract"):
+            LangGraphClient._extract_thread_id(data)
 
 
 # ============================================
@@ -343,80 +450,18 @@ async def test_health_http_error(client, mock_httpx_client):
 # ============================================
 
 
-def test_graph_url_construction(client):
-    """Test graph endpoint URL construction."""
-    # Test with default values
+def test_url_construction_default():
+    """Test default URL construction."""
     client = LangGraphClient()
     assert client.base_url == "http://localhost:2024"
     assert client.graph_id == "yonca_agent"
 
-    # Verify URL would be: http://localhost:2024/runs/stream
 
-
-def test_custom_base_url_construction():
-    """Test URL construction with custom base URL."""
-    client = LangGraphClient(base_url="https://api.example.com:8080")
-    assert client.base_url == "https://api.example.com:8080"
-
-
-# ============================================
-# TIMEOUT TESTS
-# ============================================
-
-
-@pytest.mark.skip(reason="Test uses direct httpx.AsyncClient instead of context manager")
-@pytest.mark.asyncio
-async def test_invoke_timeout(client, mock_httpx_client):
-    """Test graph invocation timeout."""
-    mock_httpx_client.post.side_effect = httpx.TimeoutException("Request timeout")
-
-    with patch("httpx.AsyncClient", return_value=mock_httpx_client):
-        with pytest.raises(httpx.TimeoutException):
-            await client.invoke(
-                message="Test",
-                thread_id="test-thread",
-                user_id="test-user",
-            )
-
-
-# ============================================
-# PAYLOAD CONSTRUCTION TESTS
-# ============================================
-
-
-@pytest.mark.skip(
-    reason="Test API mismatch: unexpected language parameter and different payload structure"
-)
-@pytest.mark.asyncio
-async def test_invoke_payload_structure(client, mock_httpx_client):
-    """Test that invoke constructs correct payload structure."""
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"messages": [{"role": "assistant", "content": "Response"}]}
-    mock_httpx_client.post.return_value = mock_response
-
-    with patch("httpx.AsyncClient", return_value=mock_httpx_client):
-        await client.invoke(
-            message="Test message",
-            thread_id="test-thread",
-            user_id="test-user",
-            language="az",
-        )
-
-    # Get the call arguments
-    call_args = mock_httpx_client.post.call_args
-    payload = call_args[1]["json"]
-
-    # Verify payload structure
-    assert "input" in payload
-    assert "config" in payload
-    assert "stream_mode" in payload
-
-    # Verify input structure
-    assert payload["input"]["user_input"] == "Test message"
-    assert payload["input"]["user_id"] == "test-user"
-    assert payload["input"]["language"] == "az"
-
-    # Verify config structure
-    assert "configurable" in payload["config"]
-    assert payload["config"]["configurable"]["thread_id"] == "test-thread"
+def test_url_construction_custom():
+    """Test custom URL construction."""
+    client = LangGraphClient(
+        base_url="https://langgraph.example.com:8080",
+        graph_id="custom_agent",
+    )
+    assert client.base_url == "https://langgraph.example.com:8080"
+    assert client.graph_id == "custom_agent"

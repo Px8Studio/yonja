@@ -19,46 +19,49 @@ services:
       - ./prompts:/app/prompts
       - ./data:/app/data
     environment:
-      # Deployment settings
-      - DEPLOYMENT_MODE=local
-      - ENVIRONMENT=development
-      - DEBUG=true
+      # Deployment Configuration (Two-Axis Model)
+      - YONCA_ENVIRONMENT=development
+      - YONCA_INFRASTRUCTURE_MODE=local
+      - YONCA_DEBUG=true
+      - YONCA_LANGGRAPH_REQUIRED=true
 
       # API settings
-      - API_HOST=0.0.0.0
-      - API_PORT=8000
-      - CORS_ORIGINS=http://localhost:3000,http://localhost:8501
+      - YONCA_API_HOST=0.0.0.0
+      - YONCA_API_PORT=8000
+      - YONCA_CORS_ORIGINS=http://localhost:3000,http://localhost:8501
 
-      # LLM Provider (use Ollama for local)
-      - LLM_PROVIDER=ollama
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - OLLAMA_MODEL=qwen3:4b
+      # LangGraph Connector
+      - YONCA_LANGGRAPH_BASE_URL=http://langgraph:2024
+      - YONCA_LANGGRAPH_GRAPH_ID=yonca_agent
 
-      # Database (PostgreSQL for production parity)
-      - DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
+      # LLM Provider
+      - YONCA_LLM_PROVIDER=ollama
+      - YONCA_OLLAMA_BASE_URL=http://ollama:11434
+      - YONCA_OLLAMA_MODEL=qwen3:4b
+
+      # Database
+      - YONCA_DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
 
       # Redis
-      - REDIS_URL=redis://redis:6379/0
+      - YONCA_REDIS_URL=redis://redis:6379/0
 
-      # Security (development only - change in production!)
-      - JWT_SECRET=dev-secret-change-in-production
-      - JWT_ALGORITHM=HS256
-      - JWT_EXPIRY_HOURS=24
+      # Security
+      - YONCA_JWT_SECRET=dev-secret-change-in-production
+      - YONCA_JWT_ALGORITHM=HS256
 
       # Observability
-      - LOG_LEVEL=DEBUG
-      - LOG_FORMAT=console
-      - PROMETHEUS_ENABLED=true
-
-      # Rate limiting
-      - RATE_LIMIT_REQUESTS_PER_MINUTE=100
-      - RATE_LIMIT_BURST=150
+      - YONCA_LANGFUSE_ENABLED=true
+      - YONCA_LANGFUSE_PUBLIC_KEY=${YONCA_LANGFUSE_PUBLIC_KEY:-}
+      - YONCA_LANGFUSE_SECRET_KEY=${YONCA_LANGFUSE_SECRET_KEY:-}
+      - YONCA_LANGFUSE_HOST=http://langfuse-server:3000
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
       ollama:
+        condition: service_healthy
+      langgraph:
         condition: service_healthy
     networks:
       - yonca-network
@@ -207,8 +210,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    profiles:
-      - langgraph  # Only runs with: docker-compose --profile langgraph up
+    # profiles:
+    #   - langgraph  # REMOVED: Now mandatory for all modes
 
   # ================================================
   # Redis Stack (Caching, Session Storage & LangGraph Checkpointing)
@@ -334,21 +337,34 @@ services:
       - ./prompts:/app/prompts
       - ./data:/app/data
     environment:
+      # Deployment settings
+      - YONCA_ENVIRONMENT=development
+      - YONCA_INFRASTRUCTURE_MODE=local
+      - YONCA_DEBUG=true
+      - YONCA_LANGGRAPH_REQUIRED=true
+
+      # Services
+      - YONCA_API_URL=http://api:8000
+      - YONCA_LANGGRAPH_BASE_URL=http://langgraph:2024
+
       # LLM settings
-      - LLM_PROVIDER=ollama
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - OLLAMA_MODEL=qwen3:4b
+      - YONCA_LLM_PROVIDER=ollama
+      - YONCA_OLLAMA_BASE_URL=http://ollama:11434
+      - YONCA_OLLAMA_MODEL=qwen3:4b
 
-      # Redis for checkpointing
-      - REDIS_URL=redis://redis:6379/0
+      # Redis
+      - YONCA_REDIS_URL=redis://redis:6379/0
 
-      # Database (PostgreSQL for data persistence)
-      - DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
+      # Database
+      - YONCA_DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
       - CHAINLIT_DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
       - ENABLE_DATA_PERSISTENCE=true
 
-      # Yonca API (optional, for API client pattern)
-      - YONCA_API_URL=http://api:8000
+      # Observability
+      - YONCA_LANGFUSE_ENABLED=true
+      - YONCA_LANGFUSE_PUBLIC_KEY=${YONCA_LANGFUSE_PUBLIC_KEY:-}
+      - YONCA_LANGFUSE_SECRET_KEY=${YONCA_LANGFUSE_SECRET_KEY:-}
+      - YONCA_LANGFUSE_HOST=http://langfuse-server:3000
 
       # Python path
       - PYTHONPATH=/app/src:/app/demo-ui
@@ -359,11 +375,15 @@ services:
         condition: service_healthy
       ollama:
         condition: service_healthy
+      langgraph:
+        condition: service_healthy
+      api:
+        condition: service_healthy
     networks:
       - yonca-network
     restart: unless-stopped
-    profiles:
-      - demo  # Only runs with: docker-compose --profile demo up
+    # profiles:
+    #   - demo  # REMOVED: Standard UI for the stack
 
 # ================================================
 # Networks

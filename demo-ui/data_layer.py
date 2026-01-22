@@ -59,19 +59,23 @@ def get_database_url() -> str:
 
 
 class YoncaDataLayer(SQLAlchemyDataLayer):
-    """Extended data layer with Yonca-specific functionality.
+    """Custom data layer with JSONB serialization fix.
 
-    Adds:
-    - ChatSettings persistence in user metadata
-    - Link to existing user_profiles table
-    - PostgreSQL-based file storage (no external blob storage needed)
-    - Full data residency: all files stored in the same PostgreSQL database
+    Chainlit's default SQLAlchemy layer has a bug where it tries to
+    JSON-serialize already-serialized strings in JSONB columns (tags, metadata).
 
-    File Storage:
-    - Audio, video, images, documents all stored in PostgreSQL BYTEA columns
-    - No dependency on S3, Azure, GCS or other external services
-    - Single database backup includes all data
+    This subclass fixes that by checking if the value is already a string
+    before attempting JSON serialization.
     """
+
+    def __init__(self, conninfo: str):
+        """Initialize with connection string only.
+
+        Args:
+            conninfo: Database connection string (e.g., postgresql+asyncpg://...)
+        """
+        super().__init__(conninfo=conninfo)
+        # REMOVED: show_logger parameter (deprecated in newer Chainlit versions)
 
     async def create_step(self, step_dict: dict) -> str:
         """Override to serialize tags before DB insert."""

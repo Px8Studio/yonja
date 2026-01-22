@@ -1,0 +1,176 @@
+# docker-compose.dev.yml
+# =========================================================================
+# Development Environment (Local)
+# Use with base configuration:
+# docker compose -f docker-compose.base.yml -f docker-compose.dev.yml up -d
+# =========================================================================
+
+services:
+  # ─────────────────────────────────────────────────────────────
+  # Ollama (Local LLM Server)
+  # ─────────────────────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: yonca-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+      - ./models:/app/models:ro
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - yonca-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ─────────────────────────────────────────────────────────────
+  # Model Setup (One-time initialization)
+  # ─────────────────────────────────────────────────────────────
+  model-setup:
+    image: ollama/ollama:latest
+    container_name: yonca-model-setup
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ./models:/app/models:ro
+    environment:
+      - OLLAMA_HOST=ollama:11434
+    networks:
+      - yonca-network
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "🚀 Setting up models..."
+        ollama pull qwen3:4b
+        echo "✅ Model setup complete!"
+    profiles:
+      - setup
+
+  # ─────────────────────────────────────────────────────────────
+  # LangGraph Dev Server (Required)
+  # ─────────────────────────────────────────────────────────────
+  langgraph:
+    build:
+      context: .
+      dockerfile: Dockerfile.langgraph
+    container_name: yonca-langgraph
+    ports:
+      - "2024:2024"
+    volumes:
+      - ./src:/app/src
+      - ./langgraph.json:/app/langgraph.json
+    environment:
+      - PYTHONPATH=/app/src
+      - YONCA_ENVIRONMENT=development
+      - YONCA_INFRASTRUCTURE_MODE=local
+      - YONCA_LANGGRAPH_REQUIRED=true
+      - LANGGRAPH_DEV_HOST=0.0.0.0
+      - LANGGRAPH_DEV_PORT=2024
+      - LANGGRAPH_POSTGRES_URI=postgresql://yonca:yonca_dev_password@postgres:5432/yonca
+      - YONCA_LLM_PROVIDER=ollama
+      - YONCA_OLLAMA_BASE_URL=http://ollama:11434
+      - YONCA_OLLAMA_MODEL=qwen3:4b
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    networks:
+      - yonca-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2024/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ─────────────────────────────────────────────────────────────
+  # Yonca AI API (FastAPI)
+  # ─────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      target: development
+      dockerfile: Dockerfile
+    container_name: yonca-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src
+      - ./prompts:/app/prompts
+      - ./data:/app/data
+    environment:
+      - YONCA_ENVIRONMENT=development
+      - YONCA_INFRASTRUCTURE_MODE=local
+      - YONCA_DEBUG=true
+      - YONCA_LANGGRAPH_REQUIRED=true
+      - YONCA_LANGGRAPH_BASE_URL=http://langgraph:2024
+      - YONCA_LLM_PROVIDER=ollama
+      - YONCA_OLLAMA_BASE_URL=http://ollama:11434
+      - YONCA_DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
+      - YONCA_REDIS_URL=redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      langgraph:
+        condition: service_healthy
+    networks:
+      - yonca-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ─────────────────────────────────────────────────────────────
+  # Chainlit Demo UI
+  # ─────────────────────────────────────────────────────────────
+  demo-ui:
+    build:
+      context: .
+      dockerfile: demo-ui/Dockerfile
+      target: development
+    container_name: yonca-demo-ui
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./src:/app/src
+      - ./demo-ui:/app/demo-ui
+      - ./prompts:/app/prompts
+      - ./data:/app/data
+    environment:
+      - YONCA_ENVIRONMENT=development
+      - YONCA_INFRASTRUCTURE_MODE=local
+      - YONCA_LANGGRAPH_REQUIRED=true
+      - YONCA_LANGGRAPH_BASE_URL=http://langgraph:2024
+      - YONCA_API_URL=http://api:8000
+      - YONCA_LLM_PROVIDER=ollama
+      - YONCA_OLLAMA_BASE_URL=http://ollama:11434
+      - YONCA_DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
+      - CHAINLIT_DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
+      - PYTHONPATH=/app/src:/app/demo-ui
+    depends_on:
+      postgres:
+        condition: service_healthy
+      langgraph:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    networks:
+      - yonca-network
+    restart: unless-stopped
+
+volumes:
+  ollama-data:
+    driver: local

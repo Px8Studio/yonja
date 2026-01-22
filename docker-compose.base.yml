@@ -1,0 +1,104 @@
+# docker-compose.base.yml
+# =========================================================================
+# Shared Infrastructure for Yonca AI
+# This file defines the core services that are common to all environments.
+# =========================================================================
+
+services:
+  # ─────────────────────────────────────────────────────────────
+  # PostgreSQL (Application Database)
+  # ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: yonca-postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=yonca
+      - POSTGRES_USER=yonca
+      - POSTGRES_PASSWORD=${YONCA_POSTGRES_PASSWORD:-yonca_dev_password}
+    networks:
+      - yonca-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yonca"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────────────────────
+  # Redis Stack (Caching & Checkpointing)
+  # ─────────────────────────────────────────────────────────────
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: yonca-redis
+    volumes:
+      - redis-data:/data
+    networks:
+      - yonca-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────────────────────
+  # Langfuse PostgreSQL Database
+  # ─────────────────────────────────────────────────────────────
+  langfuse-db:
+    image: postgres:15-alpine
+    container_name: yonca-langfuse-db
+    volumes:
+      - langfuse-db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=langfuse
+      - POSTGRES_USER=langfuse
+      - POSTGRES_PASSWORD=${LANGFUSE_POSTGRES_PASSWORD:-langfuse_secret}
+    networks:
+      - yonca-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U langfuse -d langfuse"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────────────────────
+  # Langfuse Server (Observability)
+  # ─────────────────────────────────────────────────────────────
+  langfuse-server:
+    image: langfuse/langfuse:2
+    container_name: yonca-langfuse
+    environment:
+      - DATABASE_URL=postgresql://langfuse:${LANGFUSE_POSTGRES_PASSWORD:-langfuse_secret}@langfuse-db:5432/langfuse
+      - DIRECT_URL=postgresql://langfuse:${LANGFUSE_POSTGRES_PASSWORD:-langfuse_secret}@langfuse-db:5432/langfuse
+      - NEXTAUTH_SECRET=${LANGFUSE_AUTH_SECRET:-yonca-langfuse-secret-change-in-prod}
+      - SALT=${LANGFUSE_SALT:-yonca-langfuse-salt-change-in-prod}
+      - NEXTAUTH_URL=http://localhost:3001
+      - TELEMETRY_ENABLED=false
+      - AUTH_DISABLE_SIGNUP=false
+    depends_on:
+      langfuse-db:
+        condition: service_healthy
+    networks:
+      - yonca-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/public/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  yonca-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local
+  langfuse-db-data:
+    driver: local
+  postgres-data:
+    driver: local

@@ -1,0 +1,21 @@
+# deploy/railway/railway.toml
+# =========================================================================
+# Railway Deployment Configuration
+# =========================================================================
+
+[build]
+builder = "docker"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "uvicorn yonca.api.main:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/health"
+healthcheckTimeout = 120
+restartPolicyType = "on_failure"
+
+[env]
+YONCA_ENVIRONMENT = "production"
+YONCA_INFRASTRUCTURE_MODE = "cloud"
+YONCA_LANGGRAPH_REQUIRED = "true"
+YONCA_LLM_PROVIDER = "groq"
+PYTHONPATH = "/app/src"

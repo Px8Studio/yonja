@@ -6,18 +6,53 @@ from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# ============================================================
+# Environment Configuration (Two-Axis Model)
+# ============================================================
+# Axis 1: Environment — WHAT stage of development
+# Axis 2: InfrastructureMode — WHERE it runs
+# Axis 3: LLMProvider — WHICH LLM backend (already exists below)
+# ============================================================
 
-class DeploymentMode(str, Enum):
-    """Deployment mode enum.
 
-    LOCAL: Local development with Ollama or Groq
-    OPEN_SOURCE: Open-source models (Llama, Qwen, Mistral) via Groq or self-hosted
-    CLOUD: Proprietary cloud models (Gemini, etc.)
+class Environment(str, Enum):
+    """Application environment — WHAT stage of development.
+
+    DEVELOPMENT: Local development with debug enabled, relaxed security
+    STAGING: Pre-production testing with production-like config
+    PRODUCTION: Production deployment with full security, optimized settings
     """
 
-    LOCAL = "local"  # Local development mode
-    OPEN_SOURCE = "open_source"  # Open-source models (fast with proper hardware)
-    CLOUD = "cloud"  # Proprietary cloud models
+    DEVELOPMENT = "development"
+    STAGING = "staging"
+    PRODUCTION = "production"
+
+
+class InfrastructureMode(str, Enum):
+    """Infrastructure mode — WHERE the application runs.
+
+    LOCAL: Running on developer laptop (Docker Desktop, podman, etc.)
+    CLOUD: Running in cloud infrastructure (Render, Railway, K8s, etc.)
+    """
+
+    LOCAL = "local"  # Developer laptop, local Docker
+    CLOUD = "cloud"  # Cloud infrastructure (Render, Railway, K8s)
+
+
+class DeploymentMode(str, Enum):
+    """DEPRECATED: Use Environment + InfrastructureMode instead.
+
+    Kept for backwards compatibility. Will be removed in future version.
+
+    Migration guide:
+    - LOCAL → Environment.DEVELOPMENT + InfrastructureMode.LOCAL
+    - OPEN_SOURCE → Environment.STAGING + LLMProvider.GROQ
+    - CLOUD → Environment.PRODUCTION + InfrastructureMode.CLOUD
+    """
+
+    LOCAL = "local"  # DEPRECATED: Use Environment.DEVELOPMENT
+    OPEN_SOURCE = "open_source"  # DEPRECATED: Use LLMProvider.GROQ
+    CLOUD = "cloud"  # DEPRECATED: Use InfrastructureMode.CLOUD
 
 
 class LLMProvider(str, Enum):
@@ -104,6 +139,19 @@ INFERENCE_TIER_SPECS = {
 }
 
 
+class AgentMode(str, Enum):
+    """ALEM Agent Modes — Dynamic Model Handling Strategies.
+
+    FAST: Speed-optimized (Smaller models, lower latency)
+    THINKING: Reasoning-optimized (CoT enabled / specific logic models)
+    PRO: Quality-optimized (Largest models, highest fidelity)
+    """
+
+    FAST = "fast"
+    THINKING = "thinking"
+    PRO = "pro"
+
+
 class Settings(BaseSettings):
     """Application settings with environment variable support."""
 
@@ -116,9 +164,18 @@ class Settings(BaseSettings):
     )
 
     # ===== Deployment =====
-    deployment_mode: DeploymentMode = DeploymentMode.OPEN_SOURCE
-    environment: str = "development"
+    # New two-axis model: Environment (stage) + InfrastructureMode (where)
+    environment: Environment = Environment.DEVELOPMENT
+    infrastructure_mode: InfrastructureMode = InfrastructureMode.LOCAL
     debug: bool = False
+
+    # DEPRECATED: Use environment + infrastructure_mode instead
+    deployment_mode: DeploymentMode = DeploymentMode.OPEN_SOURCE
+
+    # ===== LangGraph Server =====
+    # When True, LangGraph Dev Server is required (HTTP mode only)
+    # When False, allows fallback to in-process execution (direct mode)
+    langgraph_required: bool = True
 
     # ===== API =====
     api_host: str = "0.0.0.0"
@@ -195,25 +252,52 @@ class Settings(BaseSettings):
     langfuse_sample_rate: float = 1.0  # 1.0 = trace 100% of requests
 
     # ===== App Metadata =====
-    app_name: str = "Yonca AI"
+    app_name: str = "ALEM"
     app_version: str = "0.1.0"
 
     # ===== Localization =====
     default_language: str = "az"
 
+    # ===== New Two-Axis Properties =====
+    @property
+    def is_development(self) -> bool:
+        """Check if running in development environment."""
+        return self.environment == Environment.DEVELOPMENT
+
+    @property
+    def is_staging(self) -> bool:
+        """Check if running in staging environment."""
+        return self.environment == Environment.STAGING
+
+    @property
+    def is_production(self) -> bool:
+        """Check if running in production environment."""
+        return self.environment == Environment.PRODUCTION
+
+    @property
+    def is_local_infra(self) -> bool:
+        """Check if running on local infrastructure (Docker Desktop, etc.)."""
+        return self.infrastructure_mode == InfrastructureMode.LOCAL
+
+    @property
+    def is_cloud_infra(self) -> bool:
+        """Check if running on cloud infrastructure (Render, K8s, etc.)."""
+        return self.infrastructure_mode == InfrastructureMode.CLOUD
+
+    # ===== Legacy Properties (DEPRECATED) =====
     @property
     def is_local(self) -> bool:
-        """Check if running in local development mode."""
+        """DEPRECATED: Use is_local_infra instead."""
         return self.deployment_mode == DeploymentMode.LOCAL
 
     @property
     def is_open_source(self) -> bool:
-        """Check if using open-source models."""
+        """DEPRECATED: Check llm_provider instead."""
         return self.deployment_mode in (DeploymentMode.OPEN_SOURCE, DeploymentMode.LOCAL)
 
     @property
     def is_cloud(self) -> bool:
-        """Check if using proprietary cloud models."""
+        """DEPRECATED: Use is_cloud_infra instead."""
         return self.deployment_mode == DeploymentMode.CLOUD
 
     @property
@@ -242,6 +326,34 @@ class Settings(BaseSettings):
     def inference_tier_spec(self) -> dict:
         """Get the full specification for the current inference tier."""
         return INFERENCE_TIER_SPECS.get(self.inference_tier, {})
+
+    def get_model_for_mode(self, mode: AgentMode) -> str:
+        """Get the specific model to use for a requested AgentMode.
+
+        Dynamic selection based on available models in the current Tier.
+        """
+        # Default fallback models
+        fast_model = "qwen3:4b"
+        thinking_model = "qwen3:32b"  # or specialized CoT model
+        pro_model = "llama-3.3-70b-versatile"
+
+        # Tier-specific overrides could go here
+        if self.llm_provider == LLMProvider.GROQ:
+            fast_model = "llama-3.1-8b-instant"
+            thinking_model = "llama-3.3-70b-versatile"  # approx for now
+            pro_model = "llama-3.3-70b-versatile"
+
+        # Override with specific config variables if set (future proofing)
+        # ...
+
+        if mode == AgentMode.FAST:
+            return fast_model
+        elif mode == AgentMode.THINKING:
+            return thinking_model
+        elif mode == AgentMode.PRO:
+            return pro_model
+
+        return fast_model  # Fallback
 
 
 @lru_cache

@@ -20,16 +20,11 @@ Architecture:
 
 import json
 import os
-import uuid
-from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
 import chainlit as cl
 import structlog
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
-from chainlit.step import Step
-from chainlit.user import PersistedUser, User
-from sqlalchemy import text
 
 if TYPE_CHECKING:
     pass  # Type hints already imported above
@@ -78,248 +73,79 @@ class YoncaDataLayer(SQLAlchemyDataLayer):
     - Single database backup includes all data
     """
 
-    def __init__(self, conninfo: str, use_postgres_storage: bool = True, **kwargs):
-        """Initialize YoncaDataLayer with PostgreSQL file storage.
-
-        Args:
-            conninfo: PostgreSQL connection string
-            use_postgres_storage: If True, use PostgreSQL for file storage.
-                                  If False, disable file storage (warning suppressed).
-            **kwargs: Additional arguments passed to SQLAlchemyDataLayer
-        """
-        storage_provider = None
-
-        if use_postgres_storage and "postgresql" in conninfo:
-            try:
-                from storage_postgres import PostgresStorageClient
-
-                storage_provider = PostgresStorageClient(
-                    database_url=conninfo,
-                    # base_url can be set to serve files via API endpoint
-                    # For now, files are returned as base64 data URLs
-                    base_url=None,
-                )
-                logger.info(
-                    "postgres_file_storage_enabled",
-                    note="All files (audio, video, images, docs) stored in PostgreSQL",
-                )
-            except Exception as e:
-                logger.warning(
-                    "postgres_storage_init_failed",
-                    error=str(e),
-                    fallback="File storage disabled",
-                )
-
-        if storage_provider:
-            # Initialize with PostgreSQL storage
-            super().__init__(conninfo=conninfo, storage_provider=storage_provider, **kwargs)
-        else:
-            # Suppress the warning when no storage provider
-            import logging
-
-            chainlit_logger = logging.getLogger("chainlit")
-            original_level = chainlit_logger.level
-            chainlit_logger.setLevel(logging.ERROR)
-
-            try:
-                super().__init__(conninfo=conninfo, storage_provider=None, **kwargs)
-            finally:
-                chainlit_logger.setLevel(original_level)
-
-            logger.info(
-                "yonca_data_layer_initialized",
-                note="File storage disabled (PostgreSQL storage not available)",
-            )
-
-    async def get_user(self, identifier: str) -> PersistedUser | None:
-        """Get user by identifier (email from OAuth).
-
-        Also loads their persisted ChatSettings from metadata.
-        """
-        user = await super().get_user(identifier)
-        if user:
-            logger.debug(
-                "user_loaded",
-                identifier=identifier,
-                has_metadata=bool(user.metadata),
-            )
-        return user
-
-    async def create_user(self, user: User) -> PersistedUser | None:
-        """Override to use proper UUID and ISO string for createdAt."""
-        try:
-            async with self.async_session() as session:
-                # Use ISO string for createdAt (Chainlit uses TEXT column)
-                created_at = datetime.utcnow().isoformat()
-
-                # Generate proper UUID for id column
-                user_uuid = str(uuid.uuid4())
-
-                # Convert metadata to proper JSON string (not Python repr!)
-                if isinstance(user.metadata, str):
-                    metadata_json = user.metadata
-                elif user.metadata is None:
-                    metadata_json = "{}"
-                else:
-                    metadata_json = json.dumps(user.metadata)
-
-                await session.execute(
-                    text(
-                        """
-                        INSERT INTO users ("id", "identifier", "createdAt", "metadata")
-                        VALUES (:id, :identifier, :created_at, :metadata)
-                        ON CONFLICT ("identifier") DO UPDATE SET
-                            "metadata" = :metadata
-                    """
-                    ),
-                    {
-                        "id": user_uuid,
-                        "identifier": user.identifier,
-                        "created_at": created_at,
-                        "metadata": metadata_json,
-                    },
-                )
-                await session.commit()
-
-                logger.info(
-                    "user_created_or_updated",
-                    identifier=user.identifier,
-                    has_metadata=bool(metadata_json and metadata_json != "{}"),
-                )
-
-                # Fetch and return
-                return await self.get_user(user.identifier)
-
-        except Exception as e:
-            logger.error("create_user_failed", identifier=user.identifier, error=str(e))
-            return None
-
-    async def create_thread(self, thread) -> None:
-        """Create a thread with properly serialized tags for JSONB columns.
-
-        Args:
-            thread: Thread dictionary with metadata and tags
-        """
-        # Serialize tags if it's a list (asyncpg needs JSON string for JSONB)
-        if "tags" in thread and isinstance(thread["tags"], list):
-            thread["tags"] = json.dumps(thread["tags"])
-            logger.debug(
-                "thread_tags_serialized",
-                thread_id=thread.get("id"),
-                tags_count=len(json.loads(thread["tags"])) if thread["tags"] else 0,
-            )
-
-        return await super().create_thread(thread)
-
-    async def update_thread(self, thread_id: str, **kwargs) -> None:
-        """Update a thread with properly serialized tags.
-
-        Args:
-            thread_id: Thread ID to update
-            **kwargs: Fields to update, including optional tags
-        """
-        # Serialize tags if it's a list
-        if "tags" in kwargs and isinstance(kwargs["tags"], list):
-            kwargs["tags"] = json.dumps(kwargs["tags"])
-            logger.debug(
-                "thread_tags_serialized_update",
-                thread_id=thread_id,
-                tags_count=len(json.loads(kwargs["tags"])) if kwargs["tags"] else 0,
-            )
-
-        return await super().update_thread(thread_id, **kwargs)
-
-    async def create_step(self, step_dict) -> None:
-        """Create a step with properly serialized tags.
-
-        Args:
-            step_dict: Step dictionary with metadata and tags
-        """
-        # Serialize tags if it's a list (asyncpg needs JSON string for JSONB)
-        if "tags" in step_dict and isinstance(step_dict["tags"], list):
-            step_dict["tags"] = json.dumps(step_dict["tags"])
-            logger.debug(
-                "step_tags_serialized",
-                step_id=step_dict.get("id"),
-                tags_count=len(json.loads(step_dict["tags"])) if step_dict["tags"] else 0,
-            )
+    async def create_step(self, step_dict: dict) -> str:
+        """Override to serialize tags before DB insert."""
+        # Serialize tags to JSON string
+        if "tags" in step_dict:
+            step_dict["tags"] = _serialize_tags(step_dict["tags"])
 
         return await super().create_step(step_dict)
 
-    async def update_step(self, step_dict) -> None:
-        """Update a step with properly serialized tags.
-
-        Args:
-            step_dict: Step dictionary with updated fields
-        """
-        # Serialize tags if it's a list
-        if "tags" in step_dict and isinstance(step_dict["tags"], list):
-            step_dict["tags"] = json.dumps(step_dict["tags"])
-            logger.debug(
-                "step_tags_serialized_update",
-                step_id=step_dict.get("id"),
-                tags_count=len(json.loads(step_dict["tags"])) if step_dict["tags"] else 0,
-            )
+    async def update_step(self, step_dict: dict) -> None:
+        """Override to serialize tags before DB update."""
+        if "tags" in step_dict:
+            step_dict["tags"] = _serialize_tags(step_dict["tags"])
 
         return await super().update_step(step_dict)
 
-    async def update_user_metadata(
-        self,
-        identifier: str,
-        metadata: dict,
-    ) -> bool:
-        """Update user metadata (used for persisting ChatSettings).
 
-        This is called when user changes settings in the sidebar.
+# Add tag serialization helper
+def _serialize_tags(tags: list | str | None) -> str | None:
+    """Convert tags list to JSON string for PostgreSQL TEXT column.
 
-        Args:
-            identifier: User's email (from OAuth)
-            metadata: Updated metadata dict including chat_settings
+    Chainlit's SQLAlchemy layer passes tags as Python lists,
+    but PostgreSQL TEXT columns need JSON strings.
 
-        Returns:
-            True if update succeeded
-        """
+    Args:
+        tags: List of tag strings or already-serialized JSON
+
+    Returns:
+        JSON string or None
+    """
+    if tags is None:
+        return None
+
+    if isinstance(tags, str):
+        # Already serialized
+        return tags
+
+    if isinstance(tags, list):
+        # Serialize list to JSON
         try:
-            # Get existing user
-            user = await self.get_user(identifier)
-            if not user:
-                logger.warning("update_metadata_user_not_found", identifier=identifier)
-                return False
+            return json.dumps(tags)
+        except (TypeError, ValueError):
+            logger.warning("failed_to_serialize_tags", tags=tags)
+            return json.dumps([])
 
-            # Merge metadata (keep existing, update with new)
-            existing_metadata = user.metadata if isinstance(user.metadata, dict) else {}
-            merged_metadata = {**existing_metadata, **metadata}
+    return None
 
-            # Convert to proper JSON string
-            metadata_json = json.dumps(merged_metadata)
 
-            # Use SQLAlchemy to update
-            async with self.async_session() as session:
-                await session.execute(
-                    text("UPDATE users SET metadata = :metadata WHERE identifier = :identifier"),
-                    {"metadata": metadata_json, "identifier": identifier},
-                )
-                await session.commit()
+# Patch Chainlit's SQLAlchemyDataLayer to serialize tags
+_original_create_step = None
 
-            logger.info(
-                "user_metadata_updated",
-                identifier=identifier,
-                settings_keys=list(metadata.get("chat_settings", {}).keys()),
-            )
-            return True
 
-        except Exception as e:
-            logger.error("update_metadata_error", error=str(e), identifier=identifier)
-            return False
+def _patch_chainlit_step_serialization():
+    """Patch Chainlit's create_step to serialize tags before DB insert."""
+    global _original_create_step
 
-    async def upsert_step(self, step: "Step"):
-        """Serialize tags to JSON string for JSONB column compatibility with asyncpg."""
-        if isinstance(step.tags, list):
-            # asyncpg requires JSON-serialized string for JSONB columns, not Python list
-            step.tags = json.dumps(step.tags) if step.tags else "[]"
-        elif step.tags is None:
-            step.tags = "[]"
-        return await super().upsert_step(step)
+    from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
+
+    if _original_create_step is not None:
+        return  # Already patched
+
+    _original_create_step = SQLAlchemyDataLayer.create_step
+
+    async def create_step_patched(self, step_dict: dict) -> str:
+        """Patched create_step with tag serialization."""
+        # Serialize tags if present
+        if "tags" in step_dict and isinstance(step_dict["tags"], list):
+            step_dict["tags"] = _serialize_tags(step_dict["tags"])
+
+        # Call original method
+        return await _original_create_step(self, step_dict)
+
+    SQLAlchemyDataLayer.create_step = create_step_patched
+    logger.info("chainlit_step_serialization_patched")
 
 
 # ============================================
@@ -482,40 +308,37 @@ async def save_user_settings(user: cl.User | None, settings: dict) -> bool:
 
 
 async def save_conversation_context(
-    user_id: str,
+    user: cl.User | None,
     thread_id: str,
-    context: dict,
+    scenario_context: dict | None,
 ) -> bool:
-    """Persist conversation context to database.
-
-    Stores the conversation parameters that define agent behavior:
-    crop type, region, expertise level, etc. These are NOT physical
-    farm plans but rather agent acting instructions.
-
-    Called when chat settings change to track conversation evolution.
+    """Save conversation context to database.
 
     Args:
-        user_id: User identifier (email)
-        thread_id: Chainlit thread ID
-        context: ConversationContext dict with parameters
+        user: Chainlit user
+        thread_id: Thread/conversation ID
+        scenario_context: Scenario parameters dict
 
     Returns:
         True if saved successfully
     """
+    if not user or not scenario_context:
+        return False
+
     data_layer = get_data_layer()
-    if not data_layer:
-        logger.debug("save_context_skipped_no_datalayer")
+    if not data_layer or not data_layer.engine:
+        logger.warning("save_context_no_datalayer")
         return False
 
     try:
-        async with data_layer.async_session() as session:
-            # Generate UUID for new context
-            scenario_id = str(uuid.uuid4())
+        from sqlalchemy import text
 
-            # Insert into conversation_contexts (or view for backward compat)
-            await session.execute(
-                text(
-                    """
+        # Serialize list fields to JSON
+        action_categories = json.dumps(scenario_context.get("action_categories", []))
+        expertise_areas = json.dumps(scenario_context.get("expertise_areas", []))
+
+        stmt = text(
+            """
                     INSERT INTO conversation_contexts (
                         scenario_id, user_id, thread_id,
                         crop_category, specific_crop, region,
@@ -550,91 +373,82 @@ async def save_conversation_context(
                         settings_version = EXCLUDED.settings_version,
                         updated_at = CURRENT_TIMESTAMP
                     """
-                ),
+        )
+
+        async with data_layer.engine.begin() as conn:
+            await conn.execute(
+                stmt,
                 {
-                    "scenario_id": scenario_id,
-                    "user_id": user_id,
+                    "scenario_id": f"{user.identifier}:{thread_id}",
+                    "user_id": user.identifier,
                     "thread_id": thread_id,
-                    "crop_category": context.get("crop_category"),
-                    "specific_crop": context.get("specific_crop"),
-                    "region": context.get("region"),
-                    "farm_size_ha": context.get("farm_size_ha"),
-                    "experience_level": context.get("experience_level"),
-                    "soil_type": context.get("soil_type"),
-                    "irrigation_type": context.get("irrigation_type"),
-                    "current_month": context.get("current_month"),
-                    "action_categories": json.dumps(context.get("action_categories", [])),
-                    "expertise_areas": json.dumps(context.get("expertise_areas", [])),
-                    "smart_question": context.get("smart_question"),
-                    "user_confirmed": context.get("user_confirmed", False),
-                    "conversation_stage": context.get("conversation_stage", "initial"),
-                    "settings_version": context.get("settings_version", 1),
+                    "crop_category": scenario_context.get("crop_category"),
+                    "specific_crop": scenario_context.get("specific_crop"),
+                    "region": scenario_context.get("region"),
+                    "farm_size_ha": scenario_context.get("farm_size_ha"),
+                    "experience_level": scenario_context.get("experience_level"),
+                    "soil_type": scenario_context.get("soil_type"),
+                    "irrigation_type": scenario_context.get("irrigation_type"),
+                    "current_month": scenario_context.get("current_month"),
+                    "action_categories": action_categories,
+                    "expertise_areas": expertise_areas,
+                    "smart_question": scenario_context.get("smart_question"),
+                    "user_confirmed": scenario_context.get("user_confirmed", False),
+                    "conversation_stage": scenario_context.get("conversation_stage"),
+                    "settings_version": scenario_context.get("settings_version", 1),
                 },
             )
-            await session.commit()
 
-            logger.info(
-                "conversation_context_saved",
-                scenario_id=scenario_id,
-                user_id=user_id,
-                thread_id=thread_id,
-                crop=context.get("specific_crop"),
-                stage=context.get("conversation_stage"),
-            )
-            return True
+        logger.info("conversation_context_saved", user_id=user.identifier, thread_id=thread_id)
+        return True
 
     except Exception as e:
-        logger.error("save_scenario_error", error=str(e), exc_info=True)
+        logger.error("save_context_error", error=str(e), user_id=user.identifier)
         return False
 
 
 async def load_conversation_context(user_id: str, thread_id: str) -> dict | None:
     """Load conversation context from database.
 
-    Retrieves the conversation parameters that define agent behavior.
-    These parameters include crop type, region, expertise level, etc.
-
-    Called on chat resume to restore conversation context.
-
     Args:
-        user_id: User identifier (email)
-        thread_id: Chainlit thread ID
+        user_id: User identifier
+        thread_id: Thread/conversation ID
 
     Returns:
-        ConversationContext dict or None if not found
+        Scenario context dict or None if not found
     """
     data_layer = get_data_layer()
-    if not data_layer:
+    if not data_layer or not data_layer.engine:
+        logger.warning("load_context_no_datalayer")
         return None
 
     try:
-        async with data_layer.async_session() as session:
-            result = await session.execute(
-                text(
-                    """
-                    SELECT
-                        crop_category, specific_crop, region,
-                        farm_size_ha, experience_level,
-                        soil_type, irrigation_type, current_month,
-                        action_categories, expertise_areas,
-                        smart_question, user_confirmed,
-                        conversation_stage, settings_version
-                    FROM conversation_contexts
-                    WHERE user_id = :user_id AND thread_id = :thread_id
-                    ORDER BY updated_at DESC
-                    LIMIT 1
-                    """
-                ),
+        from sqlalchemy import text
+
+        stmt = text(
+            """
+            SELECT crop_category, specific_crop, region,
+                   farm_size_ha, experience_level,
+                   soil_type, irrigation_type, current_month,
+                   action_categories, expertise_areas,
+                   smart_question, user_confirmed,
+                   conversation_stage, settings_version
+            FROM conversation_contexts
+            WHERE user_id = :user_id AND thread_id = :thread_id
+        """
+        )
+
+        async with data_layer.engine.begin() as conn:
+            result = await conn.execute(
+                stmt,
                 {"user_id": user_id, "thread_id": thread_id},
             )
-            row = result.fetchone()
+            row = result.first()
 
             if not row:
-                logger.debug("no_context_found", user_id=user_id, thread_id=thread_id)
                 return None
 
-            # Convert Row to dict
-            context = {
+            return {
                 "crop_category": row[0],
                 "specific_crop": row[1],
                 "region": row[2],
@@ -650,19 +464,13 @@ async def load_conversation_context(user_id: str, thread_id: str) -> dict | None
                 "conversation_stage": row[12],
                 "settings_version": row[13],
             }
-
-            logger.info(
-                "conversation_context_loaded",
-                user_id=user_id,
-                thread_id=thread_id,
-                crop=context["specific_crop"],
-                stage=context["conversation_stage"],
-            )
-            return context
-
     except Exception as e:
-        logger.error("load_context_error", error=str(e), exc_info=True)
+        logger.error("load_context_error", error=str(e), user_id=user_id)
         return None
+
+
+# Patch on module load
+_patch_chainlit_step_serialization()
 
 
 # Backward compatibility aliases

@@ -34,10 +34,11 @@ persist_user_env = false
 
 # Whether to mask user environment variables (API keys) in the UI with password type
 # Set to true to show API keys as ***, false to show them as plain text
-mask_user_env = false
+mask_user_env = true
 
 # Authorized origins
-allow_origins = ["*"]
+# FIXED: Explicit origins prevent CORS auth failures with cookie-based authentication
+allow_origins = ["http://localhost:8000", "http://localhost:3000", "https://zekalab.info", "https://yonca.ai"]
 
 # Product name shown in UI header
 name = "ALEM 1"
@@ -70,7 +71,8 @@ allow_thread_sharing = true
 favorites = true
 
 # Prompt Playground - allows users to experiment with prompts
-prompt_playground = true
+# RECOMMENDED: Disabled for end-users/farmers in production
+prompt_playground = false
 
 # ════════════════════════════════════════════════════════════════════════════
 # CHAT SETTINGS LOCATION
@@ -98,10 +100,10 @@ reaction_on_message_received = false
     #    accept = ["image/*", "audio/*", "video/*"]
     # 3. For specific file extensions:
     #    accept = { "application/octet-stream" = [".xyz", ".pdb"] }
-    # Note: Using "*/*" is not recommended as it may cause browser warnings
-    accept = ["*/*"]
-    max_files = 20
-    max_size_mb = 500
+    # RECOMMENDED: Restricted for better UX and security
+    accept = ["image/*", "application/pdf"]
+    max_files = 10
+    max_size_mb = 100
 
 [features.audio]
     # Enable audio features for voice input (farmers can speak questions)
@@ -155,13 +157,15 @@ name = "Yonca AI"
 # layout = "wide"
 
 # Sidebar open by default for settings access
-default_sidebar_state = "open"
+# RECOMMENDED: Collapsed to maximize mobile screen space
+default_sidebar_state = "collapsed"
 
 # Description of the assistant. This is used for HTML tags and SEO.
 description = "ALEM 1 — Yonca AI Assistant | Sizin ağıllı kənd təsərrüfatı köməkçiniz"
 
 # Chain of Thought (CoT) display mode. Can be "hidden", "tool_call" or "full".
-cot = "full"
+# CHANGED: "tool_call" provides professional "thinking" status without clutter
+cot = "tool_call"
 
 # Specify a CSS file that can be used to customize the user interface.
 # The CSS file can be served from the public directory or via an external link.
@@ -176,7 +180,8 @@ custom_css = "/public/custom.css"
 custom_js = "/public/custom.js"
 
 # The style of alert boxes. Can be "classic" or "modern".
-alert_style = "classic"
+# RECOMMENDED: Softer UI for mobile/web apps
+alert_style = "modern"
 
 # Specify additional attributes for custom JS file
 # custom_js_attributes = "async type = \"module\""

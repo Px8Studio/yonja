@@ -139,9 +139,6 @@ from alem_persona_db import (  # noqa: E402
 )
 from chainlit.input_widget import MultiSelect, NumberInput, Select, Switch  # noqa: E402
 from chainlit.types import ThreadDict  # noqa: E402
-from components.insights_dashboard import (  # noqa: E402
-    render_dashboard_sidebar,
-)
 from components.spinners import (  # noqa: E402
     LoadingStates,
 )
@@ -155,12 +152,6 @@ from data_layer import (  # noqa: E402
     save_user_settings,
 )
 from langchain_core.runnables import RunnableConfig  # noqa: E402
-
-# Import insights dashboard components  # noqa: E402
-from services.langfuse_insights import (  # noqa: E402
-    get_insights_client,
-    get_user_dashboard_data,
-)
 from services.yonca_client import YoncaClient  # noqa: E402
 
 # Import from main yonca package (for direct mode)  # noqa: E402
@@ -592,167 +583,6 @@ def detect_expertise_from_persona(persona_dict: dict | None) -> list[str]:
     return sorted(list(expertise))
 
 
-# Profile-specific starters
-PROFILE_STARTERS = {
-    "general": [
-        cl.Starter(
-            label="📅 Həftəlik plan",
-            message="Bu həftə üçün iş planı hazırla",
-            icon="/public/elements/calendar.svg",
-        ),
-        cl.Starter(
-            label="🌤️ Hava proqnozu",
-            message="Bu günkü hava proqnozu necədir?",
-            icon="/public/elements/weather.svg",
-        ),
-        cl.Starter(
-            label="💧 Suvarma vaxtı",
-            message="Sahəmi nə vaxt suvarmalıyam?",
-            icon="/public/elements/water.svg",
-        ),
-        cl.Starter(
-            label="💰 Subsidiyalar",
-            message="Hansı subsidiyalardan yararlana bilərəm?",
-            icon="/public/elements/money.svg",
-        ),
-    ],
-    "cotton": [
-        cl.Starter(
-            label="🌱 Pambıq əkini",
-            message="Pambıq əkini üçün ən yaxşı vaxt nədir?",
-            icon="/public/elements/plant.svg",
-        ),
-        cl.Starter(
-            label="🐛 Pambıq zərərvericisi",
-            message="Pambıqda hansı zərərvericilər var?",
-            icon="/public/elements/bug.svg",
-        ),
-        cl.Starter(
-            label="💧 Pambıq suvarması",
-            message="Pambıq üçün suvarma norması nə qədərdir?",
-            icon="/public/elements/water.svg",
-        ),
-        cl.Starter(
-            label="🧪 Pambıq gübrəsi",
-            message="Pambıq üçün hansı gübrələr lazımdır?",
-            icon="/public/elements/fertilizer.svg",
-        ),
-    ],
-    "wheat": [
-        cl.Starter(
-            label="🌾 Buğda əkini",
-            message="Payızlıq buğda nə vaxt əkilir?",
-            icon="/public/elements/wheat.svg",
-        ),
-        cl.Starter(
-            label="🌡️ Don zədəsi",
-            message="Buğdanı dondan necə qorumaq olar?",
-            icon="/public/elements/frost.svg",
-        ),
-        cl.Starter(
-            label="🌿 Alaq otları",
-            message="Buğdada alaq otlarına qarşı nə etmək olar?",
-            icon="/public/elements/weed.svg",
-        ),
-        cl.Starter(
-            label="📊 Buğda məhsuldarlığı",
-            message="Buğda məhsuldarlığını necə artırmaq olar?",
-            icon="/public/elements/chart.svg",
-        ),
-    ],
-    "orchard": [
-        cl.Starter(
-            label="🍎 Alma bağı",
-            message="Alma ağaclarının qulluğu necə olmalıdır?",
-            icon="/public/elements/apple.svg",
-        ),
-        cl.Starter(
-            label="🍇 Üzüm bağı",
-            message="Üzüm bağının budaması nə vaxt olmalıdır?",
-            icon="/public/elements/grape.svg",
-        ),
-        cl.Starter(
-            label="🌸 Çiçəklənmə",
-            message="Meyvə ağaclarının çiçəklənmə dövrü nə vaxtdır?",
-            icon="/public/elements/flower.svg",
-        ),
-        cl.Starter(
-            label="🪲 Meyvə zərərvericisi",
-            message="Meyvə ağaclarında hansı zərərvericilər var?",
-            icon="/public/elements/bug.svg",
-        ),
-    ],
-    "vegetable": [
-        cl.Starter(
-            label="🍅 Pomidor əkini",
-            message="Pomidor əkini üçün torpaq necə hazırlanır?",
-            icon="/public/elements/tomato.svg",
-        ),
-        cl.Starter(
-            label="🥒 Xıyar becərilməsi",
-            message="Xıyar becərilməsinin sirləri nədir?",
-            icon="/public/elements/cucumber.svg",
-        ),
-        cl.Starter(
-            label="🌶️ İstixana",
-            message="İstixanada tərəvəz yetişdirmək necə olur?",
-            icon="/public/elements/greenhouse.svg",
-        ),
-        cl.Starter(
-            label="🥔 Kartof əkini",
-            message="Kartof əkini üçün ən yaxşı vaxt nə vaxtdır?",
-            icon="/public/elements/potato.svg",
-        ),
-    ],
-    "livestock": [
-        cl.Starter(
-            label="🐄 Mal-qara",
-            message="Mal-qaranın yemləmə rejimi necə olmalıdır?",
-            icon="/public/elements/cow.svg",
-        ),
-        cl.Starter(
-            label="🐑 Qoyun",
-            message="Qoyunların sağlamlığı üçün nə etmək lazımdır?",
-            icon="/public/elements/sheep.svg",
-        ),
-        cl.Starter(
-            label="🐝 Arıçılıq",
-            message="Arı ailələrinin qışlaması necə təşkil olunur?",
-            icon="/public/elements/bee.svg",
-        ),
-        cl.Starter(
-            label="🏥 Baytarlıq",
-            message="Heyvanların peyvəndləmə cədvəli necədir?",
-            icon="/public/elements/vet.svg",
-        ),
-    ],
-    "advanced": [
-        cl.Starter(
-            label="📊 Torpaq analizi",
-            message="Torpaq analizinin nəticələrini şərh et",
-            icon="/public/elements/soil.svg",
-        ),
-        cl.Starter(
-            label="🔬 Xəstəlik diaqnozu",
-            message="Bu bitkidə hansı xəstəlik var?",
-            icon="/public/elements/microscope.svg",
-        ),
-        cl.Starter(
-            label="📈 ROI hesablaması",
-            message="Əkin planımın rentabelliyini hesabla",
-            icon="/public/elements/calculator.svg",
-        ),
-        cl.Starter(
-            label="🗺️ Peyk məlumatları",
-            message="Sahəmin NDVI peyk şəkillərini göstər",
-            icon="/public/elements/satellite.svg",
-        ),
-    ],
-}
-
-# Alias "expert" to "advanced" for chat profile compatibility
-PROFILE_STARTERS["expert"] = PROFILE_STARTERS["advanced"]
-
 # Profile-specific system prompt additions
 PROFILE_PROMPTS = {
     "general": "",  # Use default system prompt
@@ -1010,7 +840,6 @@ async def chat_profiles(current_user: cl.User | None = None):
                 markdown_description=config["description"],
                 icon="/public/avatars/alem_1.svg",
                 default=True,
-                starters=PROFILE_STARTERS.get("general", []),
             )
         )
 
@@ -1022,54 +851,10 @@ async def chat_profiles(current_user: cl.User | None = None):
                     name=model_name,
                     markdown_description=config["description"],
                     icon="/public/avatars/alem_1.svg",
-                    starters=PROFILE_STARTERS.get("general", []),
                 )
             )
 
     return profiles
-
-
-# ============================================
-# STARTERS (Context-aware conversation prompts)
-# ============================================
-# Starters adapt based on expertise areas selected in Chat Settings.
-# Chat Profiles are now used for LLM model selection, not crop specialization.
-
-
-@cl.set_starters
-async def set_starters(current_user: cl.User | None = None, chat_profile: str | None = None):
-    """Return starters based on expertise areas from settings.
-
-    Since Chat Profiles are now used for LLM model selection,
-    starters are determined by expertise areas in settings only.
-
-    Args:
-        current_user: The authenticated user (from OAuth)
-        chat_profile: The selected LLM model name (not used for starters)
-    """
-    # Get expertise areas from user session settings
-    try:
-        settings = cl.user_session.get("chat_settings", {})
-    except Exception:
-        settings = {}
-
-    expertise_areas = settings.get("expertise_areas", [])
-
-    if expertise_areas:
-        starters = []
-        seen_labels = set()
-
-        for area in expertise_areas:
-            if area in PROFILE_STARTERS:
-                for starter in PROFILE_STARTERS[area]:
-                    if starter.label not in seen_labels:
-                        starters.append(starter)
-                        seen_labels.add(starter.label)
-
-        return starters[:6] if starters else PROFILE_STARTERS["general"]
-
-    # Default to general agriculture starters
-    return PROFILE_STARTERS["general"]
 
 
 # ============================================
@@ -2026,30 +1811,14 @@ When providing recommendations, consider these farm-specific details.
 # ============================================
 # DASHBOARD WELCOME (Agricultural Command Center)
 # ============================================
-# WELCOME EXPERIENCE ARCHITECTURE:
-# After OAuth login, users see TWO welcome elements:
+# WELCOME EXPERIENCE:
+# After OAuth login, users see a single centered welcome message in main chat.
 #
-# 1. MAIN CHAT (this function): send_dashboard_welcome()
-#    - Primary greeting (personalized with user's first name)
-#    - Farm status display (normal/attention indicators)
-#    - Quick action buttons (Weather, Subsidy, Irrigation)
-#    - Focus: Immediate interaction, farm context, action-oriented
-#
-# 2. SIDEBAR: render_dashboard_sidebar() (from insights_dashboard.py)
-#    - Usage analytics (conversations, tokens, streak)
-#    - Activity heatmap (last 90 days)
-#    - Link to Langfuse for drill-down
-#    - Focus: Secondary context, non-intrusive, analytics
-#
-# Why Two Messages?
-# - Main chat: Conversation-focused (users talk to ALEM here)
-# - Sidebar: Data-focused (users check stats here)
-# - Separation respects Chainlit's UI philosophy (chat ≠ sidebar)
-#
-# Render Sequence (in @on_chat_start):
-#   1. Load Langfuse stats
-#   2. Render sidebar dashboard (non-blocking background context)
-#   3. Send main welcome message (primary user attention)
+# send_dashboard_welcome()
+#   - Primary greeting (personalized with user's first name)
+#   - Farm status display (normal/attention indicators)
+#   - Quick action buttons (Weather, Subsidy, Irrigation)
+#   - Focus: Clean, centered interface for immediate interaction
 #
 # BRANDING NOTE: Use "ALEM" as primary agent name. "Yonca" is the internal project name.
 # AVOID: "Sidecar" (internal term), "DigiRella", "ZekaLab" (business names)
@@ -2059,8 +1828,6 @@ async def send_dashboard_welcome(user: cl.User | None = None):
 
     This is the FIRST message users see after logging in (main chat).
     Displays personalized greeting, farm context, and action buttons.
-
-    Companion to: render_dashboard_sidebar() (analytics in sidebar)
 
     Creates a "Warm Handshake" experience that transforms the chat from
     a generic interface into an agricultural command center.
@@ -2572,49 +2339,8 @@ async def on_chat_start():
     # ─────────────────────────────────────────────────────────────
     # WELCOME EXPERIENCE (Two-Part Strategy)
     # ─────────────────────────────────────────────────────────────
-    # PART 1: Activity Dashboard (Sidebar) - Background context
-    # PART 2: Welcome Message (Main Chat) - Primary interaction
-    # See: DASHBOARD WELCOME comment block for full architecture
+    # WELCOME MESSAGE (Main Chat) - Primary interaction
     # ─────────────────────────────────────────────────────────────
-    try:
-        insights_client = get_insights_client()
-        if insights_client.is_configured:
-            user_insights = await get_user_dashboard_data(user_id, days=90)
-            cl.user_session.set("user_insights", user_insights)
-
-            # PART 1: Render the activity dashboard in sidebar (non-intrusive)
-            try:
-                # Get persona and expertise for ALEM mirror
-                alem_persona_dict = cl.user_session.get("alem_persona")
-                expertise_areas = cl.user_session.get("expertise_areas")
-
-                await render_dashboard_sidebar(
-                    user_insights,
-                    alem_persona=alem_persona_dict,
-                    expertise_areas=expertise_areas,
-                )
-                logger.info(
-                    "dashboard_sidebar_rendered",
-                    user_id=user_id,
-                    total_interactions=user_insights.total_interactions,
-                    has_persona=bool(alem_persona_dict),
-                )
-            except Exception as e:
-                logger.warning("dashboard_sidebar_render_failed", error=str(e), exc_info=True)
-                # Continue anyway - sidebar failure shouldn't block chat
-
-            logger.info(
-                "dashboard_loaded",
-                user_id=user_id,
-                total_interactions=user_insights.total_interactions,
-            )
-        else:
-            logger.debug("langfuse_not_configured_skipping_dashboard")
-    except Exception as e:
-        logger.warning("dashboard_load_failed", error=str(e), exc_info=True)
-
-    # PART 2: Send the enhanced dashboard welcome message (main chat)
-    # This is the PRIMARY user-facing welcome experience
     await send_dashboard_welcome(user)
 
 

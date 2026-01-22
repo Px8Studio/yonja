@@ -61,6 +61,8 @@ import logging  # noqa: E402
 
 from chainlit.data.chainlit_data_layer import ChainlitDataLayer  # noqa: E402
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer  # noqa: E402
+from fastapi import APIRouter, HTTPException  # noqa: E402
+from pydantic import BaseModel  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine  # noqa: E402
 from sqlalchemy.orm import sessionmaker  # noqa: E402
 
@@ -761,6 +763,8 @@ def build_thread_tags(
     expertise_ids: list[str] | None,
     action_categories: list[str] | None = None,
     experience_level: str | None = None,
+    interaction_mode: str | None = None,
+    llm_model: str | None = None,
 ) -> list[str]:
     """Produce sidebar tags so users can filter threads."""
     tags: list[str] = []
@@ -774,6 +778,10 @@ def build_thread_tags(
         tags.extend(expertise_ids)
     if action_categories:
         tags.extend([f"plan:{cat}" for cat in action_categories])
+    if interaction_mode:
+        tags.append(f"mode:{interaction_mode.lower()}")
+    if llm_model:
+        tags.append(f"model:{llm_model}")
     # Deduplicate while keeping order
     seen = set()
     unique = []
@@ -813,6 +821,75 @@ async def update_thread_presentation(
         logger.debug("thread_presentation_updated", thread_id=thread_id, name=name, tags=tags)
     except Exception as e:  # noqa: BLE001
         logger.warning("thread_presentation_update_failed", thread_id=thread_id, error=str(e))
+
+
+# ============================================
+# UI DROPDOWN → BACKEND ENDPOINT
+# ============================================
+ui_router = APIRouter()
+
+
+class ModeModelPayload(BaseModel):
+    thread_id: str
+    interaction_mode: str
+    llm_model: str
+
+
+@ui_router.post("/ui/thread/preferences")
+async def update_ui_preferences(payload: ModeModelPayload):
+    """Update thread metadata and tags from client-side mode/model dropdowns."""
+
+    allowed_modes = {"Ask", "Plan", "Agent"}
+    if payload.interaction_mode not in allowed_modes:
+        raise HTTPException(status_code=400, detail="Invalid interaction_mode")
+
+    data_layer = get_data_layer()
+    if not data_layer:
+        raise HTTPException(status_code=503, detail="Data layer unavailable")
+
+    # Fetch current thread to merge metadata/tags
+    thread = await data_layer.get_thread(payload.thread_id)
+    if not thread:
+        raise HTTPException(status_code=404, detail="Thread not found")
+
+    metadata = thread.get("metadata") or {}
+    if isinstance(metadata, str):
+        try:
+            metadata = json.loads(metadata) if metadata.strip() else {}
+        except Exception:
+            metadata = {}
+
+    # Merge and persist
+    metadata.update(
+        {
+            "interaction_mode": payload.interaction_mode,
+            "llm_model": payload.llm_model,
+        }
+    )
+
+    tags = thread.get("tags") or []
+    # Rebuild tags from known context to avoid growth
+    tags = build_thread_tags(
+        metadata.get("crop_type"),
+        metadata.get("region"),
+        metadata.get("expertise_areas"),
+        metadata.get("action_categories"),
+        metadata.get("experience_level"),
+        interaction_mode=payload.interaction_mode,
+        llm_model=payload.llm_model,
+    )
+
+    await data_layer.update_thread(
+        thread_id=payload.thread_id,
+        metadata=metadata,
+        tags=tags,
+    )
+
+    return {
+        "ok": True,
+        "interaction_mode": payload.interaction_mode,
+        "llm_model": payload.llm_model,
+    }
 
 
 # ============================================
@@ -1169,6 +1246,13 @@ async def setup_chat_settings(user: cl.User | None = None):
     detail_values = ["Qısa", "Orta", "Ətraflı"]
     unit_values = ["Metrik (ha, kg)", "Yerli (sotka, pud)"]
     currency_values = ["₼ AZN (Manat)", "$ USD (Dollar)", "€ EUR (Euro)"]
+    mode_values = ["Ask", "Plan", "Agent"]
+    model_values = [
+        demo_settings.ollama_model,
+        "llama3.1",
+        "qwen2.5",
+        "mixtral-8x7b",
+    ]
 
     # Expertise area values with Azerbaijani labels
     expertise_values = [
@@ -1199,6 +1283,18 @@ async def setup_chat_settings(user: cl.User | None = None):
     currency_idx = (
         currency_values.index(persisted.get("currency", "₼ AZN (Manat)"))
         if persisted.get("currency") in currency_values
+        else 0
+    )
+
+    mode_idx = (
+        mode_values.index(persisted.get("interaction_mode", "Ask"))
+        if persisted.get("interaction_mode") in mode_values
+        else 0
+    )
+
+    model_idx = (
+        model_values.index(persisted.get("llm_model", demo_settings.ollama_model))
+        if persisted.get("llm_model") in model_values
         else 0
     )
 
@@ -1437,6 +1533,20 @@ async def setup_chat_settings(user: cl.User | None = None):
                 initial=persisted.get("show_thinking_steps", demo_settings.enable_thinking_steps),
                 description="ALEM-in hər addımını göstər (kontekst yükləmə, təhlil, cavab hazırlama)",
             ),
+            Select(
+                id="interaction_mode",
+                label="Rejim / Mode",
+                values=mode_values,
+                initial_index=mode_idx,
+                description="Ask (sürətli cavab), Plan (addım-addım), Agent (ətraflı əməliyyat)",
+            ),
+            Select(
+                id="llm_model",
+                label="Model",
+                values=model_values,
+                initial_index=model_idx,
+                description="İstifadə ediləcək model (placeholder seçim — hazırkı sessiyada eyni model istifadə olunur)",
+            ),
         ]
     ).send()
 
@@ -1539,6 +1649,8 @@ async def on_settings_update(settings: dict):
         "irrigation_type_clean": irrigation_type,
         "planning_month_clean": planning_month,
         "action_categories_clean": action_categories,
+        "interaction_mode": settings.get("interaction_mode", "Ask"),
+        "llm_model": settings.get("llm_model", demo_settings.ollama_model),
     }
 
     logger.info(
@@ -1558,6 +1670,8 @@ async def on_settings_update(settings: dict):
             "categories": action_categories,
         },
         expertise_ids=expertise_ids,
+        interaction_mode=normalized_settings["interaction_mode"],
+        llm_model=normalized_settings["llm_model"],
     )
 
     # Update session with normalized settings
@@ -1721,6 +1835,8 @@ When providing recommendations, consider these farm-specific details.
         expertise_ids=expertise_ids,
         action_categories=action_categories,
         experience_level=experience_level,
+        interaction_mode=normalized_settings["interaction_mode"],
+        llm_model=normalized_settings["llm_model"],
     )
     await update_thread_presentation(
         name=thread_name,
@@ -1732,6 +1848,8 @@ When providing recommendations, consider these farm-specific details.
             "experience_level": experience_level,
             "planning_month": planning_month,
             "action_categories": action_categories,
+            "interaction_mode": normalized_settings["interaction_mode"],
+            "llm_model": normalized_settings["llm_model"],
         },
     )
 
@@ -2229,6 +2347,8 @@ async def on_chat_start():
     cl.user_session.set("user_email", user_email)
     cl.user_session.set("profile_prompt", profile_prompt)  # For system prompt enhancement
     cl.user_session.set("expertise_areas", default_expertise)  # For on_message handler
+    cl.user_session.set("interaction_mode", "Ask")
+    cl.user_session.set("llm_model", demo_settings.ollama_model)
 
     persona_crop = (
         alem_persona.crop_type
@@ -2301,6 +2421,8 @@ async def on_chat_start():
                 else None,
                 "language": "az",
                 "active_model": active_model,
+                "interaction_mode": "Ask",
+                "llm_model": demo_settings.ollama_model,
             }
             cl.user_session.set("thread_metadata", thread_metadata)
             logger.debug("thread_metadata_prepared", metadata_keys=list(thread_metadata.keys()))
@@ -2310,11 +2432,19 @@ async def on_chat_start():
     # Persist initial name/tags so the sidebar shows contextual chips immediately
     await update_thread_presentation(
         name=build_thread_name(persona_crop, persona_region, None),
-        tags=build_thread_tags(persona_crop, persona_region, default_expertise),
+        tags=build_thread_tags(
+            persona_crop,
+            persona_region,
+            default_expertise,
+            interaction_mode="Ask",
+            llm_model=demo_settings.ollama_model,
+        ),
         metadata_updates={
             **(cl.user_session.get("thread_metadata") or {}),
             "is_shared": False,
             "shared_at": None,
+            "interaction_mode": "Ask",
+            "llm_model": demo_settings.ollama_model,
         },
     )
 

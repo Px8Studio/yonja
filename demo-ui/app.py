@@ -739,6 +739,83 @@ Sən çoxsahəli kənd təsərrüfatı ekspertisən. Aşağıdakı sahələrdə 
 
 
 # ============================================
+# THREAD PRESENTATION HELPERS
+# ============================================
+def build_thread_name(
+    crop_type: str | None, region: str | None, planning_month: str | None = None
+) -> str:
+    """Generate a human-friendly thread name for the sidebar."""
+    parts = []
+    if crop_type:
+        parts.append(crop_type)
+    if region:
+        parts.append(region)
+    if planning_month:
+        parts.append(planning_month)
+    return " • ".join(parts) if parts else "Yeni söhbət"
+
+
+def build_thread_tags(
+    crop_type: str | None,
+    region: str | None,
+    expertise_ids: list[str] | None,
+    action_categories: list[str] | None = None,
+    experience_level: str | None = None,
+) -> list[str]:
+    """Produce sidebar tags so users can filter threads."""
+    tags: list[str] = []
+    if crop_type:
+        tags.append(crop_type)
+    if region:
+        tags.append(region)
+    if experience_level:
+        tags.append(f"experience:{experience_level}")
+    if expertise_ids:
+        tags.extend(expertise_ids)
+    if action_categories:
+        tags.extend([f"plan:{cat}" for cat in action_categories])
+    # Deduplicate while keeping order
+    seen = set()
+    unique = []
+    for tag in tags:
+        if tag not in seen:
+            unique.append(tag)
+            seen.add(tag)
+    return unique
+
+
+async def update_thread_presentation(
+    name: str | None,
+    tags: list[str] | None,
+    metadata_updates: dict | None = None,
+):
+    """Persist thread name/tags/metadata so the sidebar shows rich info."""
+    data_layer = get_data_layer()
+    thread_id = cl.user_session.get("thread_id")
+
+    if not data_layer or not thread_id:
+        return
+
+    metadata = (cl.user_session.get("thread_metadata") or {}).copy()
+    if metadata_updates:
+        metadata.update(metadata_updates)
+
+    # Keep metadata in session and push to DB
+    cl.user_session.set("thread_metadata", metadata)
+
+    try:
+        await data_layer.update_thread(
+            thread_id=thread_id,
+            name=name,
+            metadata=metadata,
+            tags=tags,
+        )
+        logger.debug("thread_presentation_updated", thread_id=thread_id, name=name, tags=tags)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("thread_presentation_update_failed", thread_id=thread_id, error=str(e))
+
+
+# ============================================
 # STARTERS (Context-aware conversation prompts)
 # ============================================
 # Starters are displayed based on expertise areas selected in Chat Settings.
@@ -1634,6 +1711,30 @@ When providing recommendations, consider these farm-specific details.
         if saved:
             logger.info("settings_persisted", user=user.identifier)
 
+    # Update thread presentation so sidebar shows farm context
+    thread_name = build_thread_name(
+        crop_type=crop_type, region=region, planning_month=planning_month
+    )
+    thread_tags = build_thread_tags(
+        crop_type=crop_type,
+        region=region,
+        expertise_ids=expertise_ids,
+        action_categories=action_categories,
+        experience_level=experience_level,
+    )
+    await update_thread_presentation(
+        name=thread_name,
+        tags=thread_tags,
+        metadata_updates={
+            "crop_type": crop_type,
+            "region": region,
+            "farm_size_ha": farm_size_ha,
+            "experience_level": experience_level,
+            "planning_month": planning_month,
+            "action_categories": action_categories,
+        },
+    )
+
     # TODO: Save scenario to farm_scenario_plans table
     # This enables scenario retrieval on chat resume and tracking evolution
     # await save_farm_scenario(user_id=user.identifier if user else None,
@@ -2129,6 +2230,17 @@ async def on_chat_start():
     cl.user_session.set("profile_prompt", profile_prompt)  # For system prompt enhancement
     cl.user_session.set("expertise_areas", default_expertise)  # For on_message handler
 
+    persona_crop = (
+        alem_persona.crop_type
+        if alem_persona
+        else (alem_persona_dict.get("crop_type") if alem_persona_dict else None)
+    )
+    persona_region = (
+        alem_persona.region
+        if alem_persona
+        else (alem_persona_dict.get("region") if alem_persona_dict else None)
+    )
+
     logger.info(
         "expertise_configured",
         expertise=default_expertise,
@@ -2194,6 +2306,17 @@ async def on_chat_start():
             logger.debug("thread_metadata_prepared", metadata_keys=list(thread_metadata.keys()))
         except Exception as e:
             logger.warning("thread_metadata_preparation_failed", error=str(e))
+
+    # Persist initial name/tags so the sidebar shows contextual chips immediately
+    await update_thread_presentation(
+        name=build_thread_name(persona_crop, persona_region, None),
+        tags=build_thread_tags(persona_crop, persona_region, default_expertise),
+        metadata_updates={
+            **(cl.user_session.get("thread_metadata") or {}),
+            "is_shared": False,
+            "shared_at": None,
+        },
+    )
 
     # ─────────────────────────────────────────────────────────────
     # WELCOME EXPERIENCE (Two-Part Strategy)
@@ -2358,6 +2481,32 @@ async def on_chat_resume(thread: ThreadDict):
         content="🔄 Söhbət bərpa olundu. Sualınızı davam etdirə bilərsiniz.",
         author="system",
     ).send()
+
+
+# ============================================
+# SHARED THREAD ACCESS (Sidebar "Share" button)
+# ============================================
+
+
+@cl.on_shared_thread_view
+async def on_shared_thread_view(thread: ThreadDict, viewer: cl.User | None) -> bool:
+    """Allow viewing shared threads (placeholder policy: allow all viewers)."""
+    viewer_id = viewer.identifier if viewer else "anonymous"
+    metadata = thread.get("metadata", {}) or {}
+    if isinstance(metadata, str):
+        try:
+            metadata = json.loads(metadata) if metadata.strip() else {}
+        except Exception:
+            metadata = {}
+    logger.info(
+        "shared_thread_view",
+        thread_id=thread.get("id"),
+        owner_id=thread.get("userId"),
+        viewer_id=viewer_id,
+        is_shared=metadata.get("is_shared"),
+    )
+    # Placeholder policy: always allow shared link viewers
+    return True
 
 
 # ============================================

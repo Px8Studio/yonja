@@ -675,6 +675,9 @@ PROFILE_STARTERS = {
     ],
 }
 
+# Alias "expert" to "advanced" for chat profile compatibility
+PROFILE_STARTERS["expert"] = PROFILE_STARTERS["advanced"]
+
 # Profile-specific system prompt additions
 PROFILE_PROMPTS = {
     "general": "",  # Use default system prompt
@@ -893,42 +896,106 @@ async def update_ui_preferences(payload: ModeModelPayload):
 
 
 # ============================================
+# CHAT PROFILES (Header dropdown for assistant modes)
+# ============================================
+# Chat Profiles appear in the header as a dropdown selector.
+# This is the Chainlit-native way to let users choose between
+# different assistant configurations.
+#
+# Use cases for Yonca:
+# - Different LLM models (Fast vs Expert)
+# - Different interaction modes (Quick Ask vs Planning Agent)
+# - Crop-specific specialists (Cotton Expert, Wheat Specialist)
+# ============================================
+
+
+@cl.set_chat_profiles
+async def chat_profiles(current_user: cl.User | None = None):
+    """Define available chat profiles shown in header dropdown.
+
+    These appear as a dropdown in the Chainlit header, allowing users
+    to switch between different assistant configurations.
+
+    The selected profile is available via cl.user_session.get("chat_profile").
+    """
+    return [
+        cl.ChatProfile(
+            name="general",
+            markdown_description="**Ümumi Kənd Təsərrüfatı** — Bütün məhsullar üçün ümumi tövsiyələr",
+            icon="/public/avatars/alem_1.svg",
+            default=True,
+            starters=PROFILE_STARTERS.get("general", []),
+        ),
+        cl.ChatProfile(
+            name="cotton",
+            markdown_description="**Pambıq Mütəxəssisi** — Pambıq əkini, suvarma və zərərverici mübarizəsi",
+            icon="/public/avatars/cotton.svg",
+            starters=PROFILE_STARTERS.get("cotton", []),
+        ),
+        cl.ChatProfile(
+            name="wheat",
+            markdown_description="**Buğda Mütəxəssisi** — Dənli bitkilər, gübrələmə və məhsul yığımı",
+            icon="/public/avatars/wheat.svg",
+            starters=PROFILE_STARTERS.get("wheat", []),
+        ),
+        cl.ChatProfile(
+            name="orchard",
+            markdown_description="**Bağçılıq Eksperti** — Meyvə ağacları, budama və xəstəlik idarəetməsi",
+            icon="/public/avatars/orchard.svg",
+            starters=PROFILE_STARTERS.get("orchard", []),
+        ),
+        cl.ChatProfile(
+            name="expert",
+            markdown_description="**Aqronom Rejimi** — Ətraflı texniki tövsiyələr, elmi məlumatlar",
+            icon="/public/avatars/expert.svg",
+            starters=PROFILE_STARTERS.get("advanced", []),
+        ),
+    ]
+
+
+# ============================================
 # STARTERS (Context-aware conversation prompts)
 # ============================================
-# Starters are displayed based on expertise areas selected in Chat Settings.
-# No separate profile dropdown - expertise is managed in one place only.
+# Starters adapt to the selected Chat Profile AND expertise areas.
+# Priority: Chat Profile > Expertise Areas > General
 
 
 @cl.set_starters
-async def set_starters(current_user: cl.User = None):
-    """Return starters based on expertise areas from settings.
+async def set_starters(current_user: cl.User | None = None, chat_profile: str | None = None):
+    """Return starters based on chat profile and expertise areas.
 
-    Combines starters from all selected expertise areas.
-    Defaults to 'general' if no expertise selected.
+    Priority order:
+    1. Chat Profile (if selected and not 'general')
+    2. Expertise areas from settings
+    3. Default general starters
+
+    Args:
+        current_user: The authenticated user (from OAuth)
+        chat_profile: The selected chat profile name (from header dropdown)
     """
+    # If a specific profile is selected (not general), use its starters
+    if chat_profile and chat_profile != "general" and chat_profile in PROFILE_STARTERS:
+        return PROFILE_STARTERS[chat_profile]
+
     # Get expertise areas from user session settings
-    # Use try-except to handle context not available yet
     try:
         settings = cl.user_session.get("chat_settings", {})
     except Exception:
-        # Context not available yet, use empty settings
         settings = {}
+
     expertise_areas = settings.get("expertise_areas", [])
 
     if expertise_areas:
-        # Combine starters from all selected expertise areas
         starters = []
         seen_labels = set()
 
         for area in expertise_areas:
             if area in PROFILE_STARTERS:
                 for starter in PROFILE_STARTERS[area]:
-                    # Avoid duplicates by label
                     if starter.label not in seen_labels:
                         starters.append(starter)
                         seen_labels.add(starter.label)
 
-        # Return up to 6 most relevant starters
         return starters[:6] if starters else PROFILE_STARTERS["general"]
 
     # Default to general agriculture starters

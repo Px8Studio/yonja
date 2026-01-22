@@ -9,6 +9,7 @@ This causes: "invalid input for query argument $3: ['tag'] (expected str, got li
 
 Fix: Convert to JSONB to properly store JSON arrays, matching steps.tags pattern.
 """
+# pylint: disable=invalid-name,no-member
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
@@ -16,30 +17,34 @@ from sqlalchemy.dialects import postgresql
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "fix_threads_tags_jsonb"
-down_revision: tuple[str, ...] = ("rename_farm_scenario", "add_chainlit_files_table")
-branch_labels: str | None = None
-depends_on: str | None = None
+revision = "fix_threads_tags_jsonb"
+down_revision = ("rename_farm_scenario", "add_chainlit_files_table")
+branch_labels = None
+depends_on = None
 
 
-def upgrade() -> None:
+def upgrade():
     """Convert threads.tags from TEXT to JSONB."""
     # First, clean up invalid data
     op.execute(
+        sa.text(
+            """
+            UPDATE threads
+            SET tags = '[]'::jsonb
+            WHERE tags = '' OR tags IS NULL
         """
-        UPDATE threads
-        SET tags = '[]'::jsonb
-        WHERE tags = '' OR tags IS NULL
-    """
+        )
     )
 
     # Convert remaining valid JSON text to JSONB
     op.execute(
+        sa.text(
+            """
+            UPDATE threads
+            SET tags = tags::jsonb
+            WHERE tags IS NOT NULL AND tags != ''
         """
-        UPDATE threads
-        SET tags = tags::jsonb
-        WHERE tags IS NOT NULL AND tags != ''
-    """
+        )
     )
 
     # Now alter column type to JSONB
@@ -53,7 +58,7 @@ def upgrade() -> None:
     )
 
 
-def downgrade() -> None:
+def downgrade():
     """Convert threads.tags back from JSONB to TEXT."""
     # Convert JSONB back to text representation
     op.alter_column(

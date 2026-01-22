@@ -5,5 +5,10 @@
         "yonca_agent": "./src/yonca/agent/graph.py:create_agent_graph"
     },
     "env": ".env",
-    "python_version": "3.11"
+    "python_version": "3.12",
+    "store": {
+        "postgres": {
+            "uri_env_var": "LANGGRAPH_POSTGRES_URI"
+        }
+    }
 }

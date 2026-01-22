@@ -69,8 +69,67 @@ class YoncaDataLayer(SQLAlchemyDataLayer):
     Adds:
     - ChatSettings persistence in user metadata
     - Link to existing user_profiles table
-    - Logging for debugging
+    - PostgreSQL-based file storage (no external blob storage needed)
+    - Full data residency: all files stored in the same PostgreSQL database
+
+    File Storage:
+    - Audio, video, images, documents all stored in PostgreSQL BYTEA columns
+    - No dependency on S3, Azure, GCS or other external services
+    - Single database backup includes all data
     """
+
+    def __init__(self, conninfo: str, use_postgres_storage: bool = True, **kwargs):
+        """Initialize YoncaDataLayer with PostgreSQL file storage.
+
+        Args:
+            conninfo: PostgreSQL connection string
+            use_postgres_storage: If True, use PostgreSQL for file storage.
+                                  If False, disable file storage (warning suppressed).
+            **kwargs: Additional arguments passed to SQLAlchemyDataLayer
+        """
+        storage_provider = None
+
+        if use_postgres_storage and "postgresql" in conninfo:
+            try:
+                from storage_postgres import PostgresStorageClient
+
+                storage_provider = PostgresStorageClient(
+                    database_url=conninfo,
+                    # base_url can be set to serve files via API endpoint
+                    # For now, files are returned as base64 data URLs
+                    base_url=None,
+                )
+                logger.info(
+                    "postgres_file_storage_enabled",
+                    note="All files (audio, video, images, docs) stored in PostgreSQL",
+                )
+            except Exception as e:
+                logger.warning(
+                    "postgres_storage_init_failed",
+                    error=str(e),
+                    fallback="File storage disabled",
+                )
+
+        if storage_provider:
+            # Initialize with PostgreSQL storage
+            super().__init__(conninfo=conninfo, storage_provider=storage_provider, **kwargs)
+        else:
+            # Suppress the warning when no storage provider
+            import logging
+
+            chainlit_logger = logging.getLogger("chainlit")
+            original_level = chainlit_logger.level
+            chainlit_logger.setLevel(logging.ERROR)
+
+            try:
+                super().__init__(conninfo=conninfo, storage_provider=None, **kwargs)
+            finally:
+                chainlit_logger.setLevel(original_level)
+
+            logger.info(
+                "yonca_data_layer_initialized",
+                note="File storage disabled (PostgreSQL storage not available)",
+            )
 
     async def get_user(self, identifier: str) -> PersistedUser | None:
         """Get user by identifier (email from OAuth).

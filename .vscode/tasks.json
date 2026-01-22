@@ -214,6 +214,22 @@
       "presentation": { "reveal": "always", "panel": "shared" }
     },
     {
+      "label": "🌿 Yonca AI: 🗄️ LangGraph Setup",
+      "detail": "Create LangGraph checkpoint tables (auto-managed by LangGraph)",
+      "type": "shell",
+      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+      "args": ["scripts/setup_langgraph_checkpoint_tables.py"],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}/src",
+          "DATABASE_URL": "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
+        }
+      },
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
       "label": "🌿 Yonca AI: 🗄️ DB Seed",
       "detail": "Populate with test data",
       "type": "shell",

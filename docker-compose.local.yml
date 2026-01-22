@@ -171,15 +171,19 @@ services:
       - LANGGRAPH_DEV_PORT=2024
       - LANGGRAPH_API_LOG_LEVEL=INFO
 
+      # LangGraph PostgreSQL persistence (enables checkpoint/state storage)
+      # Without this, LangGraph uses in-memory storage (data lost on restart)
+      - LANGGRAPH_POSTGRES_URI=postgresql://yonca:yonca_dev_password@postgres:5432/yonca
+
       # LLM Provider
       - LLM_PROVIDER=ollama
       - OLLAMA_BASE_URL=http://ollama:11434
       - OLLAMA_MODEL=qwen3:4b
 
-      # Database
+      # Database (for app data, separate from LangGraph checkpoints)
       - DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
 
-      # Redis for checkpointing
+      # Redis for caching (optional, LangGraph uses Postgres for checkpoints)
       - REDIS_URL=redis://redis:6379/0
 
       # Langfuse observability

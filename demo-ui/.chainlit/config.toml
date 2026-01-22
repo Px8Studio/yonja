@@ -66,10 +66,20 @@ edit_message = true
 # Allow users to share threads (backend + UI). Requires an app-defined on_shared_thread_view callback.
 allow_thread_sharing = true
 
-# Enable favorite messages
+# Enable favorite messages - shows ⭐ button in input ribbon for quick access to saved messages
 favorites = true
 
+# Prompt Playground - allows users to experiment with prompts
 prompt_playground = true
+
+# ════════════════════════════════════════════════════════════════════════════
+# CHAT SETTINGS LOCATION
+# ════════════════════════════════════════════════════════════════════════════
+# Where to show the settings button:
+# - "message_composer" (default): ⚙️ button appears in input ribbon bar
+# - "sidebar": Settings button appears in header, opens as sidebar panel
+# For maximum toolbar features, keep in message_composer
+chat_settings_location = "message_composer"
 
 [features.slack]
 # Add emoji reaction when message is received (requires reactions:write OAuth scope)
@@ -99,8 +109,13 @@ reaction_on_message_received = false
     sample_rate = 16000
 
 [features.mcp]
-    # Enable Model Context Protocol (MCP) features
-    enabled = false
+    # ════════════════════════════════════════════════════════════════════════════
+    # MODEL CONTEXT PROTOCOL (MCP) - Shows 🔌 plug icon in input ribbon
+    # ════════════════════════════════════════════════════════════════════════════
+    # MCP allows connecting external tools/data sources to the chat.
+    # When enabled, users see a plug icon to add MCP connections.
+    # Even if you don't use MCP yet, enabling shows the UI as a placeholder.
+    enabled = true
 
 [features.mcp.sse]
     enabled = true

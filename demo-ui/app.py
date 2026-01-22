@@ -60,7 +60,6 @@ import asyncio  # noqa: E402
 import logging  # noqa: E402
 
 from chainlit.data.chainlit_data_layer import ChainlitDataLayer  # noqa: E402
-from chainlit.data.sql_alchemy import SQLAlchemyDataLayer  # noqa: E402
 from fastapi import APIRouter, HTTPException  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine  # noqa: E402
@@ -94,8 +93,12 @@ async def init_chainlit_data_layer():
 
         # Initialize Chainlit data layer
         # Note: Newer Chainlit versions expect only conninfo string, not engine
-        data_layer = SQLAlchemyDataLayer(
+        # YoncaDataLayer includes JSON serialization fix for JSONB tags columns
+        from data_layer import YoncaDataLayer
+
+        data_layer = YoncaDataLayer(
             conninfo=db_url,
+            use_postgres_storage=True,
         )
 
         # Set as global data layer
@@ -886,12 +889,15 @@ async def update_thread_presentation(
     # Keep metadata in session and push to DB
     cl.user_session.set("thread_metadata", metadata)
 
+    # Serialize tags to JSON string for JSONB column (asyncpg compatibility)
+    serialized_tags = json.dumps(tags) if tags and isinstance(tags, list) else tags
+
     try:
         await data_layer.update_thread(
             thread_id=thread_id,
             name=name,
             metadata=metadata,
-            tags=tags,
+            tags=serialized_tags,
         )
         logger.debug("thread_presentation_updated", thread_id=thread_id, name=name, tags=tags)
     except Exception as e:  # noqa: BLE001
@@ -954,10 +960,13 @@ async def update_ui_preferences(payload: ModeModelPayload):
         llm_model=payload.llm_model,
     )
 
+    # Serialize tags to JSON string for JSONB column (asyncpg compatibility)
+    serialized_tags = json.dumps(tags) if tags and isinstance(tags, list) else tags
+
     await data_layer.update_thread(
         thread_id=payload.thread_id,
         metadata=metadata,
-        tags=tags,
+        tags=serialized_tags,
     )
 
     return {

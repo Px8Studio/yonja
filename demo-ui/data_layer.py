@@ -194,6 +194,75 @@ class YoncaDataLayer(SQLAlchemyDataLayer):
             logger.error("create_user_failed", identifier=user.identifier, error=str(e))
             return None
 
+    async def create_thread(self, thread) -> None:
+        """Create a thread with properly serialized tags for JSONB columns.
+
+        Args:
+            thread: Thread dictionary with metadata and tags
+        """
+        # Serialize tags if it's a list (asyncpg needs JSON string for JSONB)
+        if "tags" in thread and isinstance(thread["tags"], list):
+            thread["tags"] = json.dumps(thread["tags"])
+            logger.debug(
+                "thread_tags_serialized",
+                thread_id=thread.get("id"),
+                tags_count=len(json.loads(thread["tags"])) if thread["tags"] else 0,
+            )
+
+        return await super().create_thread(thread)
+
+    async def update_thread(self, thread_id: str, **kwargs) -> None:
+        """Update a thread with properly serialized tags.
+
+        Args:
+            thread_id: Thread ID to update
+            **kwargs: Fields to update, including optional tags
+        """
+        # Serialize tags if it's a list
+        if "tags" in kwargs and isinstance(kwargs["tags"], list):
+            kwargs["tags"] = json.dumps(kwargs["tags"])
+            logger.debug(
+                "thread_tags_serialized_update",
+                thread_id=thread_id,
+                tags_count=len(json.loads(kwargs["tags"])) if kwargs["tags"] else 0,
+            )
+
+        return await super().update_thread(thread_id, **kwargs)
+
+    async def create_step(self, step_dict) -> None:
+        """Create a step with properly serialized tags.
+
+        Args:
+            step_dict: Step dictionary with metadata and tags
+        """
+        # Serialize tags if it's a list (asyncpg needs JSON string for JSONB)
+        if "tags" in step_dict and isinstance(step_dict["tags"], list):
+            step_dict["tags"] = json.dumps(step_dict["tags"])
+            logger.debug(
+                "step_tags_serialized",
+                step_id=step_dict.get("id"),
+                tags_count=len(json.loads(step_dict["tags"])) if step_dict["tags"] else 0,
+            )
+
+        return await super().create_step(step_dict)
+
+    async def update_step(self, step_dict) -> None:
+        """Update a step with properly serialized tags.
+
+        Args:
+            step_dict: Step dictionary with updated fields
+        """
+        # Serialize tags if it's a list
+        if "tags" in step_dict and isinstance(step_dict["tags"], list):
+            step_dict["tags"] = json.dumps(step_dict["tags"])
+            logger.debug(
+                "step_tags_serialized_update",
+                step_id=step_dict.get("id"),
+                tags_count=len(json.loads(step_dict["tags"])) if step_dict["tags"] else 0,
+            )
+
+        return await super().update_step(step_dict)
+
     async def update_user_metadata(
         self,
         identifier: str,

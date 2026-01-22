@@ -158,6 +158,70 @@ def get_llm_provider() -> LLMProvider:
     return create_llm_provider()
 
 
+def get_llm_provider_with_model(model: str | None = None) -> LLMProvider:
+    """Get LLM provider with a specific model (not cached).
+
+    This is useful for runtime model selection, e.g., from Chat Profiles.
+    If model is None or matches the default, returns the cached singleton.
+    Otherwise creates a new provider with the specified model.
+
+    Args:
+        model: Model name to use. If None, uses config default.
+
+    Returns:
+        LLMProvider instance configured for the specified model.
+    """
+    # If no model specified or matches default, use cached singleton
+    if model is None or model == settings.ollama_model:
+        return get_llm_provider()
+
+    # Create a new provider with the specified model
+    provider_type = settings.llm_provider
+
+    if provider_type == LLMProviderEnum.OLLAMA:
+        return create_ollama_provider(model=model)
+    elif provider_type == LLMProviderEnum.GROQ:
+        return create_groq_provider(model=model)
+    elif provider_type == LLMProviderEnum.VLLM:
+        return create_vllm_provider(model=model)
+    else:
+        # Fallback to cached provider for unknown types
+        return get_llm_provider()
+
+
+def get_llm_from_config(config: dict | None = None) -> LLMProvider:
+    """Get LLM provider based on RunnableConfig metadata.
+
+    This is the primary way for LangGraph nodes to get the LLM provider
+    with runtime model selection (e.g., from Chat Profiles).
+
+    Args:
+        config: RunnableConfig dict from LangGraph node invocation.
+                Expected to have config["metadata"]["model"] for model override.
+
+    Returns:
+        LLMProvider instance, either with the specified model or default.
+
+    Example:
+        ```python
+        async def my_node(state: AgentState, config: RunnableConfig) -> dict:
+            provider = get_llm_from_config(config)
+            response = await provider.generate(messages)
+        ```
+    """
+    if config is None:
+        return get_llm_provider()
+
+    # Try to get model from config metadata
+    metadata = config.get("metadata", {})
+    model = metadata.get("model") if isinstance(metadata, dict) else None
+
+    if model:
+        return get_llm_provider_with_model(model)
+
+    return get_llm_provider()
+
+
 async def get_fastest_available_provider() -> LLMProvider:
     """Get the fastest available LLM provider with automatic fallback.
 

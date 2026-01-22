@@ -351,9 +351,63 @@ _checkpointer = None
 # Global API client (for API bridge mode)
 _api_client: YoncaClient | None = None
 
+# ============================================
+# LLM MODEL PROFILES (for Chat Profile dropdown)
+# ============================================
+# Available models are pulled from Ollama container.
+# Add new models with: docker exec yonca-ollama ollama pull <model>
+#
+# This dictionary is used by:
+# 1. @cl.set_chat_profiles - to show available models in header dropdown
+# 2. resolve_active_model() - to validate selected model
+#
+# Runtime model switching is now fully implemented:
+# - Selected model flows through RunnableConfig metadata
+# - Agent nodes use get_llm_from_config() to respect the selection
+# - See: src/yonca/llm/factory.py - get_llm_from_config()
+# ============================================
+LLM_MODEL_PROFILES = {
+    "qwen3:4b": {
+        "name": "Qwen3 4B",
+        "description": "**Qwen3 4B** — Sürətli və yüngül model. Sadə suallar üçün ideal.",
+        "icon": "🚀",
+        "speed": "fast",
+    },
+    "atllama:latest": {
+        "name": "ATLlama",
+        "description": "**ATLlama** — Azərbaycan dili üçün optimallaşdırılmış model.",
+        "icon": "🇦🇿",
+        "speed": "medium",
+    },
+    "llama3.2:3b": {
+        "name": "Llama 3.2 3B",
+        "description": "**Llama 3.2 3B** — Meta-nın ən son yüngül modeli.",
+        "icon": "🦙",
+        "speed": "fast",
+    },
+    "mistral:7b": {
+        "name": "Mistral 7B",
+        "description": "**Mistral 7B** — Güclü və səmərəli model. Ətraflı cavablar üçün.",
+        "icon": "🌪️",
+        "speed": "medium",
+    },
+    "gemma2:9b": {
+        "name": "Gemma 2 9B",
+        "description": "**Gemma 2 9B** — Google-un açıq mənbəli modeli. Yüksək keyfiyyət.",
+        "icon": "💎",
+        "speed": "slow",
+    },
+}
+
 
 def resolve_active_model() -> dict:
-    """Return a single source of truth for the active model metadata."""
+    """Return a single source of truth for the active model metadata.
+
+    Checks for model selection from:
+    1. Chat Profile (header dropdown - now used for LLM selection)
+    2. Chat Settings (sidebar settings panel)
+    3. Default from config
+    """
     integration_mode = demo_settings.integration_mode.lower()
     provider = demo_settings.llm_provider.lower()
 
@@ -366,6 +420,24 @@ def resolve_active_model() -> dict:
             "source": "fastapi",
         }
 
+    # Get model from chat profile (header dropdown) or settings
+    selected_model = None
+    try:
+        # Chat Profile is now the LLM model name (e.g., "qwen3:4b")
+        chat_profile = cl.user_session.get("chat_profile")
+        if chat_profile and chat_profile in LLM_MODEL_PROFILES:
+            selected_model = chat_profile
+
+        # Fallback to settings panel selection
+        if not selected_model:
+            settings = cl.user_session.get("chat_settings") or {}
+            selected_model = settings.get("llm_model") if isinstance(settings, dict) else None
+    except Exception:
+        pass  # Session not available yet
+
+    # Final fallback to config default
+    model = selected_model or demo_settings.ollama_model
+
     location = "local" if provider == "ollama" else "cloud"
     base_url = (
         demo_settings.ollama_base_url if provider == "ollama" else "https://api.groq.com/openai/v1"
@@ -373,7 +445,7 @@ def resolve_active_model() -> dict:
 
     return {
         "provider": provider,
-        "model": demo_settings.ollama_model,
+        "model": model,
         "location": location,
         "integration_mode": integration_mode,
         "source": "langgraph",
@@ -896,87 +968,76 @@ async def update_ui_preferences(payload: ModeModelPayload):
 
 
 # ============================================
-# CHAT PROFILES (Header dropdown for assistant modes)
+# CHAT PROFILES (Header dropdown for LLM model selection)
 # ============================================
 # Chat Profiles appear in the header as a dropdown selector.
 # This is the Chainlit-native way to let users choose between
-# different assistant configurations.
+# different LLM models (open source models from Ollama).
 #
-# Use cases for Yonca:
-# - Different LLM models (Fast vs Expert)
-# - Different interaction modes (Quick Ask vs Planning Agent)
-# - Crop-specific specialists (Cotton Expert, Wheat Specialist)
+# LLM_MODEL_PROFILES is defined near the top of the file (before resolve_active_model)
+# Add new models with: docker exec yonca-ollama ollama pull <model>
 # ============================================
 
 
 @cl.set_chat_profiles
 async def chat_profiles(current_user: cl.User | None = None):
-    """Define available chat profiles shown in header dropdown.
+    """Define available LLM models as chat profiles.
 
     These appear as a dropdown in the Chainlit header, allowing users
-    to switch between different assistant configurations.
+    to switch between different open-source LLM models.
 
-    The selected profile is available via cl.user_session.get("chat_profile").
+    The selected profile name IS the model name (e.g., 'qwen3:4b').
+    Access via: cl.user_session.get("chat_profile")
     """
-    return [
-        cl.ChatProfile(
-            name="general",
-            markdown_description="**Ümumi Kənd Təsərrüfatı** — Bütün məhsullar üçün ümumi tövsiyələr",
-            icon="/public/avatars/alem_1.svg",
-            default=True,
-            starters=PROFILE_STARTERS.get("general", []),
-        ),
-        cl.ChatProfile(
-            name="cotton",
-            markdown_description="**Pambıq Mütəxəssisi** — Pambıq əkini, suvarma və zərərverici mübarizəsi",
-            icon="/public/avatars/cotton.svg",
-            starters=PROFILE_STARTERS.get("cotton", []),
-        ),
-        cl.ChatProfile(
-            name="wheat",
-            markdown_description="**Buğda Mütəxəssisi** — Dənli bitkilər, gübrələmə və məhsul yığımı",
-            icon="/public/avatars/wheat.svg",
-            starters=PROFILE_STARTERS.get("wheat", []),
-        ),
-        cl.ChatProfile(
-            name="orchard",
-            markdown_description="**Bağçılıq Eksperti** — Meyvə ağacları, budama və xəstəlik idarəetməsi",
-            icon="/public/avatars/orchard.svg",
-            starters=PROFILE_STARTERS.get("orchard", []),
-        ),
-        cl.ChatProfile(
-            name="expert",
-            markdown_description="**Aqronom Rejimi** — Ətraflı texniki tövsiyələr, elmi məlumatlar",
-            icon="/public/avatars/expert.svg",
-            starters=PROFILE_STARTERS.get("advanced", []),
-        ),
-    ]
+    profiles = []
+
+    # Default model first
+    default_model = demo_settings.ollama_model
+    if default_model in LLM_MODEL_PROFILES:
+        config = LLM_MODEL_PROFILES[default_model]
+        profiles.append(
+            cl.ChatProfile(
+                name=default_model,
+                markdown_description=config["description"],
+                icon="/public/avatars/alem_1.svg",
+                default=True,
+                starters=PROFILE_STARTERS.get("general", []),
+            )
+        )
+
+    # Add other available models
+    for model_name, config in LLM_MODEL_PROFILES.items():
+        if model_name != default_model:
+            profiles.append(
+                cl.ChatProfile(
+                    name=model_name,
+                    markdown_description=config["description"],
+                    icon="/public/avatars/alem_1.svg",
+                    starters=PROFILE_STARTERS.get("general", []),
+                )
+            )
+
+    return profiles
 
 
 # ============================================
 # STARTERS (Context-aware conversation prompts)
 # ============================================
-# Starters adapt to the selected Chat Profile AND expertise areas.
-# Priority: Chat Profile > Expertise Areas > General
+# Starters adapt based on expertise areas selected in Chat Settings.
+# Chat Profiles are now used for LLM model selection, not crop specialization.
 
 
 @cl.set_starters
 async def set_starters(current_user: cl.User | None = None, chat_profile: str | None = None):
-    """Return starters based on chat profile and expertise areas.
+    """Return starters based on expertise areas from settings.
 
-    Priority order:
-    1. Chat Profile (if selected and not 'general')
-    2. Expertise areas from settings
-    3. Default general starters
+    Since Chat Profiles are now used for LLM model selection,
+    starters are determined by expertise areas in settings only.
 
     Args:
         current_user: The authenticated user (from OAuth)
-        chat_profile: The selected chat profile name (from header dropdown)
+        chat_profile: The selected LLM model name (not used for starters)
     """
-    # If a specific profile is selected (not general), use its starters
-    if chat_profile and chat_profile != "general" and chat_profile in PROFILE_STARTERS:
-        return PROFILE_STARTERS[chat_profile]
-
     # Get expertise areas from user session settings
     try:
         settings = cl.user_session.get("chat_settings", {})

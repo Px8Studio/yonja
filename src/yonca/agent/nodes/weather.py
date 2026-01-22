@@ -8,9 +8,10 @@ and forecasted weather conditions.
 from typing import Any
 
 import structlog
+from langchain_core.runnables import RunnableConfig
 
 from yonca.agent.state import AgentState, add_assistant_message
-from yonca.llm.factory import get_llm_provider
+from yonca.llm.factory import get_llm_from_config
 from yonca.llm.providers.base import LLMMessage
 
 logger = structlog.get_logger(__name__)
@@ -81,7 +82,7 @@ def build_weather_context(state: AgentState) -> str:
 # ============================================================
 
 
-async def weather_node(state: AgentState) -> dict[str, Any]:
+async def weather_node(state: AgentState, config: RunnableConfig | None = None) -> dict[str, Any]:
     """Weather analyst node.
 
     Analyzes weather conditions and provides farming-related
@@ -89,6 +90,7 @@ async def weather_node(state: AgentState) -> dict[str, Any]:
 
     Args:
         state: Current agent state
+        config: RunnableConfig with metadata (including model override from Chat Profiles)
 
     Returns:
         State updates with weather analysis
@@ -119,8 +121,8 @@ async def weather_node(state: AgentState) -> dict[str, Any]:
         LLMMessage.user(user_input),
     ]
 
-    # Generate response
-    provider = get_llm_provider()
+    # Generate response using runtime model selection
+    provider = get_llm_from_config(config)
 
     try:
         response = await provider.generate(

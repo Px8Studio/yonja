@@ -12,6 +12,7 @@ import re
 from typing import Any
 
 import structlog
+from langchain_core.runnables import RunnableConfig
 
 from yonca.agent.state import (
     AgentState,
@@ -19,7 +20,7 @@ from yonca.agent.state import (
     UserIntent,
     add_assistant_message,
 )
-from yonca.llm.factory import get_llm_provider
+from yonca.llm.factory import get_llm_from_config
 from yonca.llm.providers.base import LLMMessage
 
 logger = structlog.get_logger(__name__)
@@ -111,11 +112,14 @@ OFF_TOPIC_RESPONSE = (
 # ============================================================
 
 
-async def classify_intent(user_input: str) -> tuple[UserIntent, float, str]:
+async def classify_intent(
+    user_input: str, config: RunnableConfig | None = None
+) -> tuple[UserIntent, float, str]:
     """Classify the user's intent using LLM.
 
     Args:
         user_input: The user's message
+        config: RunnableConfig with metadata (including model override)
 
     Returns:
         Tuple of (intent, confidence, reasoning)
@@ -151,7 +155,8 @@ async def classify_intent(user_input: str) -> tuple[UserIntent, float, str]:
         return UserIntent.DATA_QUERY, 0.88, "Verilənlər bazası sorğusu aşkarlandı"
 
     # For more complex classification, use LLM
-    provider = get_llm_provider()
+    # Use get_llm_from_config to respect runtime model selection (e.g., from Chat Profiles)
+    provider = get_llm_from_config(config)
 
     messages = [
         LLMMessage.system(INTENT_CLASSIFICATION_PROMPT),
@@ -188,7 +193,9 @@ async def classify_intent(user_input: str) -> tuple[UserIntent, float, str]:
     return UserIntent.GENERAL_ADVICE, 0.5, "Standart təsnifat (LLM xətası)"
 
 
-async def supervisor_node(state: AgentState) -> dict[str, Any]:
+async def supervisor_node(
+    state: AgentState, config: RunnableConfig | None = None
+) -> dict[str, Any]:
     """Supervisor node - routes messages to appropriate handlers.
 
     This is the entry point for all user messages. It:
@@ -198,6 +205,7 @@ async def supervisor_node(state: AgentState) -> dict[str, Any]:
 
     Args:
         state: Current agent state
+        config: RunnableConfig with metadata (including model override from Chat Profiles)
 
     Returns:
         State updates with routing decision
@@ -217,8 +225,8 @@ async def supervisor_node(state: AgentState) -> dict[str, Any]:
         crop=conversation_context.get("specific_crop"),
     )
 
-    # Classify intent
-    intent, confidence, reasoning = await classify_intent(user_input)
+    # Classify intent (passing config for model selection)
+    intent, confidence, reasoning = await classify_intent(user_input, config)
 
     logger.info(
         "intent_classified",

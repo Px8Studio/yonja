@@ -24,7 +24,9 @@ from .factory import (
     check_llm_health,
     create_llm_provider,
     create_ollama_provider,
+    get_llm_from_config,
     get_llm_provider,
+    get_llm_provider_with_model,
 )
 from .models import (
     AVAILABLE_MODELS,
@@ -41,6 +43,8 @@ __all__ = [
     "create_llm_provider",
     "create_ollama_provider",
     "get_llm_provider",
+    "get_llm_provider_with_model",
+    "get_llm_from_config",
     "check_llm_health",
     "LLMProviderError",
     # Providers

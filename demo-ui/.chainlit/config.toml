@@ -76,10 +76,12 @@ prompt_playground = true
 # CHAT SETTINGS LOCATION
 # ════════════════════════════════════════════════════════════════════════════
 # Where to show the settings button:
-# - "message_composer" (default): ⚙️ button appears in input ribbon bar
-# - "sidebar": Settings button appears in header, opens as sidebar panel
-# For maximum toolbar features, keep in message_composer
-chat_settings_location = "message_composer"
+# - "message_composer": ⚙️ button appears in input ribbon, opens as popup
+# - "sidebar": Settings button in header, opens as sliding right panel
+chat_settings_location = "sidebar"
+
+# Open settings sidebar by default when a new chat starts
+default_chat_settings_open = false
 
 [features.slack]
 # Add emoji reaction when message is received (requires reactions:write OAuth scope)

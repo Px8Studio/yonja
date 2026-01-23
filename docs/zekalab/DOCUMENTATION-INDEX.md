@@ -6,6 +6,12 @@
 
 ## 📋 All Documentation Created
 
+### Blueprint & Summaries
+1. **[MCP-BLUEPRINT.md](MCP-BLUEPRINT.md)**
+   - Sovereign AI stack (LangGraph captain, FastMCP crew, Chainlit window)
+   - Developer prompt to align assistants with the 2026 production stack
+   - Current deliverables and Phase 4-5 priorities
+
 ### Session Summaries
 1. **[SESSION-2-PROGRESS-REPORT.md](SESSION-2-PROGRESS-REPORT.md)**
    - Hourly progress breakdown
@@ -196,7 +202,7 @@ src/yonca/mcp/
 - [x] Deployment guide
 
 ### Phase 4: Orchestration ⏳
-- [ ] ZekaLabMCPHandler (TODO)
+- [x] ZekaLabMCPHandler
 - [ ] agronomist_node refactor (TODO)
 - [ ] Parallel orchestration (TODO)
 - [ ] Langfuse integration (TODO)

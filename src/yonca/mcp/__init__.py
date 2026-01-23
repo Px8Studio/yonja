@@ -46,7 +46,7 @@ Example Usage:
         args={"farm_data": farm_context, "weather": weather}
     )
 
-See docs/zekalab/21-MCP-INTEGRATION-AUDIT-PHASE-1.md for design details.
+See docs/zekalab/MCP-BLUEPRINT.md and PHASE-3-COMPLETION-SUMMARY.md for design details.
 """
 
 from yonca.mcp.client import MCPClient, get_mcp_client

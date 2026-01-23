@@ -386,50 +386,26 @@ This insight is **highly relevant** to ALEM and aligns perfectly with your archi
 
 ## Implementation Plan: MCP Integration for ALEM
 
-### **Phase 1: Foundation & Assessment** (Week 1)
+### **Phases 1-3: Foundation, Weather, Internal MCP** (✅ Complete)
 
-**🔍 AUDIT COMPLETE:** See [21-MCP-INTEGRATION-AUDIT-PHASE-1.md](21-MCP-INTEGRATION-AUDIT-PHASE-1.md) for detailed findings.
+**Docs:** [MCP-BLUEPRINT.md](MCP-BLUEPRINT.md), [PHASE-2-COMPLETION-SUMMARY.md](PHASE-2-COMPLETION-SUMMARY.md), [PHASE-3-COMPLETION-SUMMARY.md](PHASE-3-COMPLETION-SUMMARY.md), [PHASE-3-DEPLOYMENT-GUIDE.md](PHASE-3-DEPLOYMENT-GUIDE.md), [PHASE-4-HANDOFF.md](PHASE-4-HANDOFF.md), [QUICK-REFERENCE.md](QUICK-REFERENCE.md)
 
-**📊 Summary Document:** [21-MCP-SUMMARY.md](21-MCP-SUMMARY.md) - Full roadmap and design decisions
+**Delivered:**
+- MCP client/config + tests
+- Weather MCP handler with consent/fallback + traces
+- ZekaLab MCP handler (irrigation/fertilization/pest/subsidy/harvest)
+- ZekaLab MCP server (FastMCP/FastAPI) + Docker + 24 tests
 
-**Quick Start:** [21-MCP-PHASE-1.1-QUICKSTART.md](21-MCP-PHASE-1.1-QUICKSTART.md) - Implementation guide
+### **Phase 4: LangGraph Orchestrator Refactor** (Week 4)
+- [ ] Refactor context_loader/agronomist to orchestrate MCP calls in parallel with graceful degradation
+- [ ] Persist MCPTrace into AgentState + PostgresSaver; surface call_id/latency to Langfuse
+- [ ] Add MCP call logging to Langfuse for observability
+- [ ] Performance tuning
 
-**Key Findings:**
-- ✅ ALEM is **ideal for MCP** (modular nodes, explicit state management)
-- ✅ Weather node = **prime candidate** (currently synthetic)
-- ✅ Rules engine = **private MCP server** candidate (Cotton Rules, Subsidies)
-- ✅ Zero breaking changes needed; backward compatible integration
-- ✅ **Code Delivered:** src/yonca/mcp/ (3 files, 900+ lines) + tests (280 lines)
-
-**Phase 1.1 Tasks (Start Here):**
-- [ ] Review audit & summary documents (30 min)
-- [ ] Integrate MCP into FastAPI startup/shutdown (1 hour)
-- [ ] Add .env.example template with MCP vars (30 min)
-- [ ] Run unit tests: `pytest tests/unit/test_mcp_client.py -v` (15 min)
-- [ ] Create mock MCP server for local testing (1 hour)
-- [ ] Add Langfuse MCP call logging (1 hour)
-
-**Estimated Phase 1.1 Duration:** 7-8 hours
-
-**Phase 1.2 Tasks (Week 1 Continuation):**
-- [ ] Choose specific public MCP servers (OpenWeather confirmed)
-- [ ] Create mock MCP server startup task
-- [ ] Design authentication/credential management
-- [ ] Plan state model extensions (MCP metadata)
-
-**Estimated Phase 1.2 Duration:** 3-4 hours
-
-### **Phase 2: Public MCP Servers** (Week 2)
-- [ ] Integrate OpenWeather MCP (for hyperlocal crop forecasts)
-- [ ] Integrate Google Maps/Earth Engine MCP (satellite NDVI layers)
-- [ ] Create Chainlit UI indicators for MCP server connections (the "Plug" icon)
-- [ ] Add user consent flow for data access
-
-### **Phase 3: Private ZekaLab MCP Server** (Week 3)
-- [ ] Create internal `fastmcp` server wrapping your agronomical rules
-- [ ] Port "Cotton Rules Engine" into MCP tools
-- [ ] Port "Subsidies Database" as MCP resources
-- [ ] Secure with OIDC/SİMA Auth MCP integration
+### **Phase 5: DigiRella Demo Enhancement** (Week 5)
+- [ ] Update demo-ui to show MCP server status and consent gate
+- [ ] Add data source attribution display
+- [ ] Test full farmer journey with MCP-backed decisions
 
 ### **Phase 4: LangGraph Orchestrator Refactor** (Week 4)
 - [ ] Refactor existing nodes to call MCP servers instead of custom wrappers

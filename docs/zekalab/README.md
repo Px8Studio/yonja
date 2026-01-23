@@ -58,6 +58,7 @@ mindmap
 | [LANGGRAPH_ARCHITECTURE_GUIDE](LANGGRAPH_ARCHITECTURE_GUIDE.md) | **⭐ START HERE:** Dev vs Production, component relationships, multi-channel design, production stack |
 | [LANGGRAPH_TESTING_GUIDE](LANGGRAPH_TESTING_GUIDE.md) | Testing LangGraph execution and graph client |
 | [LANGGRAPH_DOCKER_DEPLOYMENT](LANGGRAPH_DOCKER_DEPLOYMENT.md) | Docker Compose setup and containerization |
+| [MCP-BLUEPRINT](MCP-BLUEPRINT.md) | Sovereign AI stack (LangGraph + FastMCP + Chainlit) and developer prompt |
 | [07-OBSERVABILITY](07-OBSERVABILITY.md) | Langfuse tracing, metrics |
 | [08-SECURITY](08-SECURITY.md) | Input validation, PII protection |
 | [09-PERFORMANCE-SLA](09-PERFORMANCE-SLA.md) | Latency targets, SLOs |

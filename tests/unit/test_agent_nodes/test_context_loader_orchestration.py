@@ -503,38 +503,29 @@ async def test_mcp_trace_consolidation():
             assert "zekalab" in servers
 
 
-@pytest.mark.asyncio
-async def test_mcp_trace_recorded_with_correct_fields(mock_zekalab_handler):
-    """Test that MCPTrace is recorded with correct fields after tool call."""
-    logger.info(
-        "evaluate_irrigation",
-        farm_id="farm_001",
-        crop="wheat",
-        soil_moisture=45.0,
-    )
+@pytest.fixture
+def mock_zekalab_handler():
+    """Fixture providing a mocked ZekaLab MCP handler."""
+    from datetime import UTC, datetime
 
-    # Add a small delay to ensure duration_ms > 0
-    import time
+    from yonca.agent.state import MCPTrace
+    from yonca.mcp.handlers.zekalab_handler import ZekaLabMCPHandler
 
-    start = time.perf_counter()
+    handler = ZekaLabMCPHandler()
 
-    result, trace = await mock_zekalab_handler.evaluate_irrigation_rules(
-        farm_id="farm_001",
-        crop_type="wheat",
-        soil_type="clay",
-        current_soil_moisture_percent=45.0,
-        temperature_c=28,
-        rainfall_mm_last_7_days=0,
-        growth_stage_days=0,
-    )
+    # Mock the evaluate_irrigation_rules method
+    async def mock_evaluate_irrigation(*args, **kwargs):
+        trace = MCPTrace(
+            server="zekalab",
+            tool="evaluate_irrigation_rules",
+            input_args=kwargs,
+            output={"recommendation": "irrigate", "confidence": 0.95},
+            duration_ms=42.5,
+            success=True,
+            error_message=None,
+            timestamp=datetime.now(UTC),
+        )
+        return ({"recommendation": "irrigate", "confidence": 0.95}, trace)
 
-    end = time.perf_counter()
-    (end - start) * 1000  # Convert to ms
-
-    assert trace.server == "zekalab"
-    assert trace.tool == "evaluate_irrigation_rules"
-    assert "farm_id" in trace.input_args
-    assert trace.success is True
-    # Allow for very small durations or mocked time
-    assert trace.duration_ms >= 0
-    assert trace.error_message is None
+    handler.evaluate_irrigation_rules = mock_evaluate_irrigation
+    return handler

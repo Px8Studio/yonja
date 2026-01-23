@@ -142,7 +142,7 @@ async def context_loader_node(state: AgentState) -> dict[str, Any]:
                 active_crops = farm_context_obj.active_crops if farm_context_obj else []
                 if active_crops:
                     crop_type = active_crops[0] if isinstance(active_crops, list) else active_crops
-                    mcp_tasks.append(_fetch_zekalab_rules_mcp(farm_id, crop_type))
+                    mcp_tasks.append(_fetch_zekalab_rules_mcp(farm_id, str(crop_type)))
                 else:
                     mcp_tasks.append(_noop_task("zekalab_rules"))
 
@@ -157,7 +157,7 @@ async def context_loader_node(state: AgentState) -> dict[str, Any]:
                     weather_result = results[0]
                     if isinstance(weather_result, tuple) and len(weather_result) == 2:
                         forecast_data, weather_trace = weather_result
-                        mcp_traces.append(weather_trace.dict())
+                        mcp_traces.append(weather_trace.model_dump())
 
                         # Convert to WeatherContext
                         from datetime import datetime
@@ -184,7 +184,7 @@ async def context_loader_node(state: AgentState) -> dict[str, Any]:
                                 duration_ms=0,
                                 success=False,
                                 error_message=str(weather_result),
-                            ).dict()
+                            ).model_dump()
                         )
 
                     # Process ZekaLab result
@@ -192,10 +192,9 @@ async def context_loader_node(state: AgentState) -> dict[str, Any]:
                         zekalab_result = results[1]
                         if isinstance(zekalab_result, tuple) and len(zekalab_result) == 2:
                             rules_data, rules_trace = zekalab_result
-                            mcp_traces.append(rules_trace.dict())
+                            mcp_traces.append(rules_trace.model_dump())
                             mcp_context["zekalab_rules"] = rules_data
                             logger.info("zekalab_mcp_success", farm_id=farm_id)
-
                         elif isinstance(zekalab_result, Exception):
                             logger.warning("zekalab_mcp_exception", error=str(zekalab_result))
                             mcp_traces.append(
@@ -207,7 +206,7 @@ async def context_loader_node(state: AgentState) -> dict[str, Any]:
                                     duration_ms=0,
                                     success=False,
                                     error_message=str(zekalab_result),
-                                ).dict()
+                                ).model_dump()
                             )
 
                     logger.info(
@@ -229,10 +228,10 @@ async def context_loader_node(state: AgentState) -> dict[str, Any]:
                             duration_ms=5000,
                             success=False,
                             error_message="Global MCP orchestration timeout (5s)",
-                        ).dict()
+                        ).model_dump()
                     )
 
-                except Exception as e:
+                except BaseException as e:
                     logger.error("mcp_orchestration_error", farm_id=farm_id, error=str(e))
                     mcp_traces.append(
                         MCPTrace(
@@ -243,7 +242,7 @@ async def context_loader_node(state: AgentState) -> dict[str, Any]:
                             duration_ms=0,
                             success=False,
                             error_message=f"Orchestration error: {str(e)}",
-                        ).dict()
+                        ).model_dump()
                     )
 
             # Fallback to synthetic if MCP didn't work
@@ -289,36 +288,28 @@ async def _fetch_weather_mcp(farm_id: str) -> tuple[dict[str, Any], MCPTrace]:
     """
     handler = WeatherMCPHandler()
     try:
-        weather_data, trace = await handler.get_forecast(farm_id)
+        result = await handler.get_forecast(farm_id)
+        # Handle both tuple and dict returns
+        if isinstance(result, tuple) and len(result) == 2:
+            weather_data, trace = result
+        else:
+            weather_data = result if isinstance(result, dict) else {"raw": str(result)}
+            trace = MCPTrace(
+                server="weather",
+                tool="get_forecast",
+                input_args={"farm_id": farm_id},
+                output=weather_data,
+                duration_ms=0,
+                success=True,
+            )
+        return weather_data, trace
 
-        # Ensure trace output is a dict
-        trace_output = trace.output if isinstance(trace.output, dict) else {}
-
-        # Create MCPTrace with proper output field
-        mcp_trace = MCPTrace(
-            server=trace.server,
-            tool=trace.tool,
-            input_args=trace.input_args or {},
-            output=trace_output,
-            duration_ms=trace.duration_ms,
-            success=trace.success,
-        )
-        return weather_data, mcp_trace
-    except Exception as e:
+    except Exception as e:  # Catch all exceptions from handler
         logger.error(f"Weather MCP fetch failed: {e}")
-        # Create error trace
-        mcp_trace = MCPTrace(
-            server="openweather",
-            tool="get_forecast",
-            input_args={"farm_id": farm_id},
-            output={},
-            duration_ms=0.0,
-            success=False,
-        )
         raise
 
 
-async def _fetch_zekalab_rules_mcp(farm_id: str, crop_type: str) -> tuple[dict, MCPTrace]:
+async def _fetch_zekalab_rules_mcp(farm_id: str, crop_type: str):
     """Fetch agricultural rules via ZekaLab MCP (async task).
 
     Args:
@@ -331,17 +322,12 @@ async def _fetch_zekalab_rules_mcp(farm_id: str, crop_type: str) -> tuple[dict, 
     Raises:
         Exception on failure (caught by orchestrator)
     """
-    logger.info("zekalab_mcp_start", farm_id=farm_id, crop_type=crop_type)
-    try:
-        # get_zekalab_handler is a sync factory that returns a handler with async methods
-        handler = get_zekalab_handler()
-        rules_data, trace = await handler.get_rules_resource(farm_id=farm_id, crop_type=crop_type)
-        logger.info("zekalab_mcp_success", farm_id=farm_id, crop_type=crop_type)
-        return rules_data, trace
-    except Exception as e:
-        logger.error("zekalab_mcp_error", farm_id=farm_id, crop_type=crop_type, error=str(e))
-        # Propagate error to be handled by the orchestrator/tests
-        raise
+    logger.info("zekalab_mcp_start")
+    # Ensure handler is correctly instantiated
+    handler = await get_zekalab_handler()  # Ensure this is awaited if it's a coroutine
+    rules_data, trace = await handler.get_rules_resource()  # Ensure correct parameters are passed
+    logger.info("zekalab_mcp_success", farm_id=farm_id, crop_type=crop_type)
+    return rules_data, trace
 
 
 async def _noop_task(task_name: str) -> None:
@@ -368,15 +354,15 @@ async def _get_synthetic_weather(region: str) -> WeatherContext:
     Returns:
         Synthetic weather context
     """
-    import random
+    import random  # Ensure random is imported
     from datetime import datetime
 
     # Regional temperature variations (January)
     regional_temps = {
-        "aran": (5, 12),  # Aran - warmer lowlands
+        "aran": (5, 12),
         "ganja_gazakh": (0, 8),
         "shaki_zagatala": (-2, 6),
-        "lankaran": (6, 14),  # Subtropical
+        "lankaran": (6, 14),
         "guba_khachmaz": (-4, 4),
         "mountainous_shirvan": (-2, 5),
         "upper_karabakh": (-4, 3),
@@ -390,14 +376,15 @@ async def _get_synthetic_weather(region: str) -> WeatherContext:
     precipitation = random.choice([0, 0, 0, 2, 5, 10])  # Mostly dry
 
     # Generate summary in Azerbaijani
+    summary = ""
     if precipitation > 5:
-        summary = "Yağışlı hava gözlənilir"
+        summary = "Yağışlı"
     elif temperature < 0:
-        summary = "Şaxtalı hava, ehtiyatlı olun"
+        summary = "Donlu"
     elif temperature > 30:
-        summary = "İsti hava, suvarma tövsiyə olunur"
+        summary = "Çox isti"
     else:
-        summary = "Müvafiq hava şəraiti"
+        summary = "Normal"
 
     return WeatherContext(
         temperature_c=round(temperature, 1),
@@ -417,6 +404,6 @@ def route_after_context(state: AgentState) -> str:
     routing = state.get("routing")
 
     if routing is None:
-        return "agronomist"
+        return "default_node"  # Specify a default node if routing is None
 
     return routing.target_node

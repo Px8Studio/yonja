@@ -455,9 +455,46 @@ supervisor ──┬──> end (greeting/off-topic handled)
 **Graph nodes** (see `src/yonca/agent/graph.py`):
 - `supervisor` — Routes intent, handles greetings
 - `context_loader` — Loads farm/user context from PostgreSQL
-- `agronomist` — Core agricultural reasoning
+- `agronomist` — Core agricultural reasoning (+ MCP tool calls)
 - `weather` — Weather-related queries
 - `validator` — Output validation + safety checks
+
+---
+
+## 🔌 MCP Integration Layer
+
+LangGraph calls external tools via **Model Context Protocol (MCP)** using `langchain-mcp-adapters`:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    LANGGRAPH + MCP                              │
+│                                                                  │
+│   ┌────────────────┐      ┌─────────────────────────────────┐   │
+│   │  StateGraph    │      │         ToolNode                │   │
+│   │                │      │   (auto-binds MCP tools)        │   │
+│   │  supervisor ──────────▶  • evaluate_irrigation_rules   │   │
+│   │       │        │      │  • evaluate_fertilization      │   │
+│   │  agronomist ──────────▶  • evaluate_pest_control       │   │
+│   │       │        │      │  • calculate_subsidy           │   │
+│   │  validator     │      │  • predict_harvest_date        │   │
+│   └────────────────┘      └─────────────┬───────────────────┘   │
+│                                          │                       │
+└──────────────────────────────────────────┼───────────────────────┘
+                                           │ MCP Protocol
+                                           ▼
+                              ┌─────────────────────────┐
+                              │   ZekaLab FastMCP       │
+                              │   :7777                 │
+                              │   (Custom rules engine) │
+                              └─────────────────────────┘
+```
+
+**Key Files:**
+- `src/yonca/mcp/adapters.py` — MCP client configuration
+- `src/yonca/mcp_server/zekalab_fastmcp.py` — FastMCP server with 5 tools
+- `src/yonca/agent/state.py` — MCPTrace for observability
+
+> 📖 **Full MCP documentation:** See [MCP-ARCHITECTURE.md](MCP-ARCHITECTURE.md)
 
 ---
 

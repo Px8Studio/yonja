@@ -1563,7 +1563,7 @@ async def setup_chat_settings(user: cl.User | None = None):
                 label=AZ_STRINGS["settings_currency"],
                 values=currency_values,
                 initial_index=currency_idx,
-                description="Qiymətlər və subsidiyalar üçün valyuta",
+                description="Qiymətlər və subsidiya üçün valyuta",
             ),
             Select(
                 id="detail_level",
@@ -1988,17 +1988,30 @@ async def send_dashboard_welcome(user: cl.User | None = None):
             greeting = "Xoş gəlmisiniz! 👋"
 
         # Check MCP service health (Phase 5 Enhancement)
-        mcp_statuses = await get_all_mcp_status()
-        mcp_status_line = format_mcp_status_line(mcp_statuses)
+        try:
+            from yonca.mcp.adapters import check_mcp_servers_health
 
-        # Count online services for status indicator
-        online_count = sum(1 for s in mcp_statuses.values() if s["status"] == "online")
-        total_count = len(mcp_statuses)
-        system_status = (
-            "✓ Normal"
-            if online_count == total_count
-            else f"⚠ {online_count}/{total_count} servis aktiv"
-        )
+            mcp_status = await check_mcp_servers_health()
+            mcp_online = [name for name, health in mcp_status.items() if health.get("healthy")]
+            online_count = len(mcp_online)
+            total_count = len(mcp_status)
+            mcp_statuses = mcp_status
+
+            if not mcp_status.get("zekalab", {}).get("healthy", True):
+                await cl.Message(
+                    content="⚠️ ZekaLab rules engine offline. Basic mode active.", author="system"
+                ).send()
+
+            # Build status lines
+            system_status = "✓ LangGraph server online"
+            mcp_status_line = f"✓ MCP servers: {online_count}/{total_count} online"
+        except Exception:
+            # MCP check failed, use defaults
+            system_status = "✓ LangGraph server online"
+            mcp_status_line = "⚠️ MCP status unknown"
+            mcp_statuses = {}
+            online_count = 0
+            total_count = 0
 
         # Build dashboard message using native markdown (more compatible than inline HTML)
         dashboard_content = f"""{greeting}
@@ -2175,7 +2188,7 @@ async def on_audio_end(elements: list[cl.Audio]):
             mime_type=mime_type,
         )
 
-        # Transcribe using Whisper via Ollama or external service
+        # Transcribe using Whisper model
         transcription = await transcribe_audio_whisper(audio_data, mime_type)
 
         if transcription and transcription.strip():
@@ -2727,11 +2740,12 @@ async def on_consent_deny(action: cl.Action):
 # ============================================
 @cl.on_message
 async def on_message(message: cl.Message):
-    """Handle incoming user messages with dual-mode support.
+    """Handle incoming user messages with file upload and MCP tool support.
 
-    Supports two integration modes:
-    - 'direct': In-process LangGraph execution (development)
-    - 'api': HTTP calls to FastAPI graph API (production-like)
+    Supports:
+    - Text messages
+    - File uploads (PDF, DOCX, images) → MCP document processing
+    - Dual integration modes (direct/api)
 
     Set via INTEGRATION_MODE environment variable.
     """
@@ -2739,6 +2753,32 @@ async def on_message(message: cl.Message):
     user_id = cl.user_session.get("user_id", "anonymous")
     farm_id = cl.user_session.get("farm_id")
     thread_id = cl.user_session.get("thread_id")
+
+    # ═══════════════════════════════════════════════════════
+    # FILE UPLOAD HANDLING (MCP Document Processing)
+    # ═══════════════════════════════════════════════════════
+    file_paths: list[str] = []
+    if message.elements:
+        for element in message.elements:
+            # Handle file uploads
+            if hasattr(element, "path") and element.path:
+                file_paths.append(element.path)
+                logger.info(
+                    "file_uploaded",
+                    file_path=element.path,
+                    file_name=getattr(element, "name", "unknown"),
+                    mime_type=getattr(element, "mime", "unknown"),
+                )
+
+        if file_paths:
+            # Store file paths in session for MCP processing
+            cl.user_session.set("pending_files", file_paths)
+
+            # Notify user about file processing
+            await cl.Message(
+                content=f"📎 {len(file_paths)} fayl qəbul edildi. Emal olunur...",
+                author="system",
+            ).send()
 
     # Phase 5: Data Consent Check
     # Show consent prompt once per session before accessing external data
@@ -2768,6 +2808,7 @@ async def on_message(message: cl.Message):
         has_profile_prompt=bool(profile_prompt),
         expertise_areas=cl.user_session.get("expertise_areas", []),
         integration_mode=demo_settings.integration_mode,
+        file_count=len(file_paths),
     )
 
     # Create response message
@@ -2788,6 +2829,7 @@ async def on_message(message: cl.Message):
             scenario_context=scenario_context,
             enable_thinking_steps=enable_thinking_steps,
             enable_feedback=enable_feedback,
+            file_paths=file_paths,  # Pass file paths to handler
         )
 
     except Exception as e:
@@ -2809,11 +2851,15 @@ async def _handle_message(
     scenario_context: dict | None,
     enable_thinking_steps: bool,
     enable_feedback: bool,
+    file_paths: list[str] | None = None,
 ):
     """Handle message via HTTP call to LangGraph Server (with streaming).
 
     This handler implements the production architecture:
     UI (Chainlit) → HTTP → LangGraph Server → LLM
+
+    Args:
+        file_paths: Optional list of uploaded file paths for document processing
     """
     try:
         async with LangGraphClient(
@@ -2834,6 +2880,7 @@ async def _handle_message(
                 system_prompt_override=profile_prompt if profile_prompt else None,
                 scenario_context=scenario_context,
                 data_consent_given=data_consent_given,
+                file_paths=file_paths,  # Pass uploaded files for doc processing
             )
 
             # Metadata for tracing/logging
@@ -2842,6 +2889,7 @@ async def _handle_message(
                     "user_id": user_id,
                     "farm_id": farm_id,
                     "source": "chainlit",
+                    "has_files": bool(file_paths),  # Track file uploads
                 }
             }
 

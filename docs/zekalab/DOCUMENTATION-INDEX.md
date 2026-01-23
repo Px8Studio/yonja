@@ -1,6 +1,6 @@
 # 📑 Yonca AI Documentation Index
 
-**Updated:** January 23, 2026
+**Updated:** January 2026
 
 ---
 
@@ -8,9 +8,9 @@
 
 | Doc | Purpose | When to Use |
 |:----|:--------|:------------|
-| [MCP-ARCHITECTURE.md](MCP-ARCHITECTURE.md) | **MCP single source of truth** | Understanding MCP setup, status, relationships |
+| [MCP-ARCHITECTURE.md](MCP-ARCHITECTURE.md) | **MCP integration guide** | Understanding MCP setup, tools, flow |
 | [03-ARCHITECTURE.md](03-ARCHITECTURE.md) | Overall system architecture | Understanding full ALEM stack |
-| [MCP-BLUEPRINT.md](MCP-BLUEPRINT.md) | Developer prompt template | Starting new Copilot/Cursor sessions |
+| [MCP-BLUEPRINT.md](MCP-BLUEPRINT.md) | Developer prompt template | Starting new AI coding sessions |
 | [00-IMPLEMENTATION-BACKLOG.md](00-IMPLEMENTATION-BACKLOG.md) | Roadmap & priorities | Planning next work |
 
 ---
@@ -20,19 +20,13 @@
 ### 🔌 MCP (Model Context Protocol)
 | Doc | Status | Notes |
 |:----|:------:|:------|
-| **[MCP-ARCHITECTURE.md](MCP-ARCHITECTURE.md)** | ✅ Current | Single source of truth |
-| [MCP-BLUEPRINT.md](MCP-BLUEPRINT.md) | ✅ Current | Developer prompt only |
-| ~~22-MCP-PHASE-2-WEATHER.md~~ | 🗄️ Archive | Superseded by MCP-ARCHITECTURE |
-| ~~23-MCP-PHASE-3-INTERNAL-SERVER.md~~ | 🗄️ Archive | Superseded by MCP-ARCHITECTURE |
-| ~~PHASE-2-COMPLETION-SUMMARY.md~~ | 🗄️ Archive | Merged into MCP-ARCHITECTURE |
-| ~~PHASE-3-COMPLETION-SUMMARY.md~~ | 🗄️ Archive | Merged into MCP-ARCHITECTURE |
-| ~~PHASE-4-HANDOFF.md~~ | 🗄️ Archive | Merged into MCP-ARCHITECTURE |
-| ~~QUICK-REFERENCE.md~~ | 🗄️ Archive | Merged into MCP-ARCHITECTURE |
+| [MCP-ARCHITECTURE.md](MCP-ARCHITECTURE.md) | ✅ Current | Single source of truth |
+| [MCP-BLUEPRINT.md](MCP-BLUEPRINT.md) | ✅ Current | AI assistant prompt |
 
 ### 🏗️ Architecture & Design
 | Doc | Status | Notes |
 |:----|:------:|:------|
-| [03-ARCHITECTURE.md](03-ARCHITECTURE.md) | ✅ Current | Full system overview |
+| [03-ARCHITECTURE.md](03-ARCHITECTURE.md) | ✅ Current | Full system overview + MCP section |
 | [01-MANIFESTO.md](01-MANIFESTO.md) | ✅ Current | Project vision |
 | [07-OBSERVABILITY.md](07-OBSERVABILITY.md) | ✅ Current | Logging/tracing strategy |
 
@@ -47,57 +41,61 @@
 | Doc | Status | Notes |
 |:----|:------:|:------|
 | [12-DEPLOYMENT-PRICING.md](12-DEPLOYMENT-PRICING.md) | ✅ Current | Hosting options |
-| [PHASE-3-DEPLOYMENT-GUIDE.md](PHASE-3-DEPLOYMENT-GUIDE.md) | ✅ Current | MCP server deployment |
 
 ### 🔮 Future Planning
 | Doc | Status | Notes |
 |:----|:------:|:------|
 | [18-ENTERPRISE-INTEGRATION-ROADMAP.md](18-ENTERPRISE-INTEGRATION-ROADMAP.md) | ✅ Current | Partner integrations |
 | [19-YONCA-AI-INTEGRATION-UNIVERSE.md](19-YONCA-AI-INTEGRATION-UNIVERSE.md) | ✅ Current | Ecosystem vision |
-| [24-MCP-PHASE-4-LANGGRAPH-REFACTOR.md](24-MCP-PHASE-4-LANGGRAPH-REFACTOR.md) | 🔄 In Progress | Next MCP phase |
-| [24-MCP-PHASE-5-DEMO-ENHANCEMENT.md](24-MCP-PHASE-5-DEMO-ENHANCEMENT.md) | ⬜ Planned | Demo improvements |
 
 ---
 
-## 🗄️ Archive (Historical Reference Only)
+## 🗂️ Key Code Locations
 
-These docs contain **implementation details that are now in code**. Keep for git history but don't maintain:
-
-- `SESSION-2-*.md` — Session logs (historical)
-- `PHASE-*-COMPLETION-SUMMARY.md` — Merged into MCP-ARCHITECTURE
-- `22-MCP-PHASE-2-WEATHER.md` — Code snippets now implemented
-- `23-MCP-PHASE-3-INTERNAL-SERVER.md` — Code snippets now implemented
-
----
-
-## 🗂️ Code Organization
-
-### Phase 2: Weather MCP (Complete ✅)
+### MCP Integration
 ```
-src/yonca/mcp/handlers/
-├── weather_handler.py (330 lines)
-└── __init__.py
+src/yonca/mcp/
+├── adapters.py           # langchain-mcp-adapters config
+
+src/yonca/mcp_server/
+├── zekalab_fastmcp.py    # FastMCP server (5 tools)
 
 src/yonca/agent/
-├── state.py (updated with MCPTrace)
-└── nodes/context_loader.py (updated with weather MCP)
-
-tests/unit/test_mcp_handlers/
-├── test_weather_handler.py (184 lines, 6 tests)
-└── __init__.py
-```
-
-### Phase 3: ZekaLab MCP Server (Complete ✅)
-```
-src/yonca/mcp_server/
-├── main.py (624 lines - MAIN SERVER)
-├── __init__.py
-├── requirements.txt
-├── Dockerfile
-├── tools/__init__.py
-└── resources/__init__.py
+├── graph.py              # StateGraph + ToolNode + make_graph()
+├── state.py              # AgentState + MCPTrace + file_paths
 
 tests/unit/test_mcp_server/
+├── test_zekalab_mcp.py   # 24 tests
+```
+
+### UI Layer
+```
+demo-ui/
+├── app.py                # Chainlit UI + MCP health checks
+```
+
+### Config
+```
+langgraph.json            # Graph entrypoint + MCP env vars
+```
+
+---
+
+## 🗑️ Deleted (Consolidated)
+
+The following docs were **deleted** and consolidated into [MCP-ARCHITECTURE.md](MCP-ARCHITECTURE.md):
+
+- `22-MCP-PHASE-2-WEATHER.md`
+- `23-MCP-PHASE-3-INTERNAL-SERVER.md`
+- `24-MCP-PHASE-4-LANGGRAPH-REFACTOR.md`
+- `24-MCP-PHASE-5-DEMO-ENHANCEMENT.md`
+- `PHASE-2-COMPLETION-SUMMARY.md`
+- `PHASE-3-COMPLETION-SUMMARY.md`
+- `PHASE-3-DEPLOYMENT-GUIDE.md`
+- `PHASE-4-HANDOFF.md`
+- `QUICK-REFERENCE.md`
+- `SESSION-2-FINAL-SUMMARY.md`
+- `SESSION-2-PROGRESS-REPORT.md`
 ├── test_zekalab_mcp.py (390 lines, 24 tests)
 └── __init__.py
 ```

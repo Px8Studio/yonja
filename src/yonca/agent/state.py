@@ -314,6 +314,9 @@ class AgentState(TypedDict, total=False):
     mcp_server_health: dict[str, bool]  # Health status of each MCP server
     mcp_config: dict  # Session-level MCP configuration
 
+    # ===== Document Processing (Phase 3) =====
+    file_paths: list[str]  # Uploaded file paths for document processing
+
 
 # ============================================================
 # State Helpers
@@ -329,6 +332,7 @@ def create_initial_state(
     system_prompt_override: str | None = None,
     scenario_context: dict | None = None,
     data_consent_given: bool = False,
+    file_paths: list[str] | None = None,
 ) -> AgentState:
     """Create initial state for a new conversation turn.
 
@@ -341,6 +345,7 @@ def create_initial_state(
         system_prompt_override: Custom system prompt for profile-specific behavior (optional)
         scenario_context: Farm scenario from chat settings (optional)
         data_consent_given: Whether user consented to use external APIs (optional)
+        file_paths: Uploaded file paths for document processing (optional)
 
     Returns:
         Initialized AgentState ready for graph execution.
@@ -395,6 +400,8 @@ def create_initial_state(
             "max_mcp_calls_per_turn": 10,
             "mcp_timeout_seconds": 5,
         },
+        # Document Processing (Phase 3)
+        file_paths=file_paths or [],
     )
 
 

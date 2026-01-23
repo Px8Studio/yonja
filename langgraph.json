@@ -4,15 +4,10 @@
     "graphs": {
         "yonca_agent": "./src/yonca/agent/graph.py:create_agent_graph"
     },
-    "env": {
-        "YONCA_LLM_PROVIDER": "YONCA_LLM_PROVIDER",
-        "YONCA_OLLAMA_BASE_URL": "YONCA_OLLAMA_BASE_URL",
-        "PYTHONPATH": "src"
-    },
+    "env": ".env",
     "python_version": "3.12",
     "store": {
-        "postgres": {
-            "uri_env_var": "LANGGRAPH_POSTGRES_URI"
-        }
+        "type": "postgres",
+        "uri": "postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST:-localhost}:${PGPORT:-5433}/${PGDATABASE:-yonca}"
     }
 }

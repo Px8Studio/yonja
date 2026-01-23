@@ -1,256 +1,161 @@
-# 🔌 MCP Architecture — Sovereign AI Stack
+# 🔌 MCP Architecture — ALEM Sovereign AI Stack
 
-> **Version:** 2.0 | **Updated:** January 23, 2026
-> **Purpose:** Single source of truth for MCP integration in ALEM
-
----
-
-## 🎯 The Big Picture
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        MCP ECOSYSTEM (2026 Sovereign Stack)                 │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│   🔄 LangGraph is BIDIRECTIONAL with MCP:                                   │
-│      • As CLIENT → Calls external MCP tools (Weather, Postgres, Finance)    │
-│      • As SERVER → Exposes ALEM as an MCP tool to other systems             │
-│                                                                             │
-│   This means:                                                               │
-│   - Claude Desktop / GPT Agents can plug in ALEM's URL as a tool            │
-│   - Master AI systems (DigiRella, Ministry) get ALEM "out of the box"       │
-│   - No API integration needed — just MCP URL handshake                      │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+> **Version:** 3.0 | **Updated:** January 2026
+> **Status:** ✅ Production Ready (uses `langchain-mcp-adapters`)
 
 ---
 
-## 🏗️ Architecture Diagram
+## 🎯 Overview
+
+ALEM integrates external tools via **Model Context Protocol (MCP)** using the official `langchain-mcp-adapters` library. LangGraph's `ToolNode` automatically binds and invokes MCP tools.
 
 ```
-                                  ┌─────────────────────────────────┐
-                                  │   EXTERNAL CONSUMERS            │
-                                  │   (Claude Desktop, GPT, etc.)   │
-                                  └───────────────┬─────────────────┘
-                                                  │ MCP Protocol
-                                                  ▼
-┌──────────────────────────────────────────────────────────────────────────────────┐
-│                         LANGGRAPH SERVER (:2024)                                  │
-│  ┌─────────────────────────────────────────────────────────────────────────────┐ │
-│  │ ✨ AUTO-EXPOSED AS MCP SERVER (Zero Code)                                    │ │
-│  │    Your ALEM Agent becomes a callable MCP Tool for external systems          │ │
-│  └─────────────────────────────────────────────────────────────────────────────┘ │
-│                                                                                   │
-│  ┌────────────────────┐    ┌────────────────────┐    ┌────────────────────────┐  │
-│  │ SUPERVISOR NODE    │───▶│ CONTEXT LOADER     │───▶│ AGRONOMIST NODE        │  │
-│  │ • Intent routing   │    │ • Load farm data   │    │ • Generate advice      │  │
-│  │ • Language detect  │    │ • Call Weather MCP │    │ • Call ZekaLab MCP     │  │
-│  └────────────────────┘    │ • Load scenarios   │    │ • Format response      │  │
-│                            └─────────┬──────────┘    └───────────┬────────────┘  │
-│                                      │                            │              │
-│                        ┌─────────────┴─────────────┐   ┌──────────┴───────────┐  │
-│                        │   MCP CLIENT CALLS        │   │  MCP CLIENT CALLS    │  │
-│                        └─────────────┬─────────────┘   └──────────┬───────────┘  │
-└───────────────────────────────────────┼────────────────────────────┼─────────────┘
-                                        │                            │
-        ┌───────────────────────────────┼────────────────────────────┼─────────────┐
-        │                               ▼                            ▼             │
-        │ ┌─────────────────────┐  ┌─────────────────────┐  ┌──────────────────┐   │
-        │ │ 🌤️ OpenWeather MCP  │  │ 🗄️ Postgres MCP     │  │ 🧠 ZekaLab MCP   │   │
-        │ │ (External)          │  │ (Out-of-Box)        │  │ (Custom/FastMCP) │   │
-        │ │ • get_forecast      │  │ • query_database    │  │ :7777            │   │
-        │ │ • get_alerts        │  │ • get_schema        │  │ • irrigation     │   │
-        │ │ • current_weather   │  │ • list_tables       │  │ • fertilization  │   │
-        │ └─────────────────────┘  └─────────────────────┘  │ • pest_control   │   │
-        │                                                    │ • subsidy        │   │
-        │         M C P   S E R V E R S   L A Y E R         │ • harvest_date   │   │
-        └───────────────────────────────────────────────────┴──────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                    ALEM ARCHITECTURE WITH MCP                                │
+│                                                                               │
+│   ┌─────────────┐     HTTP      ┌─────────────────────────────────────────┐  │
+│   │  Chainlit   │──────────────▶│        LangGraph Server :2024           │  │
+│   │  UI :8501   │◀──────────────│  ┌─────────────────────────────────┐    │  │
+│   │             │   SSE Stream  │  │         StateGraph              │    │  │
+│   │ • Chat UI   │               │  │  ┌───────────┐  ┌───────────┐   │    │  │
+│   │ • Files     │               │  │  │supervisor │─▶│agronomist │   │    │  │
+│   │ • Consent   │               │  │  └───────────┘  └─────┬─────┘   │    │  │
+│   └─────────────┘               │  │                       │         │    │  │
+│                                  │  │              ┌───────▼───────┐ │    │  │
+│                                  │  │              │   ToolNode    │ │    │  │
+│                                  │  │              │ (auto-invoke) │ │    │  │
+│                                  │  │              └───────┬───────┘ │    │  │
+│                                  │  └──────────────────────┼─────────┘    │  │
+│                                  └─────────────────────────┼──────────────┘  │
+│                                                            │                 │
+│                    ┌───────────────────────────────────────┼────────────┐    │
+│                    │              MCP SERVERS LAYER        │            │    │
+│                    │  ┌────────────────┐    ┌──────────────▼─────────┐  │    │
+│                    │  │ OpenWeather    │    │    ZekaLab FastMCP     │  │    │
+│                    │  │ (optional)     │    │    :7777               │  │    │
+│                    │  │ • forecast     │    │    • irrigation_rules  │  │    │
+│                    │  │ • alerts       │    │    • fertilizer_rules  │  │    │
+│                    │  └────────────────┘    │    • pest_control      │  │    │
+│                    │                        │    • subsidy_calc      │  │    │
+│                    │                        │    • harvest_predict   │  │    │
+│                    │                        └────────────────────────┘  │    │
+│                    └────────────────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📊 Component Roles
+## 🧩 Component Roles
 
-| Component | Role | Status | Code Location |
-|:----------|:-----|:------:|:--------------|
-| **LangGraph Server** | Graph Host + Auto MCP Server | ✅ Infra | `langgraph dev` |
-| **ALEM (LangGraph)** | Brain — Orchestrates all nodes | ✅ Custom | `src/yonca/agent/graph.py` |
-| **FastMCP (ZekaLab)** | Tool Factory — Custom agro rules | ✅ Custom | `src/yonca/mcp_server/main.py` |
-| **Postgres MCP** | Data Bridge — Opens DB to AI | 🔮 Config Only | `@modelcontextprotocol/server-postgres` |
-| **OpenWeather MCP** | External Data — Live forecasts | ✅ Handler | `src/yonca/mcp/handlers/weather_handler.py` |
-| **Chainlit** | Window — Visualizes the graph | ✅ Custom | `demo-ui/app.py` |
-
----
-
-## ✅ What's Implemented
-
-### Phase 2: Weather MCP Integration ✅
-| Component | Lines | Tests | Status |
-|:----------|:-----:|:-----:|:------:|
-| `WeatherMCPHandler` | 330 | 6/6 ✅ | Production |
-| Context loader integration | — | — | ✅ |
-| Graceful fallback | — | — | ✅ |
-
-### Phase 3: ZekaLab Internal MCP ✅
-| Component | Lines | Tests | Status |
-|:----------|:-----:|:-----:|:------:|
-| `mcp_server/main.py` | 793 | 24/24 ✅ | Production |
-| `ZekaLabMCPHandler` | 570 | — | Production |
-| Docker + deployment | — | — | ✅ |
-
-**5 Tools Available:**
-- `evaluate_irrigation_rules` → Should irrigate? How much? When?
-- `evaluate_fertilization_rules` → NPK recommendations
-- `evaluate_pest_control_rules` → Pest detection + action plans
-- `calculate_subsidy` → Government subsidy calculations
-- `predict_harvest_date` → GDD-based harvest prediction
-
-### Phase 4: LangGraph Orchestration ✅
-| Component | Lines | Tests | Status |
-|:----------|:-----:|:-----:|:------:|
-| Parallel MCP in context_loader | 460 | ✅ | Production |
-| ZekaLab in agronomist node | 423 | 20/20 ✅ | Production |
-| MCPTrace persistence | — | — | ✅ |
-| Graceful degradation | — | — | ✅ |
-
-**Key Features Implemented:**
-- ✅ `asyncio.gather()` for parallel Weather + ZekaLab MCP calls
-- ✅ 5-second global timeout with graceful fallback to synthetic data
-- ✅ Intent-based ZekaLab tool routing (irrigation→evaluate_irrigation, etc.)
-- ✅ MCPTrace recorded for every call (success/failure + duration_ms)
-- ✅ `<MCP_QAYDALAR>` section injected into LLM prompt with rule summaries
+| Component | Port | Responsibility |
+|:----------|:----:|:---------------|
+| **Chainlit** | 8501 | Chat UI, file uploads, MCP health display |
+| **LangGraph Server** | 2024 | Graph execution, state persistence |
+| **ToolNode** | — | Auto-binds & invokes MCP tools from LLM calls |
+| **ZekaLab FastMCP** | 7777 | Custom agronomy rules engine |
+| **MCP Adapters** | — | `langchain-mcp-adapters` for tool loading |
 
 ---
 
-## 🔮 What's Next
-
-### Phase 5: Demo Enhancement ✅
-| Feature | Status | Code Location |
-|:--------|:------:|:--------------|
-| MCP status badge in welcome | ✅ | `demo-ui/app.py:send_dashboard_welcome()` |
-| Data flow visualization | ✅ | `demo-ui/app.py:_format_mcp_data_flow()` |
-| Consent flow for external MCP | ✅ | `demo-ui/app.py:_show_data_consent_prompt()` |
-
-**Key Features Implemented:**
-- ✅ `get_all_mcp_status()` parallel health check for all MCP services
-- ✅ MCP status line in welcome: "🔌 ✓ ZekaLab (12ms) • ✓ LangGraph (8ms)"
-- ✅ `_format_mcp_data_flow()` shows which MCP servers contributed to each response
-- ✅ Privacy-first consent prompt before calling external APIs (weather, etc.)
-- ✅ `data_consent_given` flag passed to LangGraph agent state
-
-### Phase 6: Postgres MCP (Planned)
-- [ ] Deploy `@modelcontextprotocol/server-postgres` container
-- [ ] Create "Data Navigator" node in LangGraph
-- [ ] Bind Postgres MCP tools to node (no SQL writing)
-
----
-
-## 🧩 Relationship Map
+## 📁 Key Files
 
 ```
-┌────────────────────────────────────────────────────────────────────┐
-│                     HOW COMPONENTS RELATE                          │
-├────────────────────────────────────────────────────────────────────┤
-│                                                                    │
-│   CHAINLIT ──────────▶ LANGGRAPH ──────────▶ MCP SERVERS           │
-│   (Window)             (Brain)               (Tools/Data)          │
-│                                                                    │
-│   Shows UI ◀───────── Orchestrates ────────▶ Weather (real data)   │
-│   Streams tokens        nodes                ZekaLab (rules)       │
-│   Handles OAuth         Manages state        Postgres (DB access)  │
-│                         Calls MCP tools                            │
-│                                                                    │
-│   ────────────────────────────────────────────────────────────     │
-│                                                                    │
-│   FASTMCP ────────────▶ ZekaLab MCP Server                         │
-│   (Builder)             (Your custom tools)                        │
-│                                                                    │
-│   Creates MCP tools ──▶ evaluate_irrigation, calculate_subsidy...  │
-│   with decorators       Runs on :7777                              │
-│                                                                    │
-│   ────────────────────────────────────────────────────────────     │
-│                                                                    │
-│   LANGGRAPH SERVER ──▶ Hosts ALEM + Exposes as MCP Tool            │
-│   (Host/Adapter)        External systems can "use" your agent      │
-│                                                                    │
-└────────────────────────────────────────────────────────────────────┘
+src/yonca/
+├── mcp/
+│   └── adapters.py              # MCP client config (langchain-mcp-adapters)
+├── mcp_server/
+│   └── zekalab_fastmcp.py       # FastMCP server (5 tools, 3 resources)
+└── agent/
+    ├── graph.py                 # StateGraph + make_graph() entrypoint
+    └── state.py                 # AgentState + MCPTrace + file_paths
+
+langgraph.json                   # Graph config + MCP env vars
 ```
 
 ---
 
-## 🚀 Quick Commands
+## 🔧 ZekaLab MCP Tools
+
+| Tool | Purpose | Key Args |
+|:-----|:--------|:---------|
+| `evaluate_irrigation_rules` | Should water? How much? | soil_moisture, temp, rainfall |
+| `evaluate_fertilization_rules` | NPK recommendations | crop, soil_data, growth_stage |
+| `evaluate_pest_control_rules` | Pest action plans | weather, pests_observed |
+| `calculate_subsidy` | Government subsidy calc | crop, hectares, farmer_age |
+| `predict_harvest_date` | GDD harvest prediction | planting_date, gdd_target |
+
+---
+
+## ⚙️ Configuration
+
+### langgraph.json
+```json
+{
+  "graphs": {
+    "yonca_agent": "./src/yonca/agent/graph.py:make_graph"
+  },
+  "env": ".env"
+}
+```
+
+### Environment Variables
+```bash
+ZEKALAB_MCP_ENABLED=true
+ZEKALAB_MCP_URL=http://localhost:7777
+ZEKALAB_MCP_SECRET=optional-auth-token
+```
+
+---
+
+## 🚀 Quick Start
 
 ```powershell
-# Start ZekaLab MCP Server
-.venv\Scripts\python.exe -m uvicorn yonca.mcp_server.main:app --port 7777
+# 1. Start ZekaLab MCP Server (VS Code task or manual)
+.venv\Scripts\python.exe -m uvicorn yonca.mcp_server.zekalab_fastmcp:mcp --port 7777
 
-# Test MCP Server
-.venv\Scripts\python.exe -m pytest tests/unit/test_mcp_server/ -v
+# 2. Start LangGraph Server
+langgraph dev
 
-# Health Check
+# 3. Start Chainlit UI
+chainlit run demo-ui/app.py
+
+# 4. Verify MCP health
 curl http://localhost:7777/health
 ```
 
 ---
 
-## 📁 File Locations
+## 🧪 Testing
 
-```
-src/yonca/
-├── mcp/
-│   ├── client.py              # MCP client (calls servers)
-│   ├── config.py              # MCP config management
-│   └── handlers/
-│       ├── weather_handler.py # OpenWeather MCP handler
-│       └── zekalab_handler.py # ZekaLab MCP handler
-│
-├── mcp_server/
-│   ├── main.py                # ZekaLab MCP server (FastMCP)
-│   ├── Dockerfile             # Container config
-│   └── requirements.txt       # Server dependencies
-│
-└── agent/
-    ├── graph.py               # LangGraph definition
-    ├── state.py               # AgentState + MCPTrace
-    └── nodes/
-        ├── context_loader.py  # Calls Weather MCP
-        └── agronomist.py      # Will call ZekaLab MCP (Phase 4)
+```powershell
+# ZekaLab MCP server tests
+pytest tests/unit/test_mcp_server/test_zekalab_mcp.py -v
 ```
 
 ---
 
-## 🔐 Environment Variables
+## 📊 MCP Trace (Observability)
 
-```env
-# MCP General
-MCP_ENABLED=true
-
-# Weather MCP
-WEATHER_MCP_ENABLED=true
-WEATHER_MCP_URL=https://openweather.mcp.example.com
-WEATHER_API_KEY=your_key
-
-# ZekaLab MCP
-ZEKALAB_MCP_ENABLED=true
-ZEKALAB_MCP_URL=http://localhost:7777
-ZEKALAB_TIMEOUT_MS=2000
-
-# Postgres MCP (Phase 6)
-POSTGRES_MCP_URL=postgresql://yonca:password@localhost:5433/yonca
+Every MCP call is recorded in `AgentState.mcp_traces`:
+```python
+MCPTrace(
+    server="zekalab",
+    tool="evaluate_irrigation_rules",
+    duration_ms=42.5,
+    success=True
+)
 ```
 
 ---
 
-## 📚 Deprecation Notice
+## 🔮 Roadmap
 
-The following docs are **superseded** by this file:
-- `22-MCP-PHASE-2-WEATHER.md` → Implementation complete, code snippets removed
-- `23-MCP-PHASE-3-INTERNAL-SERVER.md` → Implementation complete, code snippets removed
-- `PHASE-2-COMPLETION-SUMMARY.md` → Merged into status table above
-- `PHASE-3-COMPLETION-SUMMARY.md` → Merged into status table above
-- `PHASE-4-HANDOFF.md` → Merged into "What's Next" section
-- `QUICK-REFERENCE.md` → Merged into Quick Commands section
-
-**Keep for reference:**
-- `MCP-BLUEPRINT.md` → Developer prompt template (useful for new sessions)
+| Feature | Status |
+|:--------|:------:|
+| ZekaLab FastMCP Server | ✅ |
+| langchain-mcp-adapters integration | ✅ |
+| ToolNode auto-binding | ✅ |
+| Chainlit file upload flow | ✅ |
+| Postgres MCP (NL-to-SQL) | 🔮 |
+| Docling MCP (documents) | 🔮 |
+| ALEM exposed as MCP Server | 🔮 |

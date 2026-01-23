@@ -166,27 +166,27 @@ class ZekaLabMCPHandler:
         crop_type: str,
         soil_type: str,
         current_soil_moisture_percent: float,
-        temperature_c: float,
-        rainfall_mm_last_7_days: float = 0,
+        temperature_c: int = 28,
+        rainfall_mm_last_7_days: int = 0,
         growth_stage_days: int = 0,
     ) -> tuple[dict[str, Any], MCPTrace]:
         """Evaluate irrigation rules.
 
         Args:
             farm_id: Farm identifier
-            crop_type: "cotton", "wheat", or "vegetables"
-            soil_type: "sandy", "loamy", "clay", or "calcareous"
-            current_soil_moisture_percent: 0-100
+            crop_type: Crop type
+            soil_type: Soil classification
+            current_soil_moisture_percent: Current soil moisture level
             temperature_c: Current temperature
-            rainfall_mm_last_7_days: Recent rainfall
+            rainfall_mm_last_7_days: Rainfall in last 7 days
             growth_stage_days: Days since planting
 
         Returns:
             (result_dict, trace) where result contains:
                 - should_irrigate: bool
                 - recommended_water_mm: float
-                - timing: str (6am/noon/6pm/anytime)
-                - confidence: float (0-1)
+                - timing: str
+                - confidence: float
                 - rule_id: str
                 - reasoning: str
         """

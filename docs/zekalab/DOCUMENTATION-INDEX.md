@@ -1,64 +1,72 @@
-# 📑 MCP Integration Documentation Index
+# 📑 Yonca AI Documentation Index
 
-**Session 2 Final Index** - January 23, 2026
+**Updated:** January 23, 2026
 
 ---
 
-## 📋 All Documentation Created
+## 🎯 Primary References (Start Here)
 
-### Blueprint & Summaries
-1. **[MCP-BLUEPRINT.md](MCP-BLUEPRINT.md)**
-   - Sovereign AI stack (LangGraph captain, FastMCP crew, Chainlit window)
-   - Developer prompt to align assistants with the 2026 production stack
-   - Current deliverables and Phase 4-5 priorities
+| Doc | Purpose | When to Use |
+|:----|:--------|:------------|
+| [MCP-ARCHITECTURE.md](MCP-ARCHITECTURE.md) | **MCP single source of truth** | Understanding MCP setup, status, relationships |
+| [03-ARCHITECTURE.md](03-ARCHITECTURE.md) | Overall system architecture | Understanding full ALEM stack |
+| [MCP-BLUEPRINT.md](MCP-BLUEPRINT.md) | Developer prompt template | Starting new Copilot/Cursor sessions |
+| [00-IMPLEMENTATION-BACKLOG.md](00-IMPLEMENTATION-BACKLOG.md) | Roadmap & priorities | Planning next work |
 
-### Session Summaries
-1. **[SESSION-2-PROGRESS-REPORT.md](SESSION-2-PROGRESS-REPORT.md)**
-   - Hourly progress breakdown
-   - What worked well
-   - Key insights
+---
 
-2. **[SESSION-2-FINAL-SUMMARY.md](SESSION-2-FINAL-SUMMARY.md)**
-   - Complete deliverables list
-   - Metrics and statistics
-   - Conclusion
+## 📁 Documentation by Category
 
-### Phase Completions
+### 🔌 MCP (Model Context Protocol)
+| Doc | Status | Notes |
+|:----|:------:|:------|
+| **[MCP-ARCHITECTURE.md](MCP-ARCHITECTURE.md)** | ✅ Current | Single source of truth |
+| [MCP-BLUEPRINT.md](MCP-BLUEPRINT.md) | ✅ Current | Developer prompt only |
+| ~~22-MCP-PHASE-2-WEATHER.md~~ | 🗄️ Archive | Superseded by MCP-ARCHITECTURE |
+| ~~23-MCP-PHASE-3-INTERNAL-SERVER.md~~ | 🗄️ Archive | Superseded by MCP-ARCHITECTURE |
+| ~~PHASE-2-COMPLETION-SUMMARY.md~~ | 🗄️ Archive | Merged into MCP-ARCHITECTURE |
+| ~~PHASE-3-COMPLETION-SUMMARY.md~~ | 🗄️ Archive | Merged into MCP-ARCHITECTURE |
+| ~~PHASE-4-HANDOFF.md~~ | 🗄️ Archive | Merged into MCP-ARCHITECTURE |
+| ~~QUICK-REFERENCE.md~~ | 🗄️ Archive | Merged into MCP-ARCHITECTURE |
 
-3. **[PHASE-2-COMPLETION-SUMMARY.md](PHASE-2-COMPLETION-SUMMARY.md)**
-   - WeatherMCPHandler details
-   - AgentState extensions
-   - context_loader refactoring
-   - Test results (6/6 passing)
+### 🏗️ Architecture & Design
+| Doc | Status | Notes |
+|:----|:------:|:------|
+| [03-ARCHITECTURE.md](03-ARCHITECTURE.md) | ✅ Current | Full system overview |
+| [01-MANIFESTO.md](01-MANIFESTO.md) | ✅ Current | Project vision |
+| [07-OBSERVABILITY.md](07-OBSERVABILITY.md) | ✅ Current | Logging/tracing strategy |
 
-4. **[PHASE-3-COMPLETION-SUMMARY.md](PHASE-3-COMPLETION-SUMMARY.md)**
-   - ZekaLab MCP server overview
-   - All 5 tools documented
-   - Test results (24/24 passing)
-   - Production readiness
+### 🔐 Security & Quality
+| Doc | Status | Notes |
+|:----|:------:|:------|
+| [08-SECURITY.md](08-SECURITY.md) | ✅ Current | Security guidelines |
+| [22-QUALITY-GATE-SYSTEM.md](22-QUALITY-GATE-SYSTEM.md) | ✅ Current | Pre-commit hooks, linting |
+| [23-QUALITY-GATE-IMPLEMENTATION.md](23-QUALITY-GATE-IMPLEMENTATION.md) | ✅ Current | Implementation details |
 
-### Operational Guides
+### 🚀 Operations & Deployment
+| Doc | Status | Notes |
+|:----|:------:|:------|
+| [12-DEPLOYMENT-PRICING.md](12-DEPLOYMENT-PRICING.md) | ✅ Current | Hosting options |
+| [PHASE-3-DEPLOYMENT-GUIDE.md](PHASE-3-DEPLOYMENT-GUIDE.md) | ✅ Current | MCP server deployment |
 
-5. **[PHASE-3-DEPLOYMENT-GUIDE.md](PHASE-3-DEPLOYMENT-GUIDE.md)**
-   - Quick start instructions
-   - Full API documentation
-   - Docker deployment steps
-   - Monitoring & troubleshooting
-   - Performance metrics
-   - Phase 4 integration notes
+### 🔮 Future Planning
+| Doc | Status | Notes |
+|:----|:------:|:------|
+| [18-ENTERPRISE-INTEGRATION-ROADMAP.md](18-ENTERPRISE-INTEGRATION-ROADMAP.md) | ✅ Current | Partner integrations |
+| [19-YONCA-AI-INTEGRATION-UNIVERSE.md](19-YONCA-AI-INTEGRATION-UNIVERSE.md) | ✅ Current | Ecosystem vision |
+| [24-MCP-PHASE-4-LANGGRAPH-REFACTOR.md](24-MCP-PHASE-4-LANGGRAPH-REFACTOR.md) | 🔄 In Progress | Next MCP phase |
+| [24-MCP-PHASE-5-DEMO-ENHANCEMENT.md](24-MCP-PHASE-5-DEMO-ENHANCEMENT.md) | ⬜ Planned | Demo improvements |
 
-6. **[PHASE-4-HANDOFF.md](PHASE-4-HANDOFF.md)**
-   - Prerequisites checklist
-   - Phase 4 tasks breakdown
-   - Code templates
-   - Success criteria
+---
 
-7. **[QUICK-REFERENCE.md](QUICK-REFERENCE.md)**
-   - One-page cheat sheet
-   - Quick start commands
-   - File locations
-   - Key metrics
-   - Test results summary
+## 🗄️ Archive (Historical Reference Only)
+
+These docs contain **implementation details that are now in code**. Keep for git history but don't maintain:
+
+- `SESSION-2-*.md` — Session logs (historical)
+- `PHASE-*-COMPLETION-SUMMARY.md` — Merged into MCP-ARCHITECTURE
+- `22-MCP-PHASE-2-WEATHER.md` — Code snippets now implemented
+- `23-MCP-PHASE-3-INTERNAL-SERVER.md` — Code snippets now implemented
 
 ---
 

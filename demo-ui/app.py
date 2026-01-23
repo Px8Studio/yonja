@@ -41,6 +41,9 @@ import json  # noqa: E402
 import os  # noqa: E402
 import sys  # noqa: E402
 from pathlib import Path  # noqa: E402
+from typing import TypedDict  # noqa: E402
+
+import httpx  # noqa: E402
 
 # Load .env files BEFORE any other imports
 from dotenv import load_dotenv  # noqa: E402
@@ -319,6 +322,155 @@ print_quick_links(
 )
 
 print_startup_complete("🌿 ALEM 0.1 Demo UI")
+
+# ============================================
+# MCP STATUS MONITORING
+# ============================================
+# Phase 5 Enhancement: Real-time MCP health badges in UI
+# Shows users which external data sources are available
+
+
+class MCPServiceStatus(TypedDict):
+    """Status of an MCP service."""
+
+    name: str
+    url: str
+    status: str  # "online" | "offline" | "degraded"
+    response_time_ms: float | None
+    version: str | None
+
+
+MCP_SERVICES = {
+    "zekalab": {
+        "name": "ZekaLab Internal Rules",
+        "url": os.getenv("ZEKALAB_MCP_URL", "http://localhost:7777"),
+        "health_endpoint": "/health",
+    },
+    "langgraph": {
+        "name": "LangGraph API",
+        "url": demo_settings.langgraph_base_url,
+        "health_endpoint": "/ok",
+    },
+}
+
+
+async def check_mcp_health(service_key: str) -> MCPServiceStatus:
+    """Check health of a single MCP service.
+
+    Args:
+        service_key: Key from MCP_SERVICES dict
+
+    Returns:
+        MCPServiceStatus with online/offline status
+    """
+    service = MCP_SERVICES.get(service_key)
+    if not service:
+        return MCPServiceStatus(
+            name=service_key,
+            url="unknown",
+            status="offline",
+            response_time_ms=None,
+            version=None,
+        )
+
+    url = f"{service['url']}{service['health_endpoint']}"
+    try:
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            import time
+
+            start = time.monotonic()
+            response = await client.get(url)
+            elapsed_ms = (time.monotonic() - start) * 1000
+
+            if response.status_code == 200:
+                data = (
+                    response.json()
+                    if response.headers.get("content-type", "").startswith("application/json")
+                    else {}
+                )
+                return MCPServiceStatus(
+                    name=service["name"],
+                    url=service["url"],
+                    status="online",
+                    response_time_ms=round(elapsed_ms, 1),
+                    version=data.get("version"),
+                )
+            else:
+                return MCPServiceStatus(
+                    name=service["name"],
+                    url=service["url"],
+                    status="degraded",
+                    response_time_ms=round(elapsed_ms, 1),
+                    version=None,
+                )
+    except Exception:
+        return MCPServiceStatus(
+            name=service["name"],
+            url=service["url"],
+            status="offline",
+            response_time_ms=None,
+            version=None,
+        )
+
+
+async def get_all_mcp_status() -> dict[str, MCPServiceStatus]:
+    """Check all MCP services in parallel.
+
+    Returns:
+        Dict mapping service_key -> MCPServiceStatus
+    """
+    import asyncio
+
+    tasks = {key: check_mcp_health(key) for key in MCP_SERVICES}
+    results = await asyncio.gather(*tasks.values(), return_exceptions=True)
+
+    return {
+        key: (
+            result
+            if not isinstance(result, Exception)
+            else MCPServiceStatus(
+                name=MCP_SERVICES[key]["name"],
+                url=MCP_SERVICES[key]["url"],
+                status="offline",
+                response_time_ms=None,
+                version=None,
+            )
+        )
+        for key, result in zip(tasks.keys(), results)
+    }
+
+
+def format_mcp_status_badge(status: MCPServiceStatus) -> str:
+    """Format a single MCP status as a markdown badge.
+
+    Args:
+        status: MCPServiceStatus to format
+
+    Returns:
+        Markdown string like "✓ ZekaLab (42ms)" or "✗ ZekaLab (offline)"
+    """
+    if status["status"] == "online":
+        time_str = f"{status['response_time_ms']}ms" if status["response_time_ms"] else ""
+        return f"✓ {status['name']} ({time_str})"
+    elif status["status"] == "degraded":
+        return f"⚠ {status['name']} (degraded)"
+    else:
+        return f"✗ {status['name']} (offline)"
+
+
+def format_mcp_status_line(statuses: dict[str, MCPServiceStatus]) -> str:
+    """Format all MCP statuses as a single-line status indicator.
+
+    Args:
+        statuses: Dict of service_key -> MCPServiceStatus
+
+    Returns:
+        Markdown string for welcome message, e.g.:
+        "🔌 MCP: ✓ ZekaLab (12ms) • ✓ LangGraph (8ms)"
+    """
+    badges = [format_mcp_status_badge(s) for s in statuses.values()]
+    return "🔌 " + " • ".join(badges)
+
 
 # ============================================
 # DATA PERSISTENCE (Chainlit Data Layer)
@@ -1835,6 +1987,19 @@ async def send_dashboard_welcome(user: cl.User | None = None):
         else:
             greeting = "Xoş gəlmisiniz! 👋"
 
+        # Check MCP service health (Phase 5 Enhancement)
+        mcp_statuses = await get_all_mcp_status()
+        mcp_status_line = format_mcp_status_line(mcp_statuses)
+
+        # Count online services for status indicator
+        online_count = sum(1 for s in mcp_statuses.values() if s["status"] == "online")
+        total_count = len(mcp_statuses)
+        system_status = (
+            "✓ Normal"
+            if online_count == total_count
+            else f"⚠ {online_count}/{total_count} servis aktiv"
+        )
+
         # Build dashboard message using native markdown (more compatible than inline HTML)
         dashboard_content = f"""{greeting}
 
@@ -1843,8 +2008,9 @@ async def send_dashboard_welcome(user: cl.User | None = None):
 Mən sizin virtual aqronomam — əkin, suvarma və subsidiya məsələlərində kömək edirəm.
 
 **📊 Sistem Vəziyyəti:**
-- ✓ Normal
+- {system_status}
 - ✓ SİMA inteqrasiyası hazır
+- {mcp_status_line}
 
 ---
 
@@ -1877,7 +2043,15 @@ Mən sizin virtual aqronomam — əkin, suvarma və subsidiya məsələlərində
             actions=actions,
         ).send()
 
-        logger.info("welcome_message_sent", user_id=user.identifier if user else "anonymous")
+        # Store MCP status in session for data flow visualization (Phase 5)
+        cl.user_session.set("mcp_status", mcp_statuses)
+
+        logger.info(
+            "welcome_message_sent",
+            user_id=user.identifier if user else "anonymous",
+            mcp_online_count=online_count,
+            mcp_total_count=total_count,
+        )
 
     except Exception as e:
         logger.error("welcome_message_failed", error=str(e), exc_info=True)
@@ -2230,6 +2404,11 @@ async def on_chat_start():
     cl.user_session.set("interaction_mode", "Ask")
     cl.user_session.set("llm_model", demo_settings.ollama_model)
 
+    # Phase 5: Data consent flag (starts False, user can grant via UI)
+    # When False, MCP calls to external APIs (weather, etc.) are skipped
+    cl.user_session.set("data_consent_given", False)
+    cl.user_session.set("consent_prompt_shown", False)
+
     persona_crop = (
         alem_persona.crop_type
         if alem_persona
@@ -2478,6 +2657,72 @@ async def on_shared_thread_view(thread: ThreadDict, viewer: cl.User | None) -> b
 
 
 # ============================================
+# DATA CONSENT FLOW (Phase 5)
+# ============================================
+# Privacy-first: Ask user permission before calling external APIs
+# Consent is stored in session and passed to LangGraph agent state
+
+
+async def _show_data_consent_prompt():
+    """Display consent prompt asking user permission for external data access.
+
+    This implements GDPR/privacy-friendly data access patterns.
+    When user grants consent, weather APIs and other external services
+    can be called to enhance responses.
+    """
+    consent_msg = """🔒 **Xarici Məlumat İcazəsi**
+
+Daha dəqiq məlumat üçün xarici xidmətlərdən (hava proqnozu, subsidiya bazası) istifadə edə bilərəm.
+
+Xarici serverlərlə əlaqə qurmağıma icazə verirsinizmi?
+
+> _İcazə verməsəniz, yalnız yerli məlumatlardan istifadə edəcəyəm._"""
+
+    actions = [
+        cl.Action(
+            name="consent_grant",
+            payload={"consent": True},
+            label="✓ İcazə verirəm",
+        ),
+        cl.Action(
+            name="consent_deny",
+            payload={"consent": False},
+            label="✗ İcazə vermirəm",
+        ),
+    ]
+
+    await cl.Message(
+        content=consent_msg,
+        author="ALEM",
+        actions=actions,
+    ).send()
+
+
+@cl.action_callback("consent_grant")
+async def on_consent_grant(action: cl.Action):
+    """Handle consent grant."""
+    cl.user_session.set("data_consent_given", True)
+    await cl.Message(
+        content="✓ **Təşəkkürlər!** Xarici xidmətlərdən istifadə edə bilərəm. Hava proqnozu və digər məlumatlar əldə olunacaq.",
+        author="ALEM",
+    ).send()
+    await action.remove()
+    logger.info("data_consent_granted", user_id=cl.user_session.get("user_id"))
+
+
+@cl.action_callback("consent_deny")
+async def on_consent_deny(action: cl.Action):
+    """Handle consent denial."""
+    cl.user_session.set("data_consent_given", False)
+    await cl.Message(
+        content="✓ **Anlaşıldı.** Yalnız yerli məlumatlardan istifadə edəcəyəm. İstədiyiniz zaman parametrlərdən dəyişə bilərsiniz.",
+        author="ALEM",
+    ).send()
+    await action.remove()
+    logger.info("data_consent_denied", user_id=cl.user_session.get("user_id"))
+
+
+# ============================================
 # MESSAGE HANDLER
 # ============================================
 @cl.on_message
@@ -2494,6 +2739,16 @@ async def on_message(message: cl.Message):
     user_id = cl.user_session.get("user_id", "anonymous")
     farm_id = cl.user_session.get("farm_id")
     thread_id = cl.user_session.get("thread_id")
+
+    # Phase 5: Data Consent Check
+    # Show consent prompt once per session before accessing external data
+    data_consent_given = cl.user_session.get("data_consent_given", False)
+    consent_prompt_shown = cl.user_session.get("consent_prompt_shown", False)
+
+    if not data_consent_given and not consent_prompt_shown:
+        # Show consent prompt
+        await _show_data_consent_prompt()
+        cl.user_session.set("consent_prompt_shown", True)
 
     # Get user preferences for response customization
     user_preferences = cl.user_session.get("user_preferences", {})
@@ -2568,6 +2823,9 @@ async def _handle_message(
             # Prepare initial state
             from yonca.agent.state import create_initial_state
 
+            # Get current consent status from session
+            data_consent_given = cl.user_session.get("data_consent_given", False)
+
             initial_state = create_initial_state(
                 thread_id=thread_id,
                 user_input=message.content,
@@ -2575,6 +2833,7 @@ async def _handle_message(
                 language="az",
                 system_prompt_override=profile_prompt if profile_prompt else None,
                 scenario_context=scenario_context,
+                data_consent_given=data_consent_given,
             )
 
             # Metadata for tracing/logging
@@ -2616,6 +2875,25 @@ async def _handle_message(
                 thread_id=thread_id,
             )
 
+            # Phase 5: Data Flow Visualization
+            # Fetch final state to show which MCP servers contributed
+            try:
+                final_state = await client.get_thread_state(thread_id)
+                state_values = final_state.get("values", {})
+                mcp_traces = state_values.get("mcp_traces", [])
+                if mcp_traces:
+                    data_flow_msg = _format_mcp_data_flow(mcp_traces)
+                    if data_flow_msg:
+                        await response_msg.stream_token(data_flow_msg)
+                        logger.info(
+                            "data_flow_visualized",
+                            trace_count=len(mcp_traces),
+                            thread_id=thread_id,
+                        )
+            except Exception as df_error:
+                # Don't fail the response if data flow viz fails
+                logger.warning("data_flow_visualization_failed", error=str(df_error))
+
     except LangGraphClientError as e:
         logger.error("langgraph_server_error", error=str(e))
         await response_msg.stream_token(
@@ -2643,6 +2921,56 @@ async def _handle_message(
 # ============================================
 # SHARED UTILITIES
 # ============================================
+
+
+def _format_mcp_data_flow(mcp_traces: list[dict]) -> str | None:
+    """Format MCP traces as a data flow visualization.
+
+    Shows users which external data sources contributed to their response.
+    This provides transparency about where information came from.
+
+    Args:
+        mcp_traces: List of MCPTrace dicts from agent state
+
+    Returns:
+        Markdown string showing data flow, or None if no traces
+    """
+    if not mcp_traces:
+        return None
+
+    # Group traces by server
+    servers: dict[str, list[dict]] = {}
+    for trace in mcp_traces:
+        server = trace.get("server", "unknown")
+        if server not in servers:
+            servers[server] = []
+        servers[server].append(trace)
+
+    # Format as compact visualization
+    lines = ["\n\n---", "📊 **Data Sources Used:**"]
+
+    for server, traces in servers.items():
+        successful = sum(1 for t in traces if t.get("success", False))
+        total = len(traces)
+        total_time_ms = sum(t.get("duration_ms", 0) for t in traces)
+
+        # Server icon mapping
+        icons = {
+            "zekalab": "🧠",
+            "openweather": "🌤️",
+            "weather": "🌤️",
+            "postgres": "🗄️",
+        }
+        icon = icons.get(server.lower(), "🔌")
+
+        # Build server line
+        tools_used = ", ".join(set(t.get("tool", "?") for t in traces))
+        status = "✓" if successful == total else f"⚠ {successful}/{total}"
+        lines.append(f"- {icon} **{server}**: {status} ({tools_used}) — {total_time_ms:.0f}ms")
+
+    return "\n".join(lines)
+
+
 async def _add_feedback_buttons(response_msg: cl.Message):
     """Add feedback action buttons to a message."""
     actions = [

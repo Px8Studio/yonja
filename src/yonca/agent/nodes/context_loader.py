@@ -20,6 +20,7 @@ from yonca.data.database import get_db_session
 from yonca.data.repositories.farm_repo import FarmRepository
 from yonca.data.repositories.user_repo import UserRepository
 from yonca.mcp.handlers.weather_handler import WeatherMCPHandler
+from yonca.mcp.handlers.zekalab_handler import get_zekalab_handler
 
 logger = structlog.get_logger(__name__)
 
@@ -280,56 +281,40 @@ async def context_loader_node(state: AgentState) -> dict[str, Any]:
 # ============================================================
 
 
-async def _fetch_weather_mcp(farm_id: str) -> tuple[dict, MCPTrace]:
-    """Fetch weather forecast via Weather MCP (async task).
-
-    Args:
-        farm_id: Farm identifier
+async def _fetch_weather_mcp(farm_id: str) -> tuple[dict[str, Any], MCPTrace]:
+    """Fetch weather data from Weather MCP handler.
 
     Returns:
-        (forecast_data, trace) tuple
-
-    Raises:
-        Exception on failure (caught by orchestrator)
+        Tuple of (weather_data, mcp_trace)
     """
-    from datetime import datetime
-
     handler = WeatherMCPHandler()
-    start_time = datetime.now(UTC)
-
     try:
-        forecast_data = await handler.get_forecast(
-            farm_id=farm_id,
-            days_ahead=7,
+        weather_data, trace = await handler.get_forecast(farm_id)
+
+        # Ensure trace output is a dict
+        trace_output = trace.output if isinstance(trace.output, dict) else {}
+
+        # Create MCPTrace with proper output field
+        mcp_trace = MCPTrace(
+            server=trace.server,
+            tool=trace.tool,
+            input_args=trace.input_args or {},
+            output=trace_output,
+            duration_ms=trace.duration_ms,
+            success=trace.success,
         )
-
-        duration_ms = (datetime.now(UTC) - start_time).total_seconds() * 1000
-
-        trace = MCPTrace(
-            server="openweather",
-            tool="get_forecast",
-            input_args={"farm_id": farm_id, "days_ahead": 7},
-            output=forecast_data,
-            duration_ms=duration_ms,
-            success=True,
-        )
-
-        return (forecast_data, trace)
-
+        return weather_data, mcp_trace
     except Exception as e:
-        duration_ms = (datetime.now(UTC) - start_time).total_seconds() * 1000
-
-        trace = MCPTrace(
+        logger.error(f"Weather MCP fetch failed: {e}")
+        # Create error trace
+        mcp_trace = MCPTrace(
             server="openweather",
             tool="get_forecast",
             input_args={"farm_id": farm_id},
             output={},
-            duration_ms=duration_ms,
+            duration_ms=0.0,
             success=False,
-            error_message=str(e),
         )
-
-        # Re-raise for orchestrator to handle
         raise
 
 
@@ -346,38 +331,16 @@ async def _fetch_zekalab_rules_mcp(farm_id: str, crop_type: str) -> tuple[dict, 
     Raises:
         Exception on failure (caught by orchestrator)
     """
-    from datetime import datetime
-
-    from yonca.mcp.handlers import get_zekalab_handler
-
-    handler = await get_zekalab_handler()
-    start_time = datetime.now(UTC)
-
+    logger.info("zekalab_mcp_start", farm_id=farm_id, crop_type=crop_type)
     try:
-        rules_data, trace = await handler.get_rules_resource()
-
-        logger.debug(
-            "zekalab_rules_fetched",
-            farm_id=farm_id,
-            crop_type=crop_type,
-            rules_count=len(rules_data.get("rules", {})),
-        )
-
-        return (rules_data, trace)
-
+        # get_zekalab_handler is a sync factory that returns a handler with async methods
+        handler = get_zekalab_handler()
+        rules_data, trace = await handler.get_rules_resource(farm_id=farm_id, crop_type=crop_type)
+        logger.info("zekalab_mcp_success", farm_id=farm_id, crop_type=crop_type)
+        return rules_data, trace
     except Exception as e:
-        duration_ms = (datetime.now(UTC) - start_time).total_seconds() * 1000
-
-        trace = MCPTrace(
-            server="zekalab",
-            tool="get_rules",
-            input_args={"farm_id": farm_id, "crop_type": crop_type},
-            output={},
-            duration_ms=duration_ms,
-            success=False,
-            error_message=str(e),
-        )
-
+        logger.error("zekalab_mcp_error", farm_id=farm_id, crop_type=crop_type, error=str(e))
+        # Propagate error to be handled by the orchestrator/tests
         raise
 
 

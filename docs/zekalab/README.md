@@ -5,99 +5,75 @@
 
 ---
 
-## 🎯 Quick Overview
+## 🎯 Architecture at a Glance
 
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-mindmap
-  root((🌿 ALEM))
-    🗣️ Azerbaijani-First
-      Native language
-      Local crops
-    ✅ Rule-Validated
-      90%+ accuracy target
-      No hallucinations
-    🔒 Data Sovereignty
-      Synthetic profiles
-      Self-hostable
-    🌿 Open-Source
-      Llama/Qwen models
-      No vendor lock-in
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         ALEM SOVEREIGN AI STACK                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│   CHAINLIT ────────▶ LANGGRAPH ────────▶ MCP SERVERS                    │
+│   (Window)           (Brain)             (Tools/Data)                   │
+│                                                                         │
+│   Shows UI ◀──────── Orchestrates ──────▶ Weather (real data)           │
+│   Streams tokens      nodes               ZekaLab (rules)               │
+│   Handles OAuth       Manages state       Postgres (DB access)          │
+│                       Calls MCP tools                                   │
+│                                                                         │
+│   ───────────────────────────────────────────────────────────────       │
+│                                                                         │
+│   🔄 LangGraph is BIDIRECTIONAL:                                        │
+│      • As CLIENT → Calls external MCP tools                             │
+│      • As SERVER → Exposes ALEM as an MCP tool to other systems         │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 **Key Features:**
-- ✅ Llama 4 Maverick, Llama 3.3 70B, Qwen 3 32B (Apache 2.0 / Llama Community License)
-- ✅ Deploy in Azerbaijan (self-hosted or AzInTelecom Cloud)
-- ✅ 200-300 tok/s performance
-- ✅ Chainlit demo UI with LangGraph
+- ✅ Llama 4, Qwen 3 (Apache 2.0 / Open Source)
+- ✅ Deploy in Azerbaijan (self-hosted or cloud)
+- ✅ MCP-native tool orchestration
+- ✅ Chainlit UI + LangGraph agent
 
 ---
 
-## 📚 Documentation Index
+## 📚 Documentation (Start Here)
 
-### Core
-
+### 🔌 MCP Integration
 | Doc | Purpose |
 |:----|:--------|
-| [00-VISUAL-STYLE-GUIDE](00-VISUAL-STYLE-GUIDE.md) | Mermaid diagram standards |
-| [01-MANIFESTO](01-MANIFESTO.md) | Vision, strategy, success metrics |
-| [02-SYNTHETIC-DATA-ENGINE](02-SYNTHETIC-DATA-ENGINE.md) | Schema design, mirror-image data |
-| [03-ARCHITECTURE](03-ARCHITECTURE.md) | Components, data flow, operations |
+| **[MCP-ARCHITECTURE](MCP-ARCHITECTURE.md)** | ⭐ **Single source of truth** — Status, relationships, what's next |
+| [MCP-BLUEPRINT](MCP-BLUEPRINT.md) | Developer prompt for new sessions |
 
-### AI & Prompting
-
+### 🏗️ Architecture
 | Doc | Purpose |
 |:----|:--------|
-| [04-TESTING-STRATEGY](04-TESTING-STRATEGY.md) | Evaluation framework, golden dataset |
-| [05-PROMPT-CONVERSATION](05-PROMPT-CONVERSATION.md) | System prompts, intent taxonomy |
+| [03-ARCHITECTURE](03-ARCHITECTURE.md) | Full system architecture |
+| [01-MANIFESTO](01-MANIFESTO.md) | Vision & success metrics |
 
-### Operations & Infrastructure
-
+### 🔐 Quality & Security
 | Doc | Purpose |
 |:----|:--------|
-| [LANGGRAPH_ARCHITECTURE_GUIDE](LANGGRAPH_ARCHITECTURE_GUIDE.md) | **⭐ START HERE:** Dev vs Production, component relationships, multi-channel design, production stack |
-| [LANGGRAPH_TESTING_GUIDE](LANGGRAPH_TESTING_GUIDE.md) | Testing LangGraph execution and graph client |
-| [LANGGRAPH_DOCKER_DEPLOYMENT](LANGGRAPH_DOCKER_DEPLOYMENT.md) | Docker Compose setup and containerization |
-| [MCP-BLUEPRINT](MCP-BLUEPRINT.md) | Sovereign AI stack (LangGraph + FastMCP + Chainlit) and developer prompt |
-| [07-OBSERVABILITY](07-OBSERVABILITY.md) | Langfuse tracing, metrics |
-| [08-SECURITY](08-SECURITY.md) | Input validation, PII protection |
-| [09-PERFORMANCE-SLA](09-PERFORMANCE-SLA.md) | Latency targets, SLOs |
-| [17-SECURITY-ENHANCEMENT-PLAN](17-SECURITY-ENHANCEMENT-PLAN.md) | 🔐 **Production security roadmap** |
-| [22-QUALITY-GATE-SYSTEM](22-QUALITY-GATE-SYSTEM.md) | 🛡️ **Pre-commit hooks & quality checks** |
+| [22-QUALITY-GATE-SYSTEM](22-QUALITY-GATE-SYSTEM.md) | Pre-commit hooks, linting |
+| [08-SECURITY](08-SECURITY.md) | Input validation, PII |
 
-### UI & Frontend
-
+### 🚀 Operations
 | Doc | Purpose |
 |:----|:--------|
-| [CHAT_UI_MODEL_AND_INTERACTION](CHAT_UI_MODEL_AND_INTERACTION.md) | 🎯 **Model selection (header) & interaction mode (sidebar) architecture** |
-| [11-CHAINLIT-UI](11-CHAINLIT-UI.md) | Demo UI implementation |
+| [PHASE-3-DEPLOYMENT-GUIDE](PHASE-3-DEPLOYMENT-GUIDE.md) | MCP server deployment |
+| [12-DEPLOYMENT-PRICING](12-DEPLOYMENT-PRICING.md) | Hosting options |
 
-### Deployment
-
+### 🔮 Roadmap
 | Doc | Purpose |
 |:----|:--------|
-| [12-DEPLOYMENT-PRICING](12-DEPLOYMENT-PRICING.md) | DigiRella options, costs, ALEM versioning |
-| [14-DISCOVERY-QUESTIONS](14-DISCOVERY-QUESTIONS.md) | Integration questions for Digital Umbrella |
-| [15-IMPLEMENTATION-BACKLOG](15-IMPLEMENTATION-BACKLOG.md) | 📋 Unimplemented features tracker |
-| [16-ADVANCED-FEATURES](16-ADVANCED-FEATURES.md) | 🎨 Multimodal, NL-to-SQL, Vision-to-Action |
-| [18-ENTERPRISE-INTEGRATION-ROADMAP](18-ENTERPRISE-INTEGRATION-ROADMAP.md) | 🌐 **Partnership strategy & phased roadmap** |
-| [19-YONCA-AI-INTEGRATION-UNIVERSE](19-YONCA-AI-INTEGRATION-UNIVERSE.md) | 🌌 **Complete integration landscape & data flows** |
-| [20-INTEGRATION-API](20-INTEGRATION-API.md) | 🔌 **API contract for Yonca Mobile integration** |
+| [00-IMPLEMENTATION-BACKLOG](00-IMPLEMENTATION-BACKLOG.md) | What's next |
+| [18-ENTERPRISE-INTEGRATION-ROADMAP](18-ENTERPRISE-INTEGRATION-ROADMAP.md) | Partner integrations |
 
 ---
 
-## 🗺️ Finding What You Need
+## 🗂️ Full Index
 
-**Start here:** [QUICK_NAVIGATION.md](QUICK_NAVIGATION.md) — Find docs by your question or role
-
----
-
-## 🧹 Documentation Maintenance
-
-**Recently Consolidated:** [DOCUMENTATION_CONSOLIDATION_SUMMARY.md](DOCUMENTATION_CONSOLIDATION_SUMMARY.md)
-- Merged 5 redundant LangGraph docs into 1 master guide
-- Added UI clarity documentation
-- Removed stale/theoretical recommendations
+See [DOCUMENTATION-INDEX.md](DOCUMENTATION-INDEX.md) for complete categorized list with status.
 - Updated all references
 
 ---

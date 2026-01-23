@@ -6,7 +6,7 @@ Tests parallel Weather + ZekaLab MCP calls with timeouts, fallbacks, and trace c
 
 import asyncio
 import logging
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from yonca.agent.nodes.context_loader import (
@@ -73,7 +73,8 @@ async def test_fetch_weather_mcp_failure():
 async def test_fetch_zekalab_rules_mcp_success():
     """Test successful ZekaLab rules fetch."""
     with patch("yonca.agent.nodes.context_loader.get_zekalab_handler") as mock_get_handler:
-        mock_instance = AsyncMock()
+        # Use MagicMock for sync handler instance
+        mock_instance = MagicMock()
         mock_trace = MCPTrace(
             server="zekalab",
             tool="get_rules",
@@ -82,6 +83,7 @@ async def test_fetch_zekalab_rules_mcp_success():
             duration_ms=150.0,
             success=True,
         )
+        # Async method on sync handler
         mock_instance.get_rules_resource = AsyncMock(
             return_value=({"rules": {"irrigation": {}, "fertilization": {}}}, mock_trace)
         )
@@ -98,7 +100,8 @@ async def test_fetch_zekalab_rules_mcp_success():
 async def test_fetch_zekalab_rules_mcp_failure():
     """Test ZekaLab rules fetch with exception - should raise."""
     with patch("yonca.agent.nodes.context_loader.get_zekalab_handler") as mock_get_handler:
-        mock_instance = AsyncMock()
+        # Use MagicMock for sync handler instance
+        mock_instance = MagicMock()
         mock_instance.get_rules_resource = AsyncMock(side_effect=Exception("API error"))
         mock_get_handler.return_value = mock_instance
 

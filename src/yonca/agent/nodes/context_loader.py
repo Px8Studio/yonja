@@ -3,17 +3,23 @@
 
 Loads context from the database based on the routing decision's requirements.
 This keeps context loading separate from business logic nodes.
+
+Phase 2: Integrates real weather data via WeatherMCPHandler
+Phase 4.3: Orchestrates parallel Weather + ZekaLab MCP calls with fallbacks
 """
 
+import asyncio
+from datetime import UTC
 from typing import Any
 
 import structlog
 
-from yonca.agent.state import AgentState, FarmContext, UserContext, WeatherContext
+from yonca.agent.state import AgentState, FarmContext, MCPTrace, UserContext, WeatherContext
 from yonca.data.cache import CachedFarmRepository, CachedUserRepository
 from yonca.data.database import get_db_session
 from yonca.data.repositories.farm_repo import FarmRepository
 from yonca.data.repositories.user_repo import UserRepository
+from yonca.mcp.handlers.weather_handler import WeatherMCPHandler
 
 logger = structlog.get_logger(__name__)
 
@@ -103,33 +109,289 @@ async def context_loader_node(state: AgentState) -> dict[str, Any]:
                     if alerts:
                         updates["alerts"] = alerts
 
-        # Load weather context (synthetic for now)
+        # Load weather context (Phase 4.3: Parallel MCP Orchestration)
         if "weather" in requires_context:
-            # TODO: Integrate with real weather API
-            # For now, generate synthetic weather based on region
-            farm_context = updates.get("farm_context") or state.get("farm_context")
+            farm_context_obj = updates.get("farm_context") or state.get("farm_context")
+            farm_id = farm_context_obj.farm_id if farm_context_obj else None
+            region = farm_context_obj.region if farm_context_obj else "aran"
 
-            if farm_context:
-                weather = await _get_synthetic_weather(farm_context.region)
-                updates["weather"] = weather
-            else:
-                # Default weather if no farm context
-                updates["weather"] = WeatherContext(
-                    temperature_c=25.0,
-                    humidity_percent=45.0,
-                    precipitation_mm=0.0,
-                    wind_speed_kmh=10.0,
-                    forecast_summary="Açıq hava, yağış gözlənilmir",
+            mcp_traces = list(state.get("mcp_traces", []))
+            use_mcp = state.get("mcp_config", {}).get("use_mcp", True)
+            allow_fallback = state.get("mcp_config", {}).get("fallback_to_synthetic", True)
+            data_consent = state.get("data_consent_given", False)
+
+            weather = None
+            mcp_context = {}  # Stores additional MCP results (rules, GDD, etc.)
+
+            # Phase 4.3: Orchestrate parallel Weather + ZekaLab MCP calls
+            if use_mcp and data_consent and farm_id:
+                logger.info(
+                    "mcp_orchestration_start",
+                    farm_id=farm_id,
+                    mcp_servers=["openweather", "zekalab"],
                 )
+
+                # Prepare parallel MCP calls with timeout
+                mcp_tasks = []
+
+                # Task 1: Weather forecast
+                mcp_tasks.append(_fetch_weather_mcp(farm_id))
+
+                # Task 2: ZekaLab rules (if crop context available)
+                active_crops = farm_context_obj.active_crops if farm_context_obj else []
+                if active_crops:
+                    crop_type = active_crops[0] if isinstance(active_crops, list) else active_crops
+                    mcp_tasks.append(_fetch_zekalab_rules_mcp(farm_id, crop_type))
+                else:
+                    mcp_tasks.append(_noop_task("zekalab_rules"))
+
+                try:
+                    # Execute all MCP calls in parallel with timeout
+                    results = await asyncio.wait_for(
+                        asyncio.gather(*mcp_tasks, return_exceptions=True),
+                        timeout=5.0,  # 5 second global timeout
+                    )
+
+                    # Process Weather result
+                    weather_result = results[0]
+                    if isinstance(weather_result, tuple) and len(weather_result) == 2:
+                        forecast_data, weather_trace = weather_result
+                        mcp_traces.append(weather_trace.dict())
+
+                        # Convert to WeatherContext
+                        from datetime import datetime
+
+                        current = forecast_data.get("current", {})
+                        weather = WeatherContext(
+                            temperature_c=current.get("temperature", 25.0),
+                            humidity_percent=current.get("humidity", 60.0),
+                            precipitation_mm=current.get("rainfall_mm", 0.0),
+                            wind_speed_kmh=current.get("wind_speed", 0.0),
+                            forecast_summary=forecast_data.get("forecast_summary"),
+                            last_updated=datetime.now(UTC),
+                        )
+                        logger.info("weather_mcp_success", farm_id=farm_id)
+
+                    elif isinstance(weather_result, Exception):
+                        logger.warning("weather_mcp_exception", error=str(weather_result))
+                        mcp_traces.append(
+                            MCPTrace(
+                                server="openweather",
+                                tool="get_forecast",
+                                input_args={"farm_id": farm_id},
+                                output={},
+                                duration_ms=0,
+                                success=False,
+                                error_message=str(weather_result),
+                            ).dict()
+                        )
+
+                    # Process ZekaLab result
+                    if len(results) > 1:
+                        zekalab_result = results[1]
+                        if isinstance(zekalab_result, tuple) and len(zekalab_result) == 2:
+                            rules_data, rules_trace = zekalab_result
+                            mcp_traces.append(rules_trace.dict())
+                            mcp_context["zekalab_rules"] = rules_data
+                            logger.info("zekalab_mcp_success", farm_id=farm_id)
+
+                        elif isinstance(zekalab_result, Exception):
+                            logger.warning("zekalab_mcp_exception", error=str(zekalab_result))
+                            mcp_traces.append(
+                                MCPTrace(
+                                    server="zekalab",
+                                    tool="get_rules",
+                                    input_args={"farm_id": farm_id},
+                                    output={},
+                                    duration_ms=0,
+                                    success=False,
+                                    error_message=str(zekalab_result),
+                                ).dict()
+                            )
+
+                    logger.info(
+                        "mcp_orchestration_complete",
+                        farm_id=farm_id,
+                        weather_success=bool(weather),
+                        zekalab_success=bool(mcp_context.get("zekalab_rules")),
+                        total_traces=len(mcp_traces),
+                    )
+
+                except asyncio.TimeoutError:
+                    logger.error("mcp_orchestration_timeout", farm_id=farm_id, timeout_s=5.0)
+                    mcp_traces.append(
+                        MCPTrace(
+                            server="orchestration",
+                            tool="parallel_mcp_calls",
+                            input_args={"farm_id": farm_id},
+                            output={},
+                            duration_ms=5000,
+                            success=False,
+                            error_message="Global MCP orchestration timeout (5s)",
+                        ).dict()
+                    )
+
+                except Exception as e:
+                    logger.error("mcp_orchestration_error", farm_id=farm_id, error=str(e))
+                    mcp_traces.append(
+                        MCPTrace(
+                            server="orchestration",
+                            tool="parallel_mcp_calls",
+                            input_args={"farm_id": farm_id},
+                            output={},
+                            duration_ms=0,
+                            success=False,
+                            error_message=f"Orchestration error: {str(e)}",
+                        ).dict()
+                    )
+
+            # Fallback to synthetic if MCP didn't work
+            if not weather and allow_fallback:
+                logger.info(
+                    "using_synthetic_weather_fallback",
+                    farm_id=farm_id,
+                    reason="mcp_disabled_or_failed",
+                )
+                weather = await _get_synthetic_weather(region)
+
+            if weather:
+                updates["weather"] = weather
+
+            if mcp_traces:
+                updates["mcp_traces"] = mcp_traces
+
+            # Store additional MCP context if available
+            if mcp_context:
+                updates["mcp_context"] = mcp_context
 
     logger.info(
         "context_loader_node_complete",
         user_context_loaded=bool(updates.get("user_context")),
         farm_context_loaded=bool(updates.get("farm_context")),
         weather_loaded=bool(updates.get("weather")),
+        mcp_traces_count=len(updates.get("mcp_traces", [])),
     )
 
     return updates
+
+
+# ============================================================
+# Phase 4.3: Parallel MCP Helper Functions
+# ============================================================
+
+
+async def _fetch_weather_mcp(farm_id: str) -> tuple[dict, MCPTrace]:
+    """Fetch weather forecast via Weather MCP (async task).
+
+    Args:
+        farm_id: Farm identifier
+
+    Returns:
+        (forecast_data, trace) tuple
+
+    Raises:
+        Exception on failure (caught by orchestrator)
+    """
+    from datetime import datetime
+
+    handler = WeatherMCPHandler()
+    start_time = datetime.now(UTC)
+
+    try:
+        forecast_data = await handler.get_forecast(
+            farm_id=farm_id,
+            days_ahead=7,
+        )
+
+        duration_ms = (datetime.now(UTC) - start_time).total_seconds() * 1000
+
+        trace = MCPTrace(
+            server="openweather",
+            tool="get_forecast",
+            input_args={"farm_id": farm_id, "days_ahead": 7},
+            output=forecast_data,
+            duration_ms=duration_ms,
+            success=True,
+        )
+
+        return (forecast_data, trace)
+
+    except Exception as e:
+        duration_ms = (datetime.now(UTC) - start_time).total_seconds() * 1000
+
+        trace = MCPTrace(
+            server="openweather",
+            tool="get_forecast",
+            input_args={"farm_id": farm_id},
+            output={},
+            duration_ms=duration_ms,
+            success=False,
+            error_message=str(e),
+        )
+
+        # Re-raise for orchestrator to handle
+        raise
+
+
+async def _fetch_zekalab_rules_mcp(farm_id: str, crop_type: str) -> tuple[dict, MCPTrace]:
+    """Fetch agricultural rules via ZekaLab MCP (async task).
+
+    Args:
+        farm_id: Farm identifier
+        crop_type: Crop type for rules
+
+    Returns:
+        (rules_data, trace) tuple
+
+    Raises:
+        Exception on failure (caught by orchestrator)
+    """
+    from datetime import datetime
+
+    from yonca.mcp.handlers import get_zekalab_handler
+
+    handler = await get_zekalab_handler()
+    start_time = datetime.now(UTC)
+
+    try:
+        rules_data, trace = await handler.get_rules_resource()
+
+        logger.debug(
+            "zekalab_rules_fetched",
+            farm_id=farm_id,
+            crop_type=crop_type,
+            rules_count=len(rules_data.get("rules", {})),
+        )
+
+        return (rules_data, trace)
+
+    except Exception as e:
+        duration_ms = (datetime.now(UTC) - start_time).total_seconds() * 1000
+
+        trace = MCPTrace(
+            server="zekalab",
+            tool="get_rules",
+            input_args={"farm_id": farm_id, "crop_type": crop_type},
+            output={},
+            duration_ms=duration_ms,
+            success=False,
+            error_message=str(e),
+        )
+
+        raise
+
+
+async def _noop_task(task_name: str) -> None:
+    """No-op task for conditional MCP calls.
+
+    Args:
+        task_name: Task identifier for logging
+
+    Returns:
+        None (skipped task)
+    """
+    logger.debug("mcp_task_skipped", task=task_name)
+    return None
 
 
 async def _get_synthetic_weather(region: str) -> WeatherContext:
@@ -180,7 +442,7 @@ async def _get_synthetic_weather(region: str) -> WeatherContext:
         precipitation_mm=round(precipitation, 1),
         wind_speed_kmh=round(random.uniform(5, 25), 1),
         forecast_summary=summary,
-        last_updated=datetime.utcnow(),
+        last_updated=datetime.now(UTC),
     )
 
 

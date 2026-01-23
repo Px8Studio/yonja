@@ -5,7 +5,7 @@ Defines the typed state that flows through the agent graph,
 including conversation history, farm context, and routing decisions.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Annotated, Literal
 
@@ -13,6 +13,24 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
+
+# ============================================================
+# MCP (Model Context Protocol) Types - Phase 2
+# ============================================================
+
+
+class MCPTrace(BaseModel):
+    """Record of a single MCP tool call for audit trail."""
+
+    server: str  # "openweather", "zekalab", etc.
+    tool: str  # "get_forecast", "evaluate_irrigation_rules", etc.
+    input_args: dict  # Arguments passed to tool
+    output: dict  # Result from tool
+    duration_ms: float  # How long the call took
+    success: bool  # Did it succeed?
+    error_message: str | None = None
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
 
 # ============================================================
 # Intent Classification
@@ -76,7 +94,7 @@ class Message(BaseModel):
 
     role: Literal["user", "assistant", "system"]
     content: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Metadata
     intent: UserIntent | None = None
@@ -95,7 +113,7 @@ class Alert(BaseModel):
     severity: Severity = Severity.MEDIUM
     message_az: str
     message_en: str | None = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 # ============================================================
@@ -290,6 +308,12 @@ class AgentState(TypedDict, total=False):
     should_stream: bool  # Whether to stream response
     language: str  # Response language (default: "az")
 
+    # ===== MCP Orchestration (Phase 2) =====
+    mcp_traces: Annotated[list[dict], _merge_rules]  # All MCP calls made during this turn
+    data_consent_given: bool  # User consented to use external APIs
+    mcp_server_health: dict[str, bool]  # Health status of each MCP server
+    mcp_config: dict  # Session-level MCP configuration
+
 
 # ============================================================
 # State Helpers
@@ -304,6 +328,7 @@ def create_initial_state(
     language: str = "az",
     system_prompt_override: str | None = None,
     scenario_context: dict | None = None,
+    data_consent_given: bool = False,
 ) -> AgentState:
     """Create initial state for a new conversation turn.
 
@@ -315,6 +340,7 @@ def create_initial_state(
         language: Response language (default Azerbaijani)
         system_prompt_override: Custom system prompt for profile-specific behavior (optional)
         scenario_context: Farm scenario from chat settings (optional)
+        data_consent_given: Whether user consented to use external APIs (optional)
 
     Returns:
         Initialized AgentState ready for graph execution.
@@ -351,11 +377,24 @@ def create_initial_state(
         weather=None,
         matched_rules=[],
         alerts=[],
-        processing_start=datetime.utcnow(),
+        processing_start=datetime.now(UTC),
         nodes_visited=[],
         error=None,
         should_stream=False,
         language=language,
+        # MCP Orchestration (Phase 2)
+        mcp_traces=[],
+        data_consent_given=data_consent_given,
+        mcp_server_health={
+            "openweather": True,
+            "zekalab": True,
+        },
+        mcp_config={
+            "use_mcp": True,
+            "fallback_to_synthetic": True,
+            "max_mcp_calls_per_turn": 10,
+            "mcp_timeout_seconds": 5,
+        },
     )
 
 
@@ -379,7 +418,7 @@ def add_assistant_message(
     return AIMessage(
         content=content,
         additional_kwargs={
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "node_source": node_source,
             "intent": intent.value if intent else None,
         },

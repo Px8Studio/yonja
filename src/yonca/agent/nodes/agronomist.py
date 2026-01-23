@@ -5,8 +5,9 @@ The main specialist agent that provides agricultural recommendations
 for irrigation, fertilization, pest control, planting, and harvesting.
 """
 
+from datetime import UTC
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import structlog
 from langchain_core.messages import AIMessage, HumanMessage
@@ -15,6 +16,9 @@ from langchain_core.runnables import RunnableConfig
 from yonca.agent.state import AgentState, UserIntent, add_assistant_message
 from yonca.llm.factory import get_llm_from_config
 from yonca.llm.providers.base import LLMMessage
+
+if TYPE_CHECKING:
+    pass
 
 logger = structlog.get_logger(__name__)
 
@@ -192,6 +196,118 @@ async def agronomist_node(
         full_system += f"\n\n<KONTEKST>\n{context_prompt}\n</KONTEKST>"
     if intent_guidance:
         full_system += f"\n\n{intent_guidance}"
+
+    # Phase 4.2: Evaluate ZekaLab MCP rules based on intent and include summary
+    mcp_section = ""
+    mcp_traces = list(state.get("mcp_traces", []))
+    try:
+        from yonca.mcp.handlers import get_zekalab_handler
+
+        handler = await get_zekalab_handler()
+
+        farm_ctx = state.get("farm_context")
+        weather = state.get("weather")
+        active_crop = None
+        if farm_ctx and getattr(farm_ctx, "active_crops", None):
+            active_crop = farm_ctx.active_crops[0] if farm_ctx.active_crops else None
+
+        # Prepare common fields
+        farm_id = getattr(farm_ctx, "farm_id", None)
+        crop_type = (active_crop.get("crop") if isinstance(active_crop, dict) else None) or "wheat"
+        soil_type = "loamy"
+        temperature_c = getattr(weather, "temperature_c", 25.0)
+        humidity_percent = getattr(weather, "humidity_percent", 60.0)
+        rainfall_mm = getattr(weather, "precipitation_mm", 0.0)
+        growth_days = (
+            active_crop.get("days_since_sowing") if isinstance(active_crop, dict) else 0
+        ) or 0
+
+        mcp_results: list[tuple[str, dict]] = []
+
+        if intent == UserIntent.IRRIGATION and farm_id:
+            result, trace = await handler.evaluate_irrigation_rules(
+                farm_id=farm_id,
+                crop_type=crop_type,
+                soil_type=soil_type,
+                current_soil_moisture_percent=45.0,
+                temperature_c=temperature_c,
+                rainfall_mm_last_7_days=rainfall_mm,
+                growth_stage_days=growth_days,
+            )
+            mcp_traces.append(trace.dict())
+            mcp_results.append(("Suvarma", result))
+
+        elif intent == UserIntent.FERTILIZATION and farm_id:
+            result, trace = await handler.evaluate_fertilization_rules(
+                farm_id=farm_id,
+                crop_type=crop_type,
+                soil_type=soil_type,
+                soil_nitrogen_ppm=None,
+                soil_phosphorus_ppm=None,
+                soil_potassium_ppm=None,
+                growth_stage_days=growth_days,
+            )
+            mcp_traces.append(trace.dict())
+            mcp_results.append(("Gübrələmə", result))
+
+        elif intent == UserIntent.PEST_CONTROL and farm_id:
+            result, trace = await handler.evaluate_pest_control_rules(
+                farm_id=farm_id,
+                crop_type=crop_type,
+                temperature_c=temperature_c,
+                humidity_percent=humidity_percent,
+                observed_pests=[],
+                growth_stage_days=growth_days,
+                rainfall_mm_last_3_days=rainfall_mm,
+            )
+            mcp_traces.append(trace.dict())
+            mcp_results.append(("Zərərverici nəzarəti", result))
+
+        elif intent == UserIntent.HARVEST and farm_id:
+            from datetime import datetime, timedelta
+
+            planting_date = (datetime.now(UTC) - timedelta(days=growth_days)).date().isoformat()
+
+            result, trace = await handler.predict_harvest_date(
+                farm_id=farm_id,
+                crop_type=crop_type,
+                planting_date=planting_date,
+                current_gdd_accumulated=0,
+            )
+            mcp_traces.append(trace.dict())
+            mcp_results.append(("Məhsul yığımı", result))
+
+        # Build MCP rule summary section
+        if mcp_results:
+            lines = []
+            for title, res in mcp_results:
+                if intent == UserIntent.IRRIGATION:
+                    lines.append(
+                        f"{title}: tövsiyə olunan su {res.get('recommended_water_mm', 0)} mm; vaxt: {res.get('timing', 'uyğun')}"
+                    )
+                elif intent == UserIntent.FERTILIZATION:
+                    lines.append(
+                        f"{title}: N {res.get('nitrogen_kg_per_hectare', 0)} kg/ha, P {res.get('phosphorus_kg_per_hectare', 0)} kg/ha, K {res.get('potassium_kg_per_hectare', 0)} kg/ha"
+                    )
+                elif intent == UserIntent.PEST_CONTROL:
+                    lines.append(
+                        f"{title}: tövsiyə olunan üsul {res.get('method', 'uyğun')}; hərəkət: {res.get('recommended_action', 'tətbiq et')}"
+                    )
+                elif intent == UserIntent.HARVEST:
+                    lines.append(
+                        f"{title}: gözlənilən tarix {res.get('predicted_harvest_date', 'naməlum')} (təxmini gün: {res.get('days_to_harvest_estimate', '—')})"
+                    )
+
+            mcp_section = "\n\n<MCP_QAYDALAR>\n" + "\n".join(lines) + "\n</MCP_QAYDALAR>"
+
+    except Exception as e:
+        logger.warning("agronomist_mcp_warning", error=str(e))
+
+    if mcp_section:
+        full_system += mcp_section
+        if mcp_traces:
+            # Store traces back into state for observability
+            state["mcp_traces"] = mcp_traces
 
     # Build conversation history
     messages = [LLMMessage.system(full_system)]

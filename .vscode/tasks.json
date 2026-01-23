@@ -357,6 +357,60 @@
         "focus": true,
         "showReuseMessage": false
       }
+    },
+    {
+      "label": "🌿 Yonca AI: 🧠 ZekaLab MCP Start",
+      "detail": "Start internal rules MCP server on :7777",
+      "type": "shell",
+      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+      "args": [
+        "-m",
+        "uvicorn",
+        "yonca.mcp_server.main:app",
+        "--port",
+        "7777",
+        "--reload"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}/src",
+          "ZEKALAB_LOG_LEVEL": "INFO",
+          "ZEKALAB_PORT": "7777"
+        }
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^ERROR.*",
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*Uvicorn running.*",
+          "endsPattern": "^.*shutdown.*"
+        }
+      }
+    },
+    {
+      "label": "🌿 Yonca AI: 🧠 ZekaLab MCP Tests",
+      "detail": "Run ZekaLab MCP server tests (24 tests)",
+      "type": "shell",
+      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+      "args": [
+        "-m",
+        "pytest",
+        "tests/unit/test_mcp_server/test_zekalab_mcp.py",
+        "-v",
+        "--tb=short"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}/src"
+        }
+      },
+      "group": "test"
     }
   ],
   "inputs": [

@@ -1,0 +1,44 @@
+# docker-compose.production.yml
+# =========================================================================
+# Production Deployment Template
+# Note: Production usually runs on managed services (Render, K8s, Railway).
+# This file serves as a reference for production environment variables.
+# =========================================================================
+
+services:
+  # LangGraph Runtime
+  langgraph:
+    image: yonca-langgraph:latest # Pre-built image
+    environment:
+      - YONCA_ENVIRONMENT=production
+      - YONCA_INFRASTRUCTURE_MODE=cloud
+      - YONCA_LANGGRAPH_REQUIRED=true
+      - YONCA_LLM_PROVIDER=groq
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - LANGGRAPH_POSTGRES_URI=${DATABASE_URL}
+    restart: always
+
+  # Application API
+  api:
+    image: yonca-api:latest
+    environment:
+      - YONCA_ENVIRONMENT=production
+      - YONCA_INFRASTRUCTURE_MODE=cloud
+      - YONCA_LANGGRAPH_REQUIRED=true
+      - YONCA_LANGGRAPH_BASE_URL=${LANGGRAPH_URL}
+      - YONCA_LLM_PROVIDER=groq
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - YONCA_DATABASE_URL=${DATABASE_URL}
+    restart: always
+
+  # Chat UI
+  demo-ui:
+    image: yonca-demo-ui:latest
+    environment:
+      - YONCA_ENVIRONMENT=production
+      - YONCA_INFRASTRUCTURE_MODE=cloud
+      - YONCA_LANGGRAPH_REQUIRED=true
+      - YONCA_LANGGRAPH_BASE_URL=${LANGGRAPH_URL}
+      - YONCA_API_URL=${API_URL}
+      - YONCA_DATABASE_URL=${DATABASE_URL}
+    restart: always

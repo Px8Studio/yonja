@@ -29,7 +29,8 @@ $venvPath = "$projectRoot\.venv\Scripts"
 $env:PYTHONPATH = "$projectRoot\src"
 $env:DATABASE_URL = "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
 
-Write-Host "🎨 Starting LangGraph..." -ForegroundColor Yellow
+Write-Host "🎨 Starting LangGraph Dev Server..." -ForegroundColor Yellow
+$env:PYTHONPATH = "$projectRoot\src"
 Start-Process -FilePath "$venvPath\langgraph.exe" -ArgumentList "dev" -WorkingDirectory $projectRoot -WindowStyle Hidden
 
 Write-Host "🌿 Starting FastAPI..." -ForegroundColor Yellow

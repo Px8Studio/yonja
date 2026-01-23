@@ -55,8 +55,9 @@ async def analyze_image(
         # Get agent and run
         agent = await get_agent()
 
+        # ✅ CRITICAL: session_id=thread_id for conversation tracking
         _langfuse_handler = create_langfuse_handler(
-            session_id=thread_id,
+            session_id=thread_id,  # ✅ Maps thread_id → Langfuse session
             user_id=user_id,
             tags=["vision", "image_upload"],
             metadata={"image_count": len(saved_paths)},

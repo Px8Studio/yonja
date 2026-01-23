@@ -1,0 +1,81 @@
+# deploy/kubernetes/deployment.yaml
+# =========================================================================
+# Kubernetes Deployment Template for Yonca AI
+# =========================================================================
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: yonca
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yonca-langgraph
+  namespace: yonca
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: yonca-langgraph
+  template:
+    metadata:
+      labels:
+        app: yonca-langgraph
+    spec:
+      containers:
+      - name: langgraph
+        image: yonca-langgraph:latest
+        ports:
+        - containerPort: 2024
+        env:
+        - name: YONCA_ENVIRONMENT
+          value: "production"
+        - name: YONCA_INFRASTRUCTURE_MODE
+          value: "cloud"
+        - name: LANGGRAPH_POSTGRES_URI
+          valueFrom:
+            secretKeyRef:
+              name: yonca-secrets
+              key: database-url
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yonca-api
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: yonca-api
+  template:
+    metadata:
+      labels:
+        app: yonca-api
+    spec:
+      containers:
+      - name: api
+        image: yonca-api:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: YONCA_ENVIRONMENT
+          value: "production"
+        - name: YONCA_LANGGRAPH_BASE_URL
+          value: "http://yonca-langgraph:2024"
+        - name: YONCA_DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: yonca-secrets
+              key: database-url
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10

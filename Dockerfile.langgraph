@@ -1,0 +1,59 @@
+# ════════════════════════════════════════════════════════════════════════════
+# Dockerfile for LangGraph Dev Server
+# ════════════════════════════════════════════════════════════════════════════
+#
+# This container runs the LangGraph Dev Server for production-like deployments.
+# It provides HTTP API access to the agent graph.
+#
+# Build:
+#   docker build -f Dockerfile.langgraph -t yonca-langgraph:latest .
+#
+# Run:
+#   docker run -p 2024:2024 \
+#     -e PYTHONPATH=/app/src \
+#     -v $(pwd)/src:/app/src \
+#     yonca-langgraph:latest
+#
+# ════════════════════════════════════════════════════════════════════════════
+
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy dependency files first (for layer caching)
+COPY requirements.txt pyproject.toml ./
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install langgraph-cli separately to ensure it's available
+RUN pip install --no-cache-dir langgraph-cli
+
+# Copy source code
+COPY src/ ./src/
+COPY langgraph.json ./
+
+# Set environment variables
+ENV PYTHONPATH=/app/src \
+    LANGGRAPH_DEV_HOST=0.0.0.0 \
+    LANGGRAPH_DEV_PORT=2024 \
+    LANGGRAPH_API_LOG_LEVEL=INFO
+
+# Expose port
+EXPOSE 2024
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:2024/health || exit 1
+
+# Run LangGraph Dev Server
+CMD ["langgraph", "dev", "--host", "0.0.0.0", "--port", "2024"]

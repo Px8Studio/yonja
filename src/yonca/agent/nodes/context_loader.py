@@ -7,11 +7,15 @@ This keeps context loading separate from business logic nodes.
 
 from typing import Any
 
+import structlog
+
 from yonca.agent.state import AgentState, FarmContext, UserContext, WeatherContext
 from yonca.data.cache import CachedFarmRepository, CachedUserRepository
 from yonca.data.database import get_db_session
 from yonca.data.repositories.farm_repo import FarmRepository
 from yonca.data.repositories.user_repo import UserRepository
+
+logger = structlog.get_logger(__name__)
 
 
 async def context_loader_node(state: AgentState) -> dict[str, Any]:
@@ -32,6 +36,15 @@ async def context_loader_node(state: AgentState) -> dict[str, Any]:
     user_id = state.get("user_id")
     nodes_visited = state.get("nodes_visited", []).copy()
     nodes_visited.append("context_loader")
+
+    requires_context = routing.requires_context if routing else []
+
+    logger.info(
+        "context_loader_node_start",
+        user_id=user_id,
+        requires_context=requires_context,
+        has_routing=bool(routing),
+    )
 
     updates: dict[str, Any] = {"nodes_visited": nodes_visited}
 
@@ -108,6 +121,13 @@ async def context_loader_node(state: AgentState) -> dict[str, Any]:
                     wind_speed_kmh=10.0,
                     forecast_summary="Açıq hava, yağış gözlənilmir",
                 )
+
+    logger.info(
+        "context_loader_node_complete",
+        user_context_loaded=bool(updates.get("user_context")),
+        farm_context_loaded=bool(updates.get("farm_context")),
+        weather_loaded=bool(updates.get("weather")),
+    )
 
     return updates
 

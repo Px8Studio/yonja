@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from yonca.api.middleware.rate_limit import RateLimiter, RateLimitExceeded, RateLimitMiddleware
-from yonca.api.routes import auth, chat, health, models, vision
+from yonca.api.routes import auth, chat, graph, health, models, vision
 from yonca.config import settings
 from yonca.data.redis_client import RedisClient
 from yonca.llm.http_pool import HTTPClientPool
@@ -325,6 +325,7 @@ app.add_middleware(
 # ===== Routes =====
 
 app.include_router(health.router, tags=["Health"])
+app.include_router(graph.router, prefix="/api/v1", tags=["Graph"])
 app.include_router(auth.router, prefix="/api", tags=["Authentication"])
 app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
 app.include_router(models.router, prefix="/api", tags=["Models"])
@@ -345,6 +346,10 @@ async def root():
             "docs": "/docs",
             "redoc": "/redoc",
             "health": "/health",
+            "graph_health": "/api/v1/graph/health",
+            "graph_invoke": "/api/v1/graph/invoke",
+            "graph_stream": "/api/v1/graph/stream",
+            "threads": "/api/v1/threads",
             "auth_test": "/api/v1/auth/test",
             "chat": "/api/v1/chat",
             "vision": "/api/v1/vision/analyze",
@@ -352,7 +357,8 @@ async def root():
         },
         "integration": {
             "primary_endpoint": "http://localhost:8000",
-            "quick_test": "POST /api/v1/auth/test with 'Authorization: Bearer <token>'",
+            "quick_test": "POST /api/v1/graph/invoke with message payload",
             "swagger_ui": "http://localhost:8000/docs",
+            "langgraph_dev_server": settings.langgraph_base_url,
         },
     }

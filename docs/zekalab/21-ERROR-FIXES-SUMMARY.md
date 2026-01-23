@@ -125,22 +125,60 @@ cl.Action(
 
 ---
 
-### 5. ✅ SQLAlchemyDataLayer Storage Warning
+### 5. ✅ SQLAlchemyDataLayer Storage Warning → PostgreSQL File Storage
 
-**Warning:**
+**Original Warning:**
 ```
 SQLAlchemyDataLayer storage client is not initialized and elements will not be persisted!
 ```
 
-**Status:**
-- This is a Chainlit internal warning, not a blocker
-- Data layer IS initialized (see logs: "user_created_successfully")
-- Likely a false positive due to async initialization timing
+**Root Cause:**
+- Chainlit's `SQLAlchemyDataLayer` expects a `storage_provider` (S3/Azure/GCS) for file uploads
+- Without it, file attachments (images, audio, documents) cannot be persisted
 
-**Evidence:**
-- Users are being created successfully
-- Threads/steps are persisting (visible in Chainlit UI)
-- Data layer singleton is properly configured
+**Solution: PostgreSQL-Based File Storage**
+
+Created a custom `PostgresStorageClient` that stores ALL files directly in PostgreSQL:
+- [demo-ui/storage_postgres.py](../../demo-ui/storage_postgres.py) - Custom storage client
+- [alembic/versions/add_chainlit_files_table.py](../../alembic/versions/add_chainlit_files_table.py) - Migration
+
+**Benefits (Data Residency):**
+- ✅ **Full data sovereignty** - All data stays in your PostgreSQL database
+- ✅ **No external dependencies** - No S3, Azure, GCS accounts needed
+- ✅ **Single backup** - Database backup includes all files
+- ✅ **ACID compliance** - File operations are transactional
+- ✅ **Simplified infrastructure** - One less service to manage
+
+**Supported File Types:**
+- 📄 Documents (PDF, DOCX, TXT, etc.)
+- 🖼️ Images (PNG, JPG, GIF, etc.)
+- 🎵 Audio (WAV, MP3, OGG, etc.)
+- 🎬 Video (MP4, WebM, etc.)
+- 📎 Any other binary data
+
+**Table Schema:**
+```sql
+CREATE TABLE chainlit_files (
+    id UUID PRIMARY KEY,
+    object_key VARCHAR(500) UNIQUE,  -- Path-like key
+    data BYTEA NOT NULL,             -- File content
+    mime_type VARCHAR(100),          -- MIME type
+    size_bytes BIGINT,               -- File size
+    checksum VARCHAR(64),            -- SHA-256 hash
+    created_at TIMESTAMP,
+    expires_at TIMESTAMP,            -- Optional TTL
+    metadata JSONB                   -- Additional metadata
+);
+```
+
+**Usage:**
+```python
+# Automatically enabled when using PostgreSQL
+data_layer = YoncaDataLayer(conninfo="postgresql+asyncpg://...")
+# Files are stored in PostgreSQL, no external blob storage needed
+```
+
+**Status:** ✅ IMPLEMENTED - Full data residency with PostgreSQL file storage
 
 ---
 

@@ -73,44 +73,39 @@ async def load_alem_persona_from_db(
 
 
 async def save_alem_persona_to_db(
-    alem_persona: dict[str, Any],
+    alem_persona: dict,
     chainlit_user_id: str,
     email: str,
     user_profile_id: str | None = None,
 ) -> bool:
-    """Save generated persona to database for persistence.
-
-    Args:
-        alem_persona: Persona dict from ALEMPersona.to_dict()
-        chainlit_user_id: Chainlit user.identifier (email from OAuth)
-        email: User email
-        user_profile_id: Optional FK to user_profiles table
-
-    Returns:
-        True if saved successfully, False otherwise
-
-    Note:
-        The chainlit_user_id FK requires the user to exist in the 'users' table first.
-        Call ensure_user_persisted() before this function.
-    """
+    """Save generated persona to database for persistence."""
     try:
-        # CRITICAL: Ensure user exists in 'users' table before FK insert
-        from data_layer import get_data_layer
-
-        data_layer = get_data_layer()
-        if data_layer:
-            existing_user = await data_layer.get_user(chainlit_user_id)
-            if not existing_user:
-                logger.warning(
-                    "user_not_in_db_skipping_persona_save",
-                    email=email,
-                    hint="Call ensure_user_persisted() before save_alem_persona_to_db()",
-                )
-                return False
-
         async with get_db_session() as session:
-            persona_id = str(uuid.uuid4())
+            # Ensure FK uses users.id (UUID), not the email identifier
+            if not chainlit_user_id or "-" not in chainlit_user_id:
+                result = await session.execute(
+                    text('SELECT "id" FROM users WHERE "identifier" = :identifier'),
+                    {"identifier": email},
+                )
+                row = result.first()
+                if row:
+                    chainlit_user_id = row[0]
+                else:
+                    chainlit_user_id = str(uuid.uuid4())
+                    await session.execute(
+                        text(
+                            'INSERT INTO users ("id", "identifier", "createdAt", "metadata") '
+                            "VALUES (:id, :identifier, :created_at, :metadata)"
+                        ),
+                        {
+                            "id": chainlit_user_id,
+                            "identifier": email,
+                            "created_at": datetime.utcnow().isoformat(),
+                            "metadata": "{}",
+                        },
+                    )
 
+            persona_id = str(uuid.uuid4())
             await session.execute(
                 text(
                     """
@@ -139,16 +134,16 @@ async def save_alem_persona_to_db(
                     "region": alem_persona["region"],
                     "crop": alem_persona["crop_type"],
                     "area": alem_persona["total_area_ha"],
-                    "exp": alem_persona.get("experience_level", "intermediate"),
+                    "exp": alem_persona["experience_level"],
                     "verified": alem_persona.get("ektis_verified", False),
                     "source": alem_persona.get("data_source", "synthetic"),
                     "created": datetime.utcnow(),
                     "login": datetime.utcnow(),
                 },
             )
+            await session.commit()
             logger.info("persona_saved_to_db", email=email, persona_id=persona_id)
             return True
-
     except Exception as e:
         logger.error("save_persona_failed", email=email, error=str(e))
         return False

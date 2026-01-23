@@ -7,9 +7,14 @@ and forecasted weather conditions.
 
 from typing import Any
 
+import structlog
+from langchain_core.runnables import RunnableConfig
+
 from yonca.agent.state import AgentState, add_assistant_message
-from yonca.llm.factory import get_llm_provider
+from yonca.llm.factory import get_llm_from_config
 from yonca.llm.providers.base import LLMMessage
+
+logger = structlog.get_logger(__name__)
 
 # ============================================================
 # Weather Analysis Prompt
@@ -77,7 +82,7 @@ def build_weather_context(state: AgentState) -> str:
 # ============================================================
 
 
-async def weather_node(state: AgentState) -> dict[str, Any]:
+async def weather_node(state: AgentState, config: RunnableConfig | None = None) -> dict[str, Any]:
     """Weather analyst node.
 
     Analyzes weather conditions and provides farming-related
@@ -85,6 +90,7 @@ async def weather_node(state: AgentState) -> dict[str, Any]:
 
     Args:
         state: Current agent state
+        config: RunnableConfig with metadata (including model override from Chat Profiles)
 
     Returns:
         State updates with weather analysis
@@ -94,6 +100,14 @@ async def weather_node(state: AgentState) -> dict[str, Any]:
 
     user_input = state.get("current_input", "")
     intent = state.get("intent")
+    weather = state.get("weather")
+
+    logger.info(
+        "weather_node_start",
+        message=user_input[:100],
+        has_weather_data=bool(weather),
+        temperature=weather.temperature_c if weather else None,
+    )
 
     # Build messages
     weather_context = build_weather_context(state)
@@ -107,8 +121,8 @@ async def weather_node(state: AgentState) -> dict[str, Any]:
         LLMMessage.user(user_input),
     ]
 
-    # Generate response
-    provider = get_llm_provider()
+    # Generate response using runtime model selection
+    provider = get_llm_from_config(config)
 
     try:
         response = await provider.generate(
@@ -151,12 +165,23 @@ async def weather_node(state: AgentState) -> dict[str, Any]:
                 )
 
             if alerts_to_add:
+                logger.info(
+                    "weather_node_complete",
+                    response_length=len(response_text),
+                    alerts_count=len(alerts_to_add),
+                )
                 return {
                     "current_response": response_text,
                     "nodes_visited": nodes_visited,
                     "messages": [add_assistant_message(state, response_text, "weather", intent)],
                     "alerts": alerts_to_add,
                 }
+
+        logger.info(
+            "weather_node_complete",
+            response_length=len(response_text),
+            alerts_count=0,
+        )
 
         return {
             "current_response": response_text,
@@ -165,6 +190,10 @@ async def weather_node(state: AgentState) -> dict[str, Any]:
         }
 
     except Exception as e:
+        logger.error(
+            "weather_node_error",
+            error=str(e),
+        )
         error_response = (
             "Hava məlumatlarını yükləyərkən xəta baş verdi. Zəhmət olmasa sonra yenidən cəhd edin."
         )

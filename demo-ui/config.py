@@ -21,7 +21,19 @@ class DemoSettings:
     )
     ollama_model: str = field(default_factory=lambda: os.getenv("OLLAMA_MODEL", "qwen3:4b"))
 
-    # Redis for checkpointing
+    # LangGraph Dev Server (Required for production-parity)
+    langgraph_base_url: str = field(
+        default_factory=lambda: os.getenv("YONCA_LANGGRAPH_BASE_URL", "http://localhost:2024")
+    )
+    langgraph_graph_id: str = field(
+        default_factory=lambda: os.getenv("YONCA_LANGGRAPH_GRAPH_ID", "yonca_agent")
+    )
+    langgraph_required: bool = field(
+        default_factory=lambda: os.getenv("YONCA_LANGGRAPH_REQUIRED", "true").lower()
+        in ("true", "1", "yes")
+    )
+
+    # Redis (Legacy - LangGraph server handles checkpointing now)
     redis_url: str = field(
         default_factory=lambda: os.getenv("REDIS_URL", "redis://localhost:6379/0")
     )
@@ -72,14 +84,14 @@ class DemoSettings:
     default_language: str = "az"
     session_timeout_seconds: int = 3600
 
+    # DEPRECATED: Yonca now always uses HTTP-based LangGraph server integration
     # Integration mode: "direct" (LangGraph) or "api" (FastAPI bridge)
-    # Use "api" mode to demo the exact API contract Digital Umbrella will use
-    integration_mode: str = field(default_factory=lambda: os.getenv("INTEGRATION_MODE", "direct"))
+    integration_mode: str = field(default_factory=lambda: os.getenv("INTEGRATION_MODE", "api"))
 
     @property
     def use_api_bridge(self) -> bool:
-        """Check if using API bridge mode."""
-        return self.integration_mode.lower() == "api"
+        """DEPRECATED: Always true now."""
+        return True
 
     # Feature flags
     enable_feedback: bool = True

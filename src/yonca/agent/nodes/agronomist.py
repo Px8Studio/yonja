@@ -8,11 +8,15 @@ for irrigation, fertilization, pest control, planting, and harvesting.
 from pathlib import Path
 from typing import Any
 
+import structlog
 from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.runnables import RunnableConfig
 
 from yonca.agent.state import AgentState, UserIntent, add_assistant_message
-from yonca.llm.factory import get_llm_provider
+from yonca.llm.factory import get_llm_from_config
 from yonca.llm.providers.base import LLMMessage
+
+logger = structlog.get_logger(__name__)
 
 # ============================================================
 # Prompt Templates
@@ -143,7 +147,9 @@ def build_intent_prompt(intent: UserIntent | None) -> str:
 # ============================================================
 
 
-async def agronomist_node(state: AgentState) -> dict[str, Any]:
+async def agronomist_node(
+    state: AgentState, config: RunnableConfig | None = None
+) -> dict[str, Any]:
     """Agronomist specialist node.
 
     Generates agricultural advice based on:
@@ -154,6 +160,7 @@ async def agronomist_node(state: AgentState) -> dict[str, Any]:
 
     Args:
         state: Current agent state with context loaded
+        config: RunnableConfig with metadata (including model override from Chat Profiles)
 
     Returns:
         State updates with generated response
@@ -161,8 +168,18 @@ async def agronomist_node(state: AgentState) -> dict[str, Any]:
     nodes_visited = state.get("nodes_visited", []).copy()
     nodes_visited.append("agronomist")
 
-    state.get("current_input", "")
+    user_input = state.get("current_input", "")
     intent = state.get("intent")
+    conversation_context = state.get("conversation_context", {})
+
+    logger.info(
+        "agronomist_node_start",
+        message=user_input[:100],
+        intent=intent.value if intent else "unknown",
+        has_farm_context=bool(state.get("farm_context")),
+        has_weather=bool(state.get("weather")),
+        conversation_stage=conversation_context.get("conversation_stage"),
+    )
 
     # Build the full prompt
     system_prompt = load_system_prompt()
@@ -187,8 +204,8 @@ async def agronomist_node(state: AgentState) -> dict[str, Any]:
         elif isinstance(msg, AIMessage):
             messages.append(LLMMessage.assistant(msg.content))
 
-    # Generate response
-    provider = get_llm_provider()
+    # Generate response using runtime model selection
+    provider = get_llm_from_config(config)
 
     try:
         response = await provider.generate(
@@ -219,6 +236,11 @@ async def agronomist_node(state: AgentState) -> dict[str, Any]:
         }
 
     except Exception as e:
+        logger.error(
+            "agronomist_node_error",
+            error=str(e),
+            intent=intent.value if intent else "unknown",
+        )
         error_response = (
             "Bağışlayın, texniki problem yarandı. "
             "Zəhmət olmasa sualınızı bir az sonra təkrar yoxlayın."
@@ -232,10 +254,14 @@ async def agronomist_node(state: AgentState) -> dict[str, Any]:
         }
 
 
-async def agronomist_node_streaming(state: AgentState):
+async def agronomist_node_streaming(state: AgentState, config: RunnableConfig | None = None):
     """Streaming version of agronomist node.
 
     Yields tokens as they are generated for real-time response.
+
+    Args:
+        state: Current agent state
+        config: RunnableConfig with metadata (including model override from Chat Profiles)
     """
     nodes_visited = state.get("nodes_visited", []).copy()
     nodes_visited.append("agronomist")
@@ -262,7 +288,8 @@ async def agronomist_node_streaming(state: AgentState):
         elif isinstance(msg, AIMessage):
             messages.append(LLMMessage.assistant(msg.content))
 
-    provider = get_llm_provider()
+    # Use runtime model selection
+    provider = get_llm_from_config(config)
 
     full_response = ""
     async for chunk in provider.stream(messages, temperature=0.7, max_tokens=800):

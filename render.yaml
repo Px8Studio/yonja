@@ -17,70 +17,49 @@ services:
     startCommand: uvicorn yonca.api.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
-      # Deployment mode
-      - key: DEPLOYMENT_MODE
-        value: cloud
-      - key: ENVIRONMENT
+      # Deployment Configuration (Two-Axis Model)
+      - key: YONCA_ENVIRONMENT
         value: production
-      - key: DEBUG
-        value: false
+      - key: YONCA_INFRASTRUCTURE_MODE
+        value: cloud
+      - key: YONCA_LANGGRAPH_REQUIRED
+        value: true
 
-      # Python path
-      - key: PYTHONPATH
-        value: /opt/render/project/src/src
+      # LangGraph Connector
+      - key: YONCA_LANGGRAPH_BASE_URL
+        value: https://yonca-langgraph.onrender.com
+      - key: YONCA_LANGGRAPH_GRAPH_ID
+        value: yonca_agent
 
       # LLM Provider (Gemini for cloud)
-      - key: LLM_PROVIDER
+      - key: YONCA_LLM_PROVIDER
         value: gemini
       - key: GEMINI_API_KEY
-        sync: false  # Set manually in Render dashboard
+        sync: false
       - key: GEMINI_MODEL
         value: gemini-2.0-flash
 
-      # Groq as fallback
-      - key: GROQ_API_KEY
-        sync: false
-      - key: GROQ_MODEL
-        value: llama-3.3-70b-versatile
-
       # Database
-      - key: DATABASE_URL
+      - key: YONCA_DATABASE_URL
         fromDatabase:
           name: yonca-db
           property: connectionString
 
-      # Redis (optional - use Upstash free tier or PostgreSQL checkpointing)
-      # If REDIS_URL is not set, checkpointing falls back to PostgreSQL
-      - key: REDIS_URL
-        sync: false  # Optional: Set to Upstash URL in dashboard
-
-      # Checkpointing backend (auto = Redis → Postgres → Memory)
-      - key: CHECKPOINTER_BACKEND
-        value: auto
-
-      # Security (generate with: openssl rand -hex 32)
-      - key: JWT_SECRET
+      # Security
+      - key: YONCA_JWT_SECRET
         generateValue: true
-      - key: JWT_ALGORITHM
+      - key: YONCA_JWT_ALGORITHM
         value: HS256
-      - key: JWT_EXPIRY_HOURS
-        value: 24
-
-      # Rate limiting
-      - key: RATE_LIMIT_REQUESTS_PER_MINUTE
-        value: 30
-      - key: RATE_LIMIT_BURST
-        value: 50
-
-      # CORS (add your frontend domains)
-      - key: CORS_ORIGINS
-        value: https://yonca-demo.onrender.com,https://yonca.az
 
       # Observability
+      - key: YONCA_LANGFUSE_ENABLED
+        value: true
+      - key: YONCA_LANGFUSE_HOST
+        value: https://yonca-langfuse.onrender.com
       - key: LOG_LEVEL
         value: INFO
-      - key: LOG_FORMAT
-        value: json
+    depends_on:
+      - yonca-langgraph
 
   # ============================================
   # Chainlit Demo UI
@@ -94,41 +73,64 @@ services:
     startCommand: cd demo-ui && chainlit run app.py --host 0.0.0.0 --port $PORT
     healthCheckPath: /
     envVars:
-      # Python path
-      - key: PYTHONPATH
-        value: /opt/render/project/src/src:/opt/render/project/src/demo-ui
+      # Deployment settings
+      - key: YONCA_ENVIRONMENT
+        value: production
+      - key: YONCA_INFRASTRUCTURE_MODE
+        value: cloud
+      - key: YONCA_LANGGRAPH_REQUIRED
+        value: true
 
-      # LLM Provider
-      - key: LLM_PROVIDER
-        value: gemini
-      - key: GEMINI_API_KEY
-        sync: false
-      - key: GEMINI_MODEL
-        value: gemini-2.0-flash
-
-      # Groq fallback
-      - key: GROQ_API_KEY
-        sync: false
-      - key: GROQ_MODEL
-        value: llama-3.3-70b-versatile
-
-      # Redis (optional - use Upstash free tier, falls back to PostgreSQL)
-      - key: REDIS_URL
-        sync: false  # Optional: Set to Upstash URL in dashboard
-
-      # Checkpointing backend (auto = Redis → Postgres → Memory)
-      - key: CHECKPOINTER_BACKEND
-        value: auto
+      # Service Connectors
+      - key: YONCA_LANGGRAPH_BASE_URL
+        value: https://yonca-langgraph.onrender.com
+      - key: YONCA_API_URL
+        value: https://yonca-api.onrender.com
 
       # Database
-      - key: DATABASE_URL
+      - key: YONCA_DATABASE_URL
+        fromDatabase:
+          name: yonca-db
+          property: connectionString
+      - key: CHAINLIT_DATABASE_URL
         fromDatabase:
           name: yonca-db
           property: connectionString
 
-      # API URL (for API client pattern)
-      - key: YONCA_API_URL
-        value: https://yonca-api.onrender.com
+      # Python path
+      - key: PYTHONPATH
+        value: /opt/render/project/src/src:/opt/render/project/src/demo-ui
+    depends_on:
+      - yonca-api
+      - yonca-langgraph
+
+# ============================================
+# LangGraph Runtime (Production Agent Server)
+# ============================================
+  - type: web
+    name: yonca-langgraph
+    runtime: docker
+    plan: starter
+    region: frankfurt
+    dockerfilePath: Dockerfile.langgraph
+    healthCheckPath: /health
+    envVars:
+      - key: YONCA_ENVIRONMENT
+        value: production
+      - key: YONCA_INFRASTRUCTURE_MODE
+        value: cloud
+      - key: YONCA_LANGGRAPH_REQUIRED
+        value: true
+      - key: YONCA_LLM_PROVIDER
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: LANGGRAPH_POSTGRES_URI
+        fromDatabase:
+          name: yonca-db
+          property: connectionString
+      - key: PYTHONPATH
+        value: /app/src
 
 # ============================================
 # Langfuse (Self-Hosted Observability)

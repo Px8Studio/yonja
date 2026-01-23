@@ -23,6 +23,14 @@ from yonca.agent.nodes.weather import weather_node
 from yonca.agent.state import AgentState, create_initial_state
 from yonca.observability.langfuse import create_langfuse_handler
 
+# Enable LangChain verbose logging for debugging
+try:
+    from langchain.globals import set_debug, set_verbose
+
+    ENABLE_VERBOSE_LOGGING = True
+except ImportError:
+    ENABLE_VERBOSE_LOGGING = False
+
 # ============================================================
 # Graph Construction
 # ============================================================
@@ -104,22 +112,33 @@ def create_agent_graph() -> StateGraph:
     return graph
 
 
-def compile_agent_graph(checkpointer: BaseCheckpointSaver | None = None):
-    """Compile the agent graph with optional checkpointing.
+def compile_agent_graph(checkpointer: BaseCheckpointSaver | None = None, verbose: bool = True):
+    """Compile the agent graph with optional checkpointing and verbose logging.
 
     Args:
         checkpointer: LangGraph checkpointer for state persistence
                      (RedisSaver, MemorySaver, or any BaseCheckpointSaver)
+        verbose: Enable detailed execution logging (default: True)
 
     Returns:
-        Compiled graph ready for invocation.
+        Compiled graph ready for invocation with Langfuse tracing.
     """
+    # Enable global LangChain verbosity for debugging
+    if verbose and ENABLE_VERBOSE_LOGGING:
+        set_verbose(True)
+        set_debug(True)
+
     graph = create_agent_graph()
 
-    if checkpointer:
-        return graph.compile(checkpointer=checkpointer)
+    # Compile with debug mode for state inspection
+    compiled = graph.compile(checkpointer=checkpointer, debug=verbose)
 
-    return graph.compile()
+    # Wrap with Langfuse tracing for observability
+    langfuse_handler = create_langfuse_handler()
+    if langfuse_handler:
+        compiled = compiled.with_config(callbacks=[langfuse_handler])
+
+    return compiled
 
 
 # ============================================================
@@ -219,12 +238,14 @@ class YoncaAgent:
 
         # Add Langfuse callback for self-hosted observability
         # Traces appear at: http://localhost:3001 (Langfuse dashboard)
+        # ✅ CRITICAL: session_id parameter maps to thread_id for correlation
+        #    This ensures Langfuse traces are grouped by conversation thread
         langfuse_handler = create_langfuse_handler(
-            session_id=thread_id,
+            session_id=thread_id,  # ✅ Maps thread_id → Langfuse session
             user_id=user_id,
             tags=["yonca", "chat", language],
             metadata={
-                "session_id": session_id,
+                "session_id": session_id,  # API session ID (different from thread)
                 "language": language,
             },
             trace_name=f"yonca_chat_{thread_id[:8]}",
@@ -293,8 +314,9 @@ class YoncaAgent:
         }
 
         # Add Langfuse callback for streaming observability
+        # ✅ CRITICAL: session_id=thread_id for conversation tracking
         langfuse_handler = create_langfuse_handler(
-            session_id=thread_id,
+            session_id=thread_id,  # ✅ Maps thread_id → Langfuse session
             user_id=user_id,
             tags=["yonca", "stream", language],
             metadata={"session_id": session_id, "language": language},

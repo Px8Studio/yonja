@@ -8,8 +8,13 @@ Supports multiple backends (NO automatic fallback - explicit selection):
 
 Best Practice: Let LangGraph handle checkpointing internally.
 Don't reinvent the wheel - use the official checkpointers.
+
+Windows Note: psycopg requires SelectorEventLoop, not ProactorEventLoop.
+Call configure_windows_event_loop() before using PostgreSQL checkpointer.
 """
 
+import asyncio
+import sys
 from typing import Literal, Union
 
 import structlog
@@ -28,12 +33,42 @@ EMOJI_MEMORY = "💾"
 EMOJI_ERROR = "❌"
 EMOJI_SUCCESS = "✅"
 
+# Flag to track if Windows event loop has been configured
+_windows_event_loop_configured = False
+
+
+def configure_windows_event_loop() -> bool:
+    """Configure Windows event loop for psycopg compatibility.
+
+    psycopg (used by LangGraph PostgreSQL checkpointer) requires
+    SelectorEventLoop on Windows, not the default ProactorEventLoop.
+
+    This should be called early in application startup.
+
+    Returns:
+        True if configuration was applied, False otherwise.
+    """
+    global _windows_event_loop_configured
+
+    if _windows_event_loop_configured:
+        return False
+
+    if sys.platform == "win32":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+        _windows_event_loop_configured = True
+        log.debug(f"{EMOJI_YONCA} Windows SelectorEventLoop configured for psycopg")
+        return True
+
+    return False
+
+
 # Type for checkpointer backend preference
-CheckpointerBackend = Literal["redis", "postgres", "memory"]
+CheckpointerBackend = Literal["redis", "postgres", "memory", "auto"]
 
 # Try to import Redis checkpointer from official package
+# NOTE: LangGraph 1.x uses langgraph.checkpoint.redis (not langgraph_checkpoint_redis)
 try:
-    from langgraph_checkpoint_redis.aio import AsyncRedisSaver
+    from langgraph.checkpoint.redis.aio import AsyncRedisSaver
 
     REDIS_CHECKPOINTER_AVAILABLE = True
     log.debug(f"{EMOJI_YONCA} {EMOJI_REDIS} langgraph-checkpoint-redis available")
@@ -43,8 +78,9 @@ except ImportError:
     log.debug(f"{EMOJI_YONCA} {EMOJI_REDIS} langgraph-checkpoint-redis not installed")
 
 # Try to import PostgreSQL checkpointer from official package
+# NOTE: LangGraph 1.x uses langgraph.checkpoint.postgres (not langgraph_checkpoint_postgres)
 try:
-    from langgraph_checkpoint_postgres.aio import AsyncPostgresSaver
+    from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
     POSTGRES_CHECKPOINTER_AVAILABLE = True
     log.debug(f"{EMOJI_YONCA} {EMOJI_POSTGRES} langgraph-checkpoint-postgres available")

@@ -1,6 +1,33 @@
 # 📋 ALEM Implementation Backlog
 
 > **Purpose:** Organized roadmap of features, integrations, and infrastructure improvements.
+> **Last Updated:** 2026-01-21
+
+---
+
+## 🎉 Recent Completions
+
+### 2026-01-21: Dynamic Farm Scenario Planning System
+- ✅ **Feature:** Agrotechnological calendar with evolving conversational state
+- ✅ **Implementation:**
+  - Database: [farm_scenario_plans table](../../alembic/versions/add_farm_scenario_plans_table.py)
+  - State: [ScenarioContext in AgentState](../../src/yonca/agent/state.py#L118-L145)
+  - Prompts: [Crop-specific calendar templates](../../prompts/agro_calendar_prompts.py)
+  - Integration: [Chat settings → agent state flow](../../demo-ui/app.py#L1433-L1493)
+- ✅ **Impact:** Replicates Yonca Mobile's "Aqrotexnoloji təqvim planı" with smart yes/no questions
+- ✅ **Documentation:** [DYNAMIC-SCENARIO-PLANNING.md](DYNAMIC-SCENARIO-PLANNING.md)
+
+### 2026-01-21: Mobile App Feature Replication
+- ✅ **Feature:** Farm profile + planning settings in Chainlit UI
+- ✅ **Implementation:** [demo-ui/app.py](../../demo-ui/app.py#L1087-L1520) - Chat settings + handler
+- ✅ **Impact:** Feature parity with Yonca Mobile App (crop, region, size, soil, irrigation, planning)
+- ✅ **Documentation:** [MOBILE-APP-FEATURES-REPLICATION.md](MOBILE-APP-FEATURES-REPLICATION.md)
+
+### 2026-01-21: Chat Profiles Activation
+- ✅ **Feature:** Expertise-based AI behavior via system prompts
+- ✅ **Implementation:** [src/yonca/agent/state.py](../../src/yonca/agent/state.py#L275-L325), [demo-ui/app.py](../../demo-ui/app.py#L672-L730)
+- ✅ **Impact:** Agent now adapts responses based on farmer's crop type (cotton, wheat, orchard, etc.)
+- ✅ **Documentation:** Updated [11-CHAINLIT-UI.md](11-CHAINLIT-UI.md) with merged Chainlit documentation
 
 ---
 
@@ -118,7 +145,7 @@
 
 | # | Feature | Status | Effort | Notes |
 |:-:|:--------|:------:|:-------|:------|
-| P.9 | **Chat Profiles (Personas)** | ⬜ | 2 days | Farmer persona selector |
+| P.9 | **Chat Profiles (Personas)** | ✅ | — | ✅ Completed 2026-01-21: Expertise-based system prompts |
 | P.10 | **NDVI Visualization** | ⬜ | 3 days | Satellite imagery display |
 | P.11 | **Export Chat History** | ⬜ | 1 day | Download conversation |
 | P.12 | **Multi-Language Support** | ⬜ | 5 days | English, Russian, Turkish fallback |
@@ -172,9 +199,9 @@
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
 pie title Implementation Status
-    "✅ Completed" : 5
+    "✅ Completed" : 4
     "🔄 In Progress" : 0
-    "⬜ Not Started" : 60
+    "⬜ Not Started" : 56
     "🚫 Blocked" : 0
 ```
 
@@ -185,10 +212,10 @@ pie title Implementation Status
 | Strategic & Certifications | 5 | 0 | 0 | 0 | 0% |
 | Enterprise Integration | 20 | 0 | 0 | 0 | 0% |
 | Critical Path | 8 | 0 | 0 | 0 | 0% |
-| Production Readiness | 12 | 1 | 0 | 0 | 8% |
+| Production Readiness | 12 | 2 | 0 | 0 | 17% |
 | Quality of Life | 9 | 2 | 0 | 0 | 22% |
 | Future R&D | 6 | 0 | 0 | 0 | 0% |
-| **TOTAL** | **60** | **3** | **0** | **0** | **5%** |
+| **TOTAL** | **60** | **4** | **0** | **0** | **7%** |
 
 ---
 

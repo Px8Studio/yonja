@@ -136,6 +136,28 @@ class FarmContext(BaseModel):
     center_coordinates: dict | None = None
 
 
+class ScenarioContext(BaseModel):
+    """Dynamic farm scenario context from chat settings.
+
+    Tracks evolving user configuration during conversation.
+    Enables rules engine to generate contextual monthly plans.
+    """
+
+    scenario_id: str | None = None  # UUID from farm_scenario_plans table
+    crop_category: str | None = None  # Danli, Taravaz, Texniki, Yem, Meyva
+    specific_crop: str  # Pambiq, Bugda, Kalam, etc.
+    region: str  # Aran, Quba-Xacmaz, etc.
+    farm_size_ha: float  # Farm size in hectares
+    experience_level: str  # novice, intermediate, expert
+    soil_type: str  # Gilli/Clay, Qumlu/Sandy, Lopam/Loam, Soranli/Saline
+    irrigation_type: str  # Damci/Drip, Pivot, Sirim/Flood, Yagis/Rainfed
+    current_month: str  # January-December
+    action_categories: list[str] = Field(default_factory=list)  # ['Ekin', 'Suvarma', etc.]
+    expertise_areas: list[str] = Field(default_factory=list)  # ['cotton', 'wheat', etc.]
+    conversation_stage: str = "profile_setup"  # profile_setup, planning_active, plan_confirmed
+    settings_version: int = 1  # Increments on each settings update
+
+
 class WeatherContext(BaseModel):
     """Weather data for recommendations.
 
@@ -227,6 +249,7 @@ class AgentState(TypedDict, total=False):
 
     Thread-Based Memory:
     - Each conversation has a unique thread_id
+    scenario_context: ScenarioContext | None  # Dynamic chat settings scenario
     - State is checkpointed to Redis after each step
     - Farmer can resume conversation even after app close
     """
@@ -249,6 +272,7 @@ class AgentState(TypedDict, total=False):
     # ===== Context (Loaded on Demand) =====
     user_context: UserContext | None  # User profile
     farm_context: FarmContext | None  # Active farm data
+    scenario_context: ScenarioContext | None  # Dynamic chat settings scenario
     weather: WeatherContext | None  # Current weather
 
     # ===== Rule Engine =====
@@ -278,6 +302,8 @@ def create_initial_state(
     user_id: str | None = None,
     session_id: str | None = None,
     language: str = "az",
+    system_prompt_override: str | None = None,
+    scenario_context: dict | None = None,
 ) -> AgentState:
     """Create initial state for a new conversation turn.
 
@@ -287,15 +313,33 @@ def create_initial_state(
         user_id: Authenticated user ID (optional)
         session_id: API session ID (optional)
         language: Response language (default Azerbaijani)
+        system_prompt_override: Custom system prompt for profile-specific behavior (optional)
+        scenario_context: Farm scenario from chat settings (optional)
 
     Returns:
         Initialized AgentState ready for graph execution.
     """
+    # Build initial human message
+    human_msg = HumanMessage(content=user_input)
+
+    # If system prompt override provided, inject it as a system message
+    messages = []
+    if system_prompt_override:
+        from langchain_core.messages import SystemMessage
+
+        messages.append(SystemMessage(content=system_prompt_override))
+    messages.append(human_msg)
+
+    # Convert scenario_context dict to ScenarioContext if provided
+    scenario_ctx = None
+    if scenario_context:
+        scenario_ctx = ScenarioContext(**scenario_context)
+
     return AgentState(
         thread_id=thread_id,
         user_id=user_id,
         session_id=session_id,
-        messages=[HumanMessage(content=user_input)],
+        messages=messages,
         current_input=user_input,
         current_response=None,
         routing=None,
@@ -303,6 +347,7 @@ def create_initial_state(
         intent_confidence=0.0,
         user_context=None,
         farm_context=None,
+        scenario_context=scenario_ctx,
         weather=None,
         matched_rules=[],
         alerts=[],

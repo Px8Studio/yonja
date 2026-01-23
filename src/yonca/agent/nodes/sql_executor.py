@@ -7,8 +7,12 @@ returning results as formatted markdown table for display to farmer.
 
 from typing import Any
 
+import structlog
+
 from yonca.agent.state import AgentState, UserIntent, add_assistant_message
 from yonca.data.database import get_db_session
+
+logger = structlog.get_logger(__name__)
 
 
 async def sql_executor_node(state: AgentState) -> dict[str, Any]:
@@ -20,6 +24,12 @@ async def sql_executor_node(state: AgentState) -> dict[str, Any]:
     nodes_visited.append("sql_executor")
 
     sql_text = state.get("current_response", "").strip()
+
+    logger.info(
+        "sql_executor_node_start",
+        sql_length=len(sql_text),
+        is_select=sql_text.upper().startswith("SELECT"),
+    )
 
     if not sql_text or not sql_text.upper().startswith("SELECT"):
         return {
@@ -44,6 +54,11 @@ async def sql_executor_node(state: AgentState) -> dict[str, Any]:
                 f"| {line} |" for line in body_lines
             )
 
+        logger.info(
+            "sql_executor_node_complete",
+            rows_returned=len(rows),
+        )
+
         return {
             "current_response": formatted,
             "nodes_visited": nodes_visited,
@@ -52,6 +67,10 @@ async def sql_executor_node(state: AgentState) -> dict[str, Any]:
             ],
         }
     except Exception as e:
+        logger.error(
+            "sql_executor_node_error",
+            error=str(e)[:100],
+        )
         error_msg = f"SQL xətası: {str(e)[:100]}"
         return {
             "error": error_msg,

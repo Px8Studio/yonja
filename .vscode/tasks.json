@@ -116,7 +116,7 @@
       "label": "🌿 Yonca AI: 🖥️ UI Start",
       "detail": "Running 💬 Chainlit Chat + 📊 Langfuse + 📖 Swagger + 📕 ReDoc (all UIs)",
       "type": "shell",
-      "command": "${workspaceFolder}\\demo-ui\\.venv\\Scripts\\chainlit.exe",
+      "command": "${workspaceFolder}\\.venv\\Scripts\\chainlit.exe",
       "args": ["run", "app.py", "-w", "--port", "8501", "--headless"],
       "options": {
         "cwd": "${workspaceFolder}/demo-ui",

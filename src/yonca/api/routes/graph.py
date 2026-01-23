@@ -87,7 +87,7 @@ async def invoke_graph(request: GraphInvokeRequest):
         graph_id=settings.langgraph_graph_id,
     ) as client:
         # Build initial state from request
-        from yonca.agent.state import create_initial_state
+        from yonca.agent.state import create_initial_state, serialize_state_for_api
 
         initial_state = create_initial_state(
             thread_id=request.thread_id or "",  # Will be created if empty
@@ -97,6 +97,9 @@ async def invoke_graph(request: GraphInvokeRequest):
             system_prompt_override=request.system_prompt_override,
             scenario_context=request.scenario_context,
         )
+
+        # Serialize state for HTTP API (converts LangChain messages to plain dicts)
+        serialized_state = serialize_state_for_api(initial_state)
 
         # Prepare config for LangGraph
         config = {
@@ -111,7 +114,7 @@ async def invoke_graph(request: GraphInvokeRequest):
         try:
             # Async invocation - non-blocking for concurrent users
             result = await client.invoke(
-                input_state=dict(initial_state),  # Convert TypedDict to dict
+                input_state=serialized_state,  # Use serialized state
                 thread_id=request.thread_id,
                 config=config,
             )
@@ -158,7 +161,7 @@ async def stream_graph(request: GraphInvokeRequest):
             graph_id=settings.langgraph_graph_id,
         ) as client:
             # Build initial state
-            from yonca.agent.state import create_initial_state
+            from yonca.agent.state import create_initial_state, serialize_state_for_api
 
             initial_state = create_initial_state(
                 thread_id=request.thread_id or "",  # Will be created if empty
@@ -168,6 +171,9 @@ async def stream_graph(request: GraphInvokeRequest):
                 system_prompt_override=request.system_prompt_override,
                 scenario_context=request.scenario_context,
             )
+
+            # Serialize state for HTTP API (converts LangChain messages to plain dicts)
+            serialized_state = serialize_state_for_api(initial_state)
 
             config = {
                 "metadata": {
@@ -181,7 +187,7 @@ async def stream_graph(request: GraphInvokeRequest):
             try:
                 # Async streaming - concurrent-safe
                 async for event in client.stream(
-                    input_state=dict(initial_state),  # Convert TypedDict to dict
+                    input_state=serialized_state,  # Use serialized state
                     thread_id=request.thread_id,
                     config=config,
                 ):

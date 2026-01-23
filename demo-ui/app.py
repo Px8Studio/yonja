@@ -102,6 +102,19 @@ async def init_chainlit_data_layer():
             expire_on_commit=False,
         )
 
+        # Initialize PostgreSQL storage provider for file elements (images, docs, etc.)
+        # This prevents the "storage client not initialized" warning
+        from storage_postgres import get_postgres_storage_client
+
+        storage_provider = None
+        if "postgresql" in db_url or "postgres" in db_url:
+            try:
+                storage_provider = get_postgres_storage_client(database_url=db_url)
+                logger.info("✅ PostgreSQL storage provider initialized for file elements")
+            except Exception as storage_err:
+                logger.warning(f"⚠️  PostgreSQL storage provider failed: {storage_err}")
+                logger.warning("   File elements (images, docs) will not be persisted")
+
         # Initialize Chainlit data layer
         # Note: Newer Chainlit versions expect only conninfo string, not engine
         # YoncaDataLayer includes JSON serialization fix for JSONB tags columns
@@ -109,6 +122,7 @@ async def init_chainlit_data_layer():
 
         data_layer = YoncaDataLayer(
             conninfo=db_url,
+            storage_provider=storage_provider,  # Pass storage provider to persist file elements
         )
 
         # Set as global data layer
@@ -863,15 +877,14 @@ async def update_thread_presentation(
     # Keep metadata in session and push to DB
     cl.user_session.set("thread_metadata", metadata)
 
-    # Serialize tags to JSON string for JSONB column (asyncpg compatibility)
-    serialized_tags = json.dumps(tags) if tags and isinstance(tags, list) else tags
-
     try:
+        # Use correct method signature: update_thread(thread_id, name, user_id, metadata, tags)
+        # Tags should be a list - the data layer handles JSON serialization
         await data_layer.update_thread(
             thread_id=thread_id,
             name=name,
             metadata=metadata,
-            tags=serialized_tags,
+            tags=tags,  # Pass as list, not serialized
         )
         logger.debug("thread_presentation_updated", thread_id=thread_id, name=name, tags=tags)
     except Exception as e:  # noqa: BLE001
@@ -934,13 +947,12 @@ async def update_ui_preferences(payload: ModeModelPayload):
         llm_model=payload.llm_model,
     )
 
-    # Serialize tags to JSON string for JSONB column (asyncpg compatibility)
-    serialized_tags = json.dumps(tags) if tags and isinstance(tags, list) else tags
-
+    # Use correct method signature: update_thread(thread_id, name, user_id, metadata, tags)
+    # Tags should be a list - the data layer handles JSON serialization
     await data_layer.update_thread(
         thread_id=payload.thread_id,
         metadata=metadata,
-        tags=serialized_tags,
+        tags=tags,  # Pass as list, not serialized
     )
 
     return {
@@ -2867,7 +2879,7 @@ async def _handle_message(
             graph_id=demo_settings.langgraph_graph_id,
         ) as client:
             # Prepare initial state
-            from yonca.agent.state import create_initial_state
+            from yonca.agent.state import create_initial_state, serialize_state_for_api
 
             # Get current consent status from session
             data_consent_given = cl.user_session.get("data_consent_given", False)
@@ -2882,6 +2894,9 @@ async def _handle_message(
                 data_consent_given=data_consent_given,
                 file_paths=file_paths,  # Pass uploaded files for doc processing
             )
+
+            # Serialize state for HTTP API (converts LangChain messages to plain dicts)
+            serialized_state = serialize_state_for_api(initial_state)
 
             # Metadata for tracing/logging
             config = {
@@ -2902,7 +2917,7 @@ async def _handle_message(
             # Use message streaming for real-time feedback
             # The new LangGraphClient supports this natively
             async for event in client.stream(
-                input_state=dict(initial_state),
+                input_state=serialized_state,
                 thread_id=thread_id,
                 config=config,
                 stream_mode="messages",

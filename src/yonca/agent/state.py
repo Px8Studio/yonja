@@ -432,6 +432,63 @@ def add_assistant_message(
     )
 
 
+def serialize_state_for_api(state: AgentState) -> dict:
+    """Serialize AgentState to a JSON-compatible dict for HTTP APIs.
+
+    LangGraph Dev Server API requires plain dicts, not LangChain message objects.
+    This helper converts SystemMessage/HumanMessage/AIMessage to plain dicts.
+
+    Args:
+        state: The AgentState TypedDict
+
+    Returns:
+        JSON-serializable dict suitable for LangGraph Dev Server API
+    """
+    from langchain_core.messages import SystemMessage
+
+    result = dict(state)
+
+    # Serialize messages to plain dicts
+    if "messages" in result and result["messages"]:
+        serialized_messages = []
+        for msg in result["messages"]:
+            if isinstance(msg, SystemMessage):
+                serialized_messages.append({"role": "system", "content": msg.content})
+            elif isinstance(msg, HumanMessage):
+                serialized_messages.append({"role": "user", "content": msg.content})
+            elif isinstance(msg, AIMessage):
+                serialized_messages.append(
+                    {
+                        "role": "assistant",
+                        "content": msg.content,
+                        **(
+                            {"additional_kwargs": msg.additional_kwargs}
+                            if msg.additional_kwargs
+                            else {}
+                        ),
+                    }
+                )
+            elif isinstance(msg, dict):
+                # Already a dict, pass through
+                serialized_messages.append(msg)
+            else:
+                # Unknown type, try to convert
+                serialized_messages.append({"role": "unknown", "content": str(msg)})
+        result["messages"] = serialized_messages
+
+    # Serialize Pydantic models to dicts
+    for key in ["routing", "user_context", "farm_context", "scenario_context", "weather"]:
+        if key in result and result[key] is not None:
+            if hasattr(result[key], "model_dump"):
+                result[key] = result[key].model_dump()
+
+    # Convert datetime to ISO string
+    if "processing_start" in result and result["processing_start"]:
+        result["processing_start"] = result["processing_start"].isoformat()
+
+    return result
+
+
 def get_conversation_summary(state: AgentState, max_messages: int = 10) -> str:
     """Get a summary of recent conversation for context.
 

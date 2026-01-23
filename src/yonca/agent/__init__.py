@@ -37,6 +37,7 @@ from yonca.agent.state import (
     UserIntent,
     WeatherContext,
     create_initial_state,
+    serialize_state_for_api,
 )
 
 __all__ = [
@@ -55,6 +56,7 @@ __all__ = [
     "WeatherContext",
     "RoutingDecision",
     "create_initial_state",
+    "serialize_state_for_api",
     # Memory
     "get_checkpointer",
     "get_checkpointer_async",

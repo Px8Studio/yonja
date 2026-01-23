@@ -228,22 +228,23 @@ class LangGraphClient:
         """
         thread = await self.ensure_thread(thread_id)
 
-        # Build run payload
+        # Build run payload - assistant_id must be in body for LangGraph API >= 0.7.x
         payload: dict[str, Any] = {
             "input": input_state,
+            "assistant_id": self.graph_id,
         }
         if config:
             payload["config"] = config
 
-        # Add graph_id as query param
-        params = {"assistant_id": self.graph_id}
+        # wait param is still a query param
+        params = {}
         if wait:
             params["wait"] = "true"
 
         try:
             response = await self.client.post(
                 f"/threads/{thread}/runs",
-                params=params,
+                params=params if params else None,
                 json=payload,
             )
             response.raise_for_status()
@@ -290,8 +291,10 @@ class LangGraphClient:
         """
         thread = await self.ensure_thread(thread_id)
 
+        # Build run payload - assistant_id must be in body for LangGraph API >= 0.7.x
         payload: dict[str, Any] = {
             "input": input_state,
+            "assistant_id": self.graph_id,
             "stream_mode": stream_mode,
         }
         if config:
@@ -301,7 +304,6 @@ class LangGraphClient:
             async with self.client.stream(
                 "POST",
                 f"/threads/{thread}/runs/stream",
-                params={"assistant_id": self.graph_id},
                 headers={"Accept": "text/event-stream"},
                 json=payload,
             ) as response:

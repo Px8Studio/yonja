@@ -1,0 +1,8 @@
+# Chainlit Ignore File
+# ═══════════════════════════════════════════════════════════════════════════
+# Prevents Chainlit from creating .files/ folder for local file caching
+# We use PostgreSQL storage instead (storage_postgres.py)
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Ignore .files folder (we don't use local file storage)
+.files/

@@ -16,12 +16,12 @@ Architecture:
     - Fallback to in-memory if DB unavailable
 """
 
-import logging
 from typing import Any
 
 import chainlit as cl
+import structlog
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class SessionManager:

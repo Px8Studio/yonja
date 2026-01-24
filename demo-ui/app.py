@@ -1634,7 +1634,7 @@ Mən sizin virtual aqronomam — əkin, suvarma və subsidiya məsələlərində
             ),
             cl.Action(
                 name="show_mcp_status",
-                value="show",
+                payload={"action": "show_mcp_status"},
                 label="🔌 MCP Status",
                 description="Show connected MCP servers and tools",
             ),

@@ -6,7 +6,7 @@
       "detail": "Quality checks → Clean → Docker → FastAPI/MCP → LangGraph → UI",
       "dependsOn": [
         "🛡️ Pre-Start Quality Checks",
-        "yonca:cleanup",
+        "🌿 Yonca AI: 🧹 Clear Ports",
         "🌿 Yonca AI: 🧹 Clear Browser Cache",
         "🌿 Yonca AI: 🐳 Docker Start",
         "🌿 Yonca AI: ⚡ FastAPI Start",
@@ -38,7 +38,7 @@
       }
     },
     {
-      "label": "yonca:cleanup",
+      "label": "🌿 Yonca AI: 🧹 Clear Ports",
       "detail": "Kill existing processes to free ports",
       "type": "shell",
       "command": "pwsh",
@@ -48,8 +48,9 @@
       ],
       "problemMatcher": [],
       "presentation": {
-        "reveal": "silent",
-        "panel": "shared"
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
       }
     },
     {
@@ -296,7 +297,9 @@
       ],
       "problemMatcher": [],
       "presentation": {
-        "reveal": "silent"
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
       }
     },
     {
@@ -308,7 +311,9 @@
       ],
       "problemMatcher": [],
       "presentation": {
-        "reveal": "silent"
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
       }
     },
     {
@@ -320,7 +325,9 @@
       ],
       "problemMatcher": [],
       "presentation": {
-        "reveal": "silent"
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
       }
     },
     {
@@ -332,7 +339,9 @@
       ],
       "problemMatcher": [],
       "presentation": {
-        "reveal": "silent"
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
       }
     },
     {
@@ -479,7 +488,9 @@
       },
       "problemMatcher": [],
       "presentation": {
-        "reveal": "silent"
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
       }
     },
     {
@@ -493,7 +504,9 @@
       ],
       "problemMatcher": [],
       "presentation": {
-        "reveal": "silent"
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
       }
     },
     {
@@ -505,7 +518,9 @@
         "${workspaceFolder}/scripts/clear_browser_cache.ps1"
       ],
       "presentation": {
-        "reveal": "silent"
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
       },
       "runOptions": {
         "runOn": "default"

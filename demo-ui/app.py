@@ -113,8 +113,6 @@ from alem_persona_db import (  # noqa: E402
     save_alem_persona_to_db,
     update_persona_login_time,
 )
-
-# Add missing UI widgets for Chat Settings
 from chainlit.input_widget import (  # noqa: E402
     MultiSelect,
     NumberInput,
@@ -122,8 +120,6 @@ from chainlit.input_widget import (  # noqa: E402
     Switch,
 )
 from chainlit.types import ThreadDict  # noqa: E402
-
-# Add missing helpers and persona types
 from components.spinners import LoadingStates  # noqa: E402
 from services.mcp_connector import (  # noqa: E402
     get_mcp_status,
@@ -132,8 +128,6 @@ from services.mcp_resilience import (  # noqa: E402
     get_mcp_manager,
     initialize_mcp,
 )
-
-# NEW: Session persistence and MCP resilience
 from services.session_manager import (  # noqa: E402
     SessionManager,
     initialize_session_with_persistence,
@@ -143,10 +137,11 @@ from services.yonca_client import YoncaClient  # noqa: E402
 from yonca.agent.graph import compile_agent_graph  # noqa: E402
 from yonca.agent.memory import get_checkpointer_async  # noqa: E402
 from yonca.config import AgentMode  # noqa: E402
-
-# Ensure flagged imports are ignored for E402 (intentional ordering)
 from yonca.config import settings as yonca_settings  # noqa: E402
-from yonca.langgraph.client import LangGraphClient, LangGraphClientError  # noqa: E402
+from yonca.langgraph.client import (  # noqa: E402
+    LangGraphClient,
+    LangGraphClientError,
+)
 from yonca.observability.banner import (  # noqa: E402
     print_endpoints,
     print_infrastructure_tier,

@@ -121,6 +121,11 @@ from chainlit.input_widget import (  # noqa: E402
 )
 from chainlit.types import ThreadDict  # noqa: E402
 from components.spinners import LoadingStates  # noqa: E402
+from constants import EXPERTISE_AREAS, LLM_MODEL_PROFILES  # noqa: E402
+from services.expertise import (  # noqa: E402
+    build_combined_system_prompt,
+    detect_expertise_from_persona,
+)
 from services.mcp_connector import (  # noqa: E402
     get_mcp_status,
 )
@@ -128,9 +133,15 @@ from services.mcp_resilience import (  # noqa: E402
     get_mcp_manager,
     initialize_mcp,
 )
+from services.model_resolver import resolve_active_model  # noqa: E402
 from services.session_manager import (  # noqa: E402
     SessionManager,
     initialize_session_with_persistence,
+)
+from services.thread_utils import (  # noqa: E402
+    build_thread_name,
+    build_thread_tags,
+    update_thread_presentation,
 )
 from services.yonca_client import YoncaClient  # noqa: E402
 
@@ -341,87 +352,11 @@ _api_client: YoncaClient | None = None
 # AGENT MODES (Dynamic Model Selection)
 # ============================================
 # Replaces static model profiles with goal-oriented modes.
-LLM_MODEL_PROFILES = {
-    AgentMode.FAST.value: {
-        "name": "Fast",
-        "description": "**Fast** — Speed only. No tools/connectors.",
-        "icon": "⚡",
-    },
-    AgentMode.THINKING.value: {
-        "name": "Thinking",
-        "description": "**Thinking** — Reasoning-heavy. No tools/connectors.",
-        "icon": "🧠",
-    },
-    AgentMode.AGENT.value: {
-        "name": "Agent",
-        "description": "**Agent** — Full autonomy + MCP tools/connectors.",
-        "icon": "🤖",
-    },
-}
-
-
-def resolve_active_model() -> dict:
-    """Return a single source of truth for the active model metadata.
-
-    Checks for model selection from:
-    1. Chat Profile (header dropdown - now used for LLM selection)
-    2. Chat Settings (sidebar settings panel)
-    3. Default from config
-    """
-    integration_mode = demo_settings.integration_mode.lower()
-    provider = demo_settings.llm_provider.lower()
-
-    if integration_mode == "api":
-        return {
-            "provider": "yonca-api",
-            "model": "server_default",
-            "location": "cloud",
-            "integration_mode": "api",
-            "source": "fastapi",
-        }
-
-    # Get mode from chat profile (header dropdown) or settings
-    selected_mode = None
-    try:
-        # Chat Profile is now the Agent Mode (e.g., "fast", "thinking", "agent")
-        chat_profile = cl.user_session.get("chat_profile")
-        if chat_profile and chat_profile in LLM_MODEL_PROFILES:
-            selected_mode = chat_profile
-
-        # Fallback to settings panel selection
-        if not selected_mode:
-            settings = cl.user_session.get("chat_settings") or {}
-            selected_mode = settings.get("llm_model") if isinstance(settings, dict) else None
-    except Exception:
-        pass  # Session not available yet
-
-    # Resolve mode to backend model
-    try:
-        if selected_mode:
-            # If it's a known mode, get the mapped model
-            mode = AgentMode(selected_mode)
-            model = yonca_settings.get_model_for_mode(mode)
-        else:
-            # Default to Fast mode
-            model = yonca_settings.get_model_for_mode(AgentMode.FAST)
-    except Exception:
-        # Fallback for safety
-        model = yonca_settings.get_model_for_mode(AgentMode.FAST)
-
-    location = "local" if provider == "ollama" else "cloud"
-    base_url = (
-        demo_settings.ollama_base_url if provider == "ollama" else "https://api.groq.com/openai/v1"
-    )
-
-    return {
-        "provider": provider,
-        "model": model,
-        "mode": selected_mode or AgentMode.FAST.value,
-        "location": location,
-        "integration_mode": integration_mode,
-        "source": "langgraph",
-        "base_url": base_url,
-    }
+# ============================================
+# AGENT MODES (Dynamic Model Selection)
+# ============================================
+# Replaces static model profiles with goal-oriented modes.
+# -> Moved to constants.py and services/model_resolver.py
 
 
 async def get_app_checkpointer():
@@ -469,245 +404,26 @@ async def get_api_client() -> YoncaClient:
 # Used to auto-configure chat settings based on ALEM persona.
 
 # Expertise area definitions with Azerbaijani labels
-EXPERTISE_AREAS = {
-    "general": "Ümumi kənd təsərrüfatı",
-    "cotton": "Pambıqçılıq",
-    "wheat": "Taxılçılıq (buğda, arpa)",
-    "orchard": "Meyvəçilik (alma, üzüm)",
-    "vegetable": "Tərəvəzçilik",
-    "livestock": "Heyvandarlıq",
-    "advanced": "Qabaqcıl texnologiyalar",
-}
-
-# Map crop types (from ALEM persona) to expertise areas
-CROP_TO_EXPERTISE = {
-    # Industrial crops
-    "Pambıq": ["cotton"],
-    "Cotton": ["cotton"],
-    # Grains
-    "Buğda": ["wheat"],
-    "Wheat": ["wheat"],
-    "Arpa": ["wheat"],
-    "Barley": ["wheat"],
-    "Qarğıdalı": ["wheat"],  # Corn grouped with grains
-    "Corn": ["wheat"],
-    # Fruits/Orchards
-    "Alma": ["orchard"],
-    "Apple": ["orchard"],
-    "Üzüm": ["orchard"],
-    "Grape": ["orchard"],
-    "Fındıq": ["orchard"],
-    "Hazelnut": ["orchard"],
-    "Nar": ["orchard"],
-    "Pomegranate": ["orchard"],
-    "Şaftalı": ["orchard"],
-    "Peach": ["orchard"],
-    # Vegetables
-    "Pomidor": ["vegetable"],
-    "Tomato": ["vegetable"],
-    "Xıyar": ["vegetable"],
-    "Cucumber": ["vegetable"],
-    "Bibər": ["vegetable"],
-    "Pepper": ["vegetable"],
-    "Kartof": ["vegetable"],
-    "Potato": ["vegetable"],
-    # Specialty
-    "Çay": ["vegetable"],  # Tea grouped with vegetables for now
-    "Tea": ["vegetable"],
-    "Sitrus": ["orchard"],
-    "Citrus": ["orchard"],
-}
-
-# Map experience level to add advanced expertise
-EXPERIENCE_TO_EXPERTISE = {
-    "expert": ["advanced"],
-    "intermediate": [],
-    "novice": [],
-}
-
-
-def detect_expertise_from_persona(persona_dict: dict | None) -> list[str]:
-    """Detect relevant expertise areas from ALEM persona.
-
-    Uses crop type and experience level to determine smart defaults.
-
-    Args:
-        persona_dict: ALEM persona dictionary with crop_type, experience_level
-
-    Returns:
-        List of expertise area IDs (e.g., ["cotton", "advanced"])
-    """
-    if not persona_dict:
-        return ["general"]
-
-    expertise = set()
-
-    # Add expertise based on crop type
-    crop_type = persona_dict.get("crop_type", "")
-    if crop_type in CROP_TO_EXPERTISE:
-        expertise.update(CROP_TO_EXPERTISE[crop_type])
-
-    # Add expertise based on experience level
-    experience = persona_dict.get("experience_level", "intermediate")
-    if experience in EXPERIENCE_TO_EXPERTISE:
-        expertise.update(EXPERIENCE_TO_EXPERTISE[experience])
-
-    # Always include general if nothing specific detected
-    if not expertise:
-        expertise.add("general")
-
-    # Sort for consistent ordering
-    return sorted(list(expertise))
+# ============================================
+# EXPERTISE AREAS — Smart Multi-Select System
+# ============================================
+# Maps user's crop types to relevant expertise areas.
+# Used to auto-configure chat settings based on ALEM persona.
+# -> Moved to constants.py and services/expertise.py
 
 
 # Profile-specific system prompt additions
-PROFILE_PROMPTS = {
-    "general": "",  # Use default system prompt
-    "cotton": """
-Sən pambıqçılıq üzrə ixtisaslaşmış aqronomiqa ekspertisən.
-Azərbaycanda pambıq becərmə (Aran bölgəsi, Muğan düzü) haqqında dərin biliyə maliksən.
-Pambığın vegetasiya mərhələləri, suvarma rejimi, gübrələmə normaları və zərərvericilərə qarşı mübarizə haqqında ətraflı məlumat ver.
-""",
-    "wheat": """
-Sən taxılçılıq üzrə ixtisaslaşmış aqronomiqa ekspertisən.
-Azərbaycanda buğda və arpa becərmə haqqında dərin biliyə maliksən.
-Payızlıq və yazlıq taxıllar, don zədəsi, alaq otlarına qarşı mübarizə və məhsuldarlığın artırılması haqqında ətraflı məlumat ver.
-""",
-    "orchard": """
-Sən meyvəçilik üzrə ixtisaslaşmış aqronomiqa ekspertisən.
-Azərbaycanda alma, üzüm, fındıq və digər meyvə bağlarının becərilməsi haqqında dərin biliyə maliksən.
-Budama, çiçəklənmə, zərərvericilərə qarşı mübarizə və məhsul yığımı haqqında ətraflı məlumat ver.
-""",
-    "vegetable": """
-Sən tərəvəzçilik üzrə ixtisaslaşmış aqronomiqa ekspertisən.
-Azərbaycanda pomidor, xıyar, bibər və digər tərəvəzlərin becərilməsi haqqında dərin biliyə maliksən.
-İstixana və açıq sahədə tərəvəz yetişdirilməsi, suvarma və gübrələmə haqqında ətraflı məlumat ver.
-""",
-    "livestock": """
-Sən heyvandarlıq üzrə ixtisaslaşmış mütəxəssissən.
-Azərbaycanda mal-qara, qoyun, keçi və quşçuluq haqqında dərin biliyə maliksən.
-Yemləmə, sağlamlıq, peyvəndləmə və məhsuldarlıq haqqında ətraflı məlumat ver.
-""",
-    "advanced": """
-Sən kənd təsərrüfatı üzrə yüksək ixtisaslı ekspertsən.
-Cavablarını daha texniki və ətraflı ver. Torpaq analizləri, bitki fiziologiyası, iqtisadi hesablamalar və GIS məlumatları daxil et.
-Lazım gəldikdə elmi terminologiya istifadə et, lakin izah da ver.
-""",
-}
-
-
-def build_combined_system_prompt(expertise_areas: list[str]) -> str:
-    """Build combined system prompt from multiple expertise areas.
-
-    Args:
-        expertise_areas: List of selected expertise area IDs
-
-    Returns:
-        Combined system prompt string
-    """
-    if not expertise_areas:
-        return ""
-
-    prompts = []
-    for area in expertise_areas:
-        if area in PROFILE_PROMPTS and PROFILE_PROMPTS[area]:
-            prompts.append(PROFILE_PROMPTS[area].strip())
-
-    if not prompts:
-        return ""
-
-    # Combine with header
-    combined = """
-Sən çoxsahəli kənd təsərrüfatı ekspertisən. Aşağıdakı sahələrdə ixtisaslaşmısan:
-
-""" + "\n\n".join(prompts)
-
-    return combined
+# Profile-specific system prompt additions
+# -> Moved to constants.py and services/expertise.py
 
 
 # ============================================
 # THREAD PRESENTATION HELPERS
 # ============================================
-def build_thread_name(
-    crop_type: str | None, region: str | None, planning_month: str | None = None
-) -> str:
-    """Generate a human-friendly thread name for the sidebar."""
-    parts = []
-    if crop_type:
-        parts.append(crop_type)
-    if region:
-        parts.append(region)
-    if planning_month:
-        parts.append(planning_month)
-    return " • ".join(parts) if parts else "Yeni söhbət"
-
-
-def build_thread_tags(
-    crop_type: str | None,
-    region: str | None,
-    expertise_ids: list[str] | None,
-    action_categories: list[str] | None = None,
-    experience_level: str | None = None,
-    interaction_mode: str | None = None,
-    llm_model: str | None = None,
-) -> list[str]:
-    """Produce sidebar tags so users can filter threads."""
-    tags: list[str] = []
-    if crop_type:
-        tags.append(crop_type)
-    if region:
-        tags.append(region)
-    if experience_level:
-        tags.append(f"experience:{experience_level}")
-    if expertise_ids:
-        tags.extend(expertise_ids)
-    if action_categories:
-        tags.extend([f"plan:{cat}" for cat in action_categories])
-    if interaction_mode:
-        tags.append(f"mode:{interaction_mode.lower()}")
-    if llm_model:
-        tags.append(f"model:{llm_model}")
-    # Deduplicate while keeping order
-    seen = set()
-    unique = []
-    for tag in tags:
-        if tag not in seen:
-            unique.append(tag)
-            seen.add(tag)
-    return unique
-
-
-async def update_thread_presentation(
-    name: str | None,
-    tags: list[str] | None,
-    metadata_updates: dict | None = None,
-):
-    """Persist thread name/tags/metadata so the sidebar shows rich info."""
-    data_layer = get_data_layer()
-    thread_id = cl.user_session.get("thread_id")
-
-    if not data_layer or not thread_id:
-        return
-
-    metadata = (cl.user_session.get("thread_metadata") or {}).copy()
-    if metadata_updates:
-        metadata.update(metadata_updates)
-
-    # Keep metadata in session and push to DB
-    cl.user_session.set("thread_metadata", metadata)
-
-    try:
-        # Use correct method signature: update_thread(thread_id, name, user_id, metadata, tags)
-        # Tags should be a list - the data layer handles JSON serialization
-        await data_layer.update_thread(
-            thread_id=thread_id,
-            name=name,
-            metadata=metadata,
-            tags=tags,  # Pass as list, not serialized
-        )
-        logger.debug("thread_presentation_updated", thread_id=thread_id, name=name, tags=tags)
-    except Exception as e:  # noqa: BLE001
-        logger.warning("thread_presentation_update_failed", thread_id=thread_id, error=str(e))
+# ============================================
+# THREAD PRESENTATION HELPERS
+# ============================================
+# -> Moved to services/thread_utils.py
 
 
 # ============================================

@@ -51,6 +51,7 @@ repos:
       - id: check-added-large-files
         name: 🚫 Block large files (>500KB)
         args: ['--maxkb=500']
+        exclude: poetry.lock
 
       - id: check-merge-conflict
         name: 🚫 Block merge conflict markers

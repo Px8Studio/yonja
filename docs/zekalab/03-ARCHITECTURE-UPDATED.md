@@ -36,7 +36,7 @@
          ▼                                     ▼
     ┌─────────────────────┐         ┌──────────────────────┐
     │ Expertise Detection │         │ System Prompt Build  │
-    │                     │         │                      │
+    │ (services/expertise)│         │ (services/expertise) │
     │ detect_expertise()  │         │ build_combined_      │
     │ From: crop_type     │         │ system_prompt()      │
     │ Returns: ["general",│         │                      │
@@ -57,6 +57,21 @@
 ```
 
 ---
+
+## 💾 Data Persistence Layer
+
+Yonca AI uses **PostgreSQL** for all data storage, including user-uploaded files.
+
+| Data Type | Storage | Rationale |
+|-----------|---------|-----------|
+| Users & Sessions | PostgreSQL | Chainlit native |
+| Conversations | PostgreSQL | Thread history |
+| **File Uploads** | PostgreSQL (BYTEA) | Twelve-Factor App compliance |
+
+> [!NOTE]
+> We **do not** use Chainlit's default `.files/` local storage.
+> This is disabled via `.chainlitignore` for production cloud deployments.
+> See: [Production Storage Architecture](11-CHAINLIT-STRUCTURE.md#-production-storage-architecture)
 
 ## 🖥️ UI Layer (Pure Chainlit Native)
 

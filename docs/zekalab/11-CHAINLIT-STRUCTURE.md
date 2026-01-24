@@ -223,6 +223,7 @@ After cleanup, verify:
 - [PostgreSQL File Storage](../../demo-ui/storage_postgres.py)
 - [Chainlit Configuration Reference](https://docs.chainlit.io/configuration)
 - [OAuth Setup Guide](11-CHAINLIT-UI.md)
+- [chainlit-ui-ux.md](../../.agent/rules/chainlit-ui-ux.md) — **Agent rules for UI/UX code**
 
 ---
 

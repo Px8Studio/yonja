@@ -354,6 +354,7 @@ Open http://localhost:8501
 - [03-ARCHITECTURE.md](03-ARCHITECTURE.md) — Overall system design
 - [07-OBSERVABILITY.md](07-OBSERVABILITY.md) — Langfuse integration
 - [20-INTEGRATION-API.md](20-INTEGRATION-API.md) — FastAPI endpoints for mobile app
+- [chainlit-ui-ux.md](../../.agent/rules/chainlit-ui-ux.md) — **Agent rules for UI/UX code**
 | Chat Profiles | P1 | Different farmer personas |
 | NDVI Visualization | P2 | Satellite imagery display |
 | Export Chat | P2 | Download conversation |

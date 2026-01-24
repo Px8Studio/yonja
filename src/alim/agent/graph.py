@@ -660,7 +660,7 @@ class AlimAgent:
 
 
 class AgentResponse:
-    """Response from the Yonca agent."""
+    """Response from the ALİM agent."""
 
     def __init__(
         self,

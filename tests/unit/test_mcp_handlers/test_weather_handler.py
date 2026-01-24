@@ -16,7 +16,7 @@ def mock_mcp_client():
 @pytest.fixture
 def weather_handler(mock_mcp_client):
     """Create a weather handler with mocked MCP client."""
-    with patch("yonca.mcp.handlers.weather_handler.get_mcp_client") as mock_get_client:
+    with patch("alim.mcp.handlers.weather_handler.get_mcp_client") as mock_get_client:
         mock_get_client.return_value = mock_mcp_client
         handler = WeatherMCPHandler()
         handler.mcp_client = mock_mcp_client

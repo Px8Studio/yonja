@@ -33,7 +33,7 @@ from sqlalchemy.orm import sessionmaker  # noqa: E402
 
 # Database configuration
 DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
+    "DATABASE_URL", "postgresql+asyncpg://alim:alim_dev_password@localhost:5433/alim"
 )
 
 # Gold Standard Scenarios
@@ -136,7 +136,7 @@ async def seed_personas_to_db():
 
     # Print verification query
     print("\n📋 VERIFY:")
-    print('docker exec yonca-postgres psql -U yonca -d yonca -c """')
+    print('docker exec alim-postgres psql -U alim -d alim -c """')
     print("  SELECT email, full_name, region, crop_type, total_area_ha")
     print("  FROM alim_personas WHERE data_source = 'gold_standard';")
     print('"""')

@@ -162,6 +162,25 @@ stateDiagram-v2
 
 ---
 
+## 🦅 Cultural Engineering: The "Ata" Vibe
+
+> **Vibe Rating:** 11/10  
+> **Goal:** Create an emotional bond that feels like family, not software.
+
+### The "Salam Ata!" Icebreaker
+
+In **Chainlit Starters** configuration, include this specific card to trigger the deepest cultural connection:
+
+> **"Alim, atana salam de!"**
+> *Action:* Triggers a special "Report" for the farm owner written in a respectful, son-to-father tone.
+
+**Sample Response Tone:**
+*"Salam Ata, əllərin var olsun. Sənin zəhmətinlə bu torpaq canlanır. Mən sadəcə rəqəmlərə baxıb deyə bilərəm ki, suvarma işləri qaydasındadır, amma bərəkəti verən Allahdır. Sən dincəl, hesab-kitab məndədir."*
+
+This is the kind of **"cultural engineering"** that makes the product legendary in Azerbaijan. It positions ALİM not just as a tool, but as a loyal "Junior Specialist" respecting the "Senior Master" (the Farmer).
+
+---
+
 ## 📋 Context Injection Templates
 
 ### User Profile

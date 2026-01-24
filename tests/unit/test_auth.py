@@ -86,7 +86,7 @@ class TestJWTAuthenticator:
             "sub": "user123",
             "iat": int(time.time()),
             "exp": int(time.time()) + 3600,
-            "scope": "yonca:read yonca:chat",
+            "scope": "alim:read alim:chat",
             "tier": "standard",
         }
         token = jwt.encode(payload, "test-secret-key-for-testing", algorithm="HS256")
@@ -162,7 +162,7 @@ class TestJWTAuthenticator:
             "sub": "user123",
             "iat": int(time.time()),
             "exp": int(time.time()) + 3600,
-            "scope": "yonca:read yonca:chat",
+            "scope": "alim:read alim:chat",
         }
         token = jwt.encode(payload, "test-secret-key-for-testing", algorithm="HS256")
 
@@ -181,7 +181,7 @@ class TestJWTAuthenticator:
         assert isinstance(user, AuthenticatedUser)
         assert user.user_id == "test_user"
         assert user.is_mock
-        assert "yonca:read" in user.scopes
+        assert "alim:read" in user.scopes
 
 
 class TestTokenPayload:
@@ -286,7 +286,7 @@ class TestAuthDependencies:
             "sub": "user123",
             "iat": int(time.time()),
             "exp": int(time.time()) + 3600,
-            "scope": "yonca:read yonca:chat",
+            "scope": "alim:read alim:chat",
             "tier": "premium",
         }
         token = jwt.encode(payload, "test-secret", algorithm="HS256")
@@ -326,7 +326,7 @@ class TestAuthDependencies:
             "sub": "user123",
             "iat": int(time.time()),
             "exp": int(time.time()) + 3600,
-            "scope": "other:read",  # Missing yonca scopes
+            "scope": "other:read",  # Missing alim scopes
         }
         token = jwt.encode(payload, "test-secret", algorithm="HS256")
 

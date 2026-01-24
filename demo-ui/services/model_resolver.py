@@ -1,6 +1,6 @@
 import chainlit as cl
 from alim.config import AgentMode
-from alim.config import settings as yonca_settings
+from alim.config import settings as alim_settings
 from config import settings as demo_settings
 from constants import LLM_MODEL_PROFILES
 
@@ -18,7 +18,7 @@ def resolve_active_model() -> dict:
 
     if integration_mode == "api":
         return {
-            "provider": "yonca-api",
+            "provider": "alim-api",
             "model": "server_default",
             "location": "cloud",
             "integration_mode": "api",
@@ -45,13 +45,13 @@ def resolve_active_model() -> dict:
         if selected_mode:
             # If it's a known mode, get the mapped model
             mode = AgentMode(selected_mode)
-            model = yonca_settings.get_model_for_mode(mode)
+            model = alim_settings.get_model_for_mode(mode)
         else:
             # Default to Fast mode
-            model = yonca_settings.get_model_for_mode(AgentMode.FAST)
+            model = alim_settings.get_model_for_mode(AgentMode.FAST)
     except Exception:
         # Fallback for safety
-        model = yonca_settings.get_model_for_mode(AgentMode.FAST)
+        model = alim_settings.get_model_for_mode(AgentMode.FAST)
 
     location = "local" if provider == "ollama" else "cloud"
     base_url = (

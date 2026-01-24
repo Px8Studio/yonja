@@ -1,6 +1,6 @@
 # scripts/pre-start-checks.ps1
 # ═══════════════════════════════════════════════════════════════════════════
-# ⚡ Yonca AI — Pre-Start Quality Checks
+# ⚡ ALİM - Pre-Start Quality Checks
 # ═══════════════════════════════════════════════════════════════════════════
 #
 # Purpose: Run fast quality checks BEFORE starting services
@@ -113,10 +113,10 @@ $importPassed = Test-Check -Name "✅ Import validation" -Command {
 import sys
 sys.path.insert(0, 'src')
 try:
-    from yonca.config import settings
-    from yonca.llm.factory import get_llm_provider
-    from yonca.agent.graph import compile_agent_graph
-    from yonca.api.main import app
+    from alim.config import settings
+    from alim.llm.factory import get_llm_provider
+    from alim.agent.graph import compile_agent_graph
+    from alim.api.main import app
     print('Core imports OK')
 except Exception as e:
     print(f'Import error: {e}', file=sys.stderr)
@@ -166,7 +166,7 @@ $configPassed = Test-Check -Name "⚙️ Config validation" -Command {
     $env:PYTHONPATH = "$PWD/src"
     $env:PYTHONIOENCODING = "utf-8"
     & $pythonCmd -c @"
-from yonca.config import settings
+from alim.config import settings
 import os
 
 # Check critical settings

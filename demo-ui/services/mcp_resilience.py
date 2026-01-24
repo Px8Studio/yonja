@@ -7,7 +7,7 @@ This module handles:
 - User notifications about service status
 
 Architectural Role:
-    The base `MCPClient` (`src/yonca/mcp/client.py`) lacks retry logic and only
+    The base `MCPClient` (`src/alim/mcp/client.py`) lacks retry logic and only
     handles single-request timeouts. `MCPResilienceManager` implements the
     necessary retry-with-backoff loop to prevent the UI from crashing if the
     MCP server is slightly slow to start.

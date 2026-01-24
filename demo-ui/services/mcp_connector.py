@@ -16,7 +16,7 @@ Architecture:
         ↓
     MCPConnector (this file)
         ↓
-    yonca.mcp.adapters (LangChain MCP adapters)
+    alim.mcp.adapters (LangChain MCP adapters)
         ↓
     MCP Servers (ZekaLab, OpenWeather, etc.)
 

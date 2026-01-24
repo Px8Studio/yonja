@@ -27,7 +27,7 @@ async def mock_http_client():
 async def zekalab_handler(mock_http_client):
     """Create a ZekaLab handler with mocked HTTP client."""
     with patch(
-        "yonca.mcp.handlers.zekalab_handler.httpx.AsyncClient",
+        "alim.mcp.handlers.zekalab_handler.httpx.AsyncClient",
         return_value=mock_http_client,
     ):
         handler = ZekaLabMCPHandler()
@@ -424,7 +424,7 @@ async def test_handler_uses_environment_config():
 @pytest.mark.asyncio
 async def test_get_zekalab_handler_singleton():
     """Test that get_zekalab_handler returns handler instances."""
-    with patch("yonca.mcp.handlers.zekalab_handler.httpx.AsyncClient"):
+    with patch("alim.mcp.handlers.zekalab_handler.httpx.AsyncClient"):
         handler1 = await get_zekalab_handler()
         handler2 = await get_zekalab_handler()
 

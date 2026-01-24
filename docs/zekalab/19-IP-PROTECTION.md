@@ -1,107 +1,145 @@
-# 🏛️ ALİM Intellectual Property Protection Guide
+# 🏛️ ZekaLab Corporate IP & Scaling Strategy (2026)
 
 > **Document Owner:** ZekaLab  
 > **Last Updated:** January 2026  
-> **Status:** Actionable
+> **Status:** Actionable  
+> **Strategy:** The "Baku-Nicosia Corridor"
 
 ---
 
 ## Overview
 
-This document outlines the IP protection strategy for **ALİM** (Ağıllı Lokal İdarəetmə Mütəxəssisi), focusing on the distinction between Authorship and Ownership, and leveraging local regulations for tax benefits and stronger legal defense.
+To scale **ZekaLab** from a local production house to a global IP-holding enterprise, we implement a structure that balances **"Sovereignty"** (Azerbaijan) with **"Marketability"** (Europe/Cyprus).
+
+This strategy ensures:
+1.  **Bureaucracy-Free Operations:** Seamless cross-border transactions via Double Tax Treaty.
+2.  **IP Shield:** Separation of "Operator" (Risk) and "Owner" (Asset).
+3.  **Global Licensing:** EU-level legal comfort for international clients.
 
 ---
 
-## 1. The Legal Setup: "Inventor-Licensor" Model
+## 1. The "Sovereign Holding" Structure
 
-To protect the invention while ensuring the company (**ZekaLab**) can commercially exploit it, we separate **Authorship** from **Ownership**.
+### The Organization
 
-### Key Concept: Authorship vs. Ownership
-*   **Authorship (Moral Rights):** Unalienable rights. You are always the Author. This arises the moment the code is written.
-*   **Ownership (Economic Rights):** Transferable rights (selling, licensing, profiting) that can be assigned to the company.
+```mermaid
+graph TD
+    subgraph Cyprus ["🇨🇾 ZekaLab Holding (The Vault)"]
+        CY[("ZekaLab Ltd.<br/>(Cyprus IBC)")]
+        IP["🔑 Global IP Rights<br/>(Trademark: ALİM)<br/>(Copyright: Core Engine)"]
+        EU_VC["Potential EU Investors"]
+        
+        CY --- IP
+        EU_VC -.-> CY
+    end
 
-### The Strategy: Exclusive License Agreement
-Instead of transferring full ownership immediately, set up a **License Agreement**.
-*   **Your Role:** Author/Licensor (The "Brain")
-*   **Company's Role:** Licensee (The "Seller")
-*   **Mechanism:** Draft an **Exclusive License Agreement** between you (individual) and the company.
-*   **Safety Loophole:** Include a "Right of Reversion" or a symbolic royalty (e.g., 1% of revenue). If the company liquidates or changes ownership unfavorably, IP rights automatically revert to you.
+    subgraph Azerbaijan ["🇦🇿 ZekaLab Operations (The Operator)"]
+        AZ[("ZekaLab MMC<br/>(Baku)")]
+        KOBIA["📜 KOBİA Startup Cert"]
+        TEAM["👨‍💻 Dev Team (5)"]
+        CLIENTS["🏢 Local Clients<br/>(DigiRella, Yonca)"]
 
----
+        AZ --- KOBIA
+        AZ --- TEAM
+        AZ --- CLIENTS
+    end
 
-## 2. Trademark Registration: "ALİM"
+    CY == "100% Ownership" ==> AZ
+    CY -- "Exclusive License<br/>(Core Technology)" --> AZ
+    AZ -- "Royalties (Low Tax)" --> CY
+    AZ -- "SaaS / Services" --> CLIENTS
+```
 
-Register the brand **ALİM** on behalf of the **Company** to build commercial goodwill and ensure legal defense capability in Azerbaijani courts.
+### Roles & Responsibilities
 
-### Registration Details
-*   **mark:** "ALİM" and "Ağıllı Lokal İdarəetmə Mütəxəssisi"
-*   **Classes:**
-    *   **Class 9:** Software, AI systems.
-    *   **Class 42:** SaaS, IT services, software development.
-*   **Authority:** Intellectual Property Agency (Əqli Mülkiyyət Agentliyi).
+1.  **ZekaLab Ltd (Baku) — "The Operator"**
+    *   **Function:** Hires developers, manages local contracts, handles daily operations.
+    *   **Benefit:** Holds **KOBİA Startup Certificate** (0% Profit Tax for 3 years).
+    *   **Risk Profile:** High (Takes on operational liability).
 
-### Procedure
-1.  **Search:** Perform a trademark search at [patent.copat.gov.az](https://patent.copat.gov.az).
-2.  **File:** Submit application (offline at Government House or online).
+2.  **ZekaLab Holding (Cyprus) — "The Vault"**
+    *   **Function:** Owns 100% of the Baku entity. Holds the **Global Trademark** for **ALİM** and the **Primary Copyright**.
+    *   **Benefit:** **EU IP Box Regime** (Effective tax rate ~2.5% on royalties).
+    *   **Risk Profile:** Low (Insulated from operational liability).
 
----
-
-## 3. Software Copyright Registration ("Software Passport")
-
-While copyright is automatic, a **Copyright Certificate** is essential for signing contracts with enterprises (e.g., DigiRella) or Government Agencies.
-
-| Feature | Details |
-| :--- | :--- |
-| **Filing** | **You (as Author)** register the source code (LangGraph nodes, ALİM engine). |
-| **Beneficiary** | In the application, you are the **Author**; the **Company** is the **Right Holder** (Hüquq Sahibi). |
-| **Timeline** | 15–30 Days (Fast processing available). |
-
----
-
-## 4. Startup Certificate & Tax Exemption
-
-Leverage the **"Startup Certificate"** from **KOBİA** (Small and Medium Business Development Agency) to optimize the licensing deal.
-
-*   **The Benefit:** Exemption from **Corporate Income Tax (20%)** on innovation profits for **3 years**.
-*   **Strategic Value:** Makes the licensing arrangement highly attractive to partners/investors as tax savings can be reinvested directly into R&D (and your royalties).
+3.  **The Relationship**
+    *   The Cyprus entity **licenses** the software to the Baku entity.
+    *   **Why?** When a third party (like Yonca) wants to license the code, they sign with **Cyprus**. This provides English Common Law protection and ease of payment (EUR/USD), skipping local banking friction.
 
 ---
 
-## 5. Implementation Roadmap (2026)
+## 2. Negotiating the "Agent Handoff" (Code vs. License)
 
-| Phase | Timeline | Action | Description |
-| :--- | :--- | :--- | :--- |
-| **1. Internal Contract** | Month 1 | **Sign License Agreement** | "Work for Hire" or "Exclusive License" between You and Company. Defines ALİM as your invention. |
-| **2. Due Diligence** | Month 1 (Week 2) | **Trademark Search** | Ensure "ALİM" is unique in Baku. |
-| **3. Formal Filing** | Month 2 | **Agency Filing** | File for Trademark (IP Agency) and Software Copyright (IP Agency). |
-| **4. Tax Status** | Month 3 | **KOBİA Application** | Apply for Startup Certificate for tax holiday. |
-| **5. Ongoing** | Ongoing | **Trade Secrets** | Maintain Fine-tuning Weights as "Commercial Secrets" (Kommersiya Sirri) via NDAs. |
+When clients ask for "the code," we never "sell" it. We **License** it. Position ZekaLab as an **AI Infrastructure Provider**, not a freelancer shop.
+
+### Professional Licensing Tiers
+
+```mermaid
+mindmap
+  root((ALİM Handoff))
+    Tier 1: SaaS
+      ::icon(fa fa-cloud)
+      API Access Only
+      ZekaLab Hosts Not Client
+      Weights Protected
+    Tier 2: On-Premise
+      ::icon(fa fa-box)
+      Docker Image
+      "Black Box"
+      Client Runs on own GPU
+    Tier 3: Source-Available
+      ::icon(fa fa-code)
+      Integration Code Only
+      Non-exclusive License
+      "For Internal Use"
+```
+
+| Tier | Type | Deliverable | Rights | Security |
+| :--- | :--- | :--- | :--- | :--- |
+| **Tier 1** | **SaaS** | API Keys | Use only. | ⭐⭐⭐⭐⭐ (Code never leaves ZekaLab) |
+| **Tier 2** | **On-Premise** | Docker Image | Run internally. No modification. | ⭐⭐⭐⭐ (Compiled "Black Box") |
+| **Tier 3** | **Source-Available** | Source Code | Modify for *internal use*. No resale. | ⭐⭐⭐ (Contractual protection essential) |
+
+**Tier 3 Contract Clause:**
+> *"Ownership of the core ALİM engine remains with ZekaLab; Client is granted a non-exclusive license to modify for internal use only."*
 
 ---
 
-## 6. Trade Secrets & Data Protection
+## 3. Concrete Implementation Plan (2026)
 
-| Asset | Protection Strategy |
-| :--- | :--- |
-| **Model Weights** | **Trade Secret.** Do NOT register. Protect via internal NDAs. |
-| **Training Data** | Database Rights (Law on Legal Protection of Compilations of Data). |
-| **Prompt Engineering** | Copyright as literary/creative works. |
+### Phase 1: Secure the "Baku Base" (Months 1-2)
+*   **Action:** Apply for **KOBİA Startup Certificate** for ZekaLab Baku.
+*   **Outcome:** 3-year tax holiday on all AI profits. This is the "Seed Capital" generator.
+*   **Cost:** Low (Administrative fees).
+
+### Phase 2: Establish the "Cyprus Vault" (Months 3-4)
+*   **Action:** Register a **Cyprus International Business Company (IBC)**.
+    *   *Note:* Use a service provider (e.g., Corporate.cy) for a local nominee secretary to ensure "Substance."
+*   **Outcome:** Access to **EU IP Box Regime**.
+*   **Cost:** Setup: ~€2,500 - €3,500; Annual: ~€2,000.
+
+### Phase 3: The "ALİM" Licensing Agreement (Months 4-5)
+*   **Action:** Draft a **Master Intercompany Agreement**.
+    *   Cyprus "buys" or is "assigned" the IP from the inventors.
+    *   Cyprus licenses it back to ZekaLab Baku for local fulfillment.
+*   **Outcome:** ZekaLab becomes an international tech firm. Investable by global VCs.
+
+### Phase 4: The "Ata" GTM (Go-To-Market)
+*   **Action:** Deploy the **"Salam Ata!"** icebreaker in the Yonca app.
+*   **Outcome:** High viral potential and brand stickiness (See *05-PROMPT-CONVERSATION.md*).
 
 ---
 
-## 7. Legal Persona & Data Sovereignty
+## 4. Why this "Exploits" the System Safely
 
-### "Mütəxəssis" (Specialist)
-Registering and positioning ALİM as a **"Specialist"** decision-support tool (rather than an autonomous agent) reduces liability.
-*   **Disclaimer:** "ALİM provides recommendations based on data; final decisions are the user's responsibility."
-
-### Data Sovereignty
-*   **"Lokal"** Advantage: Use local hosting to comply with National AI Strategy 2025-2028 and appeal to government partners.
+*   **Bureaucracy-Free:** Azerbaijan and Cyprus have a **Double Tax Treaty**. Money moves with minimal "withholding tax" friction.
+*   **IP Shield:** The "Owner" (Cyprus) is out of reach of local courts for IP seizure in case of local disputes.
+*   **Exit Strategy:** Global players (Bayer, John Deere) prefer buying Cyprus shares over local entities. Standard 1-week transaction.
 
 ---
 
-## Summary Checklist for "Müşavir" (Your Partner)
+## Summary Checklist
 
-*   [ ] **Moral Rights:** You are always the Author.
-*   [ ] **Economic Rights:** Licensed to the company for a 3-year tax-free run.
-*   [ ] **Brand:** Trademarked to the company to build "Goodwill" for future investors.
+*   [ ] **Structure:** Establish Baku Operator + Cyprus Vault.
+*   [ ] **License:** Use Tiered Licensing (SaaS > Docker > Source) – Never "Sell".
+*   [ ] **Brand:** Trademark "ALİM" in Cyprus (EU-wide protection potential).

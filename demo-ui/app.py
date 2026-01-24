@@ -11,7 +11,7 @@
 # service layer. All UI elements must reflect ALİM branding.
 #
 # USER-FACING BRAND: ALİM (not "ALİM")
-# INTERNAL PROJECT: Yonca (codebase/technical references only)
+# INTERNAL PROJECT: ALİM (codebase/technical references only)
 # =========================================================================
 """ALİM Demo — Chainlit Application.
 
@@ -178,7 +178,7 @@ mode_name = "🛡️ Universal HTTP Mode"
 mode_desc = "Decoupled architecture: UI → HTTP → LangGraph Server"
 print_status_line("Mode", mode_name, "success")
 print_status_line("Runtime", "LangGraph Dev Server", "info")
-print_status_line("API Bridge", "FastAPI (yonca.api)", "info")
+print_status_line("API Bridge", "FastAPI (alim.api)", "info")
 print_status_line("Direct Mode", "❌ Disabled (Unified)", "warning")
 
 # ─────────────────────────────────────────────────────────────
@@ -319,7 +319,7 @@ print_startup_complete("🌿 ALİM 0.1 Demo UI")
 # - ChatSettings persistence across sessions
 #
 # Requires Postgres database. SQLite falls back to session-only storage.
-# Set DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/yonca
+# Set DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/alim
 # ============================================
 if demo_settings.data_persistence_enabled:
     # Register data layer with Chainlit when Postgres is available
@@ -523,7 +523,7 @@ if _catch_all_route:
 # different LLM models (open source models from Ollama).
 #
 # LLM_MODEL_PROFILES is defined near the top of the file (before resolve_active_model)
-# Add new models with: docker exec yonca-ollama ollama pull <model>
+# Add new models with: docker exec alim-ollama ollama pull <model>
 # ============================================
 
 
@@ -745,7 +745,7 @@ if is_oauth_enabled():
             email_verified = raw_user_data.get("email_verified", False)
 
             # Google Workspace domain (only for workspace/organization accounts)
-            hosted_domain = raw_user_data.get("hd")  # e.g., "yonca.az"
+            hosted_domain = raw_user_data.get("hd")  # e.g., "alim_test.az"
 
             # Google user ID (unique, stable identifier)
             google_id = raw_user_data.get("sub")

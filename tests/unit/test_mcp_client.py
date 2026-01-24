@@ -128,7 +128,7 @@ class TestMCPClient:
     @pytest.mark.asyncio
     async def test_client_disabled_server(self):
         """Test client behavior when server is disabled."""
-        with patch("yonca.mcp.client.get_server_config", return_value=None):
+        with patch("alim.mcp.client.get_server_config", return_value=None):
             client = MCPClient("disabled_server")
             assert client.enabled is False
 
@@ -141,7 +141,7 @@ class TestMCPClient:
             timeout_ms=2000,
         )
 
-        with patch("yonca.mcp.client.get_server_config", return_value=config):
+        with patch("alim.mcp.client.get_server_config", return_value=config):
             client = MCPClient("zekalab")
             assert client.enabled is True
             assert client.server_name == "zekalab"
@@ -309,7 +309,7 @@ class TestMCPFactory:
             url="http://localhost:7777",
         )
 
-        with patch("yonca.mcp.client.get_server_config", return_value=config):
+        with patch("alim.mcp.client.get_server_config", return_value=config):
             client1 = await get_mcp_client("zekalab")
             client2 = await get_mcp_client("zekalab")
 
@@ -327,7 +327,7 @@ class TestMCPFactory:
             url="http://localhost:7777",
         )
 
-        with patch("yonca.mcp.client.get_server_config", return_value=config):
+        with patch("alim.mcp.client.get_server_config", return_value=config):
             zekalab_client = await get_mcp_client("zekalab")
             openweather_client = await get_mcp_client("openweather")
 
@@ -347,11 +347,11 @@ class TestMCPFactory:
             url="http://localhost:7777",
         )
 
-        with patch("yonca.mcp.client.get_server_config", return_value=config):
+        with patch("alim.mcp.client.get_server_config", return_value=config):
             client = await get_mcp_client("zekalab")
             assert client._http_client is not None
 
             await close_all_mcp_clients()
 
             # After closing, should be removed from cache
-            assert len(__import__("yonca.mcp.client", fromlist=["_clients"])._clients) == 0
+            assert len(__import__("alim.mcp.client", fromlist=["_clients"])._clients) == 0

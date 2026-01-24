@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test Maverick integration in Yonca AI."""
+"""Test Maverick integration in ALİM."""
 
 import asyncio
 import os
@@ -98,7 +98,7 @@ async def test_groq_provider():
 
     if not settings.groq_api_key:
         print("⚠️ No GROQ_API_KEY set. Skipping provider test.")
-        print("   Set YONCA_GROQ_API_KEY in .env or environment")
+        print("   Set ALIM_GROQ_API_KEY in .env or environment")
         return
 
     from alim.llm.factory import create_groq_provider
@@ -122,7 +122,7 @@ async def test_groq_provider():
     print("\n📋 Testing Azerbaijani Response...")
     messages = [
         LLMMessage.system(
-            "Sən Yonca adlı Azərbaycan kənd təsərrüfatı AI köməkçisisən. "
+            "Sən ALİM adlı Azərbaycan kənd təsərrüfatı AI köməkçisisən. "
             "YALNIZ Azərbaycan dilində cavab ver. Türkcə sözlər istifadə etmə."
         ),
         LLMMessage.user("Buğda əkmək üçün ən yaxşı vaxt nədir?"),

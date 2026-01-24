@@ -159,19 +159,19 @@ async def mock_httpx_client():
 @pytest.fixture
 def clean_env(monkeypatch):
     """Clear LLM-related environment variables."""
-    monkeypatch.delenv("YONCA_GROQ_API_KEY", raising=False)
-    monkeypatch.delenv("YONCA_OLLAMA_BASE_URL", raising=False)
+    monkeypatch.delenv("ALIM_GROQ_API_KEY", raising=False)
+    monkeypatch.delenv("ALIM_OLLAMA_BASE_URL", raising=False)
 
 
 @pytest.fixture
 def mock_groq_env(monkeypatch):
     """Set up mock Groq environment."""
-    monkeypatch.setenv("YONCA_GROQ_API_KEY", "test-groq-api-key")
-    monkeypatch.setenv("YONCA_LLM_PROVIDER", "groq")
+    monkeypatch.setenv("ALIM_GROQ_API_KEY", "test-groq-api-key")
+    monkeypatch.setenv("ALIM_LLM_PROVIDER", "groq")
 
 
 @pytest.fixture
 def mock_ollama_env(monkeypatch):
     """Set up mock Ollama environment."""
-    monkeypatch.setenv("YONCA_OLLAMA_BASE_URL", "http://localhost:11434")
-    monkeypatch.setenv("YONCA_LLM_PROVIDER", "ollama")
+    monkeypatch.setenv("ALIM_OLLAMA_BASE_URL", "http://localhost:11434")
+    monkeypatch.setenv("ALIM_LLM_PROVIDER", "ollama")

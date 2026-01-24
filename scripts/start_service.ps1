@@ -9,7 +9,7 @@
 # ════════════════════════════════════════════════════════════════════════════
 
 param (
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory = $true)]
     [ValidateSet("FastAPI", "UI", "LangGraph", "MCP", "Docker")]
     [string]$Service,
 
@@ -52,7 +52,8 @@ if (Test-Path $envFile) {
             [System.Environment]::SetEnvironmentVariable($legacyKey, $value, [System.EnvironmentVariableTarget]::Process)
         }
     }
-} else {
+}
+else {
     Write-Warning "⚠️  .env file not found at $envFile. Using defaults."
 }
 
@@ -66,12 +67,13 @@ if ($Service -eq "UI") {
 # 3. Define Commands
 $commands = @{
     "FastAPI"   = {
-        & "$venvScripts\python.exe" -m uvicorn yonca.api.main:app --host localhost --port 8000 --reload --log-level info
+        & "$venvScripts\python.exe" -m uvicorn alim.api.main:app --host localhost --port 8000 --reload --log-level info
     }
     "UI"        = {
         if ($Headless) {
             & "$venvScripts\chainlit.exe" run app.py -w --port 8501 --headless
-        } else {
+        }
+        else {
             & "$venvScripts\chainlit.exe" run app.py -w --port 8501
         }
     }
@@ -79,7 +81,7 @@ $commands = @{
         & "$venvScripts\langgraph.exe" dev --no-browser
     }
     "MCP"       = {
-        & "$venvScripts\python.exe" -m uvicorn yonca.mcp_server.main:app --port 7777 --reload
+        & "$venvScripts\python.exe" -m uvicorn alim.mcp_server.main:app --port 7777 --reload
     }
     "Docker"    = {
         docker-compose -f "$projectRoot\docker-compose.local.yml" up -d postgres ollama redis langfuse-db langfuse-server
@@ -95,11 +97,13 @@ if ($commands.ContainsKey($Service)) {
 
     try {
         & $commands[$Service]
-    } catch {
+    }
+    catch {
         Write-Error "Failed to start $Service : $_"
         exit 1
     }
-} else {
+}
+else {
     Write-Error "Unknown service: $Service"
     exit 1
 }

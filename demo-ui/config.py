@@ -23,13 +23,13 @@ class DemoSettings:
 
     # LangGraph Dev Server (Required for production-parity)
     langgraph_base_url: str = field(
-        default_factory=lambda: os.getenv("YONCA_LANGGRAPH_BASE_URL", "http://localhost:2024")
+        default_factory=lambda: os.getenv("ALIM_LANGGRAPH_BASE_URL", "http://localhost:2024")
     )
     langgraph_graph_id: str = field(
-        default_factory=lambda: os.getenv("YONCA_LANGGRAPH_GRAPH_ID", "alim_agent")
+        default_factory=lambda: os.getenv("ALIM_LANGGRAPH_GRAPH_ID", "alim_agent")
     )
     langgraph_required: bool = field(
-        default_factory=lambda: os.getenv("YONCA_LANGGRAPH_REQUIRED", "true").lower()
+        default_factory=lambda: os.getenv("ALIM_LANGGRAPH_REQUIRED", "true").lower()
         in ("true", "1", "yes")
     )
 
@@ -39,11 +39,11 @@ class DemoSettings:
     )
 
     # Database for Chainlit data persistence (users, threads, settings)
-    # Uses the SAME database as the main Yonca API
-    # For Postgres: postgresql+asyncpg://user:pass@host:5432/yonca  # pragma: allowlist secret
-    # For SQLite (dev only, no persistence): sqlite+aiosqlite:///./data/yonca.db
+    # Uses the SAME database as the main ALİM API
+    # For Postgres: postgresql+asyncpg://user:pass@host:5432/alim  # pragma: allowlist secret
+    # For SQLite (dev only, no persistence): sqlite+aiosqlite:///./data/alim.db
     database_url: str = field(
-        default_factory=lambda: os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./data/yonca.db")
+        default_factory=lambda: os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./data/alim.db")
     )
 
     # Chainlit-specific database URL (optional, defaults to DATABASE_URL)
@@ -84,7 +84,7 @@ class DemoSettings:
     default_language: str = "az"
     session_timeout_seconds: int = 3600
 
-    # DEPRECATED: Yonca now always uses HTTP-based LangGraph server integration
+    # DEPRECATED: ALİM now always uses HTTP-based LangGraph server integration
     # Integration mode: "direct" (LangGraph) or "api" (FastAPI bridge)
     integration_mode: str = field(default_factory=lambda: os.getenv("INTEGRATION_MODE", "api"))
 

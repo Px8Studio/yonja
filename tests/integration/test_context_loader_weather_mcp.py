@@ -35,13 +35,13 @@ async def test_context_loader_calls_weather_mcp(initial_state):
     )
 
     # Mock database calls
-    with patch("yonca.agent.nodes.context_loader.get_db_session") as mock_get_db:
+    with patch("alim.agent.nodes.context_loader.get_db_session") as mock_get_db:
         mock_session = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_session
 
         # Mock user and farm repos
-        with patch("yonca.agent.nodes.context_loader.UserRepository") as mock_user_repo_class:
-            with patch("yonca.agent.nodes.context_loader.FarmRepository") as mock_farm_repo_class:
+        with patch("alim.agent.nodes.context_loader.UserRepository") as mock_user_repo_class:
+            with patch("alim.agent.nodes.context_loader.FarmRepository") as mock_farm_repo_class:
                 mock_user_repo = AsyncMock()
                 mock_farm_repo = AsyncMock()
 
@@ -75,7 +75,7 @@ async def test_context_loader_calls_weather_mcp(initial_state):
 
                 # Mock weather MCP handler
                 with patch(
-                    "yonca.agent.nodes.context_loader.WeatherMCPHandler"
+                    "alim.agent.nodes.context_loader.WeatherMCPHandler"
                 ) as mock_handler_class:
                     mock_handler = AsyncMock()
                     mock_handler_class.return_value = mock_handler
@@ -120,11 +120,11 @@ async def test_context_loader_respects_consent(initial_state):
     )
 
     # Mock database
-    with patch("yonca.agent.nodes.context_loader.get_db_session") as mock_get_db:
+    with patch("alim.agent.nodes.context_loader.get_db_session") as mock_get_db:
         mock_session = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_session
 
-        with patch("yonca.agent.nodes.context_loader.FarmRepository") as mock_farm_repo_class:
+        with patch("alim.agent.nodes.context_loader.FarmRepository") as mock_farm_repo_class:
             mock_farm_repo = AsyncMock()
             mock_farm_repo_class.return_value = mock_farm_repo
 
@@ -138,7 +138,7 @@ async def test_context_loader_respects_consent(initial_state):
             }
 
             # Mock weather handler should NOT be called
-            with patch("yonca.agent.nodes.context_loader.WeatherMCPHandler") as mock_handler_class:
+            with patch("alim.agent.nodes.context_loader.WeatherMCPHandler") as mock_handler_class:
                 mock_handler = AsyncMock()
                 mock_handler_class.return_value = mock_handler
 
@@ -164,11 +164,11 @@ async def test_context_loader_fallback_on_mcp_failure(initial_state):
         requires_context=["weather"],
     )
 
-    with patch("yonca.agent.nodes.context_loader.get_db_session") as mock_get_db:
+    with patch("alim.agent.nodes.context_loader.get_db_session") as mock_get_db:
         mock_session = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_session
 
-        with patch("yonca.agent.nodes.context_loader.FarmRepository") as mock_farm_repo_class:
+        with patch("alim.agent.nodes.context_loader.FarmRepository") as mock_farm_repo_class:
             mock_farm_repo = AsyncMock()
             mock_farm_repo_class.return_value = mock_farm_repo
 
@@ -182,7 +182,7 @@ async def test_context_loader_fallback_on_mcp_failure(initial_state):
             }
 
             # Mock MCP failure
-            with patch("yonca.agent.nodes.context_loader.WeatherMCPHandler") as mock_handler_class:
+            with patch("alim.agent.nodes.context_loader.WeatherMCPHandler") as mock_handler_class:
                 mock_handler = AsyncMock()
                 mock_handler_class.return_value = mock_handler
                 mock_handler.get_forecast.side_effect = Exception("API error")

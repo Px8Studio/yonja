@@ -79,7 +79,7 @@ PARAMETER num_ctx 4096
 def import_gguf_docker(
     model_name: str,
     gguf_path: str,
-    container_name: str = "yonca-ollama",
+    container_name: str = "alim-ollama",
     system_prompt: str = DEFAULT_SYSTEM_PROMPT,
 ) -> bool:
     """Import GGUF model into Ollama running in Docker container.
@@ -153,7 +153,7 @@ PARAMETER num_ctx 4096
             temp_modelfile.unlink()
 
 
-def list_models_docker(container_name: str = "yonca-ollama") -> None:
+def list_models_docker(container_name: str = "alim-ollama") -> None:
     """List models available in the Docker container."""
     result = subprocess.run(
         ["docker", "exec", container_name, "ollama", "list"],
@@ -215,8 +215,8 @@ Examples:
     )
     parser.add_argument(
         "--container",
-        default="yonca-ollama",
-        help="Docker container name (default: yonca-ollama)",
+        default="alim-ollama",
+        help="Docker container name (default: alim-ollama)",
     )
     parser.add_argument(
         "--list",
@@ -262,7 +262,7 @@ Examples:
             print(f"   docker exec -it {args.container} ollama run {args.name}")
         else:
             print(f"   ollama run {args.name}")
-        print(f"\n   Or set YONCA_OLLAMA_MODEL={args.name} in your .env file")
+        print(f"\n   Or set ALIM_OLLAMA_MODEL={args.name} in your .env file")
 
     sys.exit(0 if success else 1)
 

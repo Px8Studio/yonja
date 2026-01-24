@@ -29,8 +29,8 @@ class SessionManager:
 
     # Schema key for storing preferences in Chainlit metadata
     PREFERENCES_KEY = "alim_preferences"
-    FARM_CONTEXT_KEY = "yonca_farm_context"
-    EXPERTISE_KEY = "yonca_expertise"
+    FARM_CONTEXT_KEY = "alim_farm_context"
+    EXPERTISE_KEY = "alim_expertise"
 
     @staticmethod
     async def load_user_preferences(user_id: str) -> dict[str, Any]:

@@ -486,7 +486,7 @@ class TestOutputValidator:
         """Detects prompt structure markers in output."""
         leaky_responses = [
             "################ SYSTEM INSTRUCTIONS ################",
-            "<SYSTEM>You are Yonca</SYSTEM>",
+            "<SYSTEM>You are ALIM</SYSTEM>",
             "[USER_INPUT_START]query[USER_INPUT_END]",
         ]
 

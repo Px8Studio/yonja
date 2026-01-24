@@ -5,12 +5,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # Mock the environment to simulate the user following .env.example
 os.environ["DATABASE_URL"] = "postgresql://localhost:5432/production_db"  # pragma: allowlist secret
 # Unset the correct one if it exists
-if "YONCA_DATABASE_URL" in os.environ:
-    del os.environ["YONCA_DATABASE_URL"]
+if "ALIM_DATABASE_URL" in os.environ:
+    del os.environ["ALIM_DATABASE_URL"]
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="YONCA_", case_sensitive=False)
+    model_config = SettingsConfigDict(env_prefix="ALIM_", case_sensitive=False)
     database_url: str = "sqlite:///default.db"
 
 

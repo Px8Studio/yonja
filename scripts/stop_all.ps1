@@ -1,10 +1,10 @@
 # ════════════════════════════════════════════════════════════════════════════
-# 🌿 YONCA AI — Stop All Services
+# 🌿 ALİM — Stop All Services
 # ════════════════════════════════════════════════════════════════════════════
 
 $ErrorActionPreference = 'SilentlyContinue'
 
-Write-Host "`n🛑 YONCA AI — Stopping Services`n" -ForegroundColor Yellow
+Write-Host "`n🛑 ALİM — Stopping Services`n" -ForegroundColor Yellow
 
 # Stop Python services
 $stopped = @()
@@ -29,7 +29,8 @@ if ($langgraph) {
 
 if ($stopped.Count -gt 0) {
     Write-Host "✅ Stopped: $($stopped -join ', ')" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "ℹ️  No Python processes found" -ForegroundColor DarkGray
 }
 

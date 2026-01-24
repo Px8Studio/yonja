@@ -2,32 +2,32 @@
 # Tests both Groq (cloud) and Ollama (local) providers for Turkish leakage
 
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$Provider = "both",  # "groq", "ollama", or "both"
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$GroqApiKey = $env:ALIM_GROQ_API_KEY
 )
 
 # Test cases with expected Azerbaijani words
 $testCases = @(
     @{
-        Question = "Buğda əkmək üçün ən yaxşı vaxt nədir?"
-        ExpectedWords = @("Sentyabr", "Oktyabr", "torpaq")
+        Question       = "Buğda əkmək üçün ən yaxşı vaxt nədir?"
+        ExpectedWords  = @("Sentyabr", "Oktyabr", "torpaq")
         ForbiddenWords = @("Eylül", "ekim", "zemin", "sulama")
-        Description = "Basic wheat planting question (tests months and soil)"
+        Description    = "Basic wheat planting question (tests months and soil)"
     },
     @{
-        Question = "Pomidor üçün suvarma cədvəli düzəlt"
-        ExpectedWords = @("suvarma", "torpaq", "bitki")
+        Question       = "Pomidor üçün suvarma cədvəli düzəlt"
+        ExpectedWords  = @("suvarma", "torpaq", "bitki")
         ForbiddenWords = @("sulama", "zemin", "tohum", "ürün")
-        Description = "Irrigation schedule (tests agricultural terms)"
+        Description    = "Irrigation schedule (tests agricultural terms)"
     },
     @{
-        Question = "Sentyabr ayında hansı məhsulları əkmək olar?"
-        ExpectedWords = @("Sentyabr", "məhsul", "əkin", "torpaq")
+        Question       = "Sentyabr ayında hansı məhsulları əkmək olar?"
+        ExpectedWords  = @("Sentyabr", "məhsul", "əkin", "torpaq")
         ForbiddenWords = @("Eylül", "ürün", "ekim", "zemin")
-        Description = "September planting (tests month name preservation)"
+        Description    = "September planting (tests month name preservation)"
     }
 )
 
@@ -38,8 +38,9 @@ $promptPath = Join-Path $projectRoot "prompts\system\master_v1.0.0_az_strict.txt
 if (-not (Test-Path $promptPath)) {
     Write-Host "❌ Enhanced system prompt not found at: $promptPath" -ForegroundColor Red
     Write-Host "Creating fallback prompt..." -ForegroundColor Yellow
-    $systemPrompt = "Sən Yonca AI - Azərbaycan fermerlərinin süni intellekt köməkçisisən. Yalnız Azərbaycan dilində danış."
-} else {
+    $systemPrompt = "Sən ALİM - Azərbaycan fermerlərinin süni intellekt köməkçisisən. Yalnız Azərbaycan dilində danış."
+}
+else {
     $systemPrompt = Get-Content $promptPath -Raw -Encoding UTF8
     Write-Host "✅ Loaded enhanced system prompt" -ForegroundColor Green
 }
@@ -58,23 +59,23 @@ function Test-GroqProvider {
 
     $headers = @{
         "Authorization" = "Bearer $GroqApiKey"
-        "Content-Type" = "application/json"
+        "Content-Type"  = "application/json"
     }
 
     $body = @{
-        model = "llama-3.3-70b-versatile"
-        messages = @(
+        model       = "llama-3.3-70b-versatile"
+        messages    = @(
             @{
-                role = "system"
+                role    = "system"
                 content = $systemPrompt
             },
             @{
-                role = "user"
+                role    = "user"
                 content = $TestCase.Question
             }
         )
         temperature = 0.7
-        max_tokens = 500
+        max_tokens  = 500
     } | ConvertTo-Json -Depth 10
 
     try {
@@ -88,12 +89,13 @@ function Test-GroqProvider {
         $answer = $response.choices[0].message.content
 
         return @{
-            Provider = "Groq"
-            Model = "llama-3.3-70b-versatile"
-            Answer = $answer
+            Provider   = "Groq"
+            Model      = "llama-3.3-70b-versatile"
+            Answer     = $answer
             TokensUsed = $response.usage.total_tokens
         }
-    } catch {
+    }
+    catch {
         Write-Host "❌ Groq API error: $_" -ForegroundColor Red
         return $null
     }
@@ -111,18 +113,18 @@ function Test-OllamaProvider {
     }
 
     $body = @{
-        model = "atllama"
+        model    = "atllama"
         messages = @(
             @{
-                role = "system"
+                role    = "system"
                 content = $systemPrompt
             },
             @{
-                role = "user"
+                role    = "user"
                 content = $TestCase.Question
             }
         )
-        stream = $false
+        stream   = $false
     } | ConvertTo-Json -Depth 10
 
     try {
@@ -134,12 +136,13 @@ function Test-OllamaProvider {
             -TimeoutSec 120
 
         return @{
-            Provider = "Ollama"
-            Model = "atllama"
-            Answer = $response.message.content
+            Provider   = "Ollama"
+            Model      = "atllama"
+            Answer     = $response.message.content
             TokensUsed = "N/A"
         }
-    } catch {
+    }
+    catch {
         Write-Host "❌ Ollama error: $_" -ForegroundColor Red
         Write-Host "   Make sure Ollama is running and atllama model is installed." -ForegroundColor Yellow
         return $null
@@ -153,7 +156,7 @@ function Test-LanguageQuality {
     if (-not $Response) {
         return @{
             Passed = $false
-            Score = 0
+            Score  = 0
             Issues = @("No response received")
         }
     }
@@ -187,9 +190,9 @@ function Test-LanguageQuality {
     $passed = $issues.Count -eq 0
 
     return @{
-        Passed = $passed
-        Score = [Math]::Max(0, $score)
-        Issues = $issues
+        Passed             = $passed
+        Score              = [Math]::Max(0, $score)
+        Issues             = $issues
         FoundExpectedWords = $foundExpected
         TotalExpectedWords = $TestCase.ExpectedWords.Count
     }
@@ -197,7 +200,7 @@ function Test-LanguageQuality {
 
 # Main execution
 Write-Host "═══════════════════════════════════════════════════════" -ForegroundColor Magenta
-Write-Host "  Yonca AI - Language Quality Test Suite" -ForegroundColor Magenta
+Write-Host "  ALİM - Language Quality Test Suite" -ForegroundColor Magenta
 Write-Host "  Testing for Turkish Language Leakage" -ForegroundColor Magenta
 Write-Host "═══════════════════════════════════════════════════════" -ForegroundColor Magenta
 
@@ -220,7 +223,8 @@ foreach ($testCase in $testCases) {
 
             if ($validation.Passed) {
                 Write-Host "✅ PASSED - Score: $($validation.Score)/100" -ForegroundColor Green
-            } else {
+            }
+            else {
                 Write-Host "❌ FAILED - Score: $($validation.Score)/100" -ForegroundColor Red
                 foreach ($issue in $validation.Issues) {
                     Write-Host "   $issue" -ForegroundColor Yellow
@@ -228,10 +232,10 @@ foreach ($testCase in $testCases) {
             }
 
             $results += @{
-                Test = $testCase.Description
+                Test     = $testCase.Description
                 Provider = "Groq"
-                Passed = $validation.Passed
-                Score = $validation.Score
+                Passed   = $validation.Passed
+                Score    = $validation.Score
             }
         }
     }
@@ -248,7 +252,8 @@ foreach ($testCase in $testCases) {
 
             if ($validation.Passed) {
                 Write-Host "✅ PASSED - Score: $($validation.Score)/100" -ForegroundColor Green
-            } else {
+            }
+            else {
                 Write-Host "❌ FAILED - Score: $($validation.Score)/100" -ForegroundColor Red
                 foreach ($issue in $validation.Issues) {
                     Write-Host "   $issue" -ForegroundColor Yellow
@@ -256,10 +261,10 @@ foreach ($testCase in $testCases) {
             }
 
             $results += @{
-                Test = $testCase.Description
+                Test     = $testCase.Description
                 Provider = "Ollama"
-                Passed = $validation.Passed
-                Score = $validation.Score
+                Passed   = $validation.Passed
+                Score    = $validation.Score
             }
         }
     }

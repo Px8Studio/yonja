@@ -1,5 +1,5 @@
 # ════════════════════════════════════════════════════════════════════════════
-# 🌿 YONCA AI — Start with Logs (Agent Observable)
+# 🌿 ALİM — Start with Logs (Agent Observable)
 # ════════════════════════════════════════════════════════════════════════════
 # Wrapper around start_service.ps1 to start everything with log redirection.
 # ════════════════════════════════════════════════════════════════════════════
@@ -13,7 +13,7 @@ if (-not (Test-Path $logDir)) {
     New-Item -ItemType Directory -Path $logDir | Out-Null
 }
 
-Write-Host "`n🌿 YONCA AI — Starting Services (Observable Mode)`n" -ForegroundColor Cyan
+Write-Host "`n🌿 ALİM — Starting Services (Observable Mode)`n" -ForegroundColor Cyan
 Write-Host "📂 Logs will be written to: $logDir" -ForegroundColor DarkGray
 
 # 1. Start Docker (blocking)
@@ -24,7 +24,7 @@ Write-Host "✅ Docker started" -ForegroundColor Green
 
 # 2. Start Services with Logs
 function Start-ServiceWithLog {
-    param($Name, $ServiceKey, $LogFile, $Headless=$false)
+    param($Name, $ServiceKey, $LogFile, $Headless = $false)
     Write-Host "$Name..." -ForegroundColor Yellow
 
     $argsList = @("-File", "$projectRoot\scripts\start_service.ps1", "-Service", $ServiceKey)

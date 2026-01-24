@@ -1,5 +1,5 @@
-# demo-ui/services/yonca_client.py
-"""HTTP client for the Yonca API.
+# demo-ui/services/alim_client.py
+"""HTTP client for the ALİM API.
 
 Used for the API client pattern when the demo UI talks to the
 backend via REST instead of direct LangGraph integration.
@@ -19,7 +19,7 @@ logger = structlog.get_logger(__name__)
 
 @dataclass
 class ChatResult:
-    """Structured response from the Yonca API."""
+    """Structured response from the ALİM API."""
 
     content: str
     session_id: str
@@ -29,7 +29,7 @@ class ChatResult:
 
 
 class AlimClientError(Exception):
-    """Error from the Yonca API."""
+    """Error from the ALİM API."""
 
     def __init__(self, message: str, status_code: int | None = None):
         super().__init__(message)
@@ -37,7 +37,7 @@ class AlimClientError(Exception):
 
 
 class AlimClient:
-    """Async HTTP client for the Yonca API.
+    """Async HTTP client for the ALİM API.
 
     Example:
         ```python
@@ -58,7 +58,7 @@ class AlimClient:
         """Initialize the client.
 
         Args:
-            base_url: Base URL of the Yonca API.
+            base_url: Base URL of the ALİM API.
             timeout: Request timeout in seconds.
         """
         self.base_url = base_url.rstrip("/")

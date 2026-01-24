@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 @pytest.mark.asyncio
 async def test_fetch_weather_mcp_success():
     """Test successful weather MCP fetch."""
-    with patch("yonca.agent.nodes.context_loader.WeatherMCPHandler") as mock_handler_class:
+    with patch("alim.agent.nodes.context_loader.WeatherMCPHandler") as mock_handler_class:
         mock_instance = AsyncMock()
         mock_trace = MCPTrace(
             server="openweather",
@@ -59,7 +59,7 @@ async def test_fetch_weather_mcp_success():
 @pytest.mark.asyncio
 async def test_fetch_weather_mcp_failure():
     """Test weather MCP fetch with exception - should raise."""
-    with patch("yonca.agent.nodes.context_loader.WeatherMCPHandler") as mock_handler_class:
+    with patch("alim.agent.nodes.context_loader.WeatherMCPHandler") as mock_handler_class:
         mock_instance = AsyncMock()
         mock_instance.get_forecast = AsyncMock(side_effect=Exception("Network error"))
         mock_handler_class.return_value = mock_instance
@@ -72,7 +72,7 @@ async def test_fetch_weather_mcp_failure():
 @pytest.mark.asyncio
 async def test_fetch_zekalab_rules_mcp_success():
     """Test successful ZekaLab rules fetch."""
-    with patch("yonca.agent.nodes.context_loader.get_zekalab_handler") as mock_get_handler:
+    with patch("alim.agent.nodes.context_loader.get_zekalab_handler") as mock_get_handler:
         # Use MagicMock for sync handler instance
         mock_instance = MagicMock()
         mock_trace = MCPTrace(
@@ -99,7 +99,7 @@ async def test_fetch_zekalab_rules_mcp_success():
 @pytest.mark.asyncio
 async def test_fetch_zekalab_rules_mcp_failure():
     """Test ZekaLab rules fetch with exception - should raise."""
-    with patch("yonca.agent.nodes.context_loader.get_zekalab_handler") as mock_get_handler:
+    with patch("alim.agent.nodes.context_loader.get_zekalab_handler") as mock_get_handler:
         # Use MagicMock for sync handler instance
         mock_instance = MagicMock()
         mock_instance.get_rules_resource = AsyncMock(side_effect=Exception("API error"))
@@ -162,7 +162,7 @@ async def test_context_loader_mcp_disabled():
         "mcp_traces": [],
     }
 
-    with patch("yonca.agent.nodes.context_loader.get_db_session") as mock_db:
+    with patch("alim.agent.nodes.context_loader.get_db_session") as mock_db:
         mock_session = AsyncMock()
         mock_db.return_value.__aenter__.return_value = mock_session
 
@@ -204,7 +204,7 @@ async def test_context_loader_no_consent():
         "mcp_traces": [],
     }
 
-    with patch("yonca.agent.nodes.context_loader.get_db_session") as mock_db:
+    with patch("alim.agent.nodes.context_loader.get_db_session") as mock_db:
         mock_session = AsyncMock()
         mock_db.return_value.__aenter__.return_value = mock_session
 
@@ -245,12 +245,12 @@ async def test_context_loader_parallel_mcp_calls():
         "mcp_traces": [],
     }
 
-    with patch("yonca.agent.nodes.context_loader.get_db_session") as mock_db:
+    with patch("alim.agent.nodes.context_loader.get_db_session") as mock_db:
         mock_session = AsyncMock()
         mock_db.return_value.__aenter__.return_value = mock_session
 
-        with patch("yonca.agent.nodes.context_loader._fetch_weather_mcp") as mock_weather, patch(
-            "yonca.agent.nodes.context_loader._fetch_zekalab_rules_mcp"
+        with patch("alim.agent.nodes.context_loader._fetch_weather_mcp") as mock_weather, patch(
+            "alim.agent.nodes.context_loader._fetch_zekalab_rules_mcp"
         ) as mock_zekalab:
             # Mock successful weather call
             mock_weather.return_value = (
@@ -393,14 +393,14 @@ async def test_context_loader_timeout_handling():
             success=True,
         )
 
-    with patch("yonca.agent.nodes.context_loader.get_db_session") as mock_db:
+    with patch("alim.agent.nodes.context_loader.get_db_session") as mock_db:
         mock_session = AsyncMock()
         mock_db.return_value.__aenter__.return_value = mock_session
 
         with patch(
-            "yonca.agent.nodes.context_loader._fetch_weather_mcp",
+            "alim.agent.nodes.context_loader._fetch_weather_mcp",
             side_effect=slow_weather_call,
-        ), patch("yonca.agent.nodes.context_loader._fetch_zekalab_rules_mcp") as mock_zekalab:
+        ), patch("alim.agent.nodes.context_loader._fetch_zekalab_rules_mcp") as mock_zekalab:
             mock_zekalab.return_value = (
                 {"rules": {}},
                 MCPTrace(
@@ -461,12 +461,12 @@ async def test_mcp_trace_consolidation():
         "mcp_traces": [existing_trace],
     }
 
-    with patch("yonca.agent.nodes.context_loader.get_db_session") as mock_db:
+    with patch("alim.agent.nodes.context_loader.get_db_session") as mock_db:
         mock_session = AsyncMock()
         mock_db.return_value.__aenter__.return_value = mock_session
 
-        with patch("yonca.agent.nodes.context_loader._fetch_weather_mcp") as mock_weather, patch(
-            "yonca.agent.nodes.context_loader._fetch_zekalab_rules_mcp"
+        with patch("alim.agent.nodes.context_loader._fetch_weather_mcp") as mock_weather, patch(
+            "alim.agent.nodes.context_loader._fetch_zekalab_rules_mcp"
         ) as mock_zekalab:
             mock_weather.return_value = (
                 {"current": {}},

@@ -60,7 +60,7 @@ repos:
     hooks:
       - id: detect-secrets
         args: [--baseline, .secrets.baseline]
-        exclude: \.env\.example$
+        exclude: \.env\.example$|demo-ui/\.chainlit/translations/.*\.json$
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Configuration Notes

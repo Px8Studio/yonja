@@ -1,13 +1,21 @@
 # tests/conftest.py
 """Pytest fixtures and configuration for Yonca AI tests."""
 
+import sys
 from collections.abc import AsyncIterator
+from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
+
 from yonca.llm.providers.base import LLMMessage, LLMProvider, LLMResponse
+
+# Add demo-ui to path so tests can import from services and data_layer
+PROJECT_ROOT = Path(__file__).parent.parent
+DEMO_UI_DIR = PROJECT_ROOT / "demo-ui"
+sys.path.insert(0, str(DEMO_UI_DIR))
 
 # ============================================================
 # Mock LLM Provider

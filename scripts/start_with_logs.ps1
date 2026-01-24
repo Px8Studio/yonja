@@ -1,6 +1,8 @@
 # ════════════════════════════════════════════════════════════════════════════
 # 🌿 YONCA AI — Start with Logs (Agent Observable)
 # ════════════════════════════════════════════════════════════════════════════
+# Wrapper around start_service.ps1 to start everything with log redirection.
+# ════════════════════════════════════════════════════════════════════════════
 
 $ErrorActionPreference = "Continue"
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -14,33 +16,21 @@ if (-not (Test-Path $logDir)) {
 Write-Host "`n🌿 YONCA AI — Starting Services (Observable Mode)`n" -ForegroundColor Cyan
 Write-Host "📂 Logs will be written to: $logDir" -ForegroundColor DarkGray
 
-# 1. Docker
-Write-Host "🐳 Starting Docker services..." -ForegroundColor Yellow
-docker-compose -f "$projectRoot\docker-compose.local.yml" up -d postgres ollama redis langfuse-db langfuse-server
-Write-Host "✅ Docker services started" -ForegroundColor Green
+# 1. Start Docker (blocking)
+Write-Host "🐳 Starting Docker..." -ForegroundColor Yellow
+# Docker keeps its own logs usually, but we can redirect the startup output
+pwsh -File "$projectRoot\scripts\start_service.ps1" -Service Docker *>> "$logDir\docker.log"
+Write-Host "✅ Docker started" -ForegroundColor Green
 
-# 2. Clear cache
-Get-ChildItem -Path $projectRoot -Recurse -Directory -Filter '__pycache__' -ErrorAction SilentlyContinue |
-Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-Write-Host "🧹 Cache cleared" -ForegroundColor Green
-
-# 3. Start Python services with log redirection
-$venvPath = "$projectRoot\.venv\Scripts"
-$env:PYTHONPATH = "$projectRoot\src"
-$env:DATABASE_URL = "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
-$env:ZEKALAB_MCP_ENABLED = "true"
-$env:ZEKALAB_MCP_URL = "http://localhost:7777"
-$env:PYTHONIOENCODING = "utf-8"
-
-# Helper to start process with logs
+# 2. Start Services with Logs
 function Start-ServiceWithLog {
-    param($Name, $FilePath, $Arguments, $WorkDir, $LogFile)
+    param($Name, $ServiceKey, $LogFile, $Headless=$false)
     Write-Host "$Name..." -ForegroundColor Yellow
 
-    # Split string arguments into array for Start-Process
-    $ArgsArray = $Arguments -split " "
+    $argsList = @("-File", "$projectRoot\scripts\start_service.ps1", "-Service", $ServiceKey)
+    if ($Headless) { $argsList += "-Headless" }
 
-    $p = Start-Process -FilePath $FilePath -ArgumentList $ArgsArray -WorkingDirectory $WorkDir `
+    $p = Start-Process -FilePath "pwsh" -ArgumentList $argsList -WorkingDirectory $projectRoot `
         -RedirectStandardOutput "$logDir\$LogFile.log" `
         -RedirectStandardError "$logDir\$LogFile.err.log" `
         -WindowStyle Hidden `
@@ -49,24 +39,10 @@ function Start-ServiceWithLog {
     Write-Host "   → PID: $($p.Id) | Log: $LogFile.log" -ForegroundColor DarkGray
 }
 
-# LangGraph
-$env:PYTHONPATH = "$projectRoot\src"
-Start-ServiceWithLog -Name "🎨 LangGraph" -FilePath "$venvPath\langgraph.exe" -Arguments "dev" -WorkDir $projectRoot -LogFile "langgraph"
-
-# FastAPI
-Start-ServiceWithLog -Name "🌿 FastAPI" -FilePath "$venvPath\python.exe" -Arguments "-m uvicorn yonca.api.main:app --host localhost --port 8000 --reload" -WorkDir $projectRoot -LogFile "api"
-
-# MCP
-Start-ServiceWithLog -Name "🧠 ZekaLab MCP" -FilePath "$venvPath\python.exe" -Arguments "-m uvicorn yonca.mcp_server.main:app --port 7777 --reload" -WorkDir $projectRoot -LogFile "mcp"
-
-# Chainlit
-$env:PYTHONPATH = "$projectRoot\src;$projectRoot\demo-ui"
-$env:INTEGRATION_MODE = "direct"
-$env:LLM_PROVIDER = "ollama"
-$env:OLLAMA_BASE_URL = "http://localhost:11434"
-$env:REDIS_URL = "redis://localhost:6379/0"
-$env:ENABLE_DATA_PERSISTENCE = "true"
-Start-ServiceWithLog -Name "🖥️ Chainlit UI" -FilePath "$venvPath\chainlit.exe" -Arguments "run app.py -w --port 8501 --headless" -WorkDir "$projectRoot\demo-ui" -LogFile "ui"
+Start-ServiceWithLog -Name "🌿 FastAPI"       -ServiceKey "FastAPI"   -LogFile "api"
+Start-ServiceWithLog -Name "🎨 LangGraph"     -ServiceKey "LangGraph" -LogFile "langgraph"
+Start-ServiceWithLog -Name "🧠 ZekaLab MCP"   -ServiceKey "MCP"       -LogFile "mcp"
+Start-ServiceWithLog -Name "🖥️ Chainlit UI"   -ServiceKey "UI"        -LogFile "ui" -Headless $true
 
 Write-Host "`n✅ All services started in background!" -ForegroundColor Green
 Write-Host "Use 'Get-Content logs\*.log -Tail 10' to inspect." -ForegroundColor Cyan

@@ -1,8 +1,13 @@
-# demo-ui/services/session_manager.py
 """Session state management with database persistence.
 
 This module ensures that user preferences, farm context, and expertise areas
 survive page refreshes and browser restarts by persisting to PostgreSQL.
+
+Architectural Role:
+    Chainlit's data layer handles *storage* (saving to DB), but it does **not**
+    automatically load that data back into the active session (`cl.user_session`)
+    when a user logs in. `SessionManager` performs this critical "hydration" step
+    (User Metadata → Active Session). Without it, this logic would clutter `app.py`.
 
 Architecture:
     - Store session data in Chainlit's data layer (PostgreSQL)

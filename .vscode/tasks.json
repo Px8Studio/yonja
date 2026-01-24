@@ -3,16 +3,12 @@
   "tasks": [
     {
       "label": "🌿 Yonca AI: 🚀 Start All",
-      "detail": "Quality checks → Clean → Docker → FastAPI/MCP → LangGraph → UI",
+      "detail": "Quality Checks → Docker → Services (Parallel)",
       "dependsOn": [
-        "🛡️ Pre-Start Quality Checks",
+        "✅ Quality & Sanity Checks",
         "🌿 Yonca AI: 🧹 Clear Ports",
-        "🌿 Yonca AI: 🧹 Clear Browser Cache",
         "🌿 Yonca AI: 🐳 Docker Start",
-        "🌿 Yonca AI: ⚡ FastAPI Start",
-        "🌿 Yonca AI: 🧠 ZekaLab MCP Start",
-        "🌿 Yonca AI: 🎨 LangGraph Start",
-        "🌿 Yonca AI: 🖥️ UI Start"
+        "🌿 Yonca AI: 🚀 Start Python Services"
       ],
       "dependsOrder": "sequence",
       "problemMatcher": [],
@@ -21,7 +17,19 @@
       }
     },
     {
-      "label": "🛡️ Pre-Start Quality Checks",
+      "label": "🌿 Yonca AI: 🚀 Start Python Services",
+      "detail": "Start FastAPI, UI, MCP, and LangGraph in parallel",
+      "dependsOn": [
+        "🌿 Yonca AI: ⚡ FastAPI Start",
+        "🌿 Yonca AI: 🖥️ UI Start",
+        "🌿 Yonca AI: 🧠 ZekaLab MCP Start",
+        "🌿 Yonca AI: 🎨 LangGraph Start"
+      ],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    },
+    {
+      "label": "✅ Quality & Sanity Checks",
       "detail": "Run lint + import + test checks before starting services",
       "type": "shell",
       "command": "pwsh",
@@ -34,7 +42,8 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "clear": true
+        "clear": true,
+        "group": "yonca-checks"
       }
     },
     {
@@ -43,150 +52,45 @@
       "type": "shell",
       "command": "pwsh",
       "args": [
-        "-Command",
-        "Get-Process python,chainlit,langgraph -ErrorAction SilentlyContinue | Stop-Process -Force; Write-Host '🧹 Ports cleared' -ForegroundColor Green"
+        "-File",
+        "${workspaceFolder}/scripts/force_cleanup.ps1"
       ],
-      "problemMatcher": [],
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "clear": true
-      }
-    },
-    {
-      "label": "🌿 Yonca AI: 🛑 Stop All",
-      "detail": "Stop all services (UI → LangGraph → FastAPI/MCP → Docker) + cleanup",
-      "type": "shell",
-      "command": "pwsh",
-      "args": [
-        "-Command",
-        "Write-Host '🛑 Stopping services...' -ForegroundColor Yellow; Write-Host '  → Stopping UI (Chainlit)...' -ForegroundColor Cyan; Get-Process -Name chainlit -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Milliseconds 500; Write-Host '  → Stopping LangGraph...' -ForegroundColor Cyan; Get-Process -Name langgraph -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Milliseconds 500; Write-Host '  → Stopping FastAPI + MCP (uvicorn)...' -ForegroundColor Cyan; Get-Process -Name python -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Milliseconds 500; Write-Host '  → Stopping Docker infrastructure...' -ForegroundColor Cyan; docker-compose -f docker-compose.local.yml down; Write-Host '✅ All services stopped' -ForegroundColor Green"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "clear": true
+        "clear": true,
+        "group": "yonca-ops"
       }
     },
     {
       "label": "🌿 Yonca AI: 🐳 Docker Start",
-      "detail": "Running 🐘 PostgreSQL + 🦙 Ollama + 🔴 Redis + 📊 Langfuse infrastructure",
+      "detail": "Start Docker Infrastructure",
       "type": "shell",
-      "command": "docker-compose",
+      "command": "pwsh",
       "args": [
-        "-f",
-        "docker-compose.local.yml",
-        "up",
-        "-d",
-        "postgres",
-        "ollama",
-        "redis",
-        "langfuse-db",
-        "langfuse-server"
+        "-File",
+        "${workspaceFolder}/scripts/start_service.ps1",
+        "-Service",
+        "Docker"
       ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "problemMatcher": [],
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "clear": true
-      }
-    },
-    {
-      "label": "🌿 Yonca AI: 🐳 Docker Stop",
-      "detail": "Stop all Docker containers",
-      "type": "shell",
-      "command": "docker-compose",
-      "args": [
-        "-f",
-        "docker-compose.local.yml",
-        "down"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-      }
-    },
-    {
-      "label": "🌿 Yonca AI: 🐳 Docker Status",
-      "detail": "Show container health",
-      "type": "shell",
-      "command": "docker-compose",
-      "args": [
-        "-f",
-        "docker-compose.local.yml",
-        "ps",
-        "-a"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-      }
-    },
-    {
-      "label": "🌿 Yonca AI: 🐳 Docker Logs",
-      "detail": "Stream all container logs (Postgres, Redis, Ollama, Langfuse) with timestamps",
-      "type": "shell",
-      "command": "docker-compose",
-      "args": [
-        "-f",
-        "docker-compose.local.yml",
-        "logs",
-        "-f",
-        "--tail=50",
-        "--timestamps"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "isBackground": true,
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "clear": true
+        "clear": true,
+        "group": "yonca-docker"
       }
     },
     {
       "label": "🌿 Yonca AI: ⚡ FastAPI Start",
-      "detail": "Running ⚡ FastAPI Backend + Swagger/ReDoc docs (http://localhost:8000)",
+      "detail": "Backend API (:8000)",
       "type": "shell",
-      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+      "command": "pwsh",
       "args": [
-        "-m",
-        "uvicorn",
-        "yonca.api.main:app",
-        "--host",
-        "localhost",
-        "--port",
-        "8000",
-        "--reload",
-        "--log-level",
-        "info"
+        "-File",
+        "${workspaceFolder}/scripts/start_service.ps1",
+        "-Service",
+        "FastAPI"
       ],
-      "options": {
-        "cwd": "${workspaceFolder}",
-        "env": {
-          "PYTHONPATH": "${workspaceFolder}/src",
-          "DATABASE_URL": "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca",
-          "ZEKALAB_MCP_ENABLED": "true",
-          "ZEKALAB_MCP_URL": "http://localhost:7777"
-        }
-      },
       "isBackground": true,
       "problemMatcher": {
         "owner": "uvicorn",
@@ -203,37 +107,20 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "clear": true
+        "group": "yonca-services"
       }
     },
     {
       "label": "🌿 Yonca AI: 🖥️ UI Start",
-      "detail": "Running 💬 Chainlit Chat + 📊 Langfuse + 📖 Swagger + 📕 ReDoc (all UIs)",
+      "detail": "Chainlit UI (:8501)",
       "type": "shell",
-      "command": "${workspaceFolder}\\.venv\\Scripts\\chainlit.exe",
+      "command": "pwsh",
       "args": [
-        "run",
-        "app.py",
-        "-w",
-        "--port",
-        "8501",
-        "--headless"
+        "-File",
+        "${workspaceFolder}/scripts/start_service.ps1",
+        "-Service",
+        "UI"
       ],
-      "options": {
-        "cwd": "${workspaceFolder}/demo-ui",
-        "env": {
-          "PYTHONPATH": "${workspaceFolder}/src;${workspaceFolder}/demo-ui",
-          "PYTHONIOENCODING": "utf-8",
-          "INTEGRATION_MODE": "direct",
-          "LLM_PROVIDER": "ollama",
-          "OLLAMA_BASE_URL": "http://localhost:11434",
-          "REDIS_URL": "redis://localhost:6379/0",
-          "DATABASE_URL": "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca",
-          "ENABLE_DATA_PERSISTENCE": "true",
-          "ZEKALAB_MCP_ENABLED": "true",
-          "ZEKALAB_MCP_URL": "http://localhost:7777"
-        }
-      },
       "isBackground": true,
       "problemMatcher": {
         "owner": "chainlit",
@@ -250,23 +137,50 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "clear": true
+        "group": "yonca-services"
+      }
+    },
+    {
+      "label": "🌿 Yonca AI: 🧠 ZekaLab MCP Start",
+      "detail": "MCP Server (:7777)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-File",
+        "${workspaceFolder}/scripts/start_service.ps1",
+        "-Service",
+        "MCP"
+      ],
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "mcp",
+        "pattern": {
+          "regexp": "^ERROR.*",
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*Uvicorn running.*",
+          "endsPattern": "^.*Application startup complete.*"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "yonca-services"
       }
     },
     {
       "label": "🌿 Yonca AI: 🎨 LangGraph Start",
-      "detail": "Running 🤖 LangGraph Agent + orchestration (http://localhost:2024)",
+      "detail": "LangGraph Dev Server (:2024)",
       "type": "shell",
-      "command": "${workspaceFolder}\\.venv\\Scripts\\langgraph.exe",
+      "command": "pwsh",
       "args": [
-        "dev"
+        "-File",
+        "${workspaceFolder}/scripts/start_service.ps1",
+        "-Service",
+        "LangGraph"
       ],
-      "options": {
-        "cwd": "${workspaceFolder}",
-        "env": {
-          "PYTHONPATH": "${workspaceFolder}/src"
-        }
-      },
       "isBackground": true,
       "problemMatcher": {
         "owner": "langgraph",
@@ -283,395 +197,24 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "clear": true
+        "group": "yonca-services"
       }
     },
     {
-      "label": "🌿 Yonca AI: 🌐 Open All UIs",
-      "detail": "Open Swagger + Langfuse + Chat UI",
+      "label": "🌿 Yonca AI: 🛑 Stop All",
+      "detail": "Stop all services",
       "type": "shell",
       "command": "pwsh",
       "args": [
         "-Command",
-        "Start-Process 'http://localhost:8000/docs'; Start-Process 'http://localhost:3001'; Start-Process 'http://localhost:8501'"
-      ],
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "clear": true
-      }
-    },
-    {
-      "label": "🌿 Yonca AI: 📖 Open Swagger",
-      "type": "shell",
-      "command": "Start-Process",
-      "args": [
-        "http://localhost:8000/docs"
-      ],
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "clear": true
-      }
-    },
-    {
-      "label": "🌿 Yonca AI: 💬 Open Chat UI",
-      "type": "shell",
-      "command": "Start-Process",
-      "args": [
-        "http://localhost:8501"
-      ],
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "clear": true
-      }
-    },
-    {
-      "label": "🌿 Yonca AI: 📊 Open Langfuse",
-      "type": "shell",
-      "command": "Start-Process",
-      "args": [
-        "http://localhost:3001"
-      ],
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "clear": true
-      }
-    },
-    {
-      "label": "🌿 Yonca AI: 🗄️ DB Migrate",
-      "detail": "Apply Alembic migrations",
-      "type": "shell",
-      "command": "${workspaceFolder}\\.venv\\Scripts\\alembic.exe",
-      "args": [
-        "upgrade",
-        "head"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}",
-        "env": {
-          "PYTHONPATH": "${workspaceFolder}/src",
-          "DATABASE_URL": "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
-        }
-      },
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-      }
-    },
-    {
-      "label": "🌿 Yonca AI: 🗄️ LangGraph Setup",
-      "detail": "Create LangGraph checkpoint tables (auto-managed by LangGraph)",
-      "type": "shell",
-      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
-      "args": [
-        "scripts/setup_langgraph_checkpoint_tables.py"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}",
-        "env": {
-          "PYTHONPATH": "${workspaceFolder}/src",
-          "DATABASE_URL": "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
-        }
-      },
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-      }
-    },
-    {
-      "label": "🌿 Yonca AI: 🗄️ DB Seed",
-      "detail": "Populate with test data",
-      "type": "shell",
-      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
-      "args": [
-        "scripts/seed_database.py"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}",
-        "env": {
-          "PYTHONPATH": "${workspaceFolder}/src",
-          "DATABASE_URL": "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
-        }
-      },
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-      }
-    },
-    {
-      "label": "🌿 Yonca AI: 🗄️ DB New Migration",
-      "detail": "Generate migration from model changes",
-      "type": "shell",
-      "command": "${workspaceFolder}\\.venv\\Scripts\\alembic.exe",
-      "args": [
-        "revision",
-        "--autogenerate",
-        "-m",
-        "${input:migrationMessage}"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}",
-        "env": {
-          "PYTHONPATH": "${workspaceFolder}/src",
-          "DATABASE_URL": "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
-        }
-      },
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-      }
-    },
-    {
-      "label": "🌿 Yonca AI: 🧪 Test All",
-      "detail": "Run pytest",
-      "type": "shell",
-      "command": "pytest",
-      "args": [
-        "tests/",
-        "-v",
-        "--tb=short"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}",
-        "env": {
-          "PYTHONPATH": "${workspaceFolder}/src"
-        }
-      },
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-      },
-      "group": "test"
-    },
-    {
-      "label": "🌿 Yonca AI: 🔍 Lint",
-      "detail": "Run ruff check",
-      "type": "shell",
-      "command": "ruff",
-      "args": [
-        "check",
-        "src/",
-        "tests/"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-      }
-    },
-    {
-      "label": "🌿 Yonca AI: 🧹 Clear Cache",
-      "detail": "Remove __pycache__ folders",
-      "type": "shell",
-      "command": "pwsh",
-      "args": [
-        "-Command",
-        "Get-ChildItem -Path . -Recurse -Directory -Filter '__pycache__' | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue; Write-Host '🧹 Cache cleared' -ForegroundColor Green"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "clear": true
-      }
-    },
-    {
-      "label": "🌿 Yonca AI: 🧹 Clear Browser Cache",
-      "detail": "Clear Chrome/Edge/Firefox cache (LocalStorage, SessionStorage, IndexedDB)",
-      "type": "shell",
-      "command": "pwsh",
-      "args": [
-        "-File",
-        "${workspaceFolder}/scripts/clear_browser_cache.ps1"
-      ],
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "clear": true
-      }
-    },
-    {
-      "label": "🧹 Clear Cache & Ports",
-      "type": "shell",
-      "command": "pwsh",
-      "args": [
-        "-File",
-        "${workspaceFolder}/scripts/clear_browser_cache.ps1"
+        "Write-Host '🛑 Stopping services...' -ForegroundColor Yellow; Get-Process -Name chainlit,langgraph,python -ErrorAction SilentlyContinue | Stop-Process -Force; docker-compose -f docker-compose.local.yml down; Write-Host '✅ Stopped' -ForegroundColor Green"
       ],
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "clear": true
-      },
-      "runOptions": {
-        "runOn": "default"
+        "group": "yonca-ops"
       }
-    },
-    {
-      "label": "🌿 Yonca AI: 🤖 Models Setup",
-      "detail": "Pull models (run once after Docker Start)",
-      "type": "shell",
-      "command": "docker-compose",
-      "args": [
-        "-f",
-        "docker-compose.local.yml",
-        "--profile",
-        "setup",
-        "up",
-        "model-setup"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "🌿 Yonca AI: 🤖 Models List",
-      "detail": "Show Ollama models",
-      "type": "shell",
-      "command": "docker",
-      "args": [
-        "exec",
-        "yonca-ollama",
-        "ollama",
-        "list"
-      ],
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-      }
-    },
-    {
-      "label": "🌿 Yonca AI: 📊 Master Logs",
-      "detail": "Unified log stream: All Docker services (Postgres + Redis + Ollama + Langfuse)",
-      "type": "shell",
-      "command": "docker-compose",
-      "args": [
-        "-f",
-        "docker-compose.local.yml",
-        "logs",
-        "-f",
-        "--tail=50",
-        "--timestamps"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "isBackground": true,
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "clear": true,
-        "focus": true,
-        "showReuseMessage": false
-      }
-    },
-    {
-      "label": "🌿 Yonca AI: 🧠 ZekaLab MCP Start",
-      "detail": "Start internal rules MCP server on :7777",
-      "type": "shell",
-      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
-      "args": [
-        "-m",
-        "uvicorn",
-        "yonca.mcp_server.main:app",
-        "--port",
-        "7777",
-        "--reload"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}",
-        "env": {
-          "PYTHONPATH": "${workspaceFolder}/src",
-          "ZEKALAB_LOG_LEVEL": "INFO",
-          "ZEKALAB_PORT": "7777"
-        }
-      },
-      "isBackground": true,
-      "problemMatcher": {
-        "pattern": {
-          "regexp": "^ERROR.*",
-          "message": 1
-        },
-        "background": {
-          "activeOnStart": true,
-          "beginsPattern": "^.*Uvicorn running.*",
-          "endsPattern": "^.*Application startup complete.*"
-        }
-      },
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "clear": true
-      }
-    },
-    {
-      "label": "🌿 Yonca AI: 🧠 ZekaLab MCP Tests",
-      "detail": "Run ZekaLab MCP server tests (24 tests)",
-      "type": "shell",
-      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
-      "args": [
-        "-m",
-        "pytest",
-        "tests/unit/test_mcp_server/test_zekalab_mcp.py",
-        "-v",
-        "--tb=short"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}",
-        "env": {
-          "PYTHONPATH": "${workspaceFolder}/src"
-        }
-      },
-      "group": "test"
-    },
-    {
-      "label": "🌿 Yonca AI: 🔍 MCP Inspector",
-      "detail": "Launch MCP Inspector for ZekaLab server",
-      "type": "shell",
-      "command": "npx",
-      "args": [
-        "@modelcontextprotocol/inspector",
-        "--transport",
-        "http",
-        "http://localhost:7777/mcp"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "isBackground": true
     }
   ],
-  "inputs": [
-    {
-      "id": "migrationMessage",
-      "type": "promptString",
-      "description": "Migration message (e.g., 'Add user settings')"
-    }
-  ]
+  "inputs": []
 }

@@ -3,6 +3,8 @@
 # ════════════════════════════════════════════════════════════════════════════
 
 $ErrorActionPreference = 'SilentlyContinue'
+Write-Host "`n🧹 YONCA AI — Browser Cache Cleanup" -ForegroundColor Cyan
+
 $cleared = 0
 
 $browsers = @{
@@ -12,19 +14,28 @@ $browsers = @{
 }
 
 foreach ($browser in $browsers.GetEnumerator()) {
+    $browserName = $browser.Key
+    $browserPath = $browser.Value
+
     $paths = @(
-        "$env:APPDATA\$($browser.Value)\Cache",
-        "$env:APPDATA\$($browser.Value)\Code Cache",
-        "$env:LOCALAPPDATA\$($browser.Value)\Cache",
-        "$env:LOCALAPPDATA\$($browser.Value)\Code Cache"
+        "$env:APPDATA\$browserPath\Cache",
+        "$env:APPDATA\$browserPath\Code Cache",
+        "$env:LOCALAPPDATA\$browserPath\Cache",
+        "$env:LOCALAPPDATA\$browserPath\Code Cache"
     )
 
     foreach ($path in $paths) {
         if (Test-Path $path) {
-            Remove-Item $path -Recurse -Force
+            Write-Host "   → Clearing $browserName cache..." -NoNewline -ForegroundColor Yellow
+            Remove-Item $path -Recurse -Force -ErrorAction SilentlyContinue
+            Write-Host " ✅" -ForegroundColor Green
             $cleared++
         }
     }
 }
 
-Write-Host "🧹 Browser cache cleared ($cleared items)" -ForegroundColor Green
+if ($cleared -gt 0) {
+    Write-Host "`n✨ Cleared $cleared cache locations." -ForegroundColor Green
+} else {
+    Write-Host "✨ No browser cache found to clear." -ForegroundColor Gray
+}

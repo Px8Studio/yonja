@@ -1,4 +1,3 @@
-# demo-ui/services/mcp_resilience.py
 """MCP resilience layer with retry logic and graceful degradation.
 
 This module handles:
@@ -7,8 +6,11 @@ This module handles:
 - Health check monitoring
 - User notifications about service status
 
-Problem: MCP server may not be ready when Chainlit starts.
-Solution: Retry with exponential backoff instead of failing immediately.
+Architectural Role:
+    The base `MCPClient` (`src/yonca/mcp/client.py`) lacks retry logic and only
+    handles single-request timeouts. `MCPResilienceManager` implements the
+    necessary retry-with-backoff loop to prevent the UI from crashing if the
+    MCP server is slightly slow to start.
 """
 
 import asyncio
@@ -77,7 +79,7 @@ class MCPResilienceManager:
 
                 return is_healthy
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self.last_error = "Timeout (2s)"
             logger.warning(f"MCP health timeout: url={url}")
             return False

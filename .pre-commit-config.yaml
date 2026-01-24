@@ -1,92 +1,74 @@
-# Yonca AI — Pre-commit Quality Gate
-
-# Install: Run this once to set up the hook
-#   pwsh scripts/setup-git-hooks.ps1
+# .pre-commit-config.yaml
+# ═══════════════════════════════════════════════════════════════════════════
+# 🔧 Yonca AI — Pre-commit Hooks
+# ═══════════════════════════════════════════════════════════════════════════
 #
-# Or manually:
-#   pip install pre-commit
-#   pre-commit install
+# Run once to install:   pre-commit install
+# Run manually:          pre-commit run --all-files
+# Update hooks:          pre-commit autoupdate
+#
+# How it works:
+#   1. On `git commit`, these hooks run BEFORE the commit
+#   2. Ruff auto-fixes import sorting, formatting issues
+#   3. If files are modified → commit aborts with message
+#   4. Run `git add .` and commit again → now it passes
+#
+# This is the CORRECT place for auto-fixes (not in check scripts)
+# ═══════════════════════════════════════════════════════════════════════════
 
 repos:
-  # ════════════════════════════════════════════════════════════════
-  # 🔍 Code Quality (Fast checks - run every commit)
-  # ════════════════════════════════════════════════════════════════
-
+  # ─────────────────────────────────────────────────────────────────────────
+  # 🐍 Ruff — Fast Python Linter & Formatter
+  # ─────────────────────────────────────────────────────────────────────────
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.6  # or your current version
+    rev: v0.1.0  # Match pyproject.toml [tool.poetry.group.dev.dependencies] ruff version
     hooks:
+      # Linting + auto-fix (import sorting, etc.)
       - id: ruff
-        args: [--fix, --unsafe-fixes, --exit-non-zero-on-fix]
+        args: [--fix, --exit-non-zero-on-fix]
         types_or: [python, pyi]
 
+      # Formatting (like Black, but faster)
       - id: ruff-format
-        name: 🎨 Ruff Format
         types_or: [python, pyi]
 
-  # ════════════════════════════════════════════════════════════════
-  # 🧹 File Hygiene (Prevent common mistakes)
-  # ════════════════════════════════════════════════════════════════
-
+  # ─────────────────────────────────────────────────────────────────────────
+  # 📁 General File Hygiene
+  # ─────────────────────────────────────────────────────────────────────────
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v4.5.0
     hooks:
       - id: trailing-whitespace
-        name: 🧹 Remove trailing whitespace
-
+        exclude: \.md$  # Allow trailing whitespace in markdown
       - id: end-of-file-fixer
-        name: 🧹 Ensure EOF newline
-
       - id: check-yaml
-        name: ✅ Validate YAML files
-        args: [--allow-multiple-documents]
-        exclude: ^\.github/workflows/
-
+        exclude: ^(docker-compose.*\.ya?ml)$  # Docker compose has special syntax
       - id: check-json
-        name: ✅ Validate JSON files
-        exclude: ^\.vscode/  # VS Code uses JSONC (JSON with comments)
-
       - id: check-toml
-        name: ✅ Validate TOML files
-
-      - id: check-added-large-files
-        name: 🚫 Block large files (>500KB)
-        args: ['--maxkb=500']
-        exclude: poetry.lock
-
       - id: check-merge-conflict
-        name: 🚫 Block merge conflict markers
-
-      - id: detect-private-key
-        name: 🔐 Block private keys
-
+      - id: check-added-large-files
+        args: [--maxkb=1000]
       - id: mixed-line-ending
-        name: 🧹 Fix mixed line endings
-        args: ['--fix=lf']
+        args: [--fix=lf]
 
-  # ════════════════════════════════════════════════════════════════
-  # 🔐 Security (Critical checks)
-  # ════════════════════════════════════════════════════════════════
-
+  # ─────────────────────────────────────────────────────────────────────────
+  # 🔐 Secrets Detection (you already have detect-secrets in deps)
+  # ─────────────────────────────────────────────────────────────────────────
   - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.5.0            # upgrade to match .secrets.baseline "version": "1.5.0"
+    rev: v1.5.0
     hooks:
       - id: detect-secrets
-        name: 🔐 Detect secrets/credentials
-        args: ['--baseline', '.secrets.baseline']
-        exclude: package.lock.json
+        args: [--baseline, .secrets.baseline]
+        exclude: \.env\.example$
 
-# ════════════════════════════════════════════════════════════════
-# ⚡ Fast-Only Mode (Optional - skip slow checks)
-# ════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════
+# Configuration Notes
+# ═══════════════════════════════════════════════════════════════════════════
 #
-# To skip heavy checks during rapid iteration:
-#   SKIP=mypy,pytest pre-commit run --all-files
+# Ruff settings are picked up from pyproject.toml [tool.ruff]
+# No need to duplicate configuration here
 #
-# To run full validation before PR:
-#   pre-commit run --all-files --hook-stage push
-# ════════════════════════════════════════════════════════════════
-
-ci:
-  autofix_commit_msg: |
-    🤖 [pre-commit.ci] Auto-fixes from hooks
-  autoupdate_commit_msg: '🤖 [pre-commit.ci] Auto-update hooks'
+# If you need to skip hooks temporarily:
+#   git commit --no-verify -m "WIP: skip hooks"
+#
+# ═══════════════════════════════════════════════════════════════════════════

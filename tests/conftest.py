@@ -9,7 +9,6 @@ from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
-
 from yonca.llm.providers.base import LLMMessage, LLMProvider, LLMResponse
 
 # Add demo-ui to path so tests can import from services and data_layer

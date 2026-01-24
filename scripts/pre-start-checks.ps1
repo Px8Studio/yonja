@@ -18,8 +18,7 @@
 
 param(
     [switch]$Quick = $false,     # Skip tests, only lint
-    [switch]$Verbose = $false,
-    [switch]$NoAutoFix = $false  # Disable automatic fixes
+    [switch]$Verbose = $false
 )
 
 $ErrorActionPreference = "Stop"
@@ -57,12 +56,14 @@ function Test-Check {
                 Write-Host $output -ForegroundColor Gray
             }
             return $true
-        } else {
+        }
+        else {
             Write-Host " ❌ FAILED" -ForegroundColor Red
             Write-Host $output -ForegroundColor Red
             return $false
         }
-    } catch {
+    }
+    catch {
         Write-Host " ❌ ERROR" -ForegroundColor Red
         Write-Host $_.Exception.Message -ForegroundColor Red
         return $false
@@ -70,43 +71,27 @@ function Test-Check {
 }
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Check 1: Ruff Linting (Fast - ~2s) with AUTO-FIX
+# Check 1: Ruff Linting (Fast - ~2s)
+# ═══════════════════════════════════════════════════════════════════════════
+# NOTE: Auto-fixes are handled by pre-commit hooks, NOT here.
+# This script only CHECKS — run `pre-commit run --all-files` to fix.
 # ═══════════════════════════════════════════════════════════════════════════
 
 $ruffCmd = if (Test-Path ".venv/Scripts/ruff.exe") {
     ".venv/Scripts/ruff.exe"
-} else {
+}
+else {
     "ruff"
 }
 
-# First pass: Check for issues
 $lintPassed = Test-Check -Name "🔍 Ruff linting" -Command {
     & $ruffCmd check src/ tests/ --quiet
 }
 
-# If failed and auto-fix is enabled, attempt to fix
-if (-not $lintPassed -and -not $NoAutoFix) {
+if (-not $lintPassed) {
     Write-Host ""
-    Write-Host "🔧 Attempting automatic fixes (including unsafe modernizations)..." -ForegroundColor Yellow
-
-    $fixOutput = & $ruffCmd check src/ tests/ --fix --unsafe-fixes 2>&1
-    $fixExitCode = $LASTEXITCODE
-
-    if ($fixExitCode -eq 0) {
-        Write-Host "✅ Auto-fixed all issues!" -ForegroundColor Green
-        $lintPassed = $true
-    } else {
-        Write-Host "⚠️  Fixed some issues, but manual intervention needed:" -ForegroundColor Yellow
-        Write-Host $fixOutput -ForegroundColor Red
-        Write-Host ""
-        Write-Host "💡 Remaining issues require manual fixes:" -ForegroundColor Yellow
-        Write-Host "   • F841 (unused variables): Remove or prefix with _" -ForegroundColor Gray
-        Write-Host "   • E722 (bare except): Specify exception type" -ForegroundColor Gray
-        $checksPassed = $false
-    }
-} elseif (-not $lintPassed) {
-    Write-Host ""
-    Write-Host "💡 Run with auto-fix: $ruffCmd check src/ tests/ --fix --unsafe-fixes" -ForegroundColor Yellow
+    Write-Host "💡 Run pre-commit to auto-fix: pre-commit run --all-files" -ForegroundColor Yellow
+    Write-Host "   Or manually: $ruffCmd check src/ tests/ --fix" -ForegroundColor Gray
     $checksPassed = $false
 }
 
@@ -116,7 +101,8 @@ if (-not $lintPassed -and -not $NoAutoFix) {
 
 $pythonCmd = if (Test-Path ".venv/Scripts/python.exe") {
     ".venv/Scripts/python.exe"
-} else {
+}
+else {
     "python"
 }
 
@@ -150,7 +136,8 @@ if (-not $importPassed) {
 
 $pytestCmd = if (Test-Path ".venv/Scripts/pytest.exe") {
     ".venv/Scripts/pytest.exe"
-} else {
+}
+else {
     "pytest"
 }
 
@@ -166,7 +153,8 @@ if (-not $Quick) {
         Write-Host "   Run: pytest tests/unit/ -v" -ForegroundColor Gray
         $checksPassed = $false
     }
-} else {
+}
+else {
     Write-Host "[Skipped] 🧪 Unit tests (--Quick mode)" -ForegroundColor Gray
 }
 
@@ -213,7 +201,8 @@ if ($checksPassed) {
     Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Cyan
     Write-Host ""
     exit 0
-} else {
+}
+else {
     Write-Host "❌ Quality checks FAILED! ($($elapsed.TotalSeconds.ToString('F1'))s)" -ForegroundColor Red
     Write-Host ""
     Write-Host "🛑 BLOCKING SERVICE START" -ForegroundColor Red

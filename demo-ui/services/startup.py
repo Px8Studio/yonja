@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import os
 from typing import TypedDict
 
@@ -10,8 +9,11 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-# Initialize logger
-logger = logging.getLogger(__name__)
+from services.logger import get_logger, setup_logging
+
+# Initialize structured logging
+setup_logging(level="INFO", json_format=True)
+logger = get_logger(__name__)
 
 # ============================================
 # MCP STATUS MONITORING

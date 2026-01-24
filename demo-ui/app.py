@@ -60,7 +60,10 @@ sys.path.insert(0, str(project_root / "src"))
 # ============================================
 # Must happen BEFORE importing chainlit to prevent "storage client not initialized" warning
 import asyncio  # noqa: E402
-import logging  # noqa: E402
+
+from services.logger import get_logger  # noqa: E402
+
+logger = get_logger()
 
 from config import settings as demo_settings  # noqa: E402
 from data_layer import (  # noqa: E402
@@ -75,8 +78,6 @@ from services.startup import (  # noqa: E402
     init_chainlit_data_layer,
     perform_startup_health_checks,
 )
-
-logger = logging.getLogger(__name__)
 
 # Initialize data layer before importing chainlit (but only if Postgres is configured)
 # This must happen BEFORE @cl.data_layer decorator runs
@@ -106,7 +107,6 @@ except Exception as e:
 
 # Now safe to import chainlit  # noqa: E402
 import chainlit as cl  # noqa: E402
-import structlog  # noqa: E402
 from alem_persona import ALEMPersona, PersonaProvisioner  # noqa: E402
 from alem_persona_db import (  # noqa: E402
     load_alem_persona_from_db,
@@ -164,8 +164,6 @@ from yonca.observability.banner import (  # noqa: E402
     print_startup_complete,
     print_status_line,
 )
-
-logger = structlog.get_logger()
 
 # ============================================
 # STARTUP BANNER

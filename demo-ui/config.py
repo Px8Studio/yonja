@@ -41,9 +41,12 @@ class DemoSettings:
     # Database for Chainlit data persistence (users, threads, settings)
     # Uses the SAME database as the main ALİM API
     # For Postgres: postgresql+asyncpg://user:pass@host:5432/alim  # pragma: allowlist secret
-    # For SQLite (dev only, no persistence): sqlite+aiosqlite:///./data/alim.db
+    # For Postgres: postgresql+asyncpg://user:pass@host:5432/alim  # pragma: allowlist secret
     database_url: str = field(
-        default_factory=lambda: os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./data/alim.db")
+        default_factory=lambda: os.getenv(
+            "DATABASE_URL",
+            "postgresql+asyncpg://alim:alim_dev_password@localhost:5433/alim",  # pragma: allowlist secret
+        )
     )
 
     # Chainlit-specific database URL (optional, defaults to DATABASE_URL)

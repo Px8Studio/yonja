@@ -25,7 +25,7 @@ from services.actions import (
     prompt_agent_mode,
     show_data_consent_prompt,
 )
-from services.alim_client import alimClient
+from services.alim_client import AlimClient
 from services.audio import (
     handle_audio_chunk,
     handle_audio_end,

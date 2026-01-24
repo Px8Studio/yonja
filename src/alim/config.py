@@ -213,7 +213,9 @@ class Settings(BaseSettings):
     # - "mixtral-8x7b-32768": Large context, good for complex queries
 
     # ===== Database =====
-    database_url: str = "sqlite+aiosqlite:///./data/ALİM.db"
+    database_url: str = (
+        "postgresql+asyncpg://alim:alim_dev_password@localhost:5433/alim"
+    )  # pragma: allowlist secret
     database_pool_size: int = 10
     database_max_overflow: int = 20
 

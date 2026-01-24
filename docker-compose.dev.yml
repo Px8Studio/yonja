@@ -11,7 +11,7 @@ services:
   # ─────────────────────────────────────────────────────────────
   ollama:
     image: ollama/ollama:latest
-    container_name: ALİM-ollama
+    container_name: alim-ollama
     ports:
       - "11434:11434"
     volumes:
@@ -20,10 +20,10 @@ services:
     environment:
       - OLLAMA_HOST=0.0.0.0
     networks:
-      - ALİM-network
+      - alim-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "ollama list || exit 1"]
+      test: [ "CMD-SHELL", "ollama list || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -34,7 +34,7 @@ services:
   # ─────────────────────────────────────────────────────────────
   model-setup:
     image: ollama/ollama:latest
-    container_name: ALİM-model-setup
+    container_name: alim-model-setup
     depends_on:
       ollama:
         condition: service_healthy
@@ -43,8 +43,8 @@ services:
     environment:
       - OLLAMA_HOST=ollama:11434
     networks:
-      - ALİM-network
-    entrypoint: ["/bin/sh", "-c"]
+      - alim-network
+    entrypoint: [ "/bin/sh", "-c" ]
     command:
       - |
         echo "🚀 Setting up models..."
@@ -60,7 +60,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.langgraph
-    container_name: ALİM-langgraph
+    container_name: alim-langgraph
     ports:
       - "2024:2024"
     volumes:
@@ -73,7 +73,7 @@ services:
       - ALIM_LANGGRAPH_REQUIRED=true
       - LANGGRAPH_DEV_HOST=0.0.0.0
       - LANGGRAPH_DEV_PORT=2024
-      - LANGGRAPH_POSTGRES_URI=postgresql://ALİM:ALIM_dev_password@postgres:5432/ALİM
+      - LANGGRAPH_POSTGRES_URI=postgresql://alim:alim_dev_password@postgres:5432/alim
       - ALIM_LLM_PROVIDER=ollama
       - ALIM_OLLAMA_BASE_URL=http://ollama:11434
       - ALIM_OLLAMA_MODEL=qwen3:4b
@@ -83,10 +83,10 @@ services:
       ollama:
         condition: service_healthy
     networks:
-      - ALİM-network
+      - alim-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:2024/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:2024/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -100,7 +100,7 @@ services:
       context: .
       target: development
       dockerfile: Dockerfile
-    container_name: ALİM-api
+    container_name: alim-api
     ports:
       - "8000:8000"
     volumes:
@@ -115,7 +115,7 @@ services:
       - ALIM_LANGGRAPH_BASE_URL=http://langgraph:2024
       - ALIM_LLM_PROVIDER=ollama
       - ALIM_OLLAMA_BASE_URL=http://ollama:11434
-      - ALIM_DATABASE_URL=postgresql+asyncpg://ALİM:ALIM_dev_password@postgres:5432/ALİM
+      - ALIM_DATABASE_URL=postgresql+asyncpg://alim:alim_dev_password@postgres:5432/alim
       - ALIM_REDIS_URL=redis://redis:6379/0
     depends_on:
       postgres:
@@ -125,10 +125,10 @@ services:
       langgraph:
         condition: service_healthy
     networks:
-      - ALİM-network
+      - alim-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -141,7 +141,7 @@ services:
       context: .
       dockerfile: demo-ui/Dockerfile
       target: development
-    container_name: ALİM-demo-ui
+    container_name: alim-demo-ui
     ports:
       - "8501:8501"
     volumes:
@@ -157,8 +157,8 @@ services:
       - ALIM_API_URL=http://api:8000
       - ALIM_LLM_PROVIDER=ollama
       - ALIM_OLLAMA_BASE_URL=http://ollama:11434
-      - ALIM_DATABASE_URL=postgresql+asyncpg://ALİM:ALIM_dev_password@postgres:5432/ALİM
-      - CHAINLIT_DATABASE_URL=postgresql+asyncpg://ALİM:ALIM_dev_password@postgres:5432/ALİM
+      - ALIM_DATABASE_URL=postgresql+asyncpg://alim:alim_dev_password@postgres:5432/alim
+      - CHAINLIT_DATABASE_URL=postgresql+asyncpg://alim:alim_dev_password@postgres:5432/alim
       - PYTHONPATH=/app/src:/app/demo-ui
     depends_on:
       postgres:
@@ -168,7 +168,7 @@ services:
       api:
         condition: service_healthy
     networks:
-      - ALİM-network
+      - alim-network
     restart: unless-stopped
 
 volumes:

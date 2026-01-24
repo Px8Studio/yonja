@@ -227,7 +227,7 @@ class Settings(BaseSettings):
     # HTTP endpoint for decoupled graph execution (async/scalable)
     # Dev server runs graph in separate process - critical for multi-user concurrency
     langgraph_base_url: str = "http://127.0.0.1:2024"
-    langgraph_graph_id: str = "ALİM_agent"  # From langgraph.json
+    langgraph_graph_id: str = "alim_agent"  # From langgraph.json
 
     # ===== Security =====
     jwt_secret: str = "dev-secret-change-in-production"
@@ -254,7 +254,7 @@ class Settings(BaseSettings):
     langfuse_sample_rate: float = 1.0  # 1.0 = trace 100% of requests
 
     # ===== App Metadata =====
-    app_name: str = "ALİM"
+    app_name: str = "alim"
     app_version: str = "0.1.0"
 
     # ===== Localization =====

@@ -10,7 +10,7 @@ services:
       context: .
       target: development
       dockerfile: Dockerfile
-    container_name: ALİM-api
+    container_name: alim-api
     ports:
       - "8000:8000"
     volumes:
@@ -40,7 +40,7 @@ services:
       - ALIM_OLLAMA_MODEL=qwen3:4b
 
       # Database
-      - ALIM_DATABASE_URL=postgresql+asyncpg://ALİM:ALIM_dev_password@postgres:5432/ALİM
+      - ALIM_DATABASE_URL=postgresql+asyncpg://alim:alim_dev_password@postgres:5432/alim
 
       # Redis
       - ALIM_REDIS_URL=redis://redis:6379/0
@@ -64,7 +64,7 @@ services:
       langgraph:
         condition: service_healthy
     networks:
-      - ALİM-network
+      - alim-network
     restart: unless-stopped
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
@@ -78,7 +78,7 @@ services:
   # ================================================
   ollama:
     image: ollama/ollama:latest
-    container_name: ALİM-ollama
+    container_name: alim-ollama
     ports:
       - "11434:11434"
     volumes:
@@ -88,7 +88,7 @@ services:
     environment:
       - OLLAMA_HOST=0.0.0.0
     networks:
-      - ALİM-network
+      - alim-network
     restart: unless-stopped
     healthcheck:
       test: [ "CMD-SHELL", "ollama list || exit 1" ]
@@ -111,7 +111,7 @@ services:
     # ================================================
   model-setup:
     image: ollama/ollama:latest
-    container_name: ALİM-model-setup
+    container_name: alim-model-setup
     depends_on:
       ollama:
         condition: service_healthy
@@ -120,7 +120,7 @@ services:
     environment:
       - OLLAMA_HOST=ollama:11434
     networks:
-      - ALİM-network
+      - alim-network
     entrypoint: [ "/bin/sh", "-c" ]
     command:
       - |
@@ -158,7 +158,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.langgraph
-    container_name: ALİM-langgraph
+    container_name: alim-langgraph
     ports:
       - "2024:2024"
     volumes:
@@ -176,7 +176,7 @@ services:
 
       # LangGraph PostgreSQL persistence (enables checkpoint/state storage)
       # Without this, LangGraph uses in-memory storage (data lost on restart)
-      - LANGGRAPH_POSTGRES_URI=postgresql://ALİM:ALIM_dev_password@postgres:5432/ALİM
+      - LANGGRAPH_POSTGRES_URI=postgresql://alim:alim_dev_password@postgres:5432/alim
 
       # LLM Provider
       - LLM_PROVIDER=ollama
@@ -184,7 +184,7 @@ services:
       - OLLAMA_MODEL=qwen3:4b
 
       # Database (for app data, separate from LangGraph checkpoints)
-      - DATABASE_URL=postgresql+asyncpg://ALİM:ALIM_dev_password@postgres:5432/ALİM
+      - DATABASE_URL=postgresql+asyncpg://alim:alim_dev_password@postgres:5432/alim
 
       # Redis for caching (optional, LangGraph uses Postgres for checkpoints)
       - REDIS_URL=redis://redis:6379/0
@@ -202,7 +202,7 @@ services:
       ollama:
         condition: service_healthy
     networks:
-      - ALİM-network
+      - alim-network
     restart: unless-stopped
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:2024/health" ]
@@ -219,13 +219,13 @@ services:
     # ================================================
   redis:
     image: redis/redis-stack-server:latest
-    container_name: ALİM-redis
+    container_name: alim-redis
     ports:
       - "6379:6379"
     volumes:
       - redis-data:/data
     networks:
-      - ALİM-network
+      - alim-network
     restart: unless-stopped
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
@@ -240,7 +240,7 @@ services:
   # ================================================
   langfuse-server:
     image: langfuse/langfuse:2
-    container_name: ALİM-langfuse
+    container_name: alim-langfuse
     ports:
       - "3001:3000" # Langfuse UI at http://localhost:3001
     environment:
@@ -249,8 +249,8 @@ services:
       - DIRECT_URL=postgresql://langfuse:langfuse_secret@langfuse-db:5432/langfuse
 
       # Security (CHANGE IN PRODUCTION!)
-      - NEXTAUTH_SECRET=ALİM-langfuse-secret-change-in-prod
-      - SALT=ALİM-langfuse-salt-change-in-prod
+      - NEXTAUTH_SECRET=alim-langfuse-secret-change-in-prod
+      - SALT=alim-langfuse-salt-change-in-prod
       - NEXTAUTH_URL=http://localhost:3001
 
       # Telemetry (disable for air-gapped)
@@ -264,7 +264,7 @@ services:
       langfuse-db:
         condition: service_healthy
     networks:
-      - ALİM-network
+      - alim-network
     restart: unless-stopped
     healthcheck:
       test: [ "CMD", "wget", "-q", "--spider", "http://localhost:3000/api/public/health" ]
@@ -279,7 +279,7 @@ services:
   # ================================================
   langfuse-db:
     image: postgres:15-alpine
-    container_name: ALİM-langfuse-db
+    container_name: alim-langfuse-db
     volumes:
       - langfuse-db-data:/var/lib/postgresql/data
     environment:
@@ -287,7 +287,7 @@ services:
       - POSTGRES_USER=langfuse
       - POSTGRES_PASSWORD=langfuse_secret
     networks:
-      - ALİM-network
+      - alim-network
     restart: unless-stopped
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U langfuse -d langfuse" ]
@@ -300,20 +300,20 @@ services:
   # ================================================
   postgres:
     image: postgres:15-alpine
-    container_name: ALİM-postgres
+    container_name: alim-postgres
     ports:
       - "5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=ALİM
-      - POSTGRES_USER=ALİM
-      - POSTGRES_PASSWORD=ALIM_dev_password
+      - POSTGRES_DB=alim
+      - POSTGRES_USER=alim
+      - POSTGRES_PASSWORD=alim_dev_password
     networks:
-      - ALİM-network
+      - alim-network
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ALİM" ]
+      test: [ "CMD-SHELL", "pg_isready -U alim" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -326,7 +326,7 @@ services:
       context: .
       dockerfile: demo-ui/Dockerfile
       target: development
-    container_name: ALİM-demo-ui
+    container_name: alim-demo-ui
     ports:
       - "8501:8501"
     volumes:
@@ -355,8 +355,8 @@ services:
       - ALIM_REDIS_URL=redis://redis:6379/0
 
       # Database
-      - ALIM_DATABASE_URL=postgresql+asyncpg://ALİM:ALIM_dev_password@postgres:5432/ALİM
-      - CHAINLIT_DATABASE_URL=postgresql+asyncpg://ALİM:ALIM_dev_password@postgres:5432/ALİM
+      - ALIM_DATABASE_URL=postgresql+asyncpg://alim:alim_dev_password@postgres:5432/alim
+      - CHAINLIT_DATABASE_URL=postgresql+asyncpg://alim:alim_dev_password@postgres:5432/alim
       - ENABLE_DATA_PERSISTENCE=true
 
       # Observability
@@ -379,7 +379,7 @@ services:
       api:
         condition: service_healthy
     networks:
-      - ALİM-network
+      - alim-network
     restart: unless-stopped
     # profiles:
     #   - demo  # REMOVED: Standard UI for the stack
@@ -391,7 +391,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.mcp
-    container_name: ALİM-zekalab-mcp
+    container_name: alim-zekalab-mcp
     ports:
       - "7777:7777"
     environment:
@@ -401,7 +401,7 @@ services:
     volumes:
       - ./src:/app/src:ro
     networks:
-      - ALİM-network
+      - alim-network
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:7777/health" ]
       interval: 30s
@@ -417,7 +417,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.mcp.viz
-    container_name: ALİM-python-viz-mcp
+    container_name: alim-python-viz-mcp
     ports:
       - "7778:7778"
     environment:
@@ -430,7 +430,7 @@ services:
       # Temp storage for generated visualizations
       - python-viz-tmp:/tmp/viz
     networks:
-      - ALİM-network
+      - alim-network
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:7778/health" ]
       interval: 30s
@@ -450,7 +450,7 @@ services:
 # Networks
 # ================================================
 networks:
-  ALİM-network:
+  alim-network:
     driver: bridge
 
 # ================================================

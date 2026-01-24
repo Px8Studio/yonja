@@ -8,7 +8,7 @@
 services:
   # LangGraph Runtime
   langgraph:
-    image: ALİM-langgraph:latest # Pre-built image
+    image: alim-langgraph:latest # Pre-built image
     environment:
       - ALIM_ENVIRONMENT=production
       - ALIM_INFRASTRUCTURE_MODE=cloud
@@ -20,7 +20,7 @@ services:
 
   # Application API
   api:
-    image: ALİM-api:latest
+    image: alim-api:latest
     environment:
       - ALIM_ENVIRONMENT=production
       - ALIM_INFRASTRUCTURE_MODE=cloud
@@ -33,7 +33,7 @@ services:
 
   # Chat UI
   demo-ui:
-    image: ALİM-demo-ui:latest
+    image: alim-demo-ui:latest
     environment:
       - ALIM_ENVIRONMENT=production
       - ALIM_INFRASTRUCTURE_MODE=cloud

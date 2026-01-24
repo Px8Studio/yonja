@@ -2,12 +2,12 @@ from constants import CROP_TO_EXPERTISE, EXPERIENCE_TO_EXPERTISE, PROFILE_PROMPT
 
 
 def detect_expertise_from_persona(persona_dict: dict | None) -> list[str]:
-    """Detect relevant expertise areas from ALEM persona.
+    """Detect relevant expertise areas from ALİM persona.
 
     Uses crop type and experience level to determine smart defaults.
 
     Args:
-        persona_dict: ALEM persona dictionary with crop_type, experience_level
+        persona_dict: ALİM persona dictionary with crop_type, experience_level
 
     Returns:
         List of expertise area IDs (e.g., ["cotton", "advanced"])

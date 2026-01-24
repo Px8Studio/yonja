@@ -1,15 +1,15 @@
 {
-  "name": "ALEM | Yonca AI Assistant",
+  "name": "ALEM | ALİM Assistant",
   "short_name": "ALEM",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#2D5A27",
   "theme_color": "#2D5A27",
-  "description": "ALEM — Yonca AI agricultural assistant",
+  "description": "ALEM — ALİM agricultural assistant",
   "icons": [
     {
-      "src": "/public/avatars/yonca_ai.svg",
+      "src": "/public/avatars/ALİM_ai.svg",
       "sizes": "any",
       "type": "image/svg+xml"
     },

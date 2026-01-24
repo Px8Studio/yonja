@@ -9,14 +9,14 @@ import logging
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from yonca.agent.nodes.context_loader import (
+from alim.agent.nodes.context_loader import (
     _fetch_weather_mcp,
     _fetch_zekalab_rules_mcp,
     _get_synthetic_weather,
     _noop_task,
     context_loader_node,
 )
-from yonca.agent.state import (
+from alim.agent.state import (
     FarmContext,
     MCPTrace,
     RoutingDecision,
@@ -508,8 +508,8 @@ def mock_zekalab_handler():
     """Fixture providing a mocked ZekaLab MCP handler."""
     from datetime import UTC, datetime
 
-    from yonca.agent.state import MCPTrace
-    from yonca.mcp.handlers.zekalab_handler import ZekaLabMCPHandler
+    from alim.agent.state import MCPTrace
+    from alim.mcp.handlers.zekalab_handler import ZekaLabMCPHandler
 
     handler = ZekaLabMCPHandler()
 

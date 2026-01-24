@@ -4,9 +4,9 @@
 
 ---
 
-## 🌍 System Context: Yonca Ecosystem
+## 🌍 System Context: ALİM Ecosystem
 
-> **Important Distinction:** We are building **Yonca AI** (ALEM-powered assistant) as a sidecar to the existing **Yonca Mobile App** (Digital Umbrella's production platform).
+> **Important Distinction:** We are building **ALİM** (ALEM-powered assistant) as a sidecar to the existing **ALİM Mobile App** (Digital Umbrella's production platform).
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
@@ -16,9 +16,9 @@ flowchart TB
         ektis_db["<b>EKTIS Database</b><br/><i>Ministry of Agriculture</i><br/>━━━━━━━━━<br/>✅ Live: 100k+ farms<br/>• Crop declarations<br/>• Land registry<br/>• NDVI tracking"]
     end
 
-    subgraph external["🌐 YONCA MOBILE (Digital Umbrella)"]
+    subgraph external["🌐 ALİM MOBILE (Digital Umbrella)"]
         direction TB
-        yonca_mobile["📱 <b>Yonca Mobile App</b><br/><i>Production • 100k+ users</i><br/>━━━━━━━━━<br/>✅ Existing Integrations:<br/>• EKTIS (farm data)<br/>• mygov ID (auth)<br/>• GPS tracking"]
+        ALİM_mobile["📱 <b>ALİM Mobile App</b><br/><i>Production • 100k+ users</i><br/>━━━━━━━━━<br/>✅ Existing Integrations:<br/>• EKTIS (farm data)<br/>• mygov ID (auth)<br/>• GPS tracking"]
     end
 
     subgraph future_partners["🔮 FUTURE DIRECT INTEGRATIONS (Phase 1-3)"]
@@ -30,7 +30,7 @@ flowchart TB
         weather["🌡️ <b>Weather APIs</b><br/><i>Azerbaijan Meteorology</i><br/>Phase 2"]
     end
 
-    subgraph our_system["🤖 YONCA AI (Our System)"]
+    subgraph our_system["🤖 ALİM (Our System)"]
         direction TB
         alem["🧠 <b>ALEM</b><br/><i>AI Model Stack</i>"]
         demo_ui["🖥️ <b>Demo UI</b><br/><i>Chainlit :8501</i>"]
@@ -38,14 +38,14 @@ flowchart TB
     end
 
     %% Existing connections (solid green)
-    ektis_db ==>|"✅ EXISTING<br/>Production API"| yonca_mobile
+    ektis_db ==>|"✅ EXISTING<br/>Production API"| ALİM_mobile
 
     %% Current ALEM setup (solid)
     demo_ui --> alem
     alem --> synthetic
 
     %% Future indirect path (dashed orange)
-    yonca_mobile -.->|"🔮 Option A: Via Yonca Mobile<br/>Leverage existing integration"| our_system
+    ALİM_mobile -.->|"🔮 Option A: Via ALİM Mobile<br/>Leverage existing integration"| our_system
 
     %% Future direct paths (dashed purple)
     sima -.->|"🔮 Phase 1: Auth"| our_system
@@ -63,14 +63,14 @@ flowchart TB
 
 **Legend:**
 - **Solid green arrows** (⇒) = Existing production integrations
-- **Dashed orange arrows** (⇢) = Future integration via existing Yonca Mobile
+- **Dashed orange arrows** (⇢) = Future integration via existing ALİM Mobile
 - **Dashed purple arrows** (⇢) = Future direct integrations (new partnerships)
 
 | System | Owner | Purpose | Status | ALEM Integration Path |
 |:-------|:------|:--------|:-------|:----------------------|
-| **EKTIS** | Ministry of Agriculture | Official farm registry (100k+ farms) | ✅ Live | 🔮 **Option A**: Via Yonca Mobile (indirect)<br/>🔮 **Option B**: Direct API (new partnership) |
-| **Yonca Mobile App** | Digital Umbrella | Production farming app | ✅ Live | 🔮 Data sync partner |
-| **Yonca AI (ALEM)** | Zekalab | AI assistant sidecar | 🔄 Development | — |
+| **EKTIS** | Ministry of Agriculture | Official farm registry (100k+ farms) | ✅ Live | 🔮 **Option A**: Via ALİM Mobile (indirect)<br/>🔮 **Option B**: Direct API (new partnership) |
+| **ALİM Mobile App** | Digital Umbrella | Production farming app | ✅ Live | 🔮 Data sync partner |
+| **ALİM (ALEM)** | Zekalab | AI assistant sidecar | 🔄 Development | — |
 | **SİMA/ASAN** | IDDA (Gov) | Sovereign authentication | 🔮 Planned (Phase 1) | 🔮 Direct integration |
 | **CBAR Open Banking** | Central Bank | Financial integration | 🔮 Planned (Phase 2) | 🔮 Direct integration |
 | **Azərkosmos** | Space Agency | Satellite imagery | 🔮 Planned (Phase 3) | 🔮 Direct integration |
@@ -99,7 +99,7 @@ flowchart TB
 
     subgraph data["💾 APP DATA LAYER"]
         direction LR
-        postgres["<b>Yonca App DB</b><br/>:5433<br/>━━━━━━━━━<br/>📋 App Tables:<br/>• users (OAuth)<br/>• threads, steps<br/>• user_profiles<br/>• farms, parcels<br/>• alem_personas"]
+        postgres["<b>ALİM App DB</b><br/>:5433<br/>━━━━━━━━━<br/>📋 App Tables:<br/>• users (OAuth)<br/>• threads, steps<br/>• user_profiles<br/>• farms, parcels<br/>• alim_personas"]
         redis["<b>Redis</b><br/>:6379<br/>━━━━━━━━━<br/>• LangGraph checkpoints<br/>• Session state<br/>• Rate limiting"]
     end
 
@@ -128,10 +128,10 @@ flowchart TB
 | Component | Purpose | What It Stores | Key File |
 |:----------|:--------|:---------------|:---------|
 | **Chainlit** | Chat UI + thread display | UI state (delegates to App DB) | `demo-ui/app.py` |
-| **Yonca App DB** | All app data | Users, farms, threads, personas | `demo-ui/data_layer.py` |
-| **Redis** | Fast state + checkpoints | LangGraph state, sessions | `src/yonca/agent/memory.py` |
-| **Langfuse** | LLM observability (separate DB) | Traces, costs, latencies | `src/yonca/observability/langfuse.py` |
-| **LangGraph** | Agent orchestration | In-memory graph execution | `src/yonca/agent/graph.py` |
+| **ALİM App DB** | All app data | Users, farms, threads, personas | `demo-ui/data_layer.py` |
+| **Redis** | Fast state + checkpoints | LangGraph state, sessions | `src/ALİM/agent/memory.py` |
+| **Langfuse** | LLM observability (separate DB) | Traces, costs, latencies | `src/ALİM/observability/langfuse.py` |
+| **LangGraph** | Agent orchestration | In-memory graph execution | `src/ALİM/agent/graph.py` |
 
 ### 🎯 Architecture Clarification: Three Different "LangGraphs"
 
@@ -152,7 +152,7 @@ agent.add_node("supervisor", supervisor_node)
 ```
 
 - **What**: Python library you import and use in code
-- **Where**: `src/yonca/agent/` — all agent logic
+- **Where**: `src/ALİM/agent/` — all agent logic
 - **Analogy**: Like React — you build your app with it
 - **Status**: ✅ **Required** — this is your agent's foundation
 
@@ -172,7 +172,7 @@ langgraph dev  # Starts on http://127.0.0.1:2024
 #### 3️⃣ FastAPI Backend (Production API)
 
 ```python
-# src/yonca/api/main.py
+# src/ALİM/api/main.py
 @app.post("/api/v1/chat")
 async def chat(request: ChatMessage):
     # Imports LangGraph library internally
@@ -181,7 +181,7 @@ async def chat(request: ChatMessage):
 ```
 
 - **What**: REST API server exposing agent functionality
-- **Where**: `src/yonca/api/` — all HTTP endpoints
+- **Where**: `src/ALİM/api/` — all HTTP endpoints
 - **Analogy**: Express.js server for your React app
 - **Status**: ✅ **Required** — mobile app calls these endpoints
 
@@ -244,7 +244,7 @@ INTEGRATION_MODE=direct
 │  • Weather node (weather queries)                  │
 │  • Validator node (safety checks)                  │
 │                                                      │
-│         Location: src/yonca/agent/                  │
+│         Location: src/ALİM/agent/                  │
 └─────────────────────────────────────────────────────┘
             ▲                        ▲
             │                        │
@@ -261,7 +261,7 @@ INTEGRATION_MODE=direct
 ```
 
 **Key Insight**: Both entry points use the **same LangGraph agent code**. The only difference is how they access it:
-- **Chainlit**: Imports directly (`from yonca.agent import get_agent`)
+- **Chainlit**: Imports directly (`from ALİM.agent import get_agent`)
 - **FastAPI**: Also imports directly, but exposes via HTTP endpoints
 
 There's **no duplication** — just different interfaces to the same intelligence layer.
@@ -278,34 +278,34 @@ flowchart TB
     subgraph docker["🐳 Docker Compose Stack"]
         direction TB
 
-        subgraph yonca_ai_data["💾 YONCA AI APP DATA"]
-            subgraph pg_app["🐘 PostgreSQL :5433<br/><code>yonca-postgres</code>"]
-                app_tables["📋 <b>App Tables</b><br/>━━━━━━━━━━━━━<br/>users, threads, steps<br/>user_profiles, farm_profiles<br/>parcels, alem_personas"]
+        subgraph ALİM_ai_data["💾 ALİM APP DATA"]
+            subgraph pg_app["🐘 PostgreSQL :5433<br/><code>ALİM-postgres</code>"]
+                app_tables["📋 <b>App Tables</b><br/>━━━━━━━━━━━━━<br/>users, threads, steps<br/>user_profiles, farm_profiles<br/>parcels, alim_personas"]
             end
 
-            subgraph redis["🔴 Redis Stack :6379<br/><code>yonca-redis</code>"]
+            subgraph redis["🔴 Redis Stack :6379<br/><code>ALİM-redis</code>"]
                 redis_data["⚡ <b>Runtime State</b><br/>━━━━━━━━━━━━━<br/>LangGraph checkpoints<br/>Session cache<br/>Rate limits"]
             end
         end
 
         subgraph langfuse_stack["📊 LANGFUSE STACK (Self-Contained)"]
-            subgraph pg_langfuse["🐘 PostgreSQL :5432<br/><code>yonca-langfuse-db</code><br/><i>Internal only</i>"]
+            subgraph pg_langfuse["🐘 PostgreSQL :5432<br/><code>ALİM-langfuse-db</code><br/><i>Internal only</i>"]
                 lf_tables["🔍 <b>Auto-Managed</b><br/>━━━━━━━━━━━━━<br/>traces, generations<br/>scores, prompts<br/>sessions, users"]
             end
 
-            langfuse_ui["🌐 <b>Langfuse UI :3001</b><br/><code>yonca-langfuse</code>"]
+            langfuse_ui["🌐 <b>Langfuse UI :3001</b><br/><code>ALİM-langfuse</code>"]
         end
     end
 
     subgraph external["🌐 FUTURE: External Data"]
-        yonca_mobile["📱 Yonca Mobile<br/>(Digital Umbrella)"]
+        ALİM_mobile["📱 ALİM Mobile<br/>(Digital Umbrella)"]
     end
 
     pg_langfuse --> langfuse_ui
     langfuse_ui -.->|"REST API<br/>read-only"| pg_app
-    yonca_mobile -.->|"Hot-swap<br/>when ready"| pg_app
+    ALİM_mobile -.->|"Hot-swap<br/>when ready"| pg_app
 
-    style yonca_ai_data fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style ALİM_ai_data fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
     style langfuse_stack fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     style external fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
 ```
@@ -314,10 +314,10 @@ flowchart TB
 
 | Container | Type | Port | Database/Purpose | You Manage? |
 |:----------|:-----|:-----|:-----------------|:------------|
-| `yonca-postgres` | PostgreSQL 15 | **:5433** | Yonca App tables | ✅ **Yes** — migrations, seeds |
-| `yonca-redis` | Redis Stack | **:6379** | LangGraph checkpoints, sessions | ✅ **Yes** — ephemeral |
-| `yonca-langfuse-db` | PostgreSQL 15 | *internal* | Langfuse traces (auto-managed) | ❌ **No** — Langfuse handles |
-| `yonca-langfuse` | Next.js app | **:3001** | Observability dashboard | ❌ **No** — just view it |
+| `ALİM-postgres` | PostgreSQL 15 | **:5433** | ALİM App tables | ✅ **Yes** — migrations, seeds |
+| `ALİM-redis` | Redis Stack | **:6379** | LangGraph checkpoints, sessions | ✅ **Yes** — ephemeral |
+| `ALİM-langfuse-db` | PostgreSQL 15 | *internal* | Langfuse traces (auto-managed) | ❌ **No** — Langfuse handles |
+| `ALİM-langfuse` | Next.js app | **:3001** | Observability dashboard | ❌ **No** — just view it |
 
 ### 🔍 Langfuse: How It Works
 
@@ -362,8 +362,8 @@ To view databases directly from VS Code, install these extensions:
 
 **Connection strings:**
 ```bash
-# Yonca App DB (your data)
-postgresql://yonca:yonca_dev_password@localhost:5433/yonca
+# ALİM App DB (your data)
+postgresql://ALİM:ALİM_dev_password@localhost:5433/ALİM
 
 # Redis
 redis://localhost:6379
@@ -379,8 +379,8 @@ postgresql://langfuse:langfuse_secret@localhost:5432/langfuse
 
 | Storage | Type | Tables/Keys | Purpose | Access |
 |:--------|:-----|:------------|:--------|:-------|
-| **Yonca App DB** | PostgreSQL :5433 | `users`, `threads`, `steps`, `feedbacks` | Conversation history | Read/Write |
-| **Yonca App DB** | PostgreSQL :5433 | `user_profiles`, `farm_profiles`, `parcels` | Farm data (synthetic → real) | Read/Write |
+| **ALİM App DB** | PostgreSQL :5433 | `users`, `threads`, `steps`, `feedbacks` | Conversation history | Read/Write |
+| **ALİM App DB** | PostgreSQL :5433 | `user_profiles`, `farm_profiles`, `parcels` | Farm data (synthetic → real) | Read/Write |
 | **Langfuse DB** | PostgreSQL (internal) | `traces`, `generations`, `scores` | LLM observability | **Auto-managed** |
 | **Redis** | Redis Stack :6379 | `langgraph:checkpoint:*` | LangGraph state | Read/Write |
 | **Redis** | Redis Stack :6379 | `session:*`, `rate_limit:*` | Runtime cache | Read/Write |
@@ -389,12 +389,12 @@ postgresql://langfuse:langfuse_secret@localhost:5432/langfuse
 
 ### Hot-Swap Strategy: Synthetic → Real Data
 
-The Yonca mobile platform (Digital Umbrella) already serves many users with real farm data from EKTIS. Our architecture is designed for seamless integration:
+The ALİM mobile platform (Digital Umbrella) already serves many users with real farm data from EKTIS. Our architecture is designed for seamless integration:
 
 | Phase | Data Source | Status |
 |:------|:------------|:-------|
 | **Now** | Synthetic profiles (schema-matched) | ✅ Active |
-| **Pilot** | Real users, synced from Yonca mobile | ⏳ Pending handoff |
+| **Pilot** | Real users, synced from ALİM mobile | ⏳ Pending handoff |
 | **Production** | Full EKTIS integration | 🔜 Future |
 
 > **No code changes required** — same `user_profiles`, `farm_profiles`, `parcels` tables, just different data source.
@@ -452,7 +452,7 @@ supervisor ──┬──> end (greeting/off-topic handled)
              └──> weather ──────> validator ──> end
 ```
 
-**Graph nodes** (see `src/yonca/agent/graph.py`):
+**Graph nodes** (see `src/ALİM/agent/graph.py`):
 - `supervisor` — Routes intent, handles greetings
 - `context_loader` — Loads farm/user context from PostgreSQL
 - `agronomist` — Core agricultural reasoning (+ MCP tool calls)
@@ -490,9 +490,9 @@ LangGraph calls external tools via **Model Context Protocol (MCP)** using `langc
 ```
 
 **Key Files:**
-- `src/yonca/mcp/adapters.py` — MCP client configuration
-- `src/yonca/mcp_server/zekalab_fastmcp.py` — FastMCP server with 5 tools
-- `src/yonca/agent/state.py` — MCPTrace for observability
+- `src/ALİM/mcp/adapters.py` — MCP client configuration
+- `src/ALİM/mcp_server/zekalab_fastmcp.py` — FastMCP server with 5 tools
+- `src/ALİM/agent/state.py` — MCPTrace for observability
 
 > 📖 **Full MCP documentation:** See [MCP-ARCHITECTURE.md](MCP-ARCHITECTURE.md)
 
@@ -520,7 +520,7 @@ Before diving into service URLs and commands, understand what you actually need:
 docker-compose -f docker-compose.local.yml up -d
 
 # 2. Run migrations (first time only)
-$env:DATABASE_URL = "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
+$env:DATABASE_URL = "postgresql+asyncpg://ALİM:ALİM_dev_password@localhost:5433/ALİM"
 alembic upgrade head
 
 # 3. Start Chainlit UI (development testing)
@@ -531,7 +531,7 @@ chainlit run app.py -w --port 8501
 # 4. Start FastAPI (mobile app testing - separate terminal)
 cd C:\Users\rjjaf\_Projects\yonja
 .\.venv\Scripts\Activate.ps1
-uvicorn yonca.api.main:app --reload
+uvicorn ALİM.api.main:app --reload
 
 # That's it! No LangGraph dev server needed.
 ```
@@ -578,7 +578,7 @@ docker-compose -f docker-compose.local.yml down
 # ═══════════════════════════════════════════════════════
 
 # Run migrations (first time setup)
-$env:DATABASE_URL = "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
+$env:DATABASE_URL = "postgresql+asyncpg://ALİM:ALİM_dev_password@localhost:5433/ALİM"
 $env:PYTHONPATH = "C:\Users\rjjaf\_Projects\yonja\src"
 alembic upgrade head
 
@@ -589,7 +589,7 @@ alembic revision --autogenerate -m "description"
 python scripts/seed_database.py
 
 # Verify Redis checkpoints
-docker exec yonca-redis redis-cli KEYS "langgraph:*"
+docker exec ALİM-redis redis-cli KEYS "langgraph:*"
 
 # ═══════════════════════════════════════════════════════
 # DEVELOPMENT SERVERS
@@ -603,7 +603,7 @@ chainlit run app.py -w --port 8501
 # Start FastAPI Backend (for mobile app testing)
 cd C:\Users\rjjaf\_Projects\yonja
 .\.venv\Scripts\Activate.ps1
-uvicorn yonca.api.main:app --reload --port 8000
+uvicorn ALİM.api.main:app --reload --port 8000
 
 # Test FastAPI endpoints
 curl http://localhost:8000/health
@@ -692,7 +692,7 @@ mindmap
 | Document | Purpose |
 |:---------|:--------|
 | [18-ENTERPRISE-INTEGRATION-ROADMAP](18-ENTERPRISE-INTEGRATION-ROADMAP.md) | Detailed partnership strategy, technical specs, action items |
-| [19-YONCA-AI-INTEGRATION-UNIVERSE](19-YONCA-AI-INTEGRATION-UNIVERSE.md) | Visual integration landscape, data flows, phased timeline |
+| [19-ALİM-AI-INTEGRATION-UNIVERSE](19-ALİM-AI-INTEGRATION-UNIVERSE.md) | Visual integration landscape, data flows, phased timeline |
 | [00-IMPLEMENTATION-BACKLOG](00-IMPLEMENTATION-BACKLOG.md) | Prioritized integration tasks (items 0.1-0.7) |
 | [14-DISCOVERY-QUESTIONS](14-DISCOVERY-QUESTIONS.md) | Schema validation questions for Digital Umbrella |
 

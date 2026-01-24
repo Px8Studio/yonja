@@ -25,6 +25,7 @@ from services.actions import (
     prompt_agent_mode,
     show_data_consent_prompt,
 )
+from services.alim_client import alimClient
 from services.audio import (
     handle_audio_chunk,
     handle_audio_end,
@@ -38,12 +39,11 @@ from services.lifecycle import (
 )
 from services.mock_data import MockDataService, get_demo_farms
 from services.welcome import send_dashboard_welcome
-from services.yonca_client import YoncaClient
 
 __all__ = [
     # Legacy exports
     "MockDataService",
-    "YoncaClient",
+    "AlimClient",
     "get_demo_farms",
     # Lifecycle
     "handle_chat_start",

@@ -1,6 +1,6 @@
-# 🌿 Yonca AI — Intelligent Farming Assistant
+# 🌿 ALİM — Ağıllı Lokal İdarəetmə Mütəxəssisi
 
-**Yonca AI** (branded as **ALEM** - Agronomical Logic & Evaluation Model) is a specialized AI assistant for Azerbaijani farmers. It combines localized agricultural knowledge with real-time data to provide actionable advice.
+**ALİM** (Intelligent Local Management Specialist) is a specialized AI assistant for Azerbaijani farmers. It combines localized agricultural knowledge with real-time data to provide actionable advice.
 
 ## 📚 Documentation
 

@@ -1,5 +1,5 @@
 # tests/conftest.py
-"""Pytest fixtures and configuration for Yonca AI tests."""
+"""Pytest fixtures and configuration for ALİM tests."""
 
 import sys
 from collections.abc import AsyncIterator
@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
-from yonca.llm.providers.base import LLMMessage, LLMProvider, LLMResponse
+from alim.llm.providers.base import LLMMessage, LLMProvider, LLMResponse
 
 # Add demo-ui to path so tests can import from services and data_layer
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -121,7 +121,7 @@ def mock_llm_provider_factory():
 def sample_messages() -> list[LLMMessage]:
     """Sample conversation messages for testing."""
     return [
-        LLMMessage.system("Sən Yonca AI kənd təsərrüfatı köməkçisisən."),
+        LLMMessage.system("Sən ALİM kənd təsərrüfatı köməkçisisən."),
         LLMMessage.user("Buğda əkmək üçün ən yaxşı vaxt nədir?"),
     ]
 
@@ -130,7 +130,7 @@ def sample_messages() -> list[LLMMessage]:
 def sample_multi_turn_messages() -> list[LLMMessage]:
     """Multi-turn conversation messages for testing."""
     return [
-        LLMMessage.system("Sən Yonca AI kənd təsərrüfatı köməkçisisən."),
+        LLMMessage.system("Sən ALİM kənd təsərrüfatı köməkçisisən."),
         LLMMessage.user("Pomidorlarım saraldı."),
         LLMMessage.assistant("Bu çox güman ki, azot çatışmazlığıdır. Torpağınız necədir?"),
         LLMMessage.user("Torpaq qurudur."),

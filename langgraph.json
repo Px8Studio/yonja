@@ -1,14 +1,16 @@
 {
     "$schema": "https://langchain-ai.github.io/langgraph/langgraph.json",
-    "dependencies": ["."],
+    "dependencies": [
+        "."
+    ],
     "graphs": {
-        "yonca_agent": "./src/yonca/agent/graph.py:create_agent_graph"
+        "alim_agent": "./src/alim/agent/graph.py:create_agent_graph"
     },
     "env": ".env",
     "python_version": "3.12",
     "store": {
         "type": "postgres",
-        "uri": "postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST:-localhost}:${PGPORT:-5433}/${PGDATABASE:-yonca}"
+        "uri": "postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST:-localhost}:${PGPORT:-5433}/${PGDATABASE:-alim}"
     },
     "watch": {
         "ignore": [

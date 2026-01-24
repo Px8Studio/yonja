@@ -83,7 +83,7 @@ CREATE INDEX ix_threads_userId ON threads("userId");
 {
   "farm_id": "demo_farm_001",
   "expertise_areas": ["cotton", "advanced"],
-  "alem_persona_fin": "4F7U713",
+  "alim_persona_fin": "4F7U713",
   "language": "az",
   "active_model": {"provider": "ollama", "model": "qwen3:4b"}
 }
@@ -199,16 +199,16 @@ CREATE INDEX ix_feedbacks_forId ON feedbacks("forId");
 ```
 📍 Location: PostgreSQL Database
    Host: localhost:5433
-   Database: yonca
-   User: yonca
-   Password: yonca_dev_password
+   Database: ALİM
+   User: ALİM
+   Password: ALİM_dev_password
 
 Tables:
 ├── Domain Tables (Your Business Logic)
 │   ├── user_profiles
 │   ├── farms
 │   ├── parcels
-│   ├── alem_personas
+│   ├── alim_personas
 │   └── ...
 │
 └── Chainlit Tables (UI Persistence) ✅
@@ -267,11 +267,11 @@ ALTER TABLE farms ADD COLUMN geolocation point;
 │  • users → OAuth identity             • user_profiles → Real│
 │  • threads → UI conversations         • farms → Real farms  │
 │  • steps → Chat messages              • parcels → Real land │
-│  • elements → Attachments             • alem_personas →     │
+│  • elements → Attachments             • alim_personas →     │
 │  • feedbacks → Reactions              •   Synthetic farmers │
 │                                                              │
 │  Link via:                            Link via:             │
-│  users.id ──FK──▶ alem_personas.chainlit_user_id           │
+│  users.id ──FK──▶ alim_personas.chainlit_user_id           │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -317,7 +317,7 @@ CREATE INDEX ix_elements_forId ON elements("forId");
 CREATE INDEX ix_feedbacks_forId ON feedbacks("forId");
 
 -- ✅ Add for your domain tables
-CREATE INDEX ix_alem_personas_chainlit_user_id ON alem_personas(chainlit_user_id);
+CREATE INDEX ix_alim_personas_chainlit_user_id ON alim_personas(chainlit_user_id);
 CREATE INDEX ix_user_profiles_email ON user_profiles(email);
 ```
 
@@ -339,7 +339,7 @@ Changing column names or types will break Chainlit persistence.
 If you need custom fields:
 1. Add them to metadata JSON columns (threads.metadata, etc)
 2. Create separate domain tables (user_profiles, farms, etc)
-3. Link via foreign keys (e.g., alem_personas.chainlit_user_id → users.id)
+3. Link via foreign keys (e.g., alim_personas.chainlit_user_id → users.id)
 """
 
 def upgrade() -> None:
@@ -432,7 +432,7 @@ cl.user_session.get("chat_profile") # Active profile name
 
 # ✅ Your custom keys:
 cl.user_session.set("farm_id", "F123")
-cl.user_session.set("alem_persona", {...})
+cl.user_session.set("alim_persona", {...})
 ```
 
 ### 3. Data Layer Registration
@@ -441,7 +441,7 @@ cl.user_session.set("alem_persona", {...})
 # Must use this EXACT decorator:
 @cl.data_layer
 def _get_data_layer():
-    return YoncaDataLayer(conninfo=db_url)
+    return ALİMDataLayer(conninfo=db_url)
 
 # ❌ Cannot use custom names:
 @cl.my_data_layer  # Won't work
@@ -482,7 +482,7 @@ def _get_data_layer():
 |----------------|-----|
 | Add custom fields | Use `metadata` JSON columns |
 | Store business data | Create separate domain tables |
-| Link data | Foreign keys: `alem_personas.chainlit_user_id → users.id` |
+| Link data | Foreign keys: `alim_personas.chainlit_user_id → users.id` |
 | Index optimization | Add indexes on your domain tables |
 
 ---

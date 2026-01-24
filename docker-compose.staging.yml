@@ -12,7 +12,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.langgraph
-    container_name: yonca-langgraph-staging
+    container_name: ALİM-langgraph-staging
     environment:
       - ALIM_ENVIRONMENT=staging
       - ALIM_INFRASTRUCTURE_MODE=cloud
@@ -24,18 +24,18 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - yonca-network
+      - ALİM-network
     restart: unless-stopped
 
   # ─────────────────────────────────────────────────────────────
-  # Yonca AI API (Staging)
+  # ALİM API (Staging)
   # ─────────────────────────────────────────────────────────────
   api:
     build:
       context: .
       target: production
       dockerfile: Dockerfile
-    container_name: yonca-api-staging
+    container_name: ALİM-api-staging
     ports:
       - "8000:8000"
     environment:
@@ -52,7 +52,7 @@ services:
       langgraph:
         condition: service_healthy
     networks:
-      - yonca-network
+      - ALİM-network
     restart: unless-stopped
 
   # ─────────────────────────────────────────────────────────────
@@ -63,7 +63,7 @@ services:
       context: .
       dockerfile: demo-ui/Dockerfile
       target: production
-    container_name: yonca-demo-ui-staging
+    container_name: ALİM-demo-ui-staging
     ports:
       - "8501:8501"
     environment:
@@ -80,5 +80,5 @@ services:
       langgraph:
         condition: service_healthy
     networks:
-      - yonca-network
+      - ALİM-network
     restart: unless-stopped

@@ -1,4 +1,4 @@
-# Yonca AI - Project Context & Rules
+# ALİM - Project Context & Rules
 
 ## 🧠 Core Principles
 1.  **12-Factor App**: Adhere strictly to 12-factor principles. Config in env, backing services attached resources, strict separation of build/release/run.
@@ -31,7 +31,7 @@
 ### Quality & Workflow
 *   **Pre-Commit**: Ruff linting and formatting are enforced.
 *   **MCP Integration**:
-    *   Use **backend-managed connectors** (preloaded via `yonca.mcp.adapters`).
+    *   Use **backend-managed connectors** (preloaded via `ALİM.mcp.adapters`).
     *   Profile-based access: `agent` profile gets full tools; `fast`/`thinking` get none.
     *   Handling race conditions: Implement retry logic for MCP connections.
 

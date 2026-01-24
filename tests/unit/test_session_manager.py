@@ -48,7 +48,7 @@ def mock_data_layer():
     mock_user = MagicMock()
     mock_user.identifier = "test_user_id"
     mock_user.metadata = {
-        "yonca_preferences": {
+        "alim_preferences": {
             "farm_id": "farm_123",
             "chat_profile": "Ask",
             "expertise_areas": ["irrigation"],
@@ -112,7 +112,7 @@ class TestSessionManager:
             _, kwargs = mock_data_layer.update_user.call_args
             assert kwargs["user_id"] == "test_user_id"
             metadata = json.loads(kwargs["metadata"])
-            assert metadata["yonca_preferences"] == new_prefs
+            assert metadata["alim_preferences"] == new_prefs
 
     @pytest.mark.asyncio
     async def test_restore_session(self, mock_data_layer, mock_chainlit_session):
@@ -127,7 +127,7 @@ class TestSessionManager:
             # Verify calls were made for expected keys
             keys_set = [call[0][0] for call in calls]
             assert "farm_id" in keys_set
-            # Restore logic maps yonca_preferences to session keys
+            # Restore logic maps alim_preferences to session keys
             # Verify basic restore logic
             assert "chat_profile" in keys_set
             assert "expertise_areas" in keys_set
@@ -144,7 +144,7 @@ class TestSessionManager:
             # Check specific update logic
             _, kwargs = mock_data_layer.update_user.call_args
             metadata = json.loads(kwargs["metadata"])
-            assert metadata["yonca_preferences"]["farm_id"] == "new_farm"
+            assert metadata["alim_preferences"]["farm_id"] == "new_farm"
 
     @pytest.mark.asyncio
     async def test_save_custom_preferences(self, mock_data_layer):
@@ -158,7 +158,7 @@ class TestSessionManager:
 
             _, kwargs = mock_data_layer.update_user.call_args
             metadata = json.loads(kwargs["metadata"])
-            prefs = metadata["yonca_preferences"]
+            prefs = metadata["alim_preferences"]
             assert prefs["language"] == "English"
             assert prefs["detail_level"] == "High"
             # Ensure existing prefs preserved

@@ -1,4 +1,4 @@
-# Render.com Blueprint for Yonca AI
+# Render.com Blueprint for ALİM
 # https://render.com/docs/blueprint-spec
 #
 # Deploy with: render blueprint apply
@@ -6,33 +6,33 @@
 
 services:
   # ============================================
-  # Yonca API (FastAPI Backend)
+  # ALİM API (FastAPI Backend)
   # ============================================
   - type: web
-    name: yonca-api
+    name: ALİM-api
     runtime: python
     plan: starter  # $7/month, can upgrade for production
     region: frankfurt  # Closest to Azerbaijan
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn yonca.api.main:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn ALİM.api.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       # Deployment Configuration (Two-Axis Model)
-      - key: YONCA_ENVIRONMENT
+      - key: ALİM_ENVIRONMENT
         value: production
-      - key: YONCA_INFRASTRUCTURE_MODE
+      - key: ALİM_INFRASTRUCTURE_MODE
         value: cloud
-      - key: YONCA_LANGGRAPH_REQUIRED
+      - key: ALİM_LANGGRAPH_REQUIRED
         value: true
 
       # LangGraph Connector
-      - key: YONCA_LANGGRAPH_BASE_URL
-        value: https://yonca-langgraph.onrender.com
-      - key: YONCA_LANGGRAPH_GRAPH_ID
-        value: yonca_agent
+      - key: ALİM_LANGGRAPH_BASE_URL
+        value: https://ALİM-langgraph.onrender.com
+      - key: ALİM_LANGGRAPH_GRAPH_ID
+        value: ALİM_agent
 
       # LLM Provider (Gemini for cloud)
-      - key: YONCA_LLM_PROVIDER
+      - key: ALİM_LLM_PROVIDER
         value: gemini
       - key: GEMINI_API_KEY
         sync: false
@@ -40,32 +40,32 @@ services:
         value: gemini-2.0-flash
 
       # Database
-      - key: YONCA_DATABASE_URL
+      - key: ALİM_DATABASE_URL
         fromDatabase:
-          name: yonca-db
+          name: ALİM-db
           property: connectionString
 
       # Security
-      - key: YONCA_JWT_SECRET
+      - key: ALİM_JWT_SECRET
         generateValue: true
-      - key: YONCA_JWT_ALGORITHM
+      - key: ALİM_JWT_ALGORITHM
         value: HS256
 
       # Observability
-      - key: YONCA_LANGFUSE_ENABLED
+      - key: ALİM_LANGFUSE_ENABLED
         value: true
-      - key: YONCA_LANGFUSE_HOST
-        value: https://yonca-langfuse.onrender.com
+      - key: ALİM_LANGFUSE_HOST
+        value: https://ALİM-langfuse.onrender.com
       - key: LOG_LEVEL
         value: INFO
     depends_on:
-      - yonca-langgraph
+      - ALİM-langgraph
 
   # ============================================
   # Chainlit Demo UI
   # ============================================
   - type: web
-    name: yonca-demo
+    name: ALİM-demo
     runtime: python
     plan: starter
     region: frankfurt
@@ -74,60 +74,60 @@ services:
     healthCheckPath: /
     envVars:
       # Deployment settings
-      - key: YONCA_ENVIRONMENT
+      - key: ALİM_ENVIRONMENT
         value: production
-      - key: YONCA_INFRASTRUCTURE_MODE
+      - key: ALİM_INFRASTRUCTURE_MODE
         value: cloud
-      - key: YONCA_LANGGRAPH_REQUIRED
+      - key: ALİM_LANGGRAPH_REQUIRED
         value: true
 
       # Service Connectors
-      - key: YONCA_LANGGRAPH_BASE_URL
-        value: https://yonca-langgraph.onrender.com
-      - key: YONCA_API_URL
-        value: https://yonca-api.onrender.com
+      - key: ALİM_LANGGRAPH_BASE_URL
+        value: https://ALİM-langgraph.onrender.com
+      - key: ALİM_API_URL
+        value: https://ALİM-api.onrender.com
 
       # Database
-      - key: YONCA_DATABASE_URL
+      - key: ALİM_DATABASE_URL
         fromDatabase:
-          name: yonca-db
+          name: ALİM-db
           property: connectionString
       - key: CHAINLIT_DATABASE_URL
         fromDatabase:
-          name: yonca-db
+          name: ALİM-db
           property: connectionString
 
       # Python path
       - key: PYTHONPATH
         value: /opt/render/project/src/src:/opt/render/project/src/demo-ui
     depends_on:
-      - yonca-api
-      - yonca-langgraph
+      - ALİM-api
+      - ALİM-langgraph
 
 # ============================================
 # LangGraph Runtime (Production Agent Server)
 # ============================================
   - type: web
-    name: yonca-langgraph
+    name: ALİM-langgraph
     runtime: docker
     plan: starter
     region: frankfurt
     dockerfilePath: Dockerfile.langgraph
     healthCheckPath: /health
     envVars:
-      - key: YONCA_ENVIRONMENT
+      - key: ALİM_ENVIRONMENT
         value: production
-      - key: YONCA_INFRASTRUCTURE_MODE
+      - key: ALİM_INFRASTRUCTURE_MODE
         value: cloud
-      - key: YONCA_LANGGRAPH_REQUIRED
+      - key: ALİM_LANGGRAPH_REQUIRED
         value: true
-      - key: YONCA_LLM_PROVIDER
+      - key: ALİM_LLM_PROVIDER
         value: gemini
       - key: GEMINI_API_KEY
         sync: false
       - key: LANGGRAPH_POSTGRES_URI
         fromDatabase:
-          name: yonca-db
+          name: ALİM-db
           property: connectionString
       - key: PYTHONPATH
         value: /app/src
@@ -137,7 +137,7 @@ services:
 # ============================================
 # LLM tracing & analytics with 100% data residency
   - type: web
-    name: yonca-langfuse
+    name: ALİM-langfuse
     runtime: docker
     plan: starter  # $7/month
     region: frankfurt
@@ -157,7 +157,7 @@ services:
       - key: SALT
         generateValue: true
       - key: NEXTAUTH_URL
-        value: https://yonca-langfuse.onrender.com
+        value: https://ALİM-langfuse.onrender.com
       - key: TELEMETRY_ENABLED
         value: false
       - key: AUTH_DISABLE_SIGNUP
@@ -167,11 +167,11 @@ services:
 # Database (PostgreSQL - Application)
 # ============================================
 databases:
-  - name: yonca-db
+  - name: ALİM-db
     plan: starter  # $7/month, 1GB storage
     region: frankfurt
-    databaseName: yonca
-    user: yonca
+    databaseName: ALİM
+    user: ALİM
     postgresMajorVersion: 15
 
   - name: langfuse-db

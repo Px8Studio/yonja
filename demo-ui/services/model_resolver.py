@@ -1,8 +1,8 @@
 import chainlit as cl
+from alim.config import AgentMode
+from alim.config import settings as yonca_settings
 from config import settings as demo_settings
 from constants import LLM_MODEL_PROFILES
-from yonca.config import AgentMode
-from yonca.config import settings as yonca_settings
 
 
 def resolve_active_model() -> dict:

@@ -1,8 +1,8 @@
 # demo-ui/components/spinners.py
-"""ALEM-branded loading indicators and spinners.
+"""ALİM-branded loading indicators and spinners.
 
 Provides reusable, visually consistent loading states that match
-the agricultural theme and ALEM branding.
+the agricultural theme and ALİM branding.
 """
 
 from typing import Literal
@@ -10,7 +10,7 @@ from typing import Literal
 # ============================================
 # SPINNER CONFIGURATIONS
 # ============================================
-# All spinners use the 🌿 clover emoji as the core ALEM brand element
+# All spinners use the 🌿 clover emoji as the core ALİM brand element
 
 SpinnerType = Literal[
     "thinking",  # Agent is processing/reasoning
@@ -43,7 +43,7 @@ SPINNER_MESSAGES: dict[SpinnerType, str] = {
 
 
 def get_spinner_html(spinner_type: SpinnerType, message: str | None = None) -> str:
-    """Get HTML for animated spinner with ALEM branding.
+    """Get HTML for animated spinner with ALİM branding.
 
     Args:
         spinner_type: Type of operation being performed
@@ -60,7 +60,7 @@ def get_spinner_html(spinner_type: SpinnerType, message: str | None = None) -> s
 
     # Use CSS animation defined in custom.css
     return f"""
-<div class="alem-spinner">
+<div class="ALİM-spinner">
     <div class="spinner-icon">🌿</div>
     <div class="spinner-text">{display_message}</div>
 </div>
@@ -90,7 +90,7 @@ def get_inline_spinner(spinner_type: SpinnerType) -> str:
 
 
 def get_progress_bar(percentage: int, label: str = "İrəliləyiş") -> str:
-    """Get HTML progress bar with ALEM styling.
+    """Get HTML progress bar with ALİM styling.
 
     Args:
         percentage: Progress (0-100)
@@ -106,7 +106,7 @@ def get_progress_bar(percentage: int, label: str = "İrəliləyiş") -> str:
     percentage = max(0, min(100, percentage))  # Clamp to 0-100
 
     return f"""
-<div class="alem-progress">
+<div class="ALİM-progress">
     <div class="progress-label">{label}</div>
     <div class="progress-bar-container">
         <div class="progress-bar-fill" style="width: {percentage}%"></div>
@@ -143,7 +143,7 @@ def get_step_indicator(
     percentage = int((current_step / total_steps) * 100)
 
     return f"""
-<div class="alem-step-indicator">
+<div class="ALİM-step-indicator">
     <div class="step-header">
         <span class="step-number">Addım {current_step}/{total_steps}</span>
         <span class="step-percentage">{percentage}%</span>

@@ -249,12 +249,12 @@ class CommandRegistry:
     async def _handle_help(self):
         """Show help message with all commands."""
         help_text = self.get_help_text()
-        await cl.Message(content=help_text, author="ALEM").send()
+        await cl.Message(content=help_text, author="ALİM").send()
 
     async def _handle_mcp_status(self):
         """Show MCP server status."""
         try:
-            from yonca.config import AgentMode
+            from alim.config import AgentMode
 
             from services.mcp_connector import format_mcp_status, get_mcp_status
 
@@ -297,28 +297,28 @@ class CommandRegistry:
         """Get weather forecast."""
         await cl.Message(
             content="🌤️ **Weather Forecast**\n\nFetching weather data... (Integration pending)",
-            author="ALEM",
+            author="ALİM",
         ).send()
 
     async def _handle_irrigation(self):
         """Get irrigation recommendations."""
         await cl.Message(
             content="💧 **Irrigation Recommendations**\n\nAnalyzing soil moisture and weather... (Integration pending)",
-            author="ALEM",
+            author="ALİM",
         ).send()
 
     async def _handle_subsidy(self):
         """Check subsidy eligibility."""
         await cl.Message(
             content="📋 **Subsidy Information**\n\nChecking available subsidies for your farm... (Integration pending)",
-            author="ALEM",
+            author="ALİM",
         ).send()
 
     async def _handle_calendar(self):
         """Show agricultural calendar."""
         await cl.Message(
             content="📅 **Agricultural Calendar**\n\nLoading seasonal recommendations... (Integration pending)",
-            author="ALEM",
+            author="ALİM",
         ).send()
 
     async def _handle_image(self, description: str | None = None):
@@ -333,7 +333,7 @@ class CommandRegistry:
         # Send processing message
         processing_msg = await cl.Message(
             content=f"🎨 **Generating image**\n\n`{description}`\n\nProvider: Intelligent auto-selection (Ollama → Groq → HF → OpenAI)",
-            author="ALEM",
+            author="ALİM",
         ).send()
 
         try:
@@ -358,7 +358,7 @@ class CommandRegistry:
                     await processing_msg.remove()
                     processing_msg = await cl.Message(
                         content=f"🎨 **Generating image** via {provider_label}\n\n`{description}`",
-                        author="ALEM",
+                        author="ALİM",
                     ).send()
 
                     # Generate image
@@ -385,7 +385,7 @@ class CommandRegistry:
                 await cl.Message(
                     content=f"✨ **Image Generated** via {used_provider}\n\n`{description}`",
                     elements=[image_element],
-                    author="ALEM",
+                    author="ALİM",
                 ).send()
 
                 logger.info(f"image_generation_success: provider={used_provider}")

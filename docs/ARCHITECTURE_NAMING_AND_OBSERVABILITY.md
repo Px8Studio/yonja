@@ -90,7 +90,7 @@
 ```env
 # Layer 1: LangChain/LangGraph Verbosity
 LANGCHAIN_TRACING_V2=true
-LANGCHAIN_PROJECT=yonca-dev
+LANGCHAIN_PROJECT=ALİM-dev
 LOG_LEVEL=DEBUG
 
 # Layer 3: Langfuse
@@ -129,7 +129,7 @@ LANGFUSE_HOST=http://localhost:3001
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           YONCA AI SYSTEM ARCHITECTURE                          │
+│                           ALİM SYSTEM ARCHITECTURE                          │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
 │  ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐            │
@@ -141,7 +141,7 @@ LANGFUSE_HOST=http://localhost:3001
 │           │  HTTP/SSE             │  Loads Graph                                │
 │           │                       ▼                                             │
 │           │              ┌─────────────────┐                                    │
-│           │              │ AGENT GRAPH     │◀── src/yonca/agent/graph.py       |
+│           │              │ AGENT GRAPH     │◀── src/ALİM/agent/graph.py       |
 │           │              │ (StateGraph)    │                                    │
 │           │              └────────┬────────┘                                    │
 │           │                       │                                             │
@@ -190,7 +190,7 @@ LANGFUSE_HOST=http://localhost:3001
 │            ▼                                                                     │
 │  [2] LANGGRAPH DEV SERVER (localhost:2024)                                      │
 │      │                                                                           │
-│      │ Loads: langgraph.json → src/yonca/agent/graph.py:create_agent_graph     │
+│      │ Loads: langgraph.json → src/ALİM/agent/graph.py:create_agent_graph     │
 │      ▼                                                                           │
 │  ┌────────────────────────────────────────────────────────────────────┐         │
 │  │                    STATE MACHINE EXECUTION                         │         │
@@ -223,15 +223,15 @@ LANGFUSE_HOST=http://localhost:3001
 ### Where Is What? Quick Reference
 
 ```
-yonca/
+ALİM/
 ├── demo-ui/                          🖥️ CHAINLIT UI LAYER
 │   ├── app.py                        Main UI application (3000+ lines)
 │   ├── data_layer.py                 PostgreSQL persistence for threads
 │   ├── storage_postgres.py           File storage in PostgreSQL
 │   ├── config.py                     UI-specific settings
-│   └── alem_persona.py               User persona generation
+│   └── alim_persona.py               User persona generation
 │
-├── src/yonca/                        🧠 CORE INTELLIGENCE
+├── src/ALİM/                        🧠 CORE INTELLIGENCE
 │   │
 │   ├── agent/                        📊 LANGGRAPH AGENT
 │   │   ├── graph.py                  StateGraph definition (entry point)
@@ -299,7 +299,7 @@ yonca/
 │                    │                │                │                          │
 │                    ▼                ▼                ▼                          │
 │         ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                    │
-│         │ data_layer   │  │ langgraph/   │  │ alem_persona │                    │
+│         │ data_layer   │  │ langgraph/   │  │ alim_persona │                    │
 │         │ (persistence)│  │   client.py  │  │ (JIT users)  │                    │
 │         └──────────────┘  └──────┬───────┘  └──────────────┘                    │
 │                                  │                                               │
@@ -393,10 +393,10 @@ yonca/
 |------|-------|--------------|
 | UI starts | `demo-ui/app.py` | `@cl.on_chat_start` |
 | Message handling | `demo-ui/app.py` | `@cl.on_message` |
-| LangGraph invocation | `src/yonca/langgraph/client.py` | `LangGraphClient.stream()` |
-| Graph definition | `src/yonca/agent/graph.py` | `create_agent_graph()` |
-| State schema | `src/yonca/agent/state.py` | `AgentState` TypedDict |
-| MCP calls | `src/yonca/mcp/client.py` | `MCPClient.call_tool()` |
+| LangGraph invocation | `src/ALİM/langgraph/client.py` | `LangGraphClient.stream()` |
+| Graph definition | `src/ALİM/agent/graph.py` | `create_agent_graph()` |
+| State schema | `src/ALİM/agent/state.py` | `AgentState` TypedDict |
+| MCP calls | `src/ALİM/mcp/client.py` | `MCPClient.call_tool()` |
 
 ---
 

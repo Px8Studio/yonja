@@ -1,4 +1,4 @@
-# 🌌 Yonca AI Integration Universe
+# 🌌 ALİM Integration Universe
 
 > **Purpose:** Visual map of all current and future integrations for ALEM's enterprise ecosystem.
 
@@ -6,7 +6,7 @@
 
 ## 🎯 The Complete Integration Landscape
 
-This document provides a comprehensive visual representation of Yonca AI's integration strategy, showing both implemented systems and planned partnerships across government, financial, data, and enterprise sectors.
+This document provides a comprehensive visual representation of ALİM's integration strategy, showing both implemented systems and planned partnerships across government, financial, data, and enterprise sectors.
 
 ---
 
@@ -25,9 +25,9 @@ flowchart LR
         lf["📊 Langfuse<br/><i>traces</i>"]
     end
 
-    subgraph existing["✅ EXISTING (Via Yonca Mobile)"]
+    subgraph existing["✅ EXISTING (Via ALİM Mobile)"]
         ektis["🏛️ EKTIS<br/><i>100k farms</i>"]
-        yonca["📱 Yonca Mobile<br/><i>DigiRella</i>"]
+        ALİM["📱 ALİM Mobile<br/><i>DigiRella</i>"]
     end
 
     subgraph p1["🔮 Phase 1"]
@@ -57,14 +57,14 @@ flowchart LR
     end
 
     %% Existing (green solid)
-    ektis ==>|"✅"| yonca
+    ektis ==>|"✅"| ALİM
 
     %% Current ALEM internal connections (blue solid)
     ui --> alem
     alem --> db & groq & redis & lf
 
-    %% Future via Yonca (orange dashed)
-    yonca -.->|"🔮 A"| db
+    %% Future via ALİM (orange dashed)
+    ALİM -.->|"🔮 A"| db
 
     %% Future direct (purple dashed)
     sima -.->|"🔮"| ui
@@ -82,9 +82,9 @@ flowchart LR
 ```
 
 **Legend:**
-- ✅ **Solid green** = Yonca Mobile's existing integrations
+- ✅ **Solid green** = ALİM Mobile's existing integrations
 - ✅ **Solid blue** = ALEM currently implemented
-- 🔮 **Dashed A** = Future via Yonca Mobile (Option A)
+- 🔮 **Dashed A** = Future via ALİM Mobile (Option A)
 - 🔮 **Dashed purple** = Future direct partnerships
 - **Phases** = Priority order (see timeline below)
 
@@ -97,8 +97,8 @@ flowchart LR
 | **Groq** | LLM Provider | ✅ ALEM Live | — | 🟢 | ALEM → Groq | Benchmark only (dev) |
 | **Langfuse** | Observability | ✅ ALEM Live | — | 🟢 | ALEM → Langfuse | Self-hosted traces |
 | **Redis** | State Store | ✅ ALEM Live | — | 🟢 | ALEM ↔ Redis | Checkpoints + sessions |
-| **EKTIS** | Gov Farm Data | ✅ **Yonca Mobile** has it | — | 🟠 | **EXISTING**: EKTIS → Yonca Mobile | Digital Umbrella's integration |
-| **EKTIS (Option A)** | Gov Farm Data | 🔮 Planned | 2 | 🟠 | EKTIS → Yonca → ALEM | Via existing Yonca Mobile |
+| **EKTIS** | Gov Farm Data | ✅ **ALİM Mobile** has it | — | 🟠 | **EXISTING**: EKTIS → ALİM Mobile | Digital Umbrella's integration |
+| **EKTIS (Option A)** | Gov Farm Data | 🔮 Planned | 2 | 🟠 | EKTIS → ALİM → ALEM | Via existing ALİM Mobile |
 | **EKTIS (Option B)** | Gov Farm Data | 🔮 Planned | 2 | 🟠 | EKTIS → ALEM | Direct API (new partnership) |
 | **SİMA/ASAN** | Gov Auth | ⏳ Planned | 1 | 🔴 | User → SİMA → ALEM | Replace OAuth |
 | **Weather APIs** | Data Service | ⏳ Planned | 2 | 🟠 | Weather → ALEM | Forecasts + IoT |
@@ -155,7 +155,7 @@ flowchart TB
     end
 
     subgraph presentation["🖥️ PRESENTATION"]
-        mobile["📱 Yonca Mobile<br/>(Digital Umbrella)"]
+        mobile["📱 ALİM Mobile<br/>(Digital Umbrella)"]
         web["🌐 Chainlit UI<br/>(ZekaLab)"]
     end
 

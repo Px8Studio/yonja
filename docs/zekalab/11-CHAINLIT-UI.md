@@ -44,7 +44,7 @@ flowchart TB
         llm["🤖 LLM Provider"]
     end
 
-    subgraph appdata["💾 Yonca App Data"]
+    subgraph appdata["💾 ALİM App Data"]
         subgraph pg_app["🐘 PostgreSQL :5433"]
             app_tables["users, threads, farms..."]
         end
@@ -162,8 +162,8 @@ demo-ui/
 ├── app.py                    # Main Chainlit app (1784 lines)
 ├── config.py                 # Configuration
 ├── data_layer.py             # SQLAlchemy persistence
-├── alem_persona.py           # Farmer persona management
-├── alem_persona_db.py        # Persona database operations
+├── alim_persona.py           # Farmer persona management
+├── alim_persona_db.py        # Persona database operations
 ├── chainlit.md               # Welcome message
 ├── .chainlit/
 │   └── config.toml           # Chainlit config
@@ -176,7 +176,7 @@ demo-ui/
 │   ├── farm_selector.py      # Farm selection UI
 │   └── spinners.py           # Loading indicators
 └── services/
-    ├── yonca_client.py       # API client
+    ├── ALİM_client.py       # API client
     ├── langfuse_insights.py  # Langfuse data fetch
     └── mock_data.py          # Demo data
 ```
@@ -190,8 +190,8 @@ demo-ui/
 Chainlit provides first-class LangGraph support via callbacks:
 
 ```python
-from yonca.agent.graph import compile_agent_graph
-from yonca.agent.memory import get_checkpointer_async
+from ALİM.agent.graph import compile_agent_graph
+from ALİM.agent.memory import get_checkpointer_async
 
 @cl.on_message
 async def on_message(message: cl.Message):
@@ -247,11 +247,11 @@ async def on_audio_end(elements: list[cl.Audio]):
 
 ```bash
 # demo-ui/.env
-DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca
+DATABASE_URL=postgresql+asyncpg://ALİM:ALİM_dev_password@localhost:5433/ALİM
 OAUTH_GOOGLE_CLIENT_ID=...
 OAUTH_GOOGLE_CLIENT_SECRET=...
-YONCA_LANGFUSE_SECRET_KEY=sk-lf-...
-YONCA_LANGFUSE_PUBLIC_KEY=pk-lf-...
+ALİM_LANGFUSE_SECRET_KEY=sk-lf-...
+ALİM_LANGFUSE_PUBLIC_KEY=pk-lf-...
 ```
 
 ### Chainlit Config (`.chainlit/config.toml`)
@@ -312,11 +312,11 @@ Open http://localhost:8501
 
 ```bash
 # demo-ui/.env
-DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca
+DATABASE_URL=postgresql+asyncpg://ALİM:ALİM_dev_password@localhost:5433/ALİM
 OAUTH_GOOGLE_CLIENT_ID=...
 OAUTH_GOOGLE_CLIENT_SECRET=...
-YONCA_LANGFUSE_SECRET_KEY=sk-lf-...
-YONCA_LANGFUSE_PUBLIC_KEY=pk-lf-...
+ALİM_LANGFUSE_SECRET_KEY=sk-lf-...
+ALİM_LANGFUSE_PUBLIC_KEY=pk-lf-...
 ```
 
 ### Chainlit Config (`.chainlit/config.toml`)

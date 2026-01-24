@@ -286,7 +286,7 @@ echo $OPENAI_API_KEY                  # OpenAI
 docker ps | grep ollama
 
 # Logs
-docker logs yonca-ollama
+docker logs ALİM-ollama
 
 # Test API
 curl http://localhost:11434/api/tags

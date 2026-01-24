@@ -60,7 +60,7 @@ ALEM integrates external tools via **Model Context Protocol (MCP)** using the of
 ## 📁 Key Files
 
 ```
-src/yonca/
+src/ALİM/
 ├── mcp/
 │   └── adapters.py              # MCP client config (langchain-mcp-adapters)
 ├── mcp_server/
@@ -92,7 +92,7 @@ langgraph.json                   # Graph config + MCP env vars
 ```json
 {
   "graphs": {
-    "yonca_agent": "./src/yonca/agent/graph.py:make_graph"
+    "ALİM_agent": "./src/ALİM/agent/graph.py:make_graph"
   },
   "env": ".env"
 }
@@ -111,7 +111,7 @@ ZEKALAB_MCP_SECRET=optional-auth-token
 
 ```powershell
 # 1. Start ZekaLab MCP Server (VS Code task or manual)
-.venv\Scripts\python.exe -m uvicorn yonca.mcp_server.zekalab_fastmcp:mcp --port 7777
+.venv\Scripts\python.exe -m uvicorn ALİM.mcp_server.zekalab_fastmcp:mcp --port 7777
 
 # 2. Start LangGraph Server
 langgraph dev

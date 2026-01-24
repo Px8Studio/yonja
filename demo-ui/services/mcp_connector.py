@@ -44,7 +44,7 @@ from langchain_core.tools import BaseTool
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
-from yonca.mcp.adapters import (  # noqa: E402
+from alim.mcp.adapters import (  # noqa: E402
     PROFILE_MCP_SERVERS,
     check_mcp_servers_health,
     get_mcp_client_for_profile,

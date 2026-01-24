@@ -18,7 +18,7 @@ Three powerful nodes extend ALEM's capabilities beyond text:
 **Usage:**
 
 ```python
-from yonca.llm.multimodal import create_multimodal_message
+from ALİM.llm.multimodal import create_multimodal_message
 
 msg = create_multimodal_message(
     text="This crop looks diseased. What pest is it?",
@@ -50,7 +50,7 @@ Path passed to LangGraph state
 
 **What it does:** Generates PostgreSQL queries from natural language questions.
 
-**Node:** `src/yonca/agent/nodes/nl_to_sql.py`
+**Node:** `src/ALİM/agent/nodes/nl_to_sql.py`
 
 **Trigger:** User message containing keywords like "sql", "query", "parcel", "farm"
 
@@ -69,7 +69,7 @@ Output: SELECT * FROM farms WHERE total_area_ha > 50;
 
 **Limitations:**
 - No DELETE/UPDATE/DROP — read-only enforced
-- Table names must match Yonca App DB schema
+- Table names must match ALİM App DB schema
 - Complex joins left to user refinement
 
 ---
@@ -78,7 +78,7 @@ Output: SELECT * FROM farms WHERE total_area_ha > 50;
 
 **What it does:** Analyzes uploaded crop photos and proposes farmer-facing action plans.
 
-**Node:** `src/yonca/agent/nodes/vision_to_action.py`
+**Node:** `src/ALİM/agent/nodes/vision_to_action.py`
 
 **Trigger:** User message containing keywords like "photo", "image", "şəkil"
 
@@ -100,9 +100,9 @@ Xəbərdarlıq: HIGH
 
 ## 4. SQL Executor Node
 
-**What it does:** Executes NL-generated SQL against Yonca App DB and formats results as markdown tables.
+**What it does:** Executes NL-generated SQL against ALİM App DB and formats results as markdown tables.
 
-**Node:** `src/yonca/agent/nodes/sql_executor.py`
+**Node:** `src/ALİM/agent/nodes/sql_executor.py`
 
 **Flow:**
 ```
@@ -132,7 +132,7 @@ Returns to farmer in chat
 
 **Route:** `POST /api/vision/analyze`
 
-**Code:** `src/yonca/api/routes/vision.py`
+**Code:** `src/ALİM/api/routes/vision.py`
 
 **Example:**
 
@@ -215,14 +215,14 @@ supervisor
 
 ```bash
 # Multimodal image max size
-YONCA_MAX_IMAGE_SIZE_MB=10
+ALİM_MAX_IMAGE_SIZE_MB=10
 
 # SQL executor timeout
-YONCA_SQL_EXECUTOR_TIMEOUT_SEC=30
+ALİM_SQL_EXECUTOR_TIMEOUT_SEC=30
 
 # Vision model (same as active LLM provider)
-YONCA_LLM_PROVIDER=groq
-YONCA_GROQ_MODEL=meta-llama/llama-4-maverick-17b-128e-instruct
+ALİM_LLM_PROVIDER=groq
+ALİM_GROQ_MODEL=meta-llama/llama-4-maverick-17b-128e-instruct
 ```
 
 ### Model Selection

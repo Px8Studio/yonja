@@ -25,10 +25,10 @@ import os
 
 import pytest
 import pytest_asyncio
-from yonca.llm.http_pool import HTTPClientPool
-from yonca.llm.providers.base import LLMMessage
-from yonca.llm.providers.groq import GroqProvider
-from yonca.llm.providers.ollama import OllamaProvider
+from alim.llm.http_pool import HTTPClientPool
+from alim.llm.providers.base import LLMMessage
+from alim.llm.providers.groq import GroqProvider
+from alim.llm.providers.ollama import OllamaProvider
 
 # ============================================================
 # Test Fixtures
@@ -40,7 +40,7 @@ def azerbaijani_messages() -> list[LLMMessage]:
     """Azerbaijani test messages for agricultural context."""
     return [
         LLMMessage.system(
-            "Sən Yonca AI kənd təsərrüfatı köməkçisisən. "
+            "Sən ALİM kənd təsərrüfatı köməkçisisən. "
             "Azərbaycan fermerlərə kömək edirsən. "
             "Qısa və faydalı cavablar ver."
         ),
@@ -287,7 +287,7 @@ class TestProviderFallback:
     @pytest.mark.asyncio
     async def test_get_fastest_available_provider(self, cleanup_pools):
         """Test automatic provider selection."""
-        from yonca.llm.factory import LLMProviderError, get_fastest_available_provider
+        from alim.llm.factory import LLMProviderError, get_fastest_available_provider
 
         try:
             provider = await get_fastest_available_provider()
@@ -299,7 +299,7 @@ class TestProviderFallback:
     @pytest.mark.asyncio
     async def test_check_all_providers_health(self, cleanup_pools):
         """Test health check for all configured providers."""
-        from yonca.llm.factory import check_all_providers_health
+        from alim.llm.factory import check_all_providers_health
 
         results = await check_all_providers_health()
 

@@ -72,7 +72,7 @@ async def mcp_endpoint():
 
 **New: MCP connection capture**
 ```javascript
-window.__yonca_mcp_connections__ = {
+window.__ALİM_mcp_connections__ = {
   // Captured from localStorage
   "mcp_servers": [{
     "name": "ZekaLab",
@@ -170,7 +170,7 @@ http://localhost:8501
 ## Files Modified
 
 1. `demo-ui/.chainlit/config.toml` - Enabled all features
-2. `src/yonca/mcp_server/main.py` - Fixed `/mcp` with SSE streaming
+2. `src/ALİM/mcp_server/main.py` - Fixed `/mcp` with SSE streaming
 3. `demo-ui/services/mcp_connector.py` - Added bridge function
 4. `demo-ui/public/custom.js` - Added connection capture
 

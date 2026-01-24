@@ -24,7 +24,7 @@
 ```bash
 # In VS Code, run task: 🧠 ZekaLab MCP Start
 # Or manually:
-.venv\Scripts\python.exe -m uvicorn yonca.mcp_server.main:app --port 7777 --reload
+.venv\Scripts\python.exe -m uvicorn ALİM.mcp_server.main:app --port 7777 --reload
 ```
 
 ### 2. Start Chat UI
@@ -109,7 +109,7 @@ Run task: 🧠 ZekaLab MCP Start
 3. Restart UI
 
 ### Import Errors
-**Problem:** `ModuleNotFoundError: No module named 'yonca.mcp'`
+**Problem:** `ModuleNotFoundError: No module named 'ALİM.mcp'`
 
 **Solution:**
 ```bash
@@ -135,10 +135,10 @@ chainlit run app.py
 ## Related Files
 
 - [Full Documentation](docs/MCP-IMPLEMENTATION.md)
-- [MCP Client Code](src/yonca/mcp/client.py)
-- [MCP Adapters](src/yonca/mcp/adapters.py)
-- [MCP Handlers](src/yonca/mcp/handlers/zekalab_handler.py)
-- [MCP Server](src/yonca/mcp_server/main.py)
+- [MCP Client Code](src/ALİM/mcp/client.py)
+- [MCP Adapters](src/ALİM/mcp/adapters.py)
+- [MCP Handlers](src/ALİM/mcp/handlers/zekalab_handler.py)
+- [MCP Server](src/ALİM/mcp_server/main.py)
 
 ## Testing
 

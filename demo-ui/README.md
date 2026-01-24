@@ -1,6 +1,6 @@
-# 🖥️ Yonca AI — Demo UI (Chainlit)
+# 🖥️ ALİM — Demo UI (Chainlit)
 
-Isolated Chainlit frontend for Yonca AI farming assistant.
+Isolated Chainlit frontend for ALİM farming assistant.
 
 ## 📚 Documentation
 Technical details for the UI have been moved to the central documentation folder:

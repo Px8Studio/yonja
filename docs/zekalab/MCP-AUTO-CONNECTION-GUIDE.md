@@ -64,7 +64,7 @@ async def auto_register_configured_mcps():
 
     No user action required—MCPs are automatically available.
     """
-    from yonca.mcp.adapters import get_mcp_client_config
+    from ALİM.mcp.adapters import get_mcp_client_config
 
     logger.info("auto_registering_mcps_on_chat_start")
 
@@ -284,7 +284,7 @@ class MCPRegistry:
         Returns:
             Dict of registered MCPs with metadata
         """
-        from yonca.mcp.adapters import get_mcp_client_config
+        from ALİM.mcp.adapters import get_mcp_client_config
 
         config = get_mcp_client_config()
 
@@ -637,7 +637,7 @@ demo-ui/
 └── .chainlit/
     └── config.toml                     # Optional: disable manual UI
 
-src/yonca/mcp/
+src/ALİM/mcp/
 └── adapters.py                         # Already provides config
 
 alembic/versions/
@@ -661,7 +661,7 @@ OPENWEATHER_MCP_URL=<your-openweather-url>
 OPENWEATHER_API_KEY=<your-api-key>
 
 # For persistence
-DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/yonca
+DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/ALİM
 ```
 
 ---

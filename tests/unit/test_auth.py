@@ -5,7 +5,7 @@ import time
 from unittest.mock import MagicMock
 
 import pytest
-from yonca.api.middleware.auth import (
+from alim.api.middleware.auth import (
     AuthenticatedUser,
     JWTAuthenticator,
     TokenPayload,

@@ -2,21 +2,21 @@
 # =========================================================================
 # BRAND IDENTITY & IP PROTECTION NOTICE (ZekaLab)
 # -------------------------------------------------------------------------
-# AGENT NAME: ALEM (Agronomical Logic & Evaluation Model)
-# SUBTITLE:   ALEM | Aqronom Assistentiniz
+# AGENT NAME: ALİM (Agronomical Logic & Evaluation Model)
+# SUBTITLE:   ALİM | Aqronom Assistentiniz
 # DEVELOPER:  ZekaLab (Response to DigiRella Call)
 #
 # INSTRUCTION: The term "Sidecar" is strictly prohibited in the UI,
-# documentation, and user-facing logs. ALEM is a standalone proprietary
-# service layer. All UI elements must reflect ALEM branding.
+# documentation, and user-facing logs. ALİM is a standalone proprietary
+# service layer. All UI elements must reflect ALİM branding.
 #
-# USER-FACING BRAND: ALEM (not "Yonca AI")
+# USER-FACING BRAND: ALİM (not "ALİM")
 # INTERNAL PROJECT: Yonca (codebase/technical references only)
 # =========================================================================
-"""ALEM Demo — Chainlit Application.
+"""ALİM Demo — Chainlit Application.
 
 This is the main Chainlit application that provides a demo UI
-for ALEM (Agronomical Logic & Evaluation Model) using native LangGraph integration.
+for ALİM (Agronomical Logic & Evaluation Model) using native LangGraph integration.
 
 Usage:
     chainlit run app.py -w --port 8501
@@ -107,10 +107,29 @@ except Exception as e:
 
 # Now safe to import chainlit  # noqa: E402
 import chainlit as cl  # noqa: E402
-from alem_persona import ALEMPersona, PersonaProvisioner  # noqa: E402
-from alem_persona_db import (  # noqa: E402
-    load_alem_persona_from_db,
-    save_alem_persona_to_db,
+from alim.agent.graph import compile_agent_graph  # noqa: E402
+from alim.agent.memory import get_checkpointer_async  # noqa: E402
+from alim.config import AgentMode  # noqa: E402
+from alim.config import settings as yonca_settings  # noqa: E402
+from alim.langgraph.client import (  # noqa: E402
+    LangGraphClient,
+    LangGraphClientError,
+)
+from alim.observability.banner import (  # noqa: E402
+    print_endpoints,
+    print_infrastructure_tier,
+    print_llm_info,
+    print_model_capabilities,
+    print_quick_links,
+    print_section_header,
+    print_startup_banner,
+    print_startup_complete,
+    print_status_line,
+)
+from alim_persona import ALİMPersona, PersonaProvisioner  # noqa: E402
+from alim_persona_db import (  # noqa: E402
+    load_alim_persona_from_db,
+    save_alim_persona_to_db,
     update_persona_login_time,
 )
 from chainlit.input_widget import (  # noqa: E402
@@ -142,26 +161,6 @@ from services.thread_utils import (  # noqa: E402
     build_thread_name,
     build_thread_tags,
     update_thread_presentation,
-)
-from services.yonca_client import YoncaClient  # noqa: E402
-from yonca.agent.graph import compile_agent_graph  # noqa: E402
-from yonca.agent.memory import get_checkpointer_async  # noqa: E402
-from yonca.config import AgentMode  # noqa: E402
-from yonca.config import settings as yonca_settings  # noqa: E402
-from yonca.langgraph.client import (  # noqa: E402
-    LangGraphClient,
-    LangGraphClientError,
-)
-from yonca.observability.banner import (  # noqa: E402
-    print_endpoints,
-    print_infrastructure_tier,
-    print_llm_info,
-    print_model_capabilities,
-    print_quick_links,
-    print_section_header,
-    print_startup_banner,
-    print_startup_complete,
-    print_status_line,
 )
 
 # ============================================
@@ -204,7 +203,7 @@ if demo_settings.integration_mode == "direct":
     )
     print_model_capabilities(demo_settings.ollama_model)
 
-    # Show ALEM Infrastructure Tier
+    # Show ALİM Infrastructure Tier
     try:
         print_infrastructure_tier(yonca_settings.inference_tier_spec)
     except Exception:
@@ -212,7 +211,7 @@ if demo_settings.integration_mode == "direct":
 else:
     print_section_header("🤖 LLM Configuration")
     print_status_line("Provider", "Via API Bridge", "info")
-    print_status_line("Endpoint", demo_settings.yonca_api_url, "info")
+    print_status_line("Endpoint", demo_settings.alim_api_url, "info")
 
 # ─────────────────────────────────────────────────────────────
 # Data Layer
@@ -241,7 +240,7 @@ if demo_settings.data_persistence_enabled:
     db_name = (
         demo_settings.effective_database_url.split("/")[-1].split("?")[0]
         if "/" in demo_settings.effective_database_url
-        else "yonca"
+        else "ALİM"
     )
     print_status_line("PostgreSQL", f"{db_host}/{db_name}", "success", "users, threads, settings")
 else:
@@ -302,7 +301,7 @@ print_quick_links(
     ]
 )
 
-print_startup_complete("🌿 ALEM 0.1 Demo UI")
+print_startup_complete("🌿 ALİM 0.1 Demo UI")
 
 # ============================================
 # MCP STATUS MONITORING
@@ -341,12 +340,8 @@ if demo_settings.data_persistence_enabled:
 _checkpointer = None
 
 # Global API client (for API bridge mode)
-_api_client: YoncaClient | None = None
+_api_client: LangGraphClient | None = None
 
-# ============================================
-# AGENT MODES (Dynamic Model Selection)
-# ============================================
-# Replaces static model profiles with goal-oriented modes.
 # ============================================
 # AGENT MODES (Dynamic Model Selection)
 # ============================================
@@ -371,13 +366,13 @@ async def get_app_checkpointer():
     return _checkpointer
 
 
-async def get_api_client() -> YoncaClient:
+async def get_api_client() -> LangGraphClient:
     """Get or create the API client singleton - for API bridge mode."""
     global _api_client
     if _api_client is None:
-        _api_client = YoncaClient(base_url=demo_settings.yonca_api_url)
+        _api_client = LangGraphClient(base_url=demo_settings.alim_api_url)
         await _api_client.__aenter__()
-        logger.info("api_client_connected", base_url=demo_settings.yonca_api_url)
+        logger.info("api_client_connected", base_url=demo_settings.alim_api_url)
     return _api_client
 
 
@@ -389,21 +384,21 @@ async def get_api_client() -> YoncaClient:
 # ============================================
 # CHAT PROFILES (Agent Modes / LLM selection)
 # ============================================
-# These are NOT farmer personas. Personas come from ALEM profile & expertise.
+# These are NOT farmer personas. Personas come from ALİM profile & expertise.
 # Chat profiles represent AI operating modes and model choices (fast/thinking/pro).
 
 # ============================================
 # EXPERTISE AREAS — Smart Multi-Select System
 # ============================================
 # Maps user's crop types to relevant expertise areas.
-# Used to auto-configure chat settings based on ALEM persona.
+# Used to auto-configure chat settings based on ALİM persona.
 
 # Expertise area definitions with Azerbaijani labels
 # ============================================
 # EXPERTISE AREAS — Smart Multi-Select System
 # ============================================
 # Maps user's crop types to relevant expertise areas.
-# Used to auto-configure chat settings based on ALEM persona.
+# Used to auto-configure chat settings based on ALİM persona.
 # -> Moved to constants.py and services/expertise.py
 
 
@@ -537,7 +532,7 @@ async def chat_profiles(current_user: cl.User | None = None):
     """Define agent modes as chat profiles (UI dropdown).
 
     Chat profiles in Chainlit are UI-level *agent modes* (fast/thinking/pro).
-    They are not farmer personas; persona/context comes from ALEM profile and
+    They are not farmer personas; persona/context comes from ALİM profile and
     expertise detection. The selected profile name is the AgentMode value.
     Access via: cl.user_session.get("chat_profile")
     """
@@ -551,7 +546,7 @@ async def chat_profiles(current_user: cl.User | None = None):
             cl.ChatProfile(
                 name=default_model,
                 markdown_description=config["description"],
-                icon="/public/avatars/alem_1.svg",
+                icon="/public/avatars/ALİM_1.svg",
                 default=True,
             )
         )
@@ -563,7 +558,7 @@ async def chat_profiles(current_user: cl.User | None = None):
                 cl.ChatProfile(
                     name=model_name,
                     markdown_description=config["description"],
-                    icon="/public/avatars/alem_1.svg",
+                    icon="/public/avatars/ALİM_1.svg",
                 )
             )
 
@@ -812,7 +807,7 @@ if is_oauth_enabled():
 # LOCALIZATION
 # ============================================
 AZ_STRINGS = {
-    "welcome": "**ALEM | Aqronom Assistentiniz**\n\nSalam! Mən ALEM-əm, sizin virtual aqronomun. Əkin, suvarma, gübrələmə və digər kənd təsərrüfatı məsələlərində kömək edə bilərəm.",
+    "welcome": "**ALİM | Aqronom Assistentiniz**\n\nSalam! Mən ALİM-əm, sizin virtual aqronomun. Əkin, suvarma, gübrələmə və digər kənd təsərrüfatı məsələlərində kömək edə bilərəm.",
     "farm_loaded": "📍 Təsərrüfat məlumatları yükləndi",
     "thinking": "Düşünürəm...",
     "error": "❌ Xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.",
@@ -854,7 +849,7 @@ async def setup_chat_settings(user: cl.User | None = None):
     settings are loaded from database (persisted across sessions).
 
     SMART DEFAULTS:
-    - Expertise areas are auto-detected from ALEM persona (crop type + experience)
+    - Expertise areas are auto-detected from ALİM persona (crop type + experience)
     - User can override by selecting different areas
     - Selections persist across sessions
 
@@ -865,10 +860,10 @@ async def setup_chat_settings(user: cl.User | None = None):
     persisted = await load_user_settings(user)
 
     # ─────────────────────────────────────────────────────────────
-    # SMART DEFAULTS: Detect expertise from ALEM persona
+    # SMART DEFAULTS: Detect expertise from ALİM persona
     # ─────────────────────────────────────────────────────────────
-    alem_persona = cl.user_session.get("alem_persona")
-    default_expertise = detect_expertise_from_persona(alem_persona)
+    alim_persona = cl.user_session.get("alim_persona")
+    default_expertise = detect_expertise_from_persona(alim_persona)
 
     # Use persisted expertise if available, otherwise use smart defaults
     expertise_areas = persisted.get("expertise_areas", default_expertise)
@@ -879,7 +874,7 @@ async def setup_chat_settings(user: cl.User | None = None):
         default_expertise=default_expertise,
         persisted_expertise=persisted.get("expertise_areas"),
         using_expertise=expertise_areas,
-        persona_crop=alem_persona.get("crop_type") if alem_persona else None,
+        persona_crop=alim_persona.get("crop_type") if alim_persona else None,
     )
 
     # Map persisted values to initial indices
@@ -988,7 +983,7 @@ async def setup_chat_settings(user: cl.User | None = None):
                     "Boranı (Pumpkin) [Bostan]",
                 ],
                 initial_index=0
-                if not alem_persona
+                if not alim_persona
                 else [
                     "Pambıq (Cotton)",
                     "Buğda (Wheat)",
@@ -996,8 +991,8 @@ async def setup_chat_settings(user: cl.User | None = None):
                     "Qarğıdalı (Corn)",
                     "Alma (Apple)",
                     "Üzüm (Grape)",
-                ].index(alem_persona.get("crop_type", "Pambıq (Cotton)"))
-                if alem_persona.get("crop_type")
+                ].index(alim_persona.get("crop_type", "Pambıq (Cotton)"))
+                if alim_persona.get("crop_type")
                 in ["Pambıq", "Buğda", "Arpa", "Qarğıdalı", "Alma", "Üzüm"]
                 else 0,
                 description="Təsərrüfatınızda əkin etdiyiniz əsas məhsul",
@@ -1015,13 +1010,13 @@ async def setup_chat_settings(user: cl.User | None = None):
                     "Naxçıvan",
                     "Qarabağ",
                 ],
-                initial_index=0 if not alem_persona else 0,
+                initial_index=0 if not alim_persona else 0,
                 description="Təsərrüfatınızın yerləşdiyi iqtisadi region",
             ),
             NumberInput(
                 id="farm_size_ha",
                 label="Sahə (hektar) / Farm Size (ha)",
-                initial=alem_persona.get("farm_size_ha", 5.0) if alem_persona else 5.0,
+                initial=alim_persona.get("farm_size_ha", 5.0) if alim_persona else 5.0,
                 min=0.5,
                 max=500.0,
                 step=0.5,
@@ -1036,10 +1031,10 @@ async def setup_chat_settings(user: cl.User | None = None):
                     "Mütəxəssis / Expert",
                 ],
                 initial_index=1
-                if not alem_persona
+                if not alim_persona
                 else (
                     ["novice", "intermediate", "expert"].index(
-                        alem_persona.get("experience_level", "intermediate")
+                        alim_persona.get("experience_level", "intermediate")
                     )
                 ),
                 description="Kənd təsərrüfatı təcrübəniz",
@@ -1170,7 +1165,7 @@ async def setup_chat_settings(user: cl.User | None = None):
                 id="show_thinking_steps",
                 label="🧠 Düşüncə prosesini göstər / Show Thinking Steps",
                 initial=persisted.get("show_thinking_steps", demo_settings.enable_thinking_steps),
-                description="ALEM-in hər addımını göstər (kontekst yükləmə, təhlil, cavab hazırlama)",
+                description="ALİM-in hər addımını göstər (kontekst yükləmə, təhlil, cavab hazırlama)",
             ),
         ]
     ).send()
@@ -1341,7 +1336,7 @@ async def on_settings_update(settings: dict):
             "Qarğıdalı": "Texniki",
             "Çay": "Texniki",
             # Yem (Feed/Fodder)
-            "Yonca": "Yem",
+            "ALİM": "Yem",
             "Gülül": "Yem",
             # Meyva (Fruits)
             "Üzüm": "Meyva",
@@ -1539,7 +1534,7 @@ When providing recommendations, consider these farm-specific details.
 #   - Quick action buttons (Weather, Subsidy, Irrigation)
 #   - Focus: Clean, centered interface for immediate interaction
 #
-# BRANDING NOTE: Use "ALEM" as primary agent name. "Yonca" is the internal project name.
+# BRANDING NOTE: Use "ALİM" as primary agent name. "ALİM" is the internal project name.
 # AVOID: "Sidecar" (internal term), "DigiRella", "ZekaLab" (business names)
 # ============================================
 async def send_dashboard_welcome(user: cl.User | None = None, mcp_status: dict | None = None):
@@ -1598,7 +1593,7 @@ async def send_dashboard_welcome(user: cl.User | None = None, mcp_status: dict |
         # Build dashboard message using native markdown (more compatible than inline HTML)
         dashboard_content = f"""{greeting}
 
-🌿 **ALEM | Aqronom Assistentiniz**
+🌿 **ALİM | Aqronom Assistentiniz**
 
 Mən sizin virtual aqronomam — əkin, suvarma və subsidiya məsələlərində kömək edirəm.
 
@@ -1640,7 +1635,7 @@ Mən sizin virtual aqronomam — əkin, suvarma və subsidiya məsələlərində
         # Send the dashboard welcome message
         await cl.Message(
             content=dashboard_content,
-            author="ALEM",
+            author="ALİM",
             actions=actions,
         ).send()
 
@@ -1657,7 +1652,7 @@ Mən sizin virtual aqronomam — əkin, suvarma və subsidiya məsələlərində
     except Exception as e:
         logger.error("welcome_message_failed", error=str(e), exc_info=True)
         # Fallback simple welcome
-        await cl.Message(content="👋 Xoş gəlmisiniz! Mən ALEM-əm, sizin virtual aqronomun.").send()
+        await cl.Message(content="👋 Xoş gəlmisiniz! Mən ALİM-əm, sizin virtual aqronomun.").send()
 
 
 # ============================================
@@ -1874,7 +1869,7 @@ async def transcribe_audio_whisper(audio_data: bytes, mime_type: str) -> str:
 # ============================================
 @cl.on_chat_start
 async def on_chat_start():
-    """Initialize chat session with farm context, user tracking, ALEM persona, and dashboard welcome."""
+    """Initialize chat session with farm context, user tracking, ALİM persona, and dashboard welcome."""
     # Add image upload button for Vision-to-Action flow
     try:
         cl.UploadButton(
@@ -1912,7 +1907,7 @@ async def on_chat_start():
     # This is the magic: even though the user logged in with minimal Google claims,
     # we first try to load an existing persona from DB, then auto-generate if missing.
     # This ensures the demo always has rich, personalized context that persists.
-    alem_persona: ALEMPersona | None = None
+    alim_persona: ALİMPersona | None = None
 
     if user and user.metadata:
         # Extract OAuth claims from user metadata
@@ -1922,11 +1917,11 @@ async def on_chat_start():
         }
 
         # Try to load existing persona from database
-        existing_persona_dict = await load_alem_persona_from_db(email=user_email)
+        existing_persona_dict = await load_alim_persona_from_db(email=user_email)
 
         if existing_persona_dict:
-            # Persona exists - reconstruct ALEMPersona object
-            alem_persona = ALEMPersona(
+            # Persona exists - reconstruct ALİMPersona object
+            alim_persona = ALİMPersona(
                 user_id=user_id,
                 full_name=existing_persona_dict["full_name"],
                 email=existing_persona_dict["email"],
@@ -1944,21 +1939,21 @@ async def on_chat_start():
                 logger.info(
                     "persona_loaded_from_db",
                     user_id=user_id,
-                    fin_code=alem_persona.fin_code,
-                    region=alem_persona.region,
+                    fin_code=alim_persona.fin_code,
+                    region=alim_persona.region,
                 )
             except Exception:
                 logger.info("persona_loaded_from_db", user_id=user_id, status="log_failed")
         else:
             # No existing persona - generate new one
-            alem_persona = PersonaProvisioner.provision_from_oauth(
+            alim_persona = PersonaProvisioner.provision_from_oauth(
                 user_id=user_id,
                 oauth_claims=oauth_claims,
                 existing_persona=None,
             )
             # Save to database for next time
-            await save_alem_persona_to_db(
-                alem_persona=alem_persona.to_dict(),
+            await save_alim_persona_to_db(
+                alim_persona=alim_persona.to_dict(),
                 chainlit_user_id=user_id,
                 email=user_email,
             )
@@ -1966,34 +1961,34 @@ async def on_chat_start():
                 logger.info(
                     "persona_generated_and_saved",
                     user_id=user_id,
-                    fin_code=alem_persona.fin_code,
-                    region=alem_persona.region,
+                    fin_code=alim_persona.fin_code,
+                    region=alim_persona.region,
                 )
             except Exception:
                 logger.info("persona_generated_and_saved", user_id=user_id, status="log_failed")
 
         # Store in session for later use (context for expertise detection + prompts)
         # NOTE: NOT displayed in UI - farm context influences responses implicitly
-        cl.user_session.set("alem_persona", alem_persona.to_dict())
+        cl.user_session.set("alim_persona", alim_persona.to_dict())
 
         try:
             logger.info(
-                "alem_persona_provisioned",
+                "alim_persona_provisioned",
                 user_id=user_id,
-                fin_code=alem_persona.fin_code,
-                region=alem_persona.region,
-                crop_type=alem_persona.crop_type,
+                fin_code=alim_persona.fin_code,
+                region=alim_persona.region,
+                crop_type=alim_persona.crop_type,
             )
         except Exception:
-            logger.info("alem_persona_provisioned", user_id=user_id, status="log_failed")
+            logger.info("alim_persona_provisioned", user_id=user_id, status="log_failed")
     else:
         logger.debug("no_authenticated_user_skipping_persona")
 
     # ─────────────────────────────────────────────────────────────
-    # SMART EXPERTISE DETECTION — Auto-detect from ALEM persona
+    # SMART EXPERTISE DETECTION — Auto-detect from ALİM persona
     # ─────────────────────────────────────────────────────────────
-    alem_persona_dict = cl.user_session.get("alem_persona")
-    default_expertise = detect_expertise_from_persona(alem_persona_dict)
+    alim_persona_dict = cl.user_session.get("alim_persona")
+    default_expertise = detect_expertise_from_persona(alim_persona_dict)
 
     # Build combined prompt from detected expertise
     profile_prompt = build_combined_system_prompt(default_expertise)
@@ -2018,14 +2013,14 @@ async def on_chat_start():
     cl.user_session.set("consent_prompt_shown", False)
 
     persona_crop = (
-        alem_persona.crop_type
-        if alem_persona
-        else (alem_persona_dict.get("crop_type") if alem_persona_dict else None)
+        alim_persona.crop_type
+        if alim_persona
+        else (alim_persona_dict.get("crop_type") if alim_persona_dict else None)
     )
     persona_region = (
-        alem_persona.region
-        if alem_persona
-        else (alem_persona_dict.get("region") if alem_persona_dict else None)
+        alim_persona.region
+        if alim_persona
+        else (alim_persona_dict.get("region") if alim_persona_dict else None)
     )
 
     try:
@@ -2098,8 +2093,8 @@ async def on_chat_start():
             thread_metadata = {
                 "farm_id": farm_id,
                 "expertise_areas": default_expertise,
-                "alem_persona_fin": alem_persona_dict.get("fin_code")
-                if alem_persona_dict
+                "alim_persona_fin": alim_persona_dict.get("fin_code")
+                if alim_persona_dict
                 else None,
                 "language": "az",
                 "active_model": active_model,
@@ -2248,13 +2243,13 @@ async def on_chat_resume(thread: ThreadDict):
     cl.user_session.set("user_email", user_email)
     cl.user_session.set("farm_id", metadata.get("farm_id", "demo_farm_001"))
 
-    # 3. Restore ALEM persona
+    # 3. Restore ALİM persona
     if user and user_email:
-        from alem_persona_db import load_alem_persona_from_db, update_persona_login_time
+        from alim_persona_db import load_alim_persona_from_db, update_persona_login_time
 
-        existing_persona_dict = await load_alem_persona_from_db(email=user_email)
+        existing_persona_dict = await load_alim_persona_from_db(email=user_email)
         if existing_persona_dict:
-            cl.user_session.set("alem_persona", existing_persona_dict)
+            cl.user_session.set("alim_persona", existing_persona_dict)
             await update_persona_login_time(email=user_email)
             logger.info("persona_restored", fin_code=existing_persona_dict.get("fin_code"))
         else:
@@ -2278,11 +2273,11 @@ async def on_chat_resume(thread: ThreadDict):
         )
 
     # 6. Restore expertise areas (from metadata or regenerate from persona)
-    alem_persona_dict = cl.user_session.get("alem_persona")
+    alim_persona_dict = cl.user_session.get("alim_persona")
     expertise = metadata.get("expertise_areas")
-    if not expertise and alem_persona_dict:
+    if not expertise and alim_persona_dict:
         # Regenerate from persona if not in metadata
-        expertise = detect_expertise_from_persona(alem_persona_dict)
+        expertise = detect_expertise_from_persona(alim_persona_dict)
     if not expertise:
         expertise = ["general"]
     cl.user_session.set("expertise_areas", expertise)
@@ -2308,7 +2303,7 @@ async def on_chat_resume(thread: ThreadDict):
         "thread_resume_complete",
         thread_id=thread["id"],
         user_id=user_id,
-        has_persona=bool(alem_persona_dict),
+        has_persona=bool(alim_persona_dict),
         has_settings=bool(user_settings),
         has_scenario=bool(scenario),
         expertise=expertise,
@@ -2384,7 +2379,7 @@ Xarici serverlərlə əlaqə qurmağıma icazə verirsinizmi?
 
     await cl.Message(
         content=consent_msg,
-        author="ALEM",
+        author="ALİM",
         actions=actions,
     ).send()
 
@@ -2395,7 +2390,7 @@ async def on_consent_grant(action: cl.Action):
     cl.user_session.set("data_consent_given", True)
     await cl.Message(
         content="✓ **Təşəkkürlər!** Xarici xidmətlərdən istifadə edə bilərəm. Hava proqnozu və digər məlumatlar əldə olunacaq.",
-        author="ALEM",
+        author="ALİM",
     ).send()
     await action.remove()
     logger.info("data_consent_granted", user_id=cl.user_session.get("user_id"))
@@ -2407,7 +2402,7 @@ async def on_consent_deny(action: cl.Action):
     cl.user_session.set("data_consent_given", False)
     await cl.Message(
         content="✓ **Anlaşıldı.** Yalnız yerli məlumatlardan istifadə edəcəyəm. İstədiyiniz zaman parametrlərdən dəyişə bilərsiniz.",
-        author="ALEM",
+        author="ALİM",
     ).send()
     await action.remove()
     logger.info("data_consent_denied", user_id=cl.user_session.get("user_id"))
@@ -2637,7 +2632,7 @@ async def _handle_message(
             graph_id=demo_settings.langgraph_graph_id,
         ) as client:
             # Prepare initial state
-            from yonca.agent.state import create_initial_state, serialize_state_for_api
+            from alim.agent.state import create_initial_state, serialize_state_for_api
 
             # Get current consent status from session
             data_consent_given = cl.user_session.get("data_consent_given", False)

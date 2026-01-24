@@ -1,4 +1,4 @@
-from yonca.config import AgentMode
+from alim.config import AgentMode
 
 LLM_MODEL_PROFILES = {
     AgentMode.FAST.value: {

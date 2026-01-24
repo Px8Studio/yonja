@@ -82,8 +82,8 @@ flowchart LR
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
 flowchart TB
-    subgraph existing["✅ EXISTING: Yonca Mobile"]
-        yonca["Yonca Mobile App<br/>(Digital Umbrella)"]
+    subgraph existing["✅ EXISTING: ALİM Mobile"]
+        ALİM["ALİM Mobile App<br/>(Digital Umbrella)"]
         ektis_prod["EKTIS Production API<br/>(100k+ farms)"]
     end
 
@@ -93,14 +93,14 @@ flowchart TB
 
     subgraph future["🔮 FUTURE: ALEM Integration Options"]
         direction LR
-        option_a["Option A:<br/>Via Yonca Mobile<br/>(Indirect)"]
+        option_a["Option A:<br/>Via ALİM Mobile<br/>(Indirect)"]
         option_b["Option B:<br/>Direct EKTIS API<br/>(New Partnership)"]
     end
 
-    ektis_prod ==>|"✅ EXISTING"| yonca
+    ektis_prod ==>|"✅ EXISTING"| ALİM
     synthetic -.->|"🔮 Phase 2"| option_a
     synthetic -.->|"🔮 Phase 2"| option_b
-    yonca -.->|"Option A"| option_a
+    ALİM -.->|"Option A"| option_a
     ektis_prod -.->|"Option B"| option_b
 
     style existing fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
@@ -111,8 +111,8 @@ flowchart TB
 | Attribute | Details |
 |:----------|:--------|
 | **Data Scope** | Farm registry, land plots, crop declarations, subsidy status, NDVI tracking |
-| **Current Status** | ✅ **Yonca Mobile** has production access (Digital Umbrella's existing integration) |
-| **ALEM Integration** | 🔮 **Two options for Phase 2**:<br/>**Option A**: Via Yonca Mobile API (leverage existing)<br/>**Option B**: Direct EKTIS partnership (new G2B protocol) |
+| **Current Status** | ✅ **ALİM Mobile** has production access (Digital Umbrella's existing integration) |
+| **ALEM Integration** | 🔮 **Two options for Phase 2**:<br/>**Option A**: Via ALİM Mobile API (leverage existing)<br/>**Option B**: Direct EKTIS partnership (new G2B protocol) |
 | **Technical Integration** | ASAN Bridge (REST API), possible direct database access for government partners |
 | **Cost Structure** | Free for government-approved projects |
 | **ALEM Use Case** | Replace synthetic farms with real data, enable "hot-swap" without code changes |
@@ -122,8 +122,8 @@ flowchart TB
 **Decision Required:** Choose between Option A (faster, via Digital Umbrella) vs Option B (direct, more control)
 
 **Action Items:**
-- [ ] **Decision:** Discuss with Digital Umbrella — Option A (via Yonca Mobile API) or Option B (direct EKTIS partnership)
-- [ ] **Option A path:** Request Yonca Mobile API documentation from Digital Umbrella
+- [ ] **Decision:** Discuss with Digital Umbrella — Option A (via ALİM Mobile API) or Option B (direct EKTIS partnership)
+- [ ] **Option A path:** Request ALİM Mobile API documentation from Digital Umbrella
 - [ ] **Option B path:** Request EKTİS API documentation directly from Ministry
 - [ ] Map EKTİS schema to ALEM data models (validate assumptions in [14-DISCOVERY-QUESTIONS](14-DISCOVERY-QUESTIONS.md))
 - [ ] Implement read-only API client with fallback to synthetic data
@@ -388,12 +388,12 @@ flowchart TB
 
 ### Strategic Positioning
 
-> **ALEM is not a replacement for Yonca Mobile—it's the autonomous intelligence layer that makes Yonca smarter.**
+> **ALEM is not a replacement for ALİM Mobile—it's the autonomous intelligence layer that makes ALİM smarter.**
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
 flowchart LR
-    subgraph yonca["📱 YONCA MOBILE (The Body)<br/><i>DigiRella's Platform</i>"]
+    subgraph ALİM["📱 ALİM MOBILE (The Body)<br/><i>DigiRella's Platform</i>"]
         ui["Farmer UI"]
         data["EKTİS Data<br/>(100k farms)"]
         maps["Satellite Maps<br/>(NDVI)"]
@@ -411,7 +411,7 @@ flowchart LR
     banking -->|"Credit Check"| logic
     logic -->|"Action: Trigger Payment"| notif
 
-    style yonca fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style ALİM fill:#fff3e0,stroke:#f57c00,stroke-width:2px
     style alem fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
 ```
 
@@ -419,7 +419,7 @@ flowchart LR
 
 **Executive Summary:**
 
-> "We don't want to replace Yonca; we want to make it **Autonomous**. By integrating ALEM with your existing EKTİS-linked APIs, we transform Yonca from a manual reporting tool into a **proactive AI advisor**. Our TPP accreditation means ALEM can pull real-time bank balances to tell a farmer exactly when they can afford the fertilizer our AI just recommended. **You provide the Data, we provide the Brain, and the farmer gets a Complete Sovereign Ecosystem.**"
+> "We don't want to replace ALİM; we want to make it **Autonomous**. By integrating ALEM with your existing EKTİS-linked APIs, we transform ALİM from a manual reporting tool into a **proactive AI advisor**. Our TPP accreditation means ALEM can pull real-time bank balances to tell a farmer exactly when they can afford the fertilizer our AI just recommended. **You provide the Data, we provide the Brain, and the farmer gets a Complete Sovereign Ecosystem.**"
 
 ### Integration Architecture (Three-Layer Model)
 
@@ -439,17 +439,17 @@ flowchart LR
 **Full Integration (Phase 2B):**
 - [ ] **Read Access**: `GET /api/v1/farmers/{id}/profile` → Experience level, subsidy status
 - [ ] **Read Access**: `GET /api/v1/weather/{region_code}` → Local forecasts
-- [ ] **Write Access**: `POST /api/v1/tasks` → Create actionable tasks in Yonca UI ("Apply fertilizer today")
+- [ ] **Write Access**: `POST /api/v1/tasks` → Create actionable tasks in ALİM UI ("Apply fertilizer today")
 - [ ] **Webhooks**: Real-time notifications when farmer plants new crop or weather alert triggers
 
 ### Value Proposition for DigiRella
 
 **Why DigiRella Should Partner:**
 
-1. **Differentiation**: Yonca becomes the **first AI-native agricultural app** in the Caucasus
+1. **Differentiation**: ALİM becomes the **first AI-native agricultural app** in the Caucasus
 2. **Revenue Share**: Tiered pricing model (Standard/Premium/Enterprise) where DigiRella gets 30% of ALEM subscriptions
 3. **Zero Dev Cost**: ZekaLab builds and maintains the AI layer; DigiRella just exposes APIs
-4. **Government Alignment**: Ministry of Agriculture wants "smart farming"—ALEM + Yonca delivers this
+4. **Government Alignment**: Ministry of Agriculture wants "smart farming"—ALEM + ALİM delivers this
 5. **International Scalability**: Proven architecture can be replicated in Georgia, Uzbekistan, Kazakhstan
 
 ### Meeting Agenda (First Pitch)
@@ -457,12 +457,12 @@ flowchart LR
 **30-Minute Structured Presentation:**
 
 1. **Problem (5 min)**: Farmers have data but no intelligence
-2. **Solution (10 min)**: Live demo of ALEM with synthetic Yonca data
+2. **Solution (10 min)**: Live demo of ALEM with synthetic ALİM data
 3. **Integration (10 min)**: Show API integration diagram, minimal technical lift
 4. **Business Model (5 min)**: Revenue share, government subsidies, international expansion
 
 **Key Takeaway:**
-> "ALEM is the operating system for the future of Azerbaijani agriculture. Yonca is the interface. Together, we build the world's first truly AI-autonomous farming platform."
+> "ALEM is the operating system for the future of Azerbaijani agriculture. ALİM is the interface. Together, we build the world's first truly AI-autonomous farming platform."
 
 ---
 

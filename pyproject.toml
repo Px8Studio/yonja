@@ -3,12 +3,13 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "yonca"
+name = "alim"
 version = "0.1.0"
-description = "Yonca AI — AI Farming Assistant for Azerbaijani Farmers"
+description = "ALİM — Ağıllı Lokal İdarəetmə Mütəxəssisi for Azerbaijani Farmers"
 authors = ["Rashad Jafarov <rashad.jafaroff@gmail.com>"]
 readme = "README.md"
-packages = [{include = "yonca", from = "src"}]
+packages = [{include = "alim", from = "src"}]
+
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
@@ -73,7 +74,7 @@ mypy = "^1.8.0"
 #
 # Or activate shell once and use commands directly:
 #   poetry shell
-#   uvicorn yonca.api.main:app --reload
+#   uvicorn ALİM.api.main:app --reload
 #   alembic upgrade head
 # ═══════════════════════════════════════════════════════════════════════════
 [tool.poetry.scripts]

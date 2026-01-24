@@ -2,13 +2,13 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "🌿 Yonca AI: 🚀 Start All",
+      "label": "🌿 ALİM: 🚀 Start All",
       "detail": "Quality Checks → Docker → Services (Parallel)",
       "dependsOn": [
         "✅ Quality & Sanity Checks",
-        "🌿 Yonca AI: 🧹 Clear Ports",
-        "🌿 Yonca AI: 🐳 Docker Start",
-        "🌿 Yonca AI: 🚀 Start Python Services"
+        "🌿 ALİM: 🧹 Clear Ports",
+        "🌿 ALİM: 🐳 Docker Start",
+        "🌿 ALİM: 🚀 Start Python Services"
       ],
       "dependsOrder": "sequence",
       "problemMatcher": [],
@@ -17,13 +17,13 @@
       }
     },
     {
-      "label": "🌿 Yonca AI: 🚀 Start Python Services",
+      "label": "🌿 ALİM: 🚀 Start Python Services",
       "detail": "Start FastAPI, UI, MCP, and LangGraph in parallel",
       "dependsOn": [
-        "🌿 Yonca AI: ⚡ FastAPI Start",
-        "🌿 Yonca AI: 🖥️ UI Start",
-        "🌿 Yonca AI: 🧠 ZekaLab MCP Start",
-        "🌿 Yonca AI: 🎨 LangGraph Start"
+        "🌿 ALİM: ⚡ FastAPI Start",
+        "🌿 ALİM: 🖥️ UI Start",
+        "🌿 ALİM: 🧠 ZekaLab MCP Start",
+        "🌿 ALİM: 🎨 LangGraph Start"
       ],
       "dependsOrder": "parallel",
       "problemMatcher": []
@@ -43,11 +43,11 @@
         "reveal": "always",
         "panel": "dedicated",
         "clear": true,
-        "group": "yonca-checks"
+        "group": "ALİM-checks"
       }
     },
     {
-      "label": "🌿 Yonca AI: 🧹 Clear Ports",
+      "label": "🌿 ALİM: 🧹 Clear Ports",
       "detail": "Kill existing processes to free ports",
       "type": "shell",
       "command": "pwsh",
@@ -59,11 +59,11 @@
         "reveal": "always",
         "panel": "dedicated",
         "clear": true,
-        "group": "yonca-ops"
+        "group": "ALİM-ops"
       }
     },
     {
-      "label": "🌿 Yonca AI: 🐳 Docker Start",
+      "label": "🌿 ALİM: 🐳 Docker Start",
       "detail": "Start Docker Infrastructure",
       "type": "shell",
       "command": "pwsh",
@@ -77,11 +77,11 @@
         "reveal": "always",
         "panel": "dedicated",
         "clear": true,
-        "group": "yonca-docker"
+        "group": "ALİM-docker"
       }
     },
     {
-      "label": "🌿 Yonca AI: ⚡ FastAPI Start",
+      "label": "🌿 ALİM: ⚡ FastAPI Start",
       "detail": "Backend API (:8000)",
       "type": "shell",
       "command": "pwsh",
@@ -107,11 +107,11 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "group": "yonca-services"
+        "group": "ALİM-services"
       }
     },
     {
-      "label": "🌿 Yonca AI: 🖥️ UI Start",
+      "label": "🌿 ALİM: 🖥️ UI Start",
       "detail": "Chainlit UI (:8501)",
       "type": "shell",
       "command": "pwsh",
@@ -137,11 +137,11 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "group": "yonca-services"
+        "group": "ALİM-services"
       }
     },
     {
-      "label": "🌿 Yonca AI: 🧠 ZekaLab MCP Start",
+      "label": "🌿 ALİM: 🧠 ZekaLab MCP Start",
       "detail": "MCP Server (:7777)",
       "type": "shell",
       "command": "pwsh",
@@ -167,11 +167,11 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "group": "yonca-services"
+        "group": "ALİM-services"
       }
     },
     {
-      "label": "🌿 Yonca AI: 🎨 LangGraph Start",
+      "label": "🌿 ALİM: 🎨 LangGraph Start",
       "detail": "LangGraph Dev Server (:2024)",
       "type": "shell",
       "command": "pwsh",
@@ -197,11 +197,11 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "group": "yonca-services"
+        "group": "ALİM-services"
       }
     },
     {
-      "label": "🌿 Yonca AI: 🛑 Stop All",
+      "label": "🌿 ALİM: 🛑 Stop All",
       "detail": "Stop all services",
       "type": "shell",
       "command": "pwsh",
@@ -212,7 +212,7 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "group": "yonca-ops"
+        "group": "ALİM-ops"
       }
     }
   ],

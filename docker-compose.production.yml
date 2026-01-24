@@ -8,7 +8,7 @@
 services:
   # LangGraph Runtime
   langgraph:
-    image: yonca-langgraph:latest # Pre-built image
+    image: ALİM-langgraph:latest # Pre-built image
     environment:
       - ALIM_ENVIRONMENT=production
       - ALIM_INFRASTRUCTURE_MODE=cloud
@@ -20,7 +20,7 @@ services:
 
   # Application API
   api:
-    image: yonca-api:latest
+    image: ALİM-api:latest
     environment:
       - ALIM_ENVIRONMENT=production
       - ALIM_INFRASTRUCTURE_MODE=cloud
@@ -33,7 +33,7 @@ services:
 
   # Chat UI
   demo-ui:
-    image: yonca-demo-ui:latest
+    image: ALİM-demo-ui:latest
     environment:
       - ALIM_ENVIRONMENT=production
       - ALIM_INFRASTRUCTURE_MODE=cloud

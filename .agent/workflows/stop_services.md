@@ -1,5 +1,5 @@
 ---
-description: Stop all Yonca AI services and cleanup ports
+description: Stop all ALİM services and cleanup ports
 ---
 
 This workflow gracefully stops all running services and releases the ports.

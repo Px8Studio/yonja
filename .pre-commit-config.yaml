@@ -1,6 +1,6 @@
 # .pre-commit-config.yaml
 # ═══════════════════════════════════════════════════════════════════════════
-# 🔧 Yonca AI — Pre-commit Hooks
+# 🔧 ALİM — Pre-commit Hooks
 # ═══════════════════════════════════════════════════════════════════════════
 #
 # Run once to install:   pre-commit install
@@ -42,6 +42,7 @@ repos:
         exclude: \.md$  # Allow trailing whitespace in markdown
       - id: end-of-file-fixer
       - id: check-yaml
+        args: [--allow-multiple-documents]
         exclude: ^(docker-compose.*\.ya?ml)$  # Docker compose has special syntax
       - id: check-json
       - id: check-toml

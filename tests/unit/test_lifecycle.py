@@ -96,7 +96,7 @@ class TestHandleChatResume:
             mock_session.set = lambda k, v: session_data.update({k: v})
 
             with patch(
-                "services.lifecycle.load_alem_persona_from_db", new_callable=AsyncMock
+                "services.lifecycle.load_alim_persona_from_db", new_callable=AsyncMock
             ) as mock_load:
                 mock_load.return_value = None  # No persona found
 

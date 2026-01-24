@@ -95,8 +95,8 @@ class TestSendDashboardWelcome:
                     assert "Xoş gəlmisiniz" in content
 
     @pytest.mark.asyncio
-    async def test_welcome_includes_alem_branding(self, mock_user):
-        """Test that welcome includes ALEM branding."""
+    async def test_welcome_includes_alim_branding(self, mock_user):
+        """Test that welcome includes ALİM branding."""
         with patch("chainlit.user_session") as mock_session:
             mock_session.set = MagicMock()
 
@@ -115,8 +115,8 @@ class TestSendDashboardWelcome:
                         "content", call_args.args[0] if call_args.args else ""
                     )
 
-                    # Must use ALEM branding, not "Yonca" or "Sidecar"
-                    assert "ALEM" in content
+                    # Must use ALİM branding, not "ALİM" or "Sidecar"
+                    assert "ALİM" in content
                     assert "Sidecar" not in content
 
     @pytest.mark.asyncio

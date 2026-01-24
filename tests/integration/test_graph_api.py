@@ -5,9 +5,9 @@ including invoke, stream, and thread management endpoints.
 """
 
 import pytest
+from alim.api.main import app
 from fastapi import status
 from httpx import AsyncClient
-from yonca.api.main import app
 
 # ============================================
 # FIXTURES

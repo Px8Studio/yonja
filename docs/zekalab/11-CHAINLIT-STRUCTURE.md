@@ -1,8 +1,8 @@
-# 📁 Chainlit Folder Structure — Yonca AI
+# 📁 Chainlit Folder Structure — ALİM
 
 ## Overview
 
-This document explains the standard Chainlit folder structure used in the **Yonca AI** project. It adheres to Chainlit best practices while integrating with our custom architecture (PostgreSQL persistence).
+This document explains the standard Chainlit folder structure used in the **ALİM** project. It adheres to Chainlit best practices while integrating with our custom architecture (PostgreSQL persistence).
 
 ## ✅ Project Structure
 
@@ -39,7 +39,7 @@ This folder **must** exist in the directory where you run `chainlit run`. It con
 #### 2. `.files/` (File Storage) — **DISABLED**
 
 > [!IMPORTANT]
-> **Yonca AI does NOT use local `.files/` storage.**
+> **ALİM does NOT use local `.files/` storage.**
 > We use **PostgreSQL** for file storage. This is a **production best practice**.
 
 ---
@@ -182,7 +182,7 @@ max_size_mb = 100
 ## 🚀 Running the App
 
 ### From VS Code (Recommended)
-Run task: **🌿 Yonca AI: 🚀 Start All**
+Run task: **🌿 ALİM: 🚀 Start All**
 
 This executes:
 ```bash

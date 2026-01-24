@@ -17,10 +17,10 @@ import os
 from typing import TYPE_CHECKING
 
 import chainlit as cl
-from alem_persona import ALEMPersona, PersonaProvisioner
-from alem_persona_db import (
-    load_alem_persona_from_db,
-    save_alem_persona_to_db,
+from alim_persona import ALİMPersona, PersonaProvisioner
+from alim_persona_db import (
+    load_alim_persona_from_db,
+    save_alim_persona_to_db,
     update_persona_login_time,
 )
 from chainlit.types import ThreadDict
@@ -74,7 +74,7 @@ async def handle_chat_start(
     # ─────────────────────────────────────────────────────────────
     # JIT PERSONA PROVISIONING
     # ─────────────────────────────────────────────────────────────
-    alem_persona: ALEMPersona | None = None
+    alim_persona: ALİMPersona | None = None
 
     if user and user.metadata:
         oauth_claims = {
@@ -82,10 +82,10 @@ async def handle_chat_start(
             "email": user.metadata.get("email", user_email),
         }
 
-        existing_persona_dict = await load_alem_persona_from_db(email=user_email)
+        existing_persona_dict = await load_alim_persona_from_db(email=user_email)
 
         if existing_persona_dict:
-            alem_persona = ALEMPersona(
+            alim_persona = ALİMPersona(
                 user_id=user_id,
                 full_name=existing_persona_dict["full_name"],
                 email=existing_persona_dict["email"],
@@ -101,34 +101,34 @@ async def handle_chat_start(
             logger.info(
                 "persona_loaded_from_db",
                 user_id=user_id,
-                fin_code=alem_persona.fin_code,
-                region=alem_persona.region,
+                fin_code=alim_persona.fin_code,
+                region=alim_persona.region,
             )
         else:
-            alem_persona = PersonaProvisioner.provision_from_oauth(
+            alim_persona = PersonaProvisioner.provision_from_oauth(
                 user_id=user_id,
                 oauth_claims=oauth_claims,
                 existing_persona=None,
             )
-            await save_alem_persona_to_db(
-                alem_persona=alem_persona.to_dict(),
+            await save_alim_persona_to_db(
+                alim_persona=alim_persona.to_dict(),
                 chainlit_user_id=user_id,
                 email=user_email,
             )
             logger.info(
                 "persona_generated_and_saved",
                 user_id=user_id,
-                fin_code=alem_persona.fin_code,
-                region=alem_persona.region,
+                fin_code=alim_persona.fin_code,
+                region=alim_persona.region,
             )
 
-        cl.user_session.set("alem_persona", alem_persona.to_dict())
+        cl.user_session.set("alim_persona", alim_persona.to_dict())
         logger.info(
-            "alem_persona_provisioned",
+            "alim_persona_provisioned",
             user_id=user_id,
-            fin_code=alem_persona.fin_code,
-            region=alem_persona.region,
-            crop_type=alem_persona.crop_type,
+            fin_code=alim_persona.fin_code,
+            region=alim_persona.region,
+            crop_type=alim_persona.crop_type,
         )
     else:
         logger.debug("no_authenticated_user_skipping_persona")
@@ -136,8 +136,8 @@ async def handle_chat_start(
     # ─────────────────────────────────────────────────────────────
     # SMART EXPERTISE DETECTION
     # ─────────────────────────────────────────────────────────────
-    alem_persona_dict = cl.user_session.get("alem_persona")
-    default_expertise = detect_expertise_from_persona(alem_persona_dict)
+    alim_persona_dict = cl.user_session.get("alim_persona")
+    default_expertise = detect_expertise_from_persona(alim_persona_dict)
     profile_prompt = build_combined_system_prompt(default_expertise)
 
     logger.info(
@@ -157,14 +157,14 @@ async def handle_chat_start(
     cl.user_session.set("consent_prompt_shown", False)
 
     persona_crop = (
-        alem_persona.crop_type
-        if alem_persona
-        else (alem_persona_dict.get("crop_type") if alem_persona_dict else None)
+        alim_persona.crop_type
+        if alim_persona
+        else (alim_persona_dict.get("crop_type") if alim_persona_dict else None)
     )
     persona_region = (
-        alem_persona.region
-        if alem_persona
-        else (alem_persona_dict.get("region") if alem_persona_dict else None)
+        alim_persona.region
+        if alim_persona
+        else (alim_persona_dict.get("region") if alim_persona_dict else None)
     )
 
     logger.info(
@@ -222,8 +222,8 @@ async def handle_chat_start(
             thread_metadata = {
                 "farm_id": farm_id,
                 "expertise_areas": default_expertise,
-                "alem_persona_fin": alem_persona_dict.get("fin_code")
-                if alem_persona_dict
+                "alim_persona_fin": alim_persona_dict.get("fin_code")
+                if alim_persona_dict
                 else None,
                 "language": "az",
                 "active_model": active_model,
@@ -355,11 +355,11 @@ async def handle_chat_resume(
     cl.user_session.set("user_email", user_email)
     cl.user_session.set("farm_id", metadata.get("farm_id", "demo_farm_001"))
 
-    # 3. Restore ALEM persona
+    # 3. Restore ALİM persona
     if user and user_email:
-        existing_persona_dict = await load_alem_persona_from_db(email=user_email)
+        existing_persona_dict = await load_alim_persona_from_db(email=user_email)
         if existing_persona_dict:
-            cl.user_session.set("alem_persona", existing_persona_dict)
+            cl.user_session.set("alim_persona", existing_persona_dict)
             await update_persona_login_time(email=user_email)
             logger.info("persona_restored", fin_code=existing_persona_dict.get("fin_code"))
         else:
@@ -383,10 +383,10 @@ async def handle_chat_resume(
         )
 
     # 6. Restore expertise areas
-    alem_persona_dict = cl.user_session.get("alem_persona")
+    alim_persona_dict = cl.user_session.get("alim_persona")
     expertise = metadata.get("expertise_areas")
-    if not expertise and alem_persona_dict:
-        expertise = detect_expertise_from_persona(alem_persona_dict)
+    if not expertise and alim_persona_dict:
+        expertise = detect_expertise_from_persona(alim_persona_dict)
     if not expertise:
         expertise = ["general"]
     cl.user_session.set("expertise_areas", expertise)
@@ -411,7 +411,7 @@ async def handle_chat_resume(
         "thread_resume_complete",
         thread_id=thread["id"],
         user_id=user_id,
-        has_persona=bool(alem_persona_dict),
+        has_persona=bool(alim_persona_dict),
         has_settings=bool(user_settings),
         has_scenario=bool(scenario),
         expertise=expertise,

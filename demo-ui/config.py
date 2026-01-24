@@ -10,8 +10,8 @@ class DemoSettings:
     """Demo UI configuration settings."""
 
     # API connection (when using API client pattern)
-    yonca_api_url: str = field(
-        default_factory=lambda: os.getenv("YONCA_API_URL", "http://localhost:8000")
+    alim_api_url: str = field(
+        default_factory=lambda: os.getenv("alim_api_url", "http://localhost:8000")
     )
 
     # LLM settings (when using direct integration)
@@ -26,7 +26,7 @@ class DemoSettings:
         default_factory=lambda: os.getenv("YONCA_LANGGRAPH_BASE_URL", "http://localhost:2024")
     )
     langgraph_graph_id: str = field(
-        default_factory=lambda: os.getenv("YONCA_LANGGRAPH_GRAPH_ID", "yonca_agent")
+        default_factory=lambda: os.getenv("YONCA_LANGGRAPH_GRAPH_ID", "alim_agent")
     )
     langgraph_required: bool = field(
         default_factory=lambda: os.getenv("YONCA_LANGGRAPH_REQUIRED", "true").lower()
@@ -40,7 +40,7 @@ class DemoSettings:
 
     # Database for Chainlit data persistence (users, threads, settings)
     # Uses the SAME database as the main Yonca API
-    # For Postgres: postgresql+asyncpg://user:pass@host:5432/yonca
+    # For Postgres: postgresql+asyncpg://user:pass@host:5432/yonca  # pragma: allowlist secret
     # For SQLite (dev only, no persistence): sqlite+aiosqlite:///./data/yonca.db
     database_url: str = field(
         default_factory=lambda: os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./data/yonca.db")

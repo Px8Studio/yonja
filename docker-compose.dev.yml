@@ -11,7 +11,7 @@ services:
   # ─────────────────────────────────────────────────────────────
   ollama:
     image: ollama/ollama:latest
-    container_name: yonca-ollama
+    container_name: ALİM-ollama
     ports:
       - "11434:11434"
     volumes:
@@ -20,7 +20,7 @@ services:
     environment:
       - OLLAMA_HOST=0.0.0.0
     networks:
-      - yonca-network
+      - ALİM-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "ollama list || exit 1"]
@@ -34,7 +34,7 @@ services:
   # ─────────────────────────────────────────────────────────────
   model-setup:
     image: ollama/ollama:latest
-    container_name: yonca-model-setup
+    container_name: ALİM-model-setup
     depends_on:
       ollama:
         condition: service_healthy
@@ -43,7 +43,7 @@ services:
     environment:
       - OLLAMA_HOST=ollama:11434
     networks:
-      - yonca-network
+      - ALİM-network
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
@@ -60,7 +60,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.langgraph
-    container_name: yonca-langgraph
+    container_name: ALİM-langgraph
     ports:
       - "2024:2024"
     volumes:
@@ -73,7 +73,7 @@ services:
       - ALIM_LANGGRAPH_REQUIRED=true
       - LANGGRAPH_DEV_HOST=0.0.0.0
       - LANGGRAPH_DEV_PORT=2024
-      - LANGGRAPH_POSTGRES_URI=postgresql://yonca:ALIM_dev_password@postgres:5432/yonca
+      - LANGGRAPH_POSTGRES_URI=postgresql://ALİM:ALIM_dev_password@postgres:5432/ALİM
       - ALIM_LLM_PROVIDER=ollama
       - ALIM_OLLAMA_BASE_URL=http://ollama:11434
       - ALIM_OLLAMA_MODEL=qwen3:4b
@@ -83,7 +83,7 @@ services:
       ollama:
         condition: service_healthy
     networks:
-      - yonca-network
+      - ALİM-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:2024/health"]
@@ -93,14 +93,14 @@ services:
       start_period: 40s
 
   # ─────────────────────────────────────────────────────────────
-  # Yonca AI API (FastAPI)
+  # ALİM API (FastAPI)
   # ─────────────────────────────────────────────────────────────
   api:
     build:
       context: .
       target: development
       dockerfile: Dockerfile
-    container_name: yonca-api
+    container_name: ALİM-api
     ports:
       - "8000:8000"
     volumes:
@@ -115,7 +115,7 @@ services:
       - ALIM_LANGGRAPH_BASE_URL=http://langgraph:2024
       - ALIM_LLM_PROVIDER=ollama
       - ALIM_OLLAMA_BASE_URL=http://ollama:11434
-      - ALIM_DATABASE_URL=postgresql+asyncpg://yonca:ALIM_dev_password@postgres:5432/yonca
+      - ALIM_DATABASE_URL=postgresql+asyncpg://ALİM:ALIM_dev_password@postgres:5432/ALİM
       - ALIM_REDIS_URL=redis://redis:6379/0
     depends_on:
       postgres:
@@ -125,7 +125,7 @@ services:
       langgraph:
         condition: service_healthy
     networks:
-      - yonca-network
+      - ALİM-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -141,7 +141,7 @@ services:
       context: .
       dockerfile: demo-ui/Dockerfile
       target: development
-    container_name: yonca-demo-ui
+    container_name: ALİM-demo-ui
     ports:
       - "8501:8501"
     volumes:
@@ -157,8 +157,8 @@ services:
       - ALIM_API_URL=http://api:8000
       - ALIM_LLM_PROVIDER=ollama
       - ALIM_OLLAMA_BASE_URL=http://ollama:11434
-      - ALIM_DATABASE_URL=postgresql+asyncpg://yonca:ALIM_dev_password@postgres:5432/yonca
-      - CHAINLIT_DATABASE_URL=postgresql+asyncpg://yonca:ALIM_dev_password@postgres:5432/yonca
+      - ALIM_DATABASE_URL=postgresql+asyncpg://ALİM:ALIM_dev_password@postgres:5432/ALİM
+      - CHAINLIT_DATABASE_URL=postgresql+asyncpg://ALİM:ALIM_dev_password@postgres:5432/ALİM
       - PYTHONPATH=/app/src:/app/demo-ui
     depends_on:
       postgres:
@@ -168,7 +168,7 @@ services:
       api:
         condition: service_healthy
     networks:
-      - yonca-network
+      - ALİM-network
     restart: unless-stopped
 
 volumes:

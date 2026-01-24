@@ -363,7 +363,7 @@ docker-compose.security.yml      # Traefik service
 traefik/
   ├── traefik.yml               # Static config
   ├── dynamic/                  # Dynamic routing
-  │   └── yonca.yml            # ALEM routes
+  │   └── ALİM.yml            # ALEM routes
   └── acme.json                 # SSL certificates
 ```
 
@@ -394,7 +394,7 @@ entryPoints:
 certificatesResolvers:
   letsencrypt:
     acme:
-      email: ops@yonca.az
+      email: ops@ALİM.az
       storage: /acme.json
       httpChallenge:
         entryPoint: web
@@ -526,7 +526,7 @@ services:
 
 **Files to create:**
 ```
-src/yonca/security/rbac/
+src/ALİM/security/rbac/
   ├── __init__.py
   ├── casbin_adapter.py         # PostgreSQL adapter
   ├── policies.py               # Role definitions
@@ -555,7 +555,7 @@ g, user:67890, admin
 
 **FastAPI integration:**
 ```python
-# src/yonca/security/rbac/middleware.py
+# src/ALİM/security/rbac/middleware.py
 from casbin import AsyncEnforcer
 from fastapi import Request, HTTPException
 
@@ -625,23 +625,23 @@ FROM user_profiles;
 
 **Prometheus metrics to add:**
 ```python
-# src/yonca/observability/security_metrics.py
+# src/ALİM/observability/security_metrics.py
 from prometheus_client import Counter, Histogram
 
 security_events = Counter(
-    'yonca_security_events_total',
+    'ALİM_security_events_total',
     'Security events by type',
     ['event_type', 'severity']
 )
 
 auth_failures = Counter(
-    'yonca_auth_failures_total',
+    'ALİM_auth_failures_total',
     'Authentication failures',
     ['reason']
 )
 
 input_risk_score = Histogram(
-    'yonca_input_risk_score',
+    'ALİM_input_risk_score',
     'Risk scores from input validator',
     buckets=[0.1, 0.3, 0.5, 0.7, 0.9]
 )
@@ -689,7 +689,7 @@ input_risk_score = Histogram(
 
 ## 📋 Compliance Checklist
 
-### For Yonca Mobile Integration
+### For ALİM Mobile Integration
 
 | Requirement | Status | Evidence |
 |:------------|:-------|:---------|

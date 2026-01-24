@@ -28,7 +28,7 @@
                          │
                          ▼ (Store in session)
          ┌───────────────────────────────────┐
-         │ cl.user_session["alem_persona"]   │ ← NOT DISPLAYED
+         │ cl.user_session["alim_persona"]   │ ← NOT DISPLAYED
          └───────────────────┬───────────────┘
                              │
          ┌───────────────────┴─────────────────┐
@@ -60,7 +60,7 @@
 
 ## 💾 Data Persistence Layer
 
-Yonca AI uses **PostgreSQL** for all data storage, including user-uploaded files.
+ALİM uses **PostgreSQL** for all data storage, including user-uploaded files.
 
 | Data Type | Storage | Rationale |
 |-----------|---------|-----------|
@@ -165,7 +165,7 @@ async def chat_profiles():
 ### 3️⃣ **System Prompt**
 ```python
 # In on_chat_start():
-default_expertise = detect_expertise_from_persona(alem_persona_dict)
+default_expertise = detect_expertise_from_persona(alim_persona_dict)
 # Returns: ["general", "orchard"] if crop_type="Alma"
 
 profile_prompt = build_combined_system_prompt(default_expertise)

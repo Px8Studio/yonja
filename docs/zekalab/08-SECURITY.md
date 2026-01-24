@@ -12,9 +12,9 @@
 
 | Component | Status | Location |
 |:----------|:-------|:---------|
-| **Input Validator** | ✅ | `src/yonca/security/input_validator.py` |
-| **Output Validator** | ✅ | `src/yonca/security/output_validator.py` |
-| **PII Gateway** | ✅ | `src/yonca/security/pii_gateway.py` |
+| **Input Validator** | ✅ | `src/ALİM/security/input_validator.py` |
+| **Output Validator** | ✅ | `src/ALİM/security/output_validator.py` |
+| **PII Gateway** | ✅ | `src/ALİM/security/pii_gateway.py` |
 | Rate Limiting | ✅ | Redis-based |
 | CORS | ✅ | FastAPI config |
 | JWT Validation | ✅ | Auth module |
@@ -90,7 +90,7 @@ flowchart TB
 ## 🔍 Input Validation
 
 ```python
-# src/yonca/security/input_validator.py
+# src/ALİM/security/input_validator.py
 class InputValidator:
     MAX_LENGTH = 2000
 
@@ -112,7 +112,7 @@ class InputValidator:
 ## 🛡️ PII Gateway
 
 ```python
-# src/yonca/security/pii_gateway.py
+# src/ALİM/security/pii_gateway.py
 class PIIGateway:
     """Strip or anonymize PII before LLM processing."""
 

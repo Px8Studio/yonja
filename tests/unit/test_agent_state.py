@@ -3,8 +3,7 @@
 
 from datetime import datetime
 
-from langchain_core.messages import AIMessage, HumanMessage
-from yonca.agent.state import (
+from alim.agent.state import (
     Alert,
     FarmContext,
     Message,
@@ -17,6 +16,7 @@ from yonca.agent.state import (
     create_initial_state,
     get_conversation_summary,
 )
+from langchain_core.messages import AIMessage, HumanMessage
 
 
 class TestUserIntent:

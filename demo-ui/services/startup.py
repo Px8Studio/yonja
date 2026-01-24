@@ -5,6 +5,7 @@ from typing import TypedDict
 import httpx
 from chainlit.data.chainlit_data_layer import ChainlitDataLayer
 from config import settings as demo_settings
+from data_layer import AlimDataLayer
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
@@ -167,9 +168,8 @@ async def init_chainlit_data_layer():
                 logger.error("   File elements (images, docs) will not be persisted")
 
         # Initialize Chainlit data layer
-        from data_layer import YoncaDataLayer
 
-        data_layer = YoncaDataLayer(
+        data_layer = AlimDataLayer(
             conninfo=db_url,
             storage_provider=storage_provider,
         )

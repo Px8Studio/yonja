@@ -16,20 +16,20 @@ ARCHITECTURE:
 - Use langchain-mcp-adapters for tool binding (NOT custom MCPClient)
 
 KEY FILES:
-- src/yonca/agent/graph.py → StateGraph + make_graph() entrypoint
-- src/yonca/mcp/adapters.py → MCP client config using langchain-mcp-adapters
-- src/yonca/mcp_server/zekalab_fastmcp.py → FastMCP server with 5 tools
-- src/yonca/agent/state.py → AgentState + MCPTrace
+- src/ALİM/agent/graph.py → StateGraph + make_graph() entrypoint
+- src/ALİM/mcp/adapters.py → MCP client config using langchain-mcp-adapters
+- src/ALİM/mcp_server/zekalab_fastmcp.py → FastMCP server with 5 tools
+- src/ALİM/agent/state.py → AgentState + MCPTrace
 
 RULES:
 1. Never build bespoke API wrappers—expose FastMCP tools and load via adapters
 2. Always record MCPTrace for every tool call
 3. Use ToolNode for automatic tool binding from LLM responses
 4. Graceful fallback to synthetic data if MCP fails
-5. Branding: "ALEM" or "Yonca AI" only
+5. Branding: "ALEM" or "ALİM" only
 
 QUICK START:
-- Start MCP: uvicorn yonca.mcp_server.zekalab_fastmcp:mcp --port 7777
+- Start MCP: uvicorn ALİM.mcp_server.zekalab_fastmcp:mcp --port 7777
 - Start LangGraph: langgraph dev
 - Start UI: chainlit run demo-ui/app.py
 ```
@@ -40,7 +40,7 @@ QUICK START:
 
 ```powershell
 # ZekaLab MCP Server
-.venv\Scripts\python.exe -m uvicorn yonca.mcp_server.zekalab_fastmcp:mcp --port 7777
+.venv\Scripts\python.exe -m uvicorn ALİM.mcp_server.zekalab_fastmcp:mcp --port 7777
 
 # MCP Tests
 pytest tests/unit/test_mcp_server/test_zekalab_mcp.py -v

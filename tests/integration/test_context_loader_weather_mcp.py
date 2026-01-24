@@ -3,8 +3,8 @@
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from yonca.agent.nodes.context_loader import context_loader_node
-from yonca.agent.state import (
+from alim.agent.nodes.context_loader import context_loader_node
+from alim.agent.state import (
     RoutingDecision,
     UserIntent,
     create_initial_state,

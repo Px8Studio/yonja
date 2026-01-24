@@ -31,7 +31,7 @@ if sys.platform == "win32":
     # Force SelectorEventLoop for psycopg compatibility
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-from yonca.agent.memory import get_checkpointer_async, reset_checkpointer
+from alim.agent.memory import get_checkpointer_async, reset_checkpointer
 
 
 async def setup_langgraph_tables():

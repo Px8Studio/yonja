@@ -56,9 +56,9 @@ quadrantChart
 
 **Configuration:**
 ```bash
-YONCA_LLM_PROVIDER=groq
-YONCA_GROQ_MODEL=meta-llama/llama-4-maverick-17b-128e-instruct
-YONCA_GROQ_API_KEY=gsk_your_key_here
+ALİM_LLM_PROVIDER=groq
+ALİM_GROQ_MODEL=meta-llama/llama-4-maverick-17b-128e-instruct
+ALİM_GROQ_API_KEY=gsk_your_key_here
 ```
 
 ---

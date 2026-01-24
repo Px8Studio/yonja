@@ -106,7 +106,7 @@ async def check_mcp_health(service_key: str) -> MCPServiceStatus:
 
 #### LangGraph loads MCP tools via adapters:
 ```python
-# src/yonca/mcp/adapters.py (lines 33-88)
+# src/ALİM/mcp/adapters.py (lines 33-88)
 
 def get_mcp_client_config() -> dict[str, dict[str, Any]]:
     """Build MCP client configuration from settings."""
@@ -138,7 +138,7 @@ async def get_mcp_tools() -> list[BaseTool]:
 
 #### MCP traces recorded in LangGraph state:
 ```python
-# src/yonca/agent/state.py
+# src/ALİM/agent/state.py
 
 class AgentState(TypedDict):
     # ... other fields
@@ -184,8 +184,8 @@ def _format_mcp_data_flow(mcp_traces: list[dict]) -> str | None:
   - ✅ Handle fallback if MCP unavailable
 
 - **Files:**
-  - `src/yonca/agent/graph.py` (ToolNode setup)
-  - `src/yonca/mcp/adapters.py` (MCP client config)
+  - `src/ALİM/agent/graph.py` (ToolNode setup)
+  - `src/ALİM/mcp/adapters.py` (MCP client config)
 
 ### **Layer 3: MCP Servers (Backend)**
 - **Role:** Tool/resource providers
@@ -195,7 +195,7 @@ def _format_mcp_data_flow(mcp_traces: list[dict]) -> str | None:
   - ✅ Execute agricultural rules
 
 - **Files:**
-  - `src/yonca/mcp_server/zekalab_fastmcp.py` (ZekaLab, port 7777)
+  - `src/ALİM/mcp_server/zekalab_fastmcp.py` (ZekaLab, port 7777)
   - External: OpenWeather MCP
 
 ---
@@ -319,7 +319,7 @@ LLM can only call tools from these servers
 ### **Test 1: Config Consistency**
 ```bash
 # Check all three read the same URL
-grep -r "ZEKALAB_MCP_URL" src/yonca/mcp/adapters.py
+grep -r "ZEKALAB_MCP_URL" src/ALİM/mcp/adapters.py
 grep -r "ZEKALAB_MCP_URL" demo-ui/app.py
 grep -r "zekalab_mcp_url" langgraph.json
 ```
@@ -327,14 +327,14 @@ grep -r "zekalab_mcp_url" langgraph.json
 ### **Test 2: Health Check End-to-End**
 ```bash
 # 1. Start MCP server
-Task: "🌿 Yonca AI: 🧠 ZekaLab MCP Start"
+Task: "🌿 ALİM: 🧠 ZekaLab MCP Start"
 
 # 2. Check it responds
 curl http://localhost:7777/health
 # Expected: {"status": "healthy", ...}
 
 # 3. Start Chainlit
-Task: "🌿 Yonca AI: 🖥️ UI Start"
+Task: "🌿 ALİM: 🖥️ UI Start"
 
 # 4. Open UI and look for MCP status badge
 # Should show: ✅ ZekaLab (12ms) • ✅ LangGraph (8ms)
@@ -367,20 +367,20 @@ Task: "🌿 Yonca AI: 🖥️ UI Start"
 - [ ] `_format_mcp_data_flow()` displays MCP traces
 - [ ] Data consent flow for MCP attribution
 
-### **LangGraph (src/yonca/agent/graph.py)**
+### **LangGraph (src/ALİM/agent/graph.py)**
 - [ ] ToolNode created with MCP tools
 - [ ] `get_mcp_tools()` called in make_graph()
 - [ ] Agent can invoke MCP tools
 - [ ] MCPTrace recorded for each call
 
-### **MCP Adapters (src/yonca/mcp/adapters.py)**
+### **MCP Adapters (src/ALİM/mcp/adapters.py)**
 - [ ] `get_mcp_client_config()` builds config from env
 - [ ] `create_mcp_client()` returns MultiServerMCPClient
 - [ ] `get_mcp_tools()` fetches tools from all servers
 - [ ] Profile-based filtering (PROFILE_MCP_SERVERS)
 - [ ] Health check function
 
-### **MCP Server (src/yonca/mcp_server/zekalab_fastmcp.py)**
+### **MCP Server (src/ALİM/mcp_server/zekalab_fastmcp.py)**
 - [ ] FastMCP app created
 - [ ] 5 tools exposed (irrigation, fertilization, pest control, subsidy, harvest)
 - [ ] 3 resources exposed (rules, crop profiles, subsidy data)
@@ -487,7 +487,7 @@ MCP_SERVICES = {
 
 ### **3. Add to adapters config**
 ```python
-# src/yonca/mcp/adapters.py
+# src/ALİM/mcp/adapters.py
 
 if settings.postgres_mcp_enabled:
     postgres_config = {
@@ -499,7 +499,7 @@ if settings.postgres_mcp_enabled:
 
 ### **4. Add to profile permissions**
 ```python
-# src/yonca/mcp/adapters.py
+# src/ALİM/mcp/adapters.py
 
 PROFILE_MCP_SERVERS["expert"] = ["zekalab", "openweather", "postgres"]
 ```

@@ -1,5 +1,5 @@
 ---
-description: Run the full pytest suite for Yonca AI
+description: Run the full pytest suite for ALİM
 ---
 
 This workflow runs all tests using `pytest` with verbose output.

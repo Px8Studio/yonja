@@ -8,9 +8,9 @@ Mocks external HTTP calls to ensure fast, reliable tests.
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from yonca.llm.providers.base import LLMMessage, LLMResponse, MessageRole
-from yonca.llm.providers.groq import GroqProvider, strip_thinking_tags
-from yonca.llm.providers.ollama import OllamaProvider
+from alim.llm.providers.base import LLMMessage, LLMResponse, MessageRole
+from alim.llm.providers.groq import GroqProvider, strip_thinking_tags
+from alim.llm.providers.ollama import OllamaProvider
 
 # ============================================================
 # Base Provider Tests
@@ -97,7 +97,7 @@ class TestOllamaProvider:
         assert len(formatted) == 2
         assert formatted[0]["role"] == "system"
         assert formatted[1]["role"] == "user"
-        assert "Yonca AI" in formatted[0]["content"]
+        assert "ALİM" in formatted[0]["content"]
 
     @pytest.mark.asyncio
     async def test_generate_success(self, sample_messages):
@@ -262,7 +262,7 @@ class TestHTTPClientPool:
 
     def test_pool_config_defaults(self):
         """Test default pool configuration."""
-        from yonca.llm.http_pool import PoolConfig
+        from alim.llm.http_pool import PoolConfig
 
         config = PoolConfig()
         assert config.max_connections == 100
@@ -270,7 +270,7 @@ class TestHTTPClientPool:
 
     def test_provider_specific_configs(self):
         """Test provider-specific configurations."""
-        from yonca.llm.http_pool import HTTPClientPool
+        from alim.llm.http_pool import HTTPClientPool
 
         groq_config = HTTPClientPool._get_config("groq")
         ollama_config = HTTPClientPool._get_config("ollama")

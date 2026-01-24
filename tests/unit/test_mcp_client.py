@@ -15,15 +15,15 @@ All tests use mocked HTTP clients to avoid network calls.
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from httpx import AsyncClient
-from yonca.mcp.client import (
+from alim.mcp.client import (
     MCPCallResult,
     MCPClient,
     MCPToolCall,
     close_all_mcp_clients,
     get_mcp_client,
 )
-from yonca.mcp.config import MCPServerConfig
+from alim.mcp.config import MCPServerConfig
+from httpx import AsyncClient
 
 # ============================================================
 # Fixtures

@@ -1,4 +1,4 @@
-# Yonca AI: Architecture Analysis & Refactoring Plan
+# ALİM: Architecture Analysis & Refactoring Plan
 
 ## 🔍 Current State Analysis
 
@@ -19,8 +19,8 @@ You currently have **THREE separate UI entry points**, which is causing confusio
   - File upload support
 
 #### **UI Layer 2: FastAPI REST API** (Backend - Port 8000)
-- **Location**: `src/yonca/api/main.py`
-- **Routes**: `src/yonca/api/routes/`
+- **Location**: `src/ALİM/api/main.py`
+- **Routes**: `src/ALİM/api/routes/`
   - `auth.py` - OAuth & authentication
   - `chat.py` - Chat endpoint
   - `graph.py` - Agent/graph control
@@ -31,7 +31,7 @@ You currently have **THREE separate UI entry points**, which is causing confusio
 - **Documentation**: Swagger (`/docs`), ReDoc (`/redoc`)
 
 #### **UI Layer 3: ZekaLab MCP Server** (Internal Rules - Port 7777)
-- **Location**: `src/yonca/mcp_server/main.py` (863 lines)
+- **Location**: `src/ALİM/mcp_server/main.py` (863 lines)
 - **Purpose**: Internal agricultural rules engine exposed as MCP tools
 - **Technology**: FastMCP (FastAPI-based)
 - **Tools**:
@@ -280,14 +280,14 @@ class SessionManager:
 ## 📋 Refactoring Roadmap (12-Factor Compliant)
 
 ### **Phase 1: Configuration Management** (Week 1)
-- [ ] Create unified config layer (`src/yonca/config_schema.py`)
+- [ ] Create unified config layer (`src/ALİM/config_schema.py`)
 - [ ] Validate all env vars at startup
 - [ ] Add config documentation
 - [ ] Separate demo/dev/prod configs
 
 **Files to create:**
 ```python
-# src/yonca/config_schema.py
+# src/ALİM/config_schema.py
 class AppConfig(BaseModel):
     """12-factor compliant config."""
     # Backend services

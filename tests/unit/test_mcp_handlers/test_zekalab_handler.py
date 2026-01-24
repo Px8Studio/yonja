@@ -12,8 +12,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
-from yonca.agent.state import MCPTrace
-from yonca.mcp.handlers.zekalab_handler import ZekaLabMCPHandler, get_zekalab_handler
+from alim.agent.state import MCPTrace
+from alim.mcp.handlers.zekalab_handler import ZekaLabMCPHandler, get_zekalab_handler
 
 
 @pytest.fixture

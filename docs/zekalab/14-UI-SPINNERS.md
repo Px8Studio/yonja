@@ -189,8 +189,8 @@ All spinners use CSS animations defined in `custom.css`:
 ### Color Scheme
 
 Spinners use ALEM brand colors:
-- Primary: `var(--yonca-green-primary)` (#2D5A27)
-- Accent: `var(--yonca-clover)` (#A8E6CF)
+- Primary: `var(--ALİM-green-primary)` (#2D5A27)
+- Accent: `var(--ALİM-clover)` (#A8E6CF)
 - Background: Semi-transparent green gradients
 
 ### Dark Mode

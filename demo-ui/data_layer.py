@@ -1,5 +1,5 @@
 # demo-ui/data_layer.py
-"""Chainlit Data Layer for ALEM.
+"""Chainlit Data Layer for ALİM.
 
 This module implements Chainlit's SQLAlchemy data layer to persist:
 - Users (linked to Google OAuth identity)
@@ -36,7 +36,7 @@ from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 logger = structlog.get_logger(__name__)
 
 # Module-level singleton
-_data_layer: YoncaDataLayer | None = None
+_data_layer: AlimDataLayer | None = None
 
 
 def get_database_url() -> str:
@@ -62,7 +62,7 @@ def get_database_url() -> str:
     return db_url
 
 
-class YoncaDataLayer(SQLAlchemyDataLayer):
+class AlimDataLayer(SQLAlchemyDataLayer):
     """Custom data layer with JSONB serialization fix for PostgreSQL.
 
     Chainlit's default SQLAlchemyDataLayer has a bug where it passes tags as a
@@ -324,7 +324,7 @@ async def ensure_user_persisted(user: cl.User) -> bool:
 # ============================================
 
 
-def get_data_layer() -> YoncaDataLayer | None:
+def get_data_layer() -> AlimDataLayer | None:
     """Get or create the data layer singleton."""
     global _data_layer
 
@@ -345,7 +345,7 @@ def get_data_layer() -> YoncaDataLayer | None:
     )
 
     try:
-        _data_layer = YoncaDataLayer(conninfo=db_url)
+        _data_layer = AlimDataLayer(conninfo=db_url)
         return _data_layer
     except Exception as e:
         logger.error("data_layer_init_failed", error=str(e))

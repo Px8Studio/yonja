@@ -13,8 +13,8 @@ Plus 3 resources and health check.
 from datetime import datetime
 
 import pytest
+from alim.mcp_server.main import app
 from fastapi.testclient import TestClient
-from yonca.mcp_server.main import app
 
 
 @pytest.fixture

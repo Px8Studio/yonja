@@ -3,7 +3,7 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from yonca.mcp.handlers.weather_handler import WeatherMCPHandler
+from alim.mcp.handlers.weather_handler import WeatherMCPHandler
 
 
 @pytest.fixture

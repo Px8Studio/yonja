@@ -6,7 +6,7 @@ and secure prompt building.
 """
 
 import pytest
-from yonca.security import (
+from alim.security import (
     # Input Validation
     InputValidator,
     OutputValidationResult,
@@ -607,7 +607,7 @@ class TestSecurePromptBuilder:
     def test_builds_complete_prompt(self, builder: SecurePromptBuilder):
         """Builds prompt with all sections."""
         prompt = builder.build(
-            system_prompt="You are Yonca AI, an agricultural assistant.",
+            system_prompt="You are ALİM, an agricultural assistant.",
             context="Farm: 15 ha wheat field in Quba",
             user_query="When should I water?",
         )
@@ -619,7 +619,7 @@ class TestSecurePromptBuilder:
         assert "CAVAB TƏLİMATLARI" in prompt
 
         # Should contain content
-        assert "Yonca AI" in prompt
+        assert "ALİM" in prompt
         assert "15 ha" in prompt
         assert "When should I water?" in prompt
 

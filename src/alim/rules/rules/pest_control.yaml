@@ -1,0 +1,121 @@
+# Pest Control Rules for ALİM
+# Category: pest_control (zərərverici)
+# Language: Azerbaijani (az)
+
+rules:
+  # Spraying Wind Warning
+  - id: PEST_001
+    name: "Dərman Çiləmə Küləyi"
+    category: pest_control
+    description: "Avoid spraying in windy conditions"
+    conditions:
+      - field: weather.wind_speed_kmh
+        operator: gte
+        value: 15
+    recommendation:
+      az: "💨 Külək güclüdür (>15 km/saat). Pestisid çiləməyin - dərman hədəfdən kənara uçacaq, qonşu sahələrə, insanlara və faydalı həşəratlara zərər verə bilər."
+      en: "Wind is strong (>15 km/h). Don't spray pesticides - chemicals will drift off target, potentially harming neighboring fields, people, and beneficial insects."
+    priority: high
+    confidence: 0.95
+
+  # Rain Wash-off Warning
+  - id: PEST_002
+    name: "Yağış Yuma Xəbərdarlığı"
+    category: pest_control
+    description: "Warn about pesticide wash-off from rain"
+    conditions:
+      - field: weather.precipitation_mm
+        operator: gte
+        value: 5
+    recommendation:
+      az: "🌧️ Yağış gözlənilir. Pestisid çiləməyin - dərman yuyulacaq və səmərəsiz olacaq. Çiləmədən sonra ən azı 4-6 saat quru hava lazımdır."
+      en: "Rain expected. Don't spray pesticides - they will wash off and be ineffective. At least 4-6 hours of dry weather needed after spraying."
+    priority: medium
+    confidence: 0.9
+
+  # High Humidity Fungal Risk
+  - id: PEST_003
+    name: "Göbələk Xəstəliyi Riski"
+    category: pest_control
+    description: "Fungal disease risk in high humidity"
+    conditions:
+      - field: weather.humidity_percent
+        operator: gte
+        value: 80
+      - field: weather.temperature_c
+        operator: between
+        value: [15, 28]
+    recommendation:
+      az: "🍄 Rütubət yüksəkdir - göbələk xəstəlikləri riski artıb. Bitkiləri yoxlayın, xüsusilə yarpaqların alt tərəfini. Profilaktik fungisid düşünün."
+      en: "Humidity is high - increased risk of fungal diseases. Check plants, especially undersides of leaves. Consider preventive fungicide."
+    priority: medium
+    confidence: 0.85
+
+  # Hot Weather Pest Activity
+  - id: PEST_004
+    name: "İsti Havada Zərərverici Aktivliyi"
+    category: pest_control
+    description: "Increased pest activity in hot weather"
+    conditions:
+      - field: weather.temperature_c
+        operator: gte
+        value: 28
+      - field: weather.humidity_percent
+        operator: lte
+        value: 50
+    recommendation:
+      az: "🐛 İsti və quru hava mənənə, trips və hörümçək gənəsi üçün əlverişlidir. Bitkiləri mütəmadi yoxlayın. Bioloji mübarizə üsullarını (yararlı həşəratlar) nəzərdən keçirin."
+      en: "Hot, dry weather favors aphids, thrips, and spider mites. Check plants regularly. Consider biological control methods (beneficial insects)."
+    priority: medium
+    confidence: 0.8
+
+  # Morning Spraying Recommendation
+  - id: PEST_005
+    name: "Səhər Çiləmə Tövsiyəsi"
+    category: pest_control
+    description: "Recommend early morning for pesticide application"
+    conditions:
+      - field: weather.temperature_c
+        operator: between
+        value: [15, 25]
+      - field: weather.wind_speed_kmh
+        operator: lte
+        value: 10
+    recommendation:
+      az: "✅ Pestisid çiləmək üçün yaxşı şərait. Səhər erkən (06:00-09:00) çiləmək ən yaxşısıdır - temperatur mülayim, külək yox, buxarlanma azdır."
+      en: "Good conditions for pesticide application. Early morning (06:00-09:00) is best - moderate temperature, no wind, minimal evaporation."
+    priority: low
+    confidence: 0.85
+
+  # Integrated Pest Management
+  - id: PEST_006
+    name: "Kompleks Mübarizə Tövsiyəsi"
+    category: pest_control
+    description: "Encourage integrated pest management"
+    conditions:
+      - field: intent
+        operator: eq
+        value: "pest_control"
+    recommendation:
+      az: "🌿 Kompleks mübarizə strategiyası (IPM) tövsiyə olunur: 1) Əvvəlcə bioloji üsullar (yararlı həşəratlar), 2) Sonra mexaniki üsullar (tələlər), 3) Ən son kimyəvi mübarizə. Bu, ətraf mühit və sağlamlıq üçün daha yaxşıdır."
+      en: "Integrated Pest Management (IPM) recommended: 1) First biological methods (beneficial insects), 2) Then mechanical methods (traps), 3) Lastly chemical control. Better for environment and health."
+    priority: low
+    confidence: 0.75
+
+  # Night Frost After Spraying
+  - id: PEST_007
+    name: "Çiləmədən Sonra Şaxta"
+    category: pest_control
+    description: "Warning about frost after pesticide application"
+    conditions:
+      - field: weather.temperature_c
+        operator: lte
+        value: 8
+      - field: date.month
+        operator: in
+        values: [3, 4, 10, 11]
+    recommendation:
+      az: "❄️ Gecə şaxta riski var. Pestisid çiləməyin - dərman kristallaşa bilər və bitkilərə zərər verə bilər. Hava istiləşəndə çiləyin."
+      en: "Night frost risk. Don't spray pesticides - chemicals may crystallize and damage plants. Wait for warmer weather."
+    priority: medium
+    confidence: 0.8

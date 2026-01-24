@@ -1,4 +1,4 @@
-# 📑 Yonca AI Documentation Index
+# 📑 ALİM Documentation Index
 
 **Updated:** January 2026
 
@@ -46,7 +46,7 @@
 | Doc | Status | Notes |
 |:----|:------:|:------|
 | [18-ENTERPRISE-INTEGRATION-ROADMAP.md](18-ENTERPRISE-INTEGRATION-ROADMAP.md) | ✅ Current | Partner integrations |
-| [19-YONCA-AI-INTEGRATION-UNIVERSE.md](19-YONCA-AI-INTEGRATION-UNIVERSE.md) | ✅ Current | Ecosystem vision |
+| [19-ALİM-AI-INTEGRATION-UNIVERSE.md](19-ALİM-AI-INTEGRATION-UNIVERSE.md) | ✅ Current | Ecosystem vision |
 
 ---
 
@@ -54,13 +54,13 @@
 
 ### MCP Integration
 ```
-src/yonca/mcp/
+src/ALİM/mcp/
 ├── adapters.py           # langchain-mcp-adapters config
 
-src/yonca/mcp_server/
+src/ALİM/mcp_server/
 ├── zekalab_fastmcp.py    # FastMCP server (5 tools)
 
-src/yonca/agent/
+src/ALİM/agent/
 ├── graph.py              # StateGraph + ToolNode + make_graph()
 ├── state.py              # AgentState + MCPTrace + file_paths
 
@@ -102,7 +102,7 @@ The following docs were **deleted** and consolidated into [MCP-ARCHITECTURE.md](
 
 ### Configuration (Updated)
 ```
-src/yonca/mcp/
+src/ALİM/mcp/
 ├── __init__.py
 ├── config.py (updated - Pydantic v2)
 ├── client.py (Phase 1)
@@ -178,12 +178,12 @@ src/yonca/mcp/
 
 | File | Purpose | Lines |
 |------|---------|-------|
-| [src/yonca/mcp_server/main.py](../src/yonca/mcp_server/main.py) | Main MCP server | 624 |
-| [src/yonca/mcp/handlers/weather_handler.py](../src/yonca/mcp/handlers/weather_handler.py) | Weather handler | 330 |
+| [src/ALİM/mcp_server/main.py](../src/ALİM/mcp_server/main.py) | Main MCP server | 624 |
+| [src/ALİM/mcp/handlers/weather_handler.py](../src/ALİM/mcp/handlers/weather_handler.py) | Weather handler | 330 |
 | [tests/unit/test_mcp_server/test_zekalab_mcp.py](../tests/unit/test_mcp_server/test_zekalab_mcp.py) | MCP tests | 390 |
 | [tests/unit/test_mcp_handlers/test_weather_handler.py](../tests/unit/test_mcp_handlers/test_weather_handler.py) | Weather tests | 184 |
-| [src/yonca/agent/state.py](../src/yonca/agent/state.py) | Agent state (updated) | 446 |
-| [src/yonca/mcp/config.py](../src/yonca/mcp/config.py) | MCP config (fixed) | 238 |
+| [src/ALİM/agent/state.py](../src/ALİM/agent/state.py) | Agent state (updated) | 446 |
+| [src/ALİM/mcp/config.py](../src/ALİM/mcp/config.py) | MCP config (fixed) | 238 |
 
 ---
 

@@ -1,4 +1,4 @@
-# 📋 ALEM Implementation Backlog
+# 📋 ALİM Implementation Backlog
 
 > **Updated:** January 2026
 
@@ -16,9 +16,29 @@
 ### Chat Profiles (Complete ✅)
 - ✅ Expertise-based AI behavior via system prompts
 - ✅ Farm scenario planning with agrotechnological calendar
+
+---
+
+## 🏛️ Legal & Intellectual Property
+
+> **New Category:** IP protection and legal requirements for ALİM brand. See [19-IP-PROTECTION](19-IP-PROTECTION.md) for full details.
+
+| # | Item | Status | Effort | Priority | Notes |
+|:-:|:-----|:------:|:-------|:--------:|:------|
+| L.1 | **ALİM Trademark Registration** | ⬜ | 3-5 mo | 🔴 | Class 9/42/35 with IP Agency |
+| L.2 | **Software Copyright Filing** | ⬜ | 2-4 wk | 🔴 | Register LangGraph/Chainlit code |
+| L.3 | **Database Rights Filing** | ⬜ | 2-4 wk | 🟠 | Training data protection |
+| L.4 | **Trade Secret NDA Template** | ⬜ | 1 wk | 🟠 | For model weights |
+| L.5 | **DigiRella IP Clause Draft** | ⬜ | 1 wk | 🔴 | Proposal addendum |
+| L.6 | **Internal License Agreement** | ⬜ | 1 wk | 🔴 | Exclusive license with reversion right |
+| L.7 | **KOBİA Startup Cert. App** | ⬜ | 2-4 wk | 🔴 | For 3-year tax exemption |
+| L.8 | **IP Ownership Clause Draft** | ⬜ | 3 days | 🔴 | For internal partner agreement |
+
+---
+
 ## 🎯 Strategic Priorities & Certifications
 
-> **New Category:** High-level partnerships and legal/regulatory requirements for enterprise deployment.
+> High-level partnerships and legal/regulatory requirements for enterprise deployment.
 
 | # | Item | Status | Effort | Blocking | Notes |
 |:-:|:-----|:------:|:-------|:---------|:------|
@@ -46,7 +66,7 @@
 
 | # | Partner | Status | Effort | Priority | Notes |
 |:-:|:--------|:------:|:-------|:--------:|:------|
-| 2.1 | **EKTİS Hot-Swap (Option A)** | ⬜ | 4-6 weeks | 🔴 | Via DigiRella/Yonca Mobile API |
+| 2.1 | **EKTİS Hot-Swap (Option A)** | ⬜ | 4-6 weeks | 🔴 | Via DigiRella/ALİM Mobile API |
 | 2.2 | **EKTİS Direct API (Option B)** | ⬜ | 6-8 weeks | 🟠 | Separate Ministry partnership |
 | 2.3 | **CBAR Open Banking (AIS)** | ⬜ | 4-6 weeks | 🟠 | Account information service |
 | 2.4 | **Weather APIs (Azerbaijan Meteorology)** | ⬜ | 1-2 weeks | 🟠 | Hyperlocal forecasts |

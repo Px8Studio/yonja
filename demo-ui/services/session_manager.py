@@ -28,7 +28,7 @@ class SessionManager:
     """Unified session state management with database persistence."""
 
     # Schema key for storing preferences in Chainlit metadata
-    PREFERENCES_KEY = "yonca_preferences"
+    PREFERENCES_KEY = "alim_preferences"
     FARM_CONTEXT_KEY = "yonca_farm_context"
     EXPERTISE_KEY = "yonca_expertise"
 

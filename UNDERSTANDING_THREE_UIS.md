@@ -68,8 +68,8 @@ Response streams back to UI
 - Theoretically could be used by other clients
 
 **Code Location:**
-- `src/yonca/api/main.py` (365 lines)
-- `src/yonca/api/routes/`
+- `src/ALİM/api/main.py` (365 lines)
+- `src/ALİM/api/routes/`
   - `chat.py` - Chat endpoint
   - `auth.py` - Authentication
   - `graph.py` - Agent control
@@ -83,7 +83,7 @@ Response streams back to UI
 
 **Entry Point:**
 ```bash
-python -m uvicorn yonca.api.main:app --port 8000
+python -m uvicorn ALİM.api.main:app --port 8000
 ```
 
 **Current Usage:**
@@ -120,9 +120,9 @@ LangGraph Server is used instead.
 - NOT a UI; a tool provider
 
 **Code Location:**
-- `src/yonca/mcp_server/main.py` (863 lines)
-- `src/yonca/mcp_server/zekalab_fastmcp.py`
-- `src/yonca/rules/` - Rule definitions
+- `src/ALİM/mcp_server/main.py` (863 lines)
+- `src/ALİM/mcp_server/zekalab_fastmcp.py`
+- `src/ALİM/rules/` - Rule definitions
 
 **Built With:**
 - FastMCP (MCP server framework)
@@ -130,7 +130,7 @@ LangGraph Server is used instead.
 
 **Entry Point:**
 ```bash
-python -m uvicorn yonca.mcp_server.main:app --port 7777
+python -m uvicorn ALİM.mcp_server.main:app --port 7777
 ```
 
 **What It Does:**

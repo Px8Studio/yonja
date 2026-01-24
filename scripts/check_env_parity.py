@@ -9,11 +9,11 @@ from pathlib import Path
 
 from dotenv import dotenv_values
 
-# Add src to path so we can import yonca
+# Add src to path so we can import alim
 sys.path.append(str(Path(__file__).parent.parent / "src"))
 
 try:
-    from yonca.config import Settings
+    from alim.config import Settings
 except ImportError as e:
     print(f"❌ Could not import settings: {e}")
     sys.exit(1)

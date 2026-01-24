@@ -2,11 +2,11 @@
 
 ## Overview
 
-The Yonca AI project now has full MCP support enabled in the Chainlit UI. This allows the chat interface to connect to external tools and data sources through the Model Context Protocol standard.
+The ALİM project now has full MCP support enabled in the Chainlit UI. This allows the chat interface to connect to external tools and data sources through the Model Context Protocol standard.
 
 ### Chainlit Native MCP UI vs. Backend-Managed Connectors
 - **Chainlit native MCP UI**: ships with a "Connect an MCP" modal (stdin/stdio/SSE/HTTP) so end-users can add their own servers. Use this if you intentionally want user-provided MCP endpoints.
-- **Backend-managed connectors (current approach)**: we preload servers via `yonca.mcp.adapters` and surface status/tools in chat. This keeps credentials and routing server-side and avoids user setup friction.
+- **Backend-managed connectors (current approach)**: we preload servers via `ALİM.mcp.adapters` and surface status/tools in chat. This keeps credentials and routing server-side and avoids user setup friction.
 - **LangGraph MCP adapters**: we rely on `langchain_mcp_adapters` to populate tools; this stays compatible with Chainlit's UI because tools are pulled server-side and rendered in chat.
 
 Recommendation: keep backend-managed connectors as default; optionally expose the native MCP UI toggle later for power users, guarded by feature flags and per-mode access (fast = off, thinking = off, agent = full connectors).
@@ -31,14 +31,14 @@ Recommendation: keep backend-managed connectors as default; optionally expose th
 └──────────────────────┬──────────────────────────────────────┘
                        ↓
 ┌─────────────────────────────────────────────────────────────┐
-│         MCP Adapters (yonca/mcp/adapters.py)               │
+│         MCP Adapters (ALİM/mcp/adapters.py)               │
 │  - LangChain MCP adapter integration                       │
 │  - Multi-server client management                          │
 │  - Tool loading and caching                                │
 └──────────────────────┬──────────────────────────────────────┘
                        ↓
 ┌─────────────────────────────────────────────────────────────┐
-│            MCP Client (yonca/mcp/client.py)                │
+│            MCP Client (ALİM/mcp/client.py)                │
 │  - HTTP client for MCP servers                             │
 │  - Error handling and retries                              │
 │  - Latency tracking                                         │
@@ -114,7 +114,7 @@ Only the `agent` mode can use MCP connectors. Fast and Thinking are tool-less.
 | `thinking`| _None_ (connectors disabled) | Deep reasoning, still offline/tools-off   |
 | `agent`   | ZekaLab + OpenWeather        | Full autonomy with rules + weather tools  |
 
-Configuration: `yonca/mcp/adapters.py` → `PROFILE_MCP_SERVERS`
+Configuration: `ALİM/mcp/adapters.py` → `PROFILE_MCP_SERVERS`
 
 ## Usage
 
@@ -208,7 +208,7 @@ tool_node = ToolNode(tools)
 Run task: 🧠 ZekaLab MCP Start
 
 # Or manually
-python -m uvicorn yonca.mcp_server.main:app --port 7777 --reload
+python -m uvicorn ALİM.mcp_server.main:app --port 7777 --reload
 ```
 
 **Test Server:**
@@ -297,7 +297,7 @@ mcp_tool_invoked | server=zekalab | tool=evaluate_irrigation_rules | profile=age
 **Symptom:** `/mcp` shows 0 tools
 
 **Solutions:**
-1. Check profile configuration in `yonca/mcp/adapters.py`
+1. Check profile configuration in `ALİM/mcp/adapters.py`
 2. Verify server has tools registered:
    ```bash
    curl http://localhost:7777/tools
@@ -338,8 +338,8 @@ mcp_tool_invoked | server=zekalab | tool=evaluate_irrigation_rules | profile=age
 
 To add a new MCP server:
 
-1. **Define server config** in `yonca/mcp/config.py`
-2. **Add to adapters** in `yonca/mcp/adapters.py`
+1. **Define server config** in `ALİM/mcp/config.py`
+2. **Add to adapters** in `ALİM/mcp/adapters.py`
 3. **Update profile access** in `PROFILE_MCP_SERVERS`
 4. **Add environment variables** to `.env.example`
 5. **Update documentation** in this file

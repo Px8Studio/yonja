@@ -8,8 +8,8 @@ import sys
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from yonca.config import settings  # noqa: E402
-from yonca.llm.model_roles import (  # noqa: E402
+from alim.config import settings  # noqa: E402
+from alim.llm.model_roles import (  # noqa: E402
     LANGGRAPH_NODE_MODELS,
     MODEL_ROLES,
     get_model_for_node,
@@ -101,8 +101,8 @@ async def test_groq_provider():
         print("   Set YONCA_GROQ_API_KEY in .env or environment")
         return
 
-    from yonca.llm.factory import create_groq_provider
-    from yonca.llm.providers.base import LLMMessage
+    from alim.llm.factory import create_groq_provider
+    from alim.llm.providers.base import LLMMessage
 
     # Create Maverick provider
     provider = create_groq_provider(model="meta-llama/llama-4-maverick-17b-128e-instruct")

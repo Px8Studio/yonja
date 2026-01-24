@@ -104,10 +104,10 @@ In [.vscode/tasks.json](.vscode/tasks.json), remove pre-checks from dependsOn:
 
 ```json
 {
-  "label": "🌿 Yonca AI: 🚀 Start All",
+  "label": "🌿 ALİM: 🚀 Start All",
   "dependsOn": [
     // "🛡️ Pre-Start Quality Checks",  ← Comment out
-    "yonca:cleanup",
+    "ALİM:cleanup",
     ...
   ]
 }
@@ -137,7 +137,7 @@ See [.github/workflows/ci.yml](.github/workflows/ci.yml)
 
 ```powershell
 # 1. Make changes to code
-code src/yonca/agent/graph.py
+code src/ALİM/agent/graph.py
 
 # 2. Commit (pre-commit hooks run automatically)
 git add .
@@ -158,7 +158,7 @@ git push origin dev
 **Pre-Commit Hook Fails:**
 ```
 ❌ Ruff linter failed
-src/yonca/agent/graph.py:42:5: Undefined name 'compile_graph'
+src/ALİM/agent/graph.py:42:5: Undefined name 'compile_graph'
 
 Fix with: ruff check src/ tests/ --fix
 ```
@@ -203,7 +203,7 @@ Edit [scripts/pre-start-checks.ps1](scripts/pre-start-checks.ps1):
 ```powershell
 # Add custom validation
 $envPassed = Test-Check -Name "🔐 API keys set" -Command {
-    if (-not $env:YONCA_GROQ_API_KEY) {
+    if (-not $env:ALİM_GROQ_API_KEY) {
         Write-Error "GROQ API key missing"
         exit 1
     }

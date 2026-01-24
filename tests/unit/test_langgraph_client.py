@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
-from yonca.langgraph.client import LangGraphClient, LangGraphClientError
+from alim.langgraph.client import LangGraphClient, LangGraphClientError
 
 # ============================================
 # FIXTURES
@@ -41,7 +41,7 @@ def test_client_init_default():
     client = LangGraphClient()
 
     assert client.base_url == "http://localhost:2024"
-    assert client.graph_id == "yonca_agent"
+    assert client.graph_id == "alim_agent"
     assert client.timeout == 120.0
 
 
@@ -403,7 +403,7 @@ async def test_chat_convenience_method(client, mock_async_client):
     client._client = mock_async_client
 
     result = await client.chat(
-        message="Hello, ALEM!",
+        message="Hello, ALİM!",
         user_id="farmer-123",
     )
 
@@ -454,7 +454,7 @@ def test_url_construction_default():
     """Test default URL construction."""
     client = LangGraphClient()
     assert client.base_url == "http://localhost:2024"
-    assert client.graph_id == "yonca_agent"
+    assert client.graph_id == "alim_agent"
 
 
 def test_url_construction_custom():

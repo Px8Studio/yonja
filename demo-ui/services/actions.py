@@ -109,7 +109,7 @@ Xarici serverlərlə əlaqə qurmağıma icazə verirsinizmi?
 
     await cl.Message(
         content=consent_msg,
-        author="ALEM",
+        author="ALİM",
         actions=actions,
     ).send()
 

@@ -8,7 +8,7 @@
 poetry shell
 
 # Then use commands directly
-uvicorn yonca.api.main:app --reload
+uvicorn ALİM.api.main:app --reload
 alembic upgrade head
 chainlit run demo-ui/app.py --port 8501
 pytest tests/
@@ -39,7 +39,7 @@ poetry run pytest     # Run tests
 .\activate.ps1
 
 # Then use commands normally
-uvicorn yonca.api.main:app --reload
+uvicorn ALİM.api.main:app --reload
 alembic upgrade head
 ```
 
@@ -52,7 +52,7 @@ alembic upgrade head
 
 | Task | Poetry Shell | Poetry Run | Direct Path |
 |------|-------------|-----------|-------------|
-| **Start API** | `uvicorn yonca.api.main:app --reload` | `poetry run dev` | `.\.venv\Scripts\python.exe -m uvicorn yonca.api.main:app --reload` |
+| **Start API** | `uvicorn ALİM.api.main:app --reload` | `poetry run dev` | `.\.venv\Scripts\python.exe -m uvicorn ALİM.api.main:app --reload` |
 | **Run Migrations** | `alembic upgrade head` | `poetry run migrate` | `.\.venv\Scripts\alembic.exe upgrade head` |
 | **Seed Database** | `python scripts/seed_database.py` | `poetry run seed` | `.\.venv\Scripts\python.exe scripts/seed_database.py` |
 | **Run Tests** | `pytest tests/` | `poetry run pytest tests/` | `.\.venv\Scripts\pytest.exe tests/` |
@@ -63,12 +63,12 @@ alembic upgrade head
 
 ## 🌍 Environment Configuration (Two-Axis Model)
 
-Yonca uses a **two-axis deployment model** for clarity:
+ALİM uses a **two-axis deployment model** for clarity:
 
 | Axis | Variable | Values | Purpose |
 |------|----------|--------|---------|
-| **Environment** | `YONCA_ENVIRONMENT` | `development`, `staging`, `production` | WHAT stage of development |
-| **Infrastructure** | `YONCA_INFRASTRUCTURE_MODE` | `local`, `cloud` | WHERE it runs |
+| **Environment** | `ALİM_ENVIRONMENT` | `development`, `staging`, `production` | WHAT stage of development |
+| **Infrastructure** | `ALİM_INFRASTRUCTURE_MODE` | `local`, `cloud` | WHERE it runs |
 
 ### Configuration Matrix
 
@@ -83,18 +83,18 @@ Yonca uses a **two-axis deployment model** for clarity:
 
 **Local Development:**
 ```bash
-YONCA_ENVIRONMENT=development
-YONCA_INFRASTRUCTURE_MODE=local
-YONCA_LLM_PROVIDER=ollama
-YONCA_LANGGRAPH_REQUIRED=true
+ALİM_ENVIRONMENT=development
+ALİM_INFRASTRUCTURE_MODE=local
+ALİM_LLM_PROVIDER=ollama
+ALİM_LANGGRAPH_REQUIRED=true
 ```
 
 **Cloud Production:**
 ```bash
-YONCA_ENVIRONMENT=production
-YONCA_INFRASTRUCTURE_MODE=cloud
-YONCA_LLM_PROVIDER=groq
-YONCA_LANGGRAPH_REQUIRED=true
+ALİM_ENVIRONMENT=production
+ALİM_INFRASTRUCTURE_MODE=cloud
+ALİM_LLM_PROVIDER=groq
+ALİM_LANGGRAPH_REQUIRED=true
 ```
 
 ---
@@ -104,19 +104,19 @@ YONCA_LANGGRAPH_REQUIRED=true
 ### "Command not recognized" Error
 ```powershell
 # Problem:
-PS> uvicorn yonca.api.main:app --reload
+PS> uvicorn ALİM.api.main:app --reload
 uvicorn: The term 'uvicorn' is not recognized...
 
 # Solution 1: Activate Poetry shell
 poetry shell
-uvicorn yonca.api.main:app --reload
+uvicorn ALİM.api.main:app --reload
 
 # Solution 2: Use Poetry run
 poetry run dev
 
 # Solution 3: Use quick activate
 .\activate.ps1
-uvicorn yonca.api.main:app --reload
+uvicorn ALİM.api.main:app --reload
 ```
 
 ### First Time Setup
@@ -137,7 +137,7 @@ poetry shell
 
 ## 🐳 Docker Multi-Environment Deployment
 
-Yonca now uses a modular Docker Compose structure for different deployment stages.
+ALİM now uses a modular Docker Compose structure for different deployment stages.
 
 ### 1. Development (Local)
 Full stack with local Ollama, LangGraph server, API, and UI.
@@ -194,7 +194,7 @@ LangGraph Studio provides a visual interface for debugging your agent's state ma
 1. **Add to your PowerShell profile** (auto-activate on `cd`):
    ```powershell
    # Edit: $PROFILE
-   function yonca {
+   function ALİM {
        cd C:\Users\rjjaf\_Projects\yonja
        poetry shell
    }
@@ -206,8 +206,8 @@ LangGraph Studio provides a visual interface for debugging your agent's state ma
 
 4. **Check if environment is active:**
    ```powershell
-   # Look for (yonca-ai) prefix in prompt
-   (yonca-ai) PS C:\Users\rjjaf\_Projects\yonja>
+   # Look for (ALİM-ai) prefix in prompt
+   (ALİM-ai) PS C:\Users\rjjaf\_Projects\yonja>
    ```
 
 ---

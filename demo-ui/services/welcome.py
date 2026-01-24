@@ -85,7 +85,7 @@ async def send_dashboard_welcome(
         # Build dashboard message
         dashboard_content = f"""{greeting}
 
-🌿 **ALEM | Aqronom Assistentiniz**
+🌿 **ALİM | Aqronom Assistentiniz**
 
 Mən sizin virtual aqronomam — əkin, suvarma və subsidiya məsələlərində kömək edirəm.
 
@@ -127,7 +127,7 @@ Mən sizin virtual aqronomam — əkin, suvarma və subsidiya məsələlərində
         # Send the dashboard welcome message
         await cl.Message(
             content=dashboard_content,
-            author="ALEM",
+            author="ALİM",
             actions=actions,
         ).send()
 
@@ -144,4 +144,4 @@ Mən sizin virtual aqronomam — əkin, suvarma və subsidiya məsələlərində
     except Exception as e:
         logger.error("welcome_message_failed", error=str(e), exc_info=True)
         # Fallback simple welcome
-        await cl.Message(content="👋 Xoş gəlmisiniz! Mən ALEM-əm, sizin virtual aqronomun.").send()
+        await cl.Message(content="👋 Xoş gəlmisiniz! Mən ALİM-əm, sizin virtual aqronomun.").send()

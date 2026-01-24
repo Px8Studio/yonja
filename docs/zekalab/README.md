@@ -85,7 +85,7 @@ See [DOCUMENTATION-INDEX.md](DOCUMENTATION-INDEX.md) for complete categorized li
 docker-compose -f docker-compose.local.yml up -d
 
 # 2. Run migrations
-$env:DATABASE_URL = "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
+$env:DATABASE_URL = "postgresql+asyncpg://ALİM:ALİM_dev_password@localhost:5433/ALİM"
 alembic upgrade head
 
 # 3. Start demo UI
@@ -105,11 +105,11 @@ cd demo-ui && chainlit run app.py -w --port 8501
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
 flowchart TB
-    subgraph external["🌐 External: Yonca Mobile (Digital Umbrella)"]
-        yonca_mobile["📱 Production App<br/><i>Future data source</i>"]
+    subgraph external["🌐 External: ALİM Mobile (Digital Umbrella)"]
+        ALİM_mobile["📱 Production App<br/><i>Future data source</i>"]
     end
 
-    subgraph yonca_ai["🤖 YONCA AI (Our System)"]
+    subgraph ALİM_ai["🤖 ALİM (Our System)"]
         subgraph ui["🖥️ Demo UI"]
             chainlit["Chainlit :8501"]
         end
@@ -130,7 +130,7 @@ flowchart TB
         langfuse_ui["Langfuse :3001"]
     end
 
-    yonca_mobile -.->|"future sync"| pg
+    ALİM_mobile -.->|"future sync"| pg
     chainlit --> agent --> llm
     agent --> pg
     agent --> redis
@@ -138,9 +138,9 @@ flowchart TB
     langfuse_db --> langfuse_ui
 
     style external fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
-    style yonca_ai fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style ALİM_ai fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
     style observe fill:#f3e5f5,stroke:#7b1fa2
 ```
 
-> **Key:** Yonca AI = our system | Yonca Mobile = Digital Umbrella's production app
+> **Key:** ALİM = our system | ALİM Mobile = Digital Umbrella's production app
 > See [03-ARCHITECTURE](03-ARCHITECTURE.md) for full data ecosystem + VS Code DB access.

@@ -20,6 +20,10 @@ $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $envFile = "$projectRoot\.env"
 
+# Force UTF-8 for Python output to prevent emoji crashes on Windows
+$env:PYTHONUTF8 = "1"
+
+
 # 1. Load .env file
 if (Test-Path $envFile) {
     Get-Content $envFile | Where-Object { $_ -match '^\s*[^#]' -and $_ -match '=' } | ForEach-Object {
@@ -27,7 +31,13 @@ if (Test-Path $envFile) {
         $key = $key.Trim()
         $value = $value.Trim()
 
+        # Remove trailing comments (e.g., "value # comment" -> "value")
+        if ($value -match '^(.*?)(\s+#.*)$') {
+            $value = $matches[1].Trim()
+        }
+
         # Remove quotes if present
+
         if ($value -match '^"(.*)"$') { $value = $matches[1] }
         elseif ($value -match "^'(.*)'$") { $value = $matches[1] }
 

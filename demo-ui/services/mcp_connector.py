@@ -115,7 +115,7 @@ async def get_native_mcp_connections() -> dict[str, Any]:
             "count": len(native_connections),
         }
     except Exception as e:
-        logger.warning("failed_to_get_native_mcp_connections", error=str(e))
+        logger.warning("failed_to_get_native_mcp_connections", error=str(e), exc_info=True)
         return {
             "native_connections": {},
             "count": 0,
@@ -239,6 +239,7 @@ async def invoke_mcp_tool(
             server=server,
             tool=tool_name,
             error=str(e),
+            exc_info=True,
         )
         return {
             "success": False,

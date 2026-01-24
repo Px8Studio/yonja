@@ -43,6 +43,9 @@ class SessionManager:
 
             data_layer = get_data_layer()
             if not data_layer:
+                # If data layer is expected but missing, this is weird, but maybe not fatal if in-memory
+                # But if we are in persistence mode, this should probably be an error.
+                # For now, we log usage.
                 logger.debug("session_load_no_datalayer")
                 return {}
 
@@ -53,13 +56,24 @@ class SessionManager:
                 return {}
 
             # Extract preferences from user metadata
-            metadata = user.get("metadata") or {}
+            # Handle both Pydantic object (PersistedUser) and dict (legacy)
+            if hasattr(user, "metadata"):
+                metadata = user.metadata
+            else:
+                metadata = user.get("metadata")
+
+            if not metadata:
+                metadata = {}
+
             if isinstance(metadata, str):
                 import json
 
                 try:
                     metadata = json.loads(metadata) if metadata.strip() else {}
                 except Exception:
+                    # corrupted metadata json is bad, but maybe recoverable by resetting?
+                    # Strict mode: warn deeply
+                    logger.warning(f"Corrupted metadata JSON for user {user_id}")
                     metadata = {}
 
             preferences = metadata.get(SessionManager.PREFERENCES_KEY, {})
@@ -71,8 +85,9 @@ class SessionManager:
             return preferences
 
         except Exception as e:
-            logger.warning(f"Session load failed: user_id={user_id}, error={str(e)}")
-            return {}
+            # STRICT MODE: Do not swallow DB errors.
+            logger.error(f"❌ Session load CRITICAL FAILURE: user_id={user_id}", exc_info=True)
+            raise e
 
     @staticmethod
     async def save_user_preferences(user_id: str, preferences: dict[str, Any]) -> bool:
@@ -100,7 +115,14 @@ class SessionManager:
                 return False
 
             # Merge into metadata
-            metadata = user.get("metadata") or {}
+            # Handle both Pydantic object (PersistedUser) and dict (legacy)
+            if hasattr(user, "metadata"):
+                metadata = user.metadata
+            else:
+                metadata = user.get("metadata")
+
+            if not metadata:
+                metadata = {}
             if isinstance(metadata, str):
                 import json
 
@@ -127,8 +149,9 @@ class SessionManager:
             return True
 
         except Exception as e:
-            logger.warning(f"Session save failed: user_id={user_id}, error={str(e)}")
-            return False
+            # STRICT MODE: Do not swallow save errors.
+            logger.error(f"❌ Session save CRITICAL FAILURE: user_id={user_id}", exc_info=True)
+            raise e
 
     @staticmethod
     async def restore_session(user_id: str) -> None:

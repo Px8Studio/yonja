@@ -38,7 +38,7 @@ mask_user_env = true
 
 # Authorized origins
 # FIXED: Explicit origins prevent CORS auth failures with cookie-based authentication
-allow_origins = ["http://localhost:8000", "http://localhost:3000", "https://zekalab.info", "https://yonca.ai"]
+allow_origins = ["http://localhost:8000", "http://localhost:3000", "http://localhost:8501", "http://127.0.0.1:8501", "https://zekalab.info", "https://yonca.ai"]
 
 # Product name shown in UI header
 name = "ALEM 1"

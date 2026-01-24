@@ -41,7 +41,6 @@ import json  # noqa: E402
 import os  # noqa: E402
 import sys  # noqa: E402
 from pathlib import Path  # noqa: E402
-from typing import TypedDict  # noqa: E402
 
 import httpx  # noqa: E402
 
@@ -63,7 +62,6 @@ sys.path.insert(0, str(project_root / "src"))
 import asyncio  # noqa: E402
 import logging  # noqa: E402
 
-from chainlit.data.chainlit_data_layer import ChainlitDataLayer  # noqa: E402
 from config import settings as demo_settings  # noqa: E402
 from data_layer import (  # noqa: E402
     get_data_layer,
@@ -71,70 +69,14 @@ from data_layer import (  # noqa: E402
     save_farm_scenario,
     save_user_settings,
 )
-from fastapi import APIRouter, HTTPException  # noqa: E402
+from fastapi import HTTPException  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine  # noqa: E402
-from sqlalchemy.orm import sessionmaker  # noqa: E402
+from services.startup import (  # noqa: E402
+    init_chainlit_data_layer,
+    perform_startup_health_checks,
+)
 
 logger = logging.getLogger(__name__)
-
-
-async def init_chainlit_data_layer():
-    """Initialize Chainlit's SQLAlchemy data layer with async engine."""
-    try:
-        db_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./data/yonca.db")
-        logger.info(
-            f"Initializing Chainlit data layer with: {db_url.split('@')[-1] if '@' in db_url else db_url}"
-        )
-
-        # Create async engine
-        engine = create_async_engine(
-            db_url,
-            echo=False,
-            pool_pre_ping=True,
-            pool_recycle=3600,
-        )
-
-        # Create async session factory
-        sessionmaker(
-            engine,
-            class_=AsyncSession,
-            expire_on_commit=False,
-        )
-
-        # Initialize PostgreSQL storage provider for file elements (images, docs, etc.)
-        # This prevents the "storage client not initialized" warning
-        from storage_postgres import get_postgres_storage_client
-
-        storage_provider = None
-        if "postgresql" in db_url or "postgres" in db_url:
-            try:
-                storage_provider = get_postgres_storage_client(database_url=db_url)
-                logger.info("✅ PostgreSQL storage provider initialized for file elements")
-            except Exception as storage_err:
-                logger.warning(f"⚠️  PostgreSQL storage provider failed: {storage_err}")
-                logger.warning("   File elements (images, docs) will not be persisted")
-
-        # Initialize Chainlit data layer
-        # Note: Newer Chainlit versions expect only conninfo string, not engine
-        # YoncaDataLayer includes JSON serialization fix for JSONB tags columns
-        from data_layer import YoncaDataLayer
-
-        data_layer = YoncaDataLayer(
-            conninfo=db_url,
-            storage_provider=storage_provider,  # Pass storage provider to persist file elements
-        )
-
-        # Set as global data layer
-        ChainlitDataLayer._instance = data_layer
-
-        logger.info("✅ Chainlit data layer initialized successfully")
-        return data_layer
-    except Exception as e:
-        logger.warning(f"⚠️  Chainlit data layer initialization failed: {e}")
-        logger.warning("   Threads will not be persisted (sessions will be stateless)")
-        return None
-
 
 # Initialize data layer before importing chainlit (but only if Postgres is configured)
 # This must happen BEFORE @cl.data_layer decorator runs
@@ -142,15 +84,25 @@ _data_layer_initialized = False
 try:
     from config import settings as demo_settings_early
 
+    # 1. Run explicit health checks
+    asyncio.run(perform_startup_health_checks())
+
+    # 2. Initialize Data Layer (which also checks DB connection)
     if demo_settings_early.data_persistence_enabled:
         asyncio.run(init_chainlit_data_layer())
         _data_layer_initialized = True
-        logger.info("✅ Data layer pre-initialized for Chainlit registration")
+        logger.info("[OK] Data layer pre-initialized for Chainlit registration")
     else:
-        logger.info("⏩ Skipping data layer init (SQLite/no Postgres configured)")
+        logger.info("[SKIP] Skipping data layer init (SQLite/no Postgres configured)")
+
 except Exception as e:
-    logger.error(f"Failed to initialize data layer: {e}")
-    _data_layer_initialized = False
+    # ----------------------------------------------------
+    # STRICT STARTUP POLICY: NO SILENT FAILURES
+    # ----------------------------------------------------
+    logger.critical("STOP CRITICAL STARTUP FAILURE: Application cannot start.", exc_info=True)
+    print(f"\n\nSTOP FATAL ERROR: {str(e)}\n   Check logs for details.\n")
+    sys.exit(1)  # Force exit with error code
+
 
 # Now safe to import chainlit  # noqa: E402
 import chainlit as cl  # noqa: E402
@@ -187,6 +139,7 @@ from services.session_manager import (  # noqa: E402
     initialize_session_with_persistence,
 )
 from services.yonca_client import YoncaClient  # noqa: E402
+
 from yonca.agent.graph import compile_agent_graph  # noqa: E402
 from yonca.agent.memory import get_checkpointer_async  # noqa: E402
 from yonca.config import AgentMode  # noqa: E402
@@ -355,148 +308,6 @@ print_startup_complete("🌿 ALEM 0.1 Demo UI")
 # ============================================
 # Phase 5 Enhancement: Real-time MCP health badges in UI
 # Shows users which external data sources are available
-
-
-class MCPServiceStatus(TypedDict):
-    """Status of an MCP service."""
-
-    name: str
-    url: str
-    status: str  # "online" | "offline" | "degraded"
-    response_time_ms: float | None
-    version: str | None
-
-
-MCP_SERVICES = {
-    "zekalab": {
-        "name": "ZekaLab Internal Rules",
-        "url": os.getenv("ZEKALAB_MCP_URL", "http://localhost:7777"),
-        "health_endpoint": "/health",
-    },
-    "langgraph": {
-        "name": "LangGraph API",
-        "url": demo_settings.langgraph_base_url,
-        "health_endpoint": "/ok",
-    },
-}
-
-
-async def check_mcp_health(service_key: str) -> MCPServiceStatus:
-    """Check health of a single MCP service.
-
-    Args:
-        service_key: Key from MCP_SERVICES dict
-
-    Returns:
-        MCPServiceStatus with online/offline status
-    """
-    service = MCP_SERVICES.get(service_key)
-    if not service:
-        return MCPServiceStatus(
-            name=service_key,
-            url="unknown",
-            status="offline",
-            response_time_ms=None,
-            version=None,
-        )
-
-    url = f"{service['url']}{service['health_endpoint']}"
-    try:
-        async with httpx.AsyncClient(timeout=2.0) as client:
-            import time
-
-            start = time.monotonic()
-            response = await client.get(url)
-            elapsed_ms = (time.monotonic() - start) * 1000
-
-            if response.status_code == 200:
-                data = (
-                    response.json()
-                    if response.headers.get("content-type", "").startswith("application/json")
-                    else {}
-                )
-                return MCPServiceStatus(
-                    name=service["name"],
-                    url=service["url"],
-                    status="online",
-                    response_time_ms=round(elapsed_ms, 1),
-                    version=data.get("version"),
-                )
-            else:
-                return MCPServiceStatus(
-                    name=service["name"],
-                    url=service["url"],
-                    status="degraded",
-                    response_time_ms=round(elapsed_ms, 1),
-                    version=None,
-                )
-    except Exception:
-        return MCPServiceStatus(
-            name=service["name"],
-            url=service["url"],
-            status="offline",
-            response_time_ms=None,
-            version=None,
-        )
-
-
-async def get_all_mcp_status() -> dict[str, MCPServiceStatus]:
-    """Check all MCP services in parallel.
-
-    Returns:
-        Dict mapping service_key -> MCPServiceStatus
-    """
-    import asyncio
-
-    tasks = {key: check_mcp_health(key) for key in MCP_SERVICES}
-    results = await asyncio.gather(*tasks.values(), return_exceptions=True)
-
-    return {
-        key: (
-            result
-            if not isinstance(result, Exception)
-            else MCPServiceStatus(
-                name=MCP_SERVICES[key]["name"],
-                url=MCP_SERVICES[key]["url"],
-                status="offline",
-                response_time_ms=None,
-                version=None,
-            )
-        )
-        for key, result in zip(tasks.keys(), results)
-    }
-
-
-def format_mcp_status_badge(status: MCPServiceStatus) -> str:
-    """Format a single MCP status as a markdown badge.
-
-    Args:
-        status: MCPServiceStatus to format
-
-    Returns:
-        Markdown string like "✓ ZekaLab (42ms)" or "✗ ZekaLab (offline)"
-    """
-    if status["status"] == "online":
-        time_str = f"{status['response_time_ms']}ms" if status["response_time_ms"] else ""
-        return f"✓ {status['name']} ({time_str})"
-    elif status["status"] == "degraded":
-        return f"⚠ {status['name']} (degraded)"
-    else:
-        return f"✗ {status['name']} (offline)"
-
-
-def format_mcp_status_line(statuses: dict[str, MCPServiceStatus]) -> str:
-    """Format all MCP statuses as a single-line status indicator.
-
-    Args:
-        statuses: Dict of service_key -> MCPServiceStatus
-
-    Returns:
-        Markdown string for welcome message, e.g.:
-        "🔌 MCP: ✓ ZekaLab (12ms) • ✓ LangGraph (8ms)"
-    """
-    badges = [format_mcp_status_badge(s) for s in statuses.values()]
-    return "🔌 " + " • ".join(badges)
 
 
 # ============================================
@@ -907,7 +718,12 @@ async def update_thread_presentation(
 # ============================================
 # UI DROPDOWN → BACKEND ENDPOINT
 # ============================================
-ui_router = APIRouter()
+# Import Chainlit's FastAPI app to add custom routes
+from chainlit.server import app as chainlit_app  # noqa: E402
+
+# NOTE: We define routes directly on chainlit_app (not via router) because
+# Chainlit's catch-all route /{full_path:path} intercepts everything.
+# After defining all routes, we move the catch-all to the end.
 
 
 class ModeModelPayload(BaseModel):
@@ -916,7 +732,7 @@ class ModeModelPayload(BaseModel):
     llm_model: str
 
 
-@ui_router.post("/ui/thread/preferences")
+@chainlit_app.post("/ui/thread/preferences")
 async def update_ui_preferences(payload: ModeModelPayload):
     """Update thread metadata and tags from client-side mode/model dropdowns."""
 
@@ -975,7 +791,7 @@ async def update_ui_preferences(payload: ModeModelPayload):
     }
 
 
-@ui_router.get("/ui/mcp/status")
+@chainlit_app.get("/ui/mcp/status")
 async def ui_mcp_status(profile: str | None = None):
     """Return MCP status for the requested profile (agent modes)."""
     from services.mcp_connector import get_mcp_status
@@ -983,6 +799,19 @@ async def ui_mcp_status(profile: str | None = None):
     # Default to agent view so UI badge shows full connector state
     selected_profile = profile or AgentMode.AGENT.value
     return await get_mcp_status(profile=selected_profile)
+
+
+# Move catch-all route to the end so our custom routes are matched first
+# (Chainlit's /{full_path:path} route would otherwise intercept everything)
+_catch_all_route = None
+for _route in chainlit_app.routes:
+    if hasattr(_route, "path") and _route.path == "/{full_path:path}":
+        _catch_all_route = _route
+        break
+
+if _catch_all_route:
+    chainlit_app.routes.remove(_catch_all_route)
+    chainlit_app.routes.append(_catch_all_route)
 
 
 # ============================================
@@ -1087,7 +916,6 @@ async def fetch_google_people_api(access_token: str) -> dict:
     Returns:
         Dict with enhanced profile fields (birthday, gender, phone, address)
     """
-    import httpx
 
     # Request specific person fields from People API
     person_fields = "birthdays,genders,phoneNumbers,addresses,locales,ageRanges"
@@ -1177,6 +1005,9 @@ if is_oauth_enabled():
         default_user: cl.User,
         _id_token: str | None = None,
     ) -> cl.User | None:
+        logger.info(f"OAuth Callback Triggered for {provider_id}")
+        logger.debug(f"Raw User Data: {raw_user_data}")
+
         """Handle OAuth callback from Google with enhanced user profile data.
 
         This captures all available user info from Google OAuth:
@@ -1218,17 +1049,21 @@ if is_oauth_enabled():
             # Google user ID (unique, stable identifier)
             google_id = raw_user_data.get("sub")
 
-            logger.info(
-                "oauth_login_standard",
-                provider=provider_id,
-                email=email,
-                name=name,
-                given_name=given_name,
-                family_name=family_name,
-                locale=locale,
-                hosted_domain=hosted_domain,
-                email_verified=email_verified,
-            )
+            try:
+                # Log success (careful with Unicode names on Windows)
+                logger.info(
+                    "oauth_login_standard",
+                    provider=provider_id,
+                    email=email,
+                    name=name,
+                    given_name=given_name,
+                    family_name=family_name,
+                    locale=locale,
+                    hosted_domain=hosted_domain,
+                    email_verified=email_verified,
+                )
+            except Exception:
+                logger.info("oauth_login_standard", email=email, status="success_log_failed")
 
             # ═══════════════════════════════════════════════════════════════
             # NOTE: People API (birthday, gender, phone, address) NOT used
@@ -2088,6 +1923,12 @@ Mən sizin virtual aqronomam — əkin, suvarma və subsidiya məsələlərində
                 payload={"action": "irrigation"},
                 label="💧 " + AZ_STRINGS["irrigation"],
             ),
+            cl.Action(
+                name="show_mcp_status",
+                value="show",
+                label="🔌 MCP Status",
+                description="Show connected MCP servers and tools",
+            ),
         ]
 
         # Send the dashboard welcome message
@@ -2280,8 +2121,6 @@ async def transcribe_audio_whisper(audio_data: bytes, mime_type: str) -> str:
     """
     import tempfile
 
-    import httpx
-
     # Save audio to temp file (Whisper needs file input)
     ext = ".webm" if "webm" in mime_type else ".wav"
     with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as f:
@@ -2395,12 +2234,15 @@ async def on_chat_start():
             )
             # Update last login time
             await update_persona_login_time(email=user_email)
-            logger.info(
-                "persona_loaded_from_db",
-                user_id=user_id,
-                fin_code=alem_persona.fin_code,
-                region=alem_persona.region,
-            )
+            try:
+                logger.info(
+                    "persona_loaded_from_db",
+                    user_id=user_id,
+                    fin_code=alem_persona.fin_code,
+                    region=alem_persona.region,
+                )
+            except Exception:
+                logger.info("persona_loaded_from_db", user_id=user_id, status="log_failed")
         else:
             # No existing persona - generate new one
             alem_persona = PersonaProvisioner.provision_from_oauth(
@@ -2414,24 +2256,30 @@ async def on_chat_start():
                 chainlit_user_id=user_id,
                 email=user_email,
             )
-            logger.info(
-                "persona_generated_and_saved",
-                user_id=user_id,
-                fin_code=alem_persona.fin_code,
-                region=alem_persona.region,
-            )
+            try:
+                logger.info(
+                    "persona_generated_and_saved",
+                    user_id=user_id,
+                    fin_code=alem_persona.fin_code,
+                    region=alem_persona.region,
+                )
+            except Exception:
+                logger.info("persona_generated_and_saved", user_id=user_id, status="log_failed")
 
         # Store in session for later use (context for expertise detection + prompts)
         # NOTE: NOT displayed in UI - farm context influences responses implicitly
         cl.user_session.set("alem_persona", alem_persona.to_dict())
 
-        logger.info(
-            "alem_persona_provisioned",
-            user_id=user_id,
-            fin_code=alem_persona.fin_code,
-            region=alem_persona.region,
-            crop_type=alem_persona.crop_type,
-        )
+        try:
+            logger.info(
+                "alem_persona_provisioned",
+                user_id=user_id,
+                fin_code=alem_persona.fin_code,
+                region=alem_persona.region,
+                crop_type=alem_persona.crop_type,
+            )
+        except Exception:
+            logger.info("alem_persona_provisioned", user_id=user_id, status="log_failed")
     else:
         logger.debug("no_authenticated_user_skipping_persona")
 
@@ -2474,12 +2322,15 @@ async def on_chat_start():
         else (alem_persona_dict.get("region") if alem_persona_dict else None)
     )
 
-    logger.info(
-        "expertise_configured",
-        expertise=default_expertise,
-        user_id=user_id,
-        has_custom_prompt=bool(profile_prompt),
-    )
+    try:
+        logger.info(
+            "expertise_configured",
+            expertise=default_expertise,
+            user_id=user_id,
+            has_custom_prompt=bool(profile_prompt),
+        )
+    except Exception:
+        logger.info("expertise_configured", user_id=user_id, status="log_failed")
 
     # Default farm for demo (synthetic farmer profile - NOT the real user)
     farm_id = "demo_farm_001"

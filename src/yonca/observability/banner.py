@@ -73,12 +73,12 @@ class StatusStyle:
 
 
 STATUS_STYLES = {
-    "success": StatusStyle("✓", Colors.BRIGHT_GREEN, "OK"),
-    "warning": StatusStyle("⚠", Colors.BRIGHT_YELLOW, "WARN"),
-    "error": StatusStyle("✗", Colors.BRIGHT_RED, "FAIL"),
-    "info": StatusStyle("ℹ", Colors.BRIGHT_CYAN, "INFO"),
-    "pending": StatusStyle("◌", Colors.BRIGHT_YELLOW, "..."),
-    "running": StatusStyle("●", Colors.BRIGHT_GREEN, "LIVE"),
+    "success": StatusStyle("[OK]", Colors.BRIGHT_GREEN, "OK"),
+    "warning": StatusStyle("[!]", Colors.BRIGHT_YELLOW, "WARN"),
+    "error": StatusStyle("[X]", Colors.BRIGHT_RED, "FAIL"),
+    "info": StatusStyle("[i]", Colors.BRIGHT_CYAN, "INFO"),
+    "pending": StatusStyle("[...]", Colors.BRIGHT_YELLOW, "..."),
+    "running": StatusStyle("[L]", Colors.BRIGHT_GREEN, "LIVE"),
 }
 
 
@@ -124,11 +124,11 @@ def _link(url: str, display_text: str | None = None) -> str:
 
 YONCA_ASCII = r"""
   ═══════════════════════════════════════════════════
-  🌿 YONCA AI — Kənd Təsərrüfatı Köməkçisi
+  [Yonca] YONCA AI — Kənd Təsərrüfatı Köməkçisi
   ═══════════════════════════════════════════════════
 """
 
-YONCA_ASCII_COMPACT = "🌿 YONCA AI — Kənd Təsərrüfatı Köməkçisi"
+YONCA_ASCII_COMPACT = "[Yonca] YONCA AI — Kənd Təsərrüfatı Köməkçisi"
 
 
 def print_startup_banner(
@@ -144,16 +144,16 @@ def print_startup_banner(
         mode: "development", "production", or "demo"
     """
     component_info = {
-        "api": ("FastAPI Server", "🚀", Colors.BRIGHT_GREEN),
-        "demo-ui": ("Chainlit Demo", "🖥️", Colors.BRIGHT_CYAN),
-        "agent": ("LangGraph Agent", "🤖", Colors.BRIGHT_MAGENTA),
+        "api": ("FastAPI Server", "[API]", Colors.BRIGHT_GREEN),
+        "demo-ui": ("Chainlit Demo", "[UI]", Colors.BRIGHT_CYAN),
+        "agent": ("LangGraph Agent", "[BOT]", Colors.BRIGHT_MAGENTA),
     }
 
-    name, emoji, color = component_info.get(component, ("Service", "⚡", Colors.WHITE))
+    name, emoji, color = component_info.get(component, ("Service", "[PWR]", Colors.WHITE))
 
     print()
     print(_c("  ═══════════════════════════════════════════════════════", Colors.BRIGHT_GREEN))
-    print(_c("  🌿 YONCA AI — Kənd Təsərrüfatı Köməkçisi", Colors.BRIGHT_WHITE))
+    print(_c("  [Yonca] YONCA AI — Kənd Təsərrüfatı Köməkçisi", Colors.BRIGHT_WHITE))
     print(_c(f"     {emoji} {name} v{version}", color))
     print(_c("  ═══════════════════════════════════════════════════════", Colors.BRIGHT_GREEN))
     print()
@@ -293,13 +293,13 @@ def print_llm_info(
         api_key_set: Whether API key is configured
         features: Optional list of model features/capabilities
     """
-    print_section_header("🤖 LLM Configuration")
+    print_section_header("[BOT] LLM Configuration")
 
     mode_labels = {
-        "cloud": "☁️  Cloud API",
-        "local": "🏠 Self-Hosted",
-        "hybrid": "🔄 Hybrid",
-        "open_source": "🌐 Open-Source (via Cloud)",
+        "cloud": "[CLOUD]  Cloud API",
+        "local": "[HOME] Self-Hosted",
+        "hybrid": "[HYBRID] Hybrid",
+        "open_source": "[OS] Open-Source (via Cloud)",
     }
 
     print_status_line("Provider", provider, "success")
@@ -307,7 +307,7 @@ def print_llm_info(
     print_status_line("Mode", mode_labels.get(mode, mode), "info")
 
     if api_key_set:
-        print_status_line("API Key", "Configured ✓", "success")
+        print_status_line("API Key", "Configured [OK]", "success")
     elif mode == "local":
         print_status_line("API Key", "Not required (local)", "info")
     else:
@@ -318,9 +318,9 @@ def print_llm_info(
 
     if features:
         print()
-        print(_c("  📋 Model Capabilities:", Colors.BRIGHT_WHITE))
+        print(_c("  [LIST] Model Capabilities:", Colors.BRIGHT_WHITE))
         for feature in features:
-            print(f"     {_c('•', Colors.BRIGHT_GREEN)} {feature}")
+            print(f"     {_c('*', Colors.BRIGHT_GREEN)} {feature}")
 
 
 def print_database_info(
@@ -341,7 +341,7 @@ def print_database_info(
         langfuse_url: Langfuse observability URL
         langfuse_ok: Whether Langfuse is configured
     """
-    print_section_header("🗄️  Data Layer")
+    print_section_header("[DB]  Data Layer")
 
     if postgres_url:
         # Extract host:port from URL, mask password
@@ -391,7 +391,7 @@ def print_infrastructure_summary(
     Args:
         services: List of service dicts with: name, status, style, port, detail
     """
-    print_section_header("🐳 Infrastructure Services")
+    print_section_header("[DOCKER] Infrastructure Services")
 
     for svc in services:
         port_info = f":{svc.get('port')}" if svc.get("port") else ""
@@ -415,30 +415,30 @@ def print_model_capabilities(model_name: str) -> None:
     """Print model-specific capabilities based on known models."""
     capabilities = {
         "meta-llama/llama-4-maverick-17b-128e-instruct": [
-            "🎯 2026 Gold Standard — Single model for ALL tasks",
-            "🌍 Native Azerbaijani language support",
-            "🧮 Advanced reasoning & calculations",
-            "📝 128K context window",
-            "⚡ Enterprise-grade latency via Groq LPU",
-            "🏠 Self-hostable with appropriate hardware",
+            "[TARGET] 2026 Gold Standard — Single model for ALL tasks",
+            "[WORLD] Native Azerbaijani language support",
+            "[MATH] Advanced reasoning & calculations",
+            "[MEM] 128K context window",
+            "[PWR] Enterprise-grade latency via Groq LPU",
+            "[HOME] Self-hostable with appropriate hardware",
         ],
         "llama-3.3-70b-versatile": [
-            "🌍 Excellent multilingual support",
-            "📝 32K context window",
-            "🎯 Best for Azerbaijani quality",
+            "[WORLD] Excellent multilingual support",
+            "[MEM] 32K context window",
+            "[TARGET] Best for Azerbaijani quality",
         ],
         "qwen3:4b": [
-            "🏠 Local-first, runs on CPU",
-            "⚡ Fast inference, low latency",
-            "🧮 Good for reasoning tasks",
-            "⚠️  Turkish leakage risk",
+            "[HOME] Local-first, runs on CPU",
+            "[PWR] Fast inference, low latency",
+            "[MATH] Good for reasoning tasks",
+            "[!] Turkish leakage risk",
         ],
     }
 
     caps = capabilities.get(model_name)
     if caps:
         print()
-        print(_c("  📋 Model Capabilities:", Colors.BRIGHT_WHITE))
+        print(_c("  [LIST] Model Capabilities:", Colors.BRIGHT_WHITE))
         for cap in caps:
             print(f"     {cap}")
 
@@ -450,7 +450,7 @@ def print_security_info(
     cors_origins: list[str] | None = None,
 ) -> None:
     """Print security configuration summary."""
-    print_section_header("🔒 Security")
+    print_section_header("[LOCK] Security")
 
     print_status_line("Rate Limit", f"{rate_limit} req/min", "info", f"burst: {burst_limit}")
     print_status_line(
@@ -473,7 +473,7 @@ def print_observability_info(
     log_level: str = "INFO",
 ) -> None:
     """Print observability configuration."""
-    print_section_header("📊 Observability")
+    print_section_header("[CHART] Observability")
 
     print_status_line(
         "Langfuse",
@@ -498,13 +498,13 @@ def print_infrastructure_tier(
         tier_spec: Tier specification dict from INFERENCE_TIER_SPECS
         show_all_tiers: If True, shows comparison of all tiers
     """
-    print_section_header("🏗️  ALEM Infrastructure Tier")
+    print_section_header("[INFRA]  ALEM Infrastructure Tier")
 
     if not tier_spec:
         print_status_line("Tier", "Unknown", "warning", "Configure LLM provider")
         return
 
-    icon = tier_spec.get("icon", "⚡")
+    icon = tier_spec.get("icon", "[PWR]")
     name = tier_spec.get("name", "Unknown")
     tagline = tier_spec.get("tagline", "")
 
@@ -526,7 +526,11 @@ def print_infrastructure_tier(
     for label, value in specs:
         # Highlight data residency with Azerbaijan flag
         if "Azerbaijan" in value or "🇦🇿" in value:
-            print(f"     {_c(f'{label}:', Colors.BRIGHT_WHITE)} {_c(value, Colors.BRIGHT_GREEN)}")
+            # Strip emoji if present or just print value
+            clean_value = value.replace("🇦🇿", "[AZ]")
+            print(
+                f"     {_c(f'{label}:', Colors.BRIGHT_WHITE)} {_c(clean_value, Colors.BRIGHT_GREEN)}"
+            )
         elif "US" in value or "EU" in value:
             print(f"     {_c(f'{label}:', Colors.BRIGHT_WHITE)} {_c(value, Colors.BRIGHT_YELLOW)}")
         else:
@@ -568,7 +572,7 @@ def print_infrastructure_tier(
     notes = tier_spec.get("notes")
     if notes:
         print()
-        print(f"     {_dim('ℹ️  ' + notes)}")
+        print(f"     {_dim('[i]  ' + notes)}")
 
 
 def print_tier_comparison() -> None:
@@ -576,7 +580,7 @@ def print_tier_comparison() -> None:
     # Import here to avoid circular import
     from yonca.config import INFERENCE_TIER_SPECS, InferenceTier
 
-    print_section_header("🏗️  ALEM Infrastructure Matrix — All Tiers")
+    print_section_header("[INFRA]  ALEM Infrastructure Matrix — All Tiers")
     print()
 
     tier_order = [
@@ -587,7 +591,7 @@ def print_tier_comparison() -> None:
 
     for tier in tier_order:
         spec = INFERENCE_TIER_SPECS.get(tier, {})
-        icon = spec.get("icon", "•")
+        icon = spec.get("icon", "*")
         name = spec.get("name", str(tier))
         cost = spec.get("cost_range", "")
         residency = spec.get("data_residency", "")
@@ -595,13 +599,13 @@ def print_tier_comparison() -> None:
         # Color based on data residency
         if "Azerbaijan" in residency:
             color = Colors.BRIGHT_GREEN
-            flag = "🇦🇿"
+            flag = "[AZ]"
         elif "Customer" in residency:
             color = Colors.BRIGHT_MAGENTA
-            flag = "🏠"
+            flag = "[HOME]"
         else:
             color = Colors.BRIGHT_YELLOW
-            flag = "☁️"
+            flag = "[CLOUD]"
 
         print(f"  {icon} {_c(name, color)}")
         print(f"     {flag} {residency} | {_dim(cost)}")

@@ -30,7 +30,7 @@ RUN apt-get update && apt-get install -y \
   && rm -rf /var/lib/apt/lists/*
 
 # Copy project files needed for installation
-COPY requirements.txt pyproject.toml ./
+COPY requirements.txt pyproject.toml README.md ./
 COPY src/ ./src/
 
 # Install Python dependencies

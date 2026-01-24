@@ -321,12 +321,12 @@ async def test_context_loader_partial_mcp_failure():
         "mcp_traces": [],
     }
 
-    with patch("yonca.agent.nodes.context_loader.get_db_session") as mock_db:
+    with patch("alim.agent.nodes.context_loader.get_db_session") as mock_db:
         mock_session = AsyncMock()
         mock_db.return_value.__aenter__.return_value = mock_session
 
-        with patch("yonca.agent.nodes.context_loader._fetch_weather_mcp") as mock_weather, patch(
-            "yonca.agent.nodes.context_loader._fetch_zekalab_rules_mcp"
+        with patch("alim.agent.nodes.context_loader._fetch_weather_mcp") as mock_weather, patch(
+            "alim.agent.nodes.context_loader._fetch_zekalab_rules_mcp"
         ) as mock_zekalab:
             # Weather succeeds
             mock_weather.return_value = (

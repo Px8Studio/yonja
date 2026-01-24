@@ -417,6 +417,21 @@
         }
       },
       "group": "test"
+    },
+    {
+      "label": "🌿 Yonca AI: 🔍 MCP Inspector",
+      "detail": "Launch MCP Inspector for ZekaLab server",
+      "type": "shell",
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/inspector",
+        "--transport", "http",
+        "http://localhost:7777/mcp"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true
     }
   ],
   "inputs": [

@@ -1,0 +1,67 @@
+# Dockerfile.mcp.viz
+# Python Visualization MCP Server
+# Generates charts (Plotly), diagrams (Mermaid), maps (Folium)
+
+FROM python:3.12-slim
+
+# Labels
+LABEL maintainer="Yonca AI Team"
+LABEL description="Python Visualization MCP Server for Yonca AI"
+LABEL version="1.0.0"
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies for visualization libraries
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    # For Pillow/image processing
+    libjpeg-dev \
+    libpng-dev \
+    # For matplotlib backends
+    libfreetype6-dev \
+    # Cleanup
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for caching
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir \
+    # FastMCP for MCP server
+    fastmcp>=0.1.0 \
+    # Visualization libraries
+    plotly>=5.18.0 \
+    pandas>=2.0.0 \
+    numpy>=1.24.0 \
+    # Mermaid diagram generation (text-based, no external deps)
+    # Folium for maps
+    folium>=0.15.0 \
+    # Web framework
+    uvicorn>=0.25.0 \
+    fastapi>=0.108.0 \
+    # HTTP client
+    httpx>=0.26.0 \
+    # Logging
+    structlog>=24.1.0
+
+# Copy source code
+COPY src/yonca/mcp_server/python_viz.py /app/src/yonca/mcp_server/python_viz.py
+
+# Set Python path
+ENV PYTHONPATH=/app/src
+ENV PYTHON_VIZ_PORT=7778
+ENV PYTHON_VIZ_LOG_LEVEL=INFO
+
+# Create temp directory for generated visualizations
+RUN mkdir -p /tmp/viz && chmod 755 /tmp/viz
+
+# Expose port
+EXPOSE 7778
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:7778/health || exit 1
+
+# Run the MCP server
+CMD ["python", "-m", "uvicorn", "yonca.mcp_server.python_viz:app", "--host", "0.0.0.0", "--port", "7778"]

@@ -385,6 +385,68 @@ services:
     # profiles:
     #   - demo  # REMOVED: Standard UI for the stack
 
+  # ================================================
+  # ZekaLab MCP Server (Internal Rules Engine)
+  # ================================================
+  zekalab-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    container_name: yonca-zekalab-mcp
+    ports:
+      - "7777:7777"
+    environment:
+      - ZEKALAB_PORT=7777
+      - ZEKALAB_LOG_LEVEL=INFO
+      - PYTHONPATH=/app/src
+    volumes:
+      - ./src:/app/src:ro
+    networks:
+      - yonca-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7777/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ================================================
+  # Python Visualization MCP Server
+  # Generates charts (Plotly), diagrams (Mermaid), maps (Folium)
+  # Uses sandboxed Python execution for safety
+  # ================================================
+  python-viz-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp.viz
+    container_name: yonca-python-viz-mcp
+    ports:
+      - "7778:7778"
+    environment:
+      - PYTHON_VIZ_PORT=7778
+      - PYTHON_VIZ_LOG_LEVEL=INFO
+      - PYTHON_VIZ_MAX_EXECUTION_TIME=30
+      - PYTHONPATH=/app/src
+    volumes:
+      - ./src:/app/src:ro
+      # Temp storage for generated visualizations
+      - python-viz-tmp:/tmp/viz
+    networks:
+      - yonca-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7778/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    # Security: Restrict capabilities for sandboxed execution
+    security_opt:
+      - no-new-privileges:true
+    # Limit resources
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+
 # ================================================
 # Networks
 # ================================================
@@ -403,4 +465,6 @@ volumes:
   langfuse-db-data:
     driver: local
   postgres-data:
+    driver: local
+  python-viz-tmp:
     driver: local

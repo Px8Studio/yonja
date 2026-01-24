@@ -2,11 +2,15 @@
 """LangGraph main graph for the Yonca AI agent.
 
 Defines the conversation flow as a state machine with nodes
-for routing, context loading, specialist processing, and validation.
+for routing, context loading, specialist processing, validation,
+and visualization.
 
 Supports two modes:
 1. Standard graph (create_agent_graph) - without MCP tools
 2. MCP-enabled graph (create_agent_graph_with_mcp) - with MCP tool integration
+
+Graph Flow (with visualizer):
+    supervisor → context_loader → specialist → validator → visualizer → END
 """
 
 from typing import Any
@@ -25,6 +29,7 @@ from yonca.agent.nodes.sql_executor import sql_executor_node
 from yonca.agent.nodes.supervisor import route_from_supervisor, supervisor_node
 from yonca.agent.nodes.validator import validator_node
 from yonca.agent.nodes.vision_to_action import vision_to_action_node
+from yonca.agent.nodes.visualizer import route_after_visualizer, visualizer_node
 from yonca.agent.nodes.weather import weather_node
 from yonca.agent.state import AgentState, create_initial_state
 from yonca.observability.langfuse import create_langfuse_handler
@@ -90,9 +95,9 @@ def create_agent_graph() -> StateGraph:
                  ▼
            context_loader
                  │
-                 ├──> agronomist ──> validator ──> end
+                 ├──> agronomist ──> validator ──> visualizer ──> end
                  │
-                 └──> weather ──────> validator ──> end
+                 └──> weather ──────> validator ──> visualizer ──> end
     ```
 
     Returns:
@@ -110,6 +115,7 @@ def create_agent_graph() -> StateGraph:
     graph.add_node("sql_executor", sql_executor_node)
     graph.add_node("vision_to_action", vision_to_action_node)
     graph.add_node("validator", validator_node)
+    graph.add_node("visualizer", visualizer_node)
 
     # Set entry point
     graph.set_entry_point("supervisor")
@@ -147,8 +153,11 @@ def create_agent_graph() -> StateGraph:
     graph.add_edge("sql_executor", "validator")
     graph.add_edge("vision_to_action", "validator")
 
-    # Validator goes to end
-    graph.add_edge("validator", END)
+    # Validator goes to visualizer (reflection step)
+    graph.add_edge("validator", "visualizer")
+
+    # Visualizer goes to end
+    graph.add_edge("visualizer", END)
 
     return graph
 
@@ -172,18 +181,21 @@ async def create_agent_graph_with_mcp() -> StateGraph:
       ▼
     supervisor ──┬──> end
                  │
-                 ├──> context_loader ──> specialist ──> validator ──> end
+                 ├──> context_loader ──> specialist ──> validator ──> visualizer ──> end
                  │
-                 └──> mcp_tools ──> context_loader (if tools return context)
+                 ├──> mcp_tools ──> context_loader (if tools return context)
+                 │
+                 └──> python_viz_tools ──> end (visualization generation)
     ```
 
     Returns:
         StateGraph with MCP tools integrated
     """
-    from yonca.mcp.adapters import get_mcp_tools
+    from yonca.mcp.adapters import get_mcp_tools, get_python_viz_tools
 
     # Load MCP tools (returns empty list if no servers enabled)
     mcp_tools = await get_mcp_tools()
+    python_viz_tools = await get_python_viz_tools()
 
     # Create base graph
     graph = StateGraph(AgentState)
@@ -197,6 +209,7 @@ async def create_agent_graph_with_mcp() -> StateGraph:
     graph.add_node("sql_executor", sql_executor_node)
     graph.add_node("vision_to_action", vision_to_action_node)
     graph.add_node("validator", validator_node)
+    graph.add_node("visualizer", visualizer_node)
 
     # Add HITL nodes for destructive operations
     graph.add_node("human_approval", human_approval_node)
@@ -212,6 +225,17 @@ async def create_agent_graph_with_mcp() -> StateGraph:
         )
     else:
         logger.info("mcp_tools_not_available", reason="no_tools_loaded")
+
+    # Add Python Viz MCP ToolNode for visualization
+    if python_viz_tools:
+        graph.add_node("python_viz_tools", ToolNode(python_viz_tools))
+        logger.info(
+            "python_viz_tools_added_to_graph",
+            tool_count=len(python_viz_tools),
+            tool_names=[t.name for t in python_viz_tools],
+        )
+    else:
+        logger.info("python_viz_tools_not_available", reason="no_tools_loaded")
 
     # Set entry point
     graph.set_entry_point("supervisor")
@@ -257,8 +281,24 @@ async def create_agent_graph_with_mcp() -> StateGraph:
     graph.add_edge("sql_executor", "validator")
     graph.add_edge("vision_to_action", "validator")
 
-    # Validator goes to end
-    graph.add_edge("validator", END)
+    # Validator goes to visualizer (reflection step)
+    graph.add_edge("validator", "visualizer")
+
+    # Visualizer conditional routing
+    if python_viz_tools:
+        graph.add_conditional_edges(
+            "visualizer",
+            route_after_visualizer,
+            {
+                "python_viz_tools": "python_viz_tools",
+                "end": END,
+            },
+        )
+        # Python viz tools go to end after generating visualization
+        graph.add_edge("python_viz_tools", END)
+    else:
+        # No viz tools, go straight to end
+        graph.add_edge("visualizer", END)
 
     # MCP tools go to context_loader (to enrich context with tool results)
     if mcp_tools:

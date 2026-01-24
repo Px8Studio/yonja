@@ -99,6 +99,24 @@ class MCPSettings(BaseSettings):
         description="ZekaLab timeout in milliseconds",
     )
 
+    # Python Visualization MCP
+    python_viz_mcp_enabled: bool = Field(
+        default=False,
+        description="Enable Python Visualization MCP server",
+    )
+    python_viz_mcp_url: str = Field(
+        default="http://localhost:7778",
+        description="Python Viz MCP server URL",
+    )
+    python_viz_timeout_ms: int = Field(
+        default=10000,  # 10 seconds - Python execution can be slow
+        description="Python Viz timeout in milliseconds",
+    )
+    python_viz_max_execution_time: int = Field(
+        default=30,  # 30 seconds max for code execution
+        description="Max execution time for Python code in seconds",
+    )
+
     # EKTİS MCP (Phase 3)
     ektis_mcp_enabled: bool = Field(
         default=False,

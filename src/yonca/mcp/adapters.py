@@ -147,6 +147,89 @@ async def get_mcp_tools() -> list[BaseTool]:
 
 
 # ============================================================
+# Python Viz MCP Tools
+# ============================================================
+
+
+def get_python_viz_client_config() -> dict[str, dict[str, Any]]:
+    """Build Python Viz MCP client configuration.
+
+    Returns configuration dict for the Python visualization MCP server.
+
+    Returns:
+        Configuration dict for MultiServerMCPClient
+    """
+    settings = mcp_settings
+    config: dict[str, dict[str, Any]] = {}
+
+    if settings.python_viz_mcp_enabled:
+        config["python_viz"] = {
+            "url": f"{settings.python_viz_mcp_url}/mcp",
+            "transport": "http",
+        }
+        logger.info(
+            "mcp_server_configured",
+            server="python_viz",
+            url=settings.python_viz_mcp_url,
+        )
+
+    return config
+
+
+def create_python_viz_client() -> MultiServerMCPClient | None:
+    """Create Python Viz MCP client.
+
+    Returns MultiServerMCPClient for Python visualization server
+    if enabled, otherwise returns None.
+
+    Returns:
+        MultiServerMCPClient instance or None
+    """
+    config = get_python_viz_client_config()
+
+    if not config:
+        logger.info("python_viz_mcp_not_enabled")
+        return None
+
+    logger.info("python_viz_mcp_client_created")
+    return MultiServerMCPClient(config)
+
+
+async def get_python_viz_tools() -> list[BaseTool]:
+    """Get tools from Python visualization MCP server.
+
+    Returns tools for generating charts, diagrams, and executing
+    Python code for visualizations.
+
+    Returns:
+        List of LangChain tools from Python Viz MCP server
+    """
+    client = create_python_viz_client()
+
+    if client is None:
+        logger.info("python_viz_tools_empty", reason="not_enabled")
+        return []
+
+    try:
+        tools = await client.get_tools()
+
+        logger.info(
+            "python_viz_tools_loaded",
+            tool_count=len(tools),
+            tool_names=[t.name for t in tools],
+        )
+
+        return tools
+    except Exception as e:
+        logger.error(
+            "python_viz_tools_load_failed",
+            error=str(e),
+            error_type=type(e).__name__,
+        )
+        return []
+
+
+# ============================================================
 # Profile-Based Tool Loading
 # ============================================================
 

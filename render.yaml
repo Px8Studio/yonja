@@ -9,7 +9,7 @@ services:
   # ALİM API (FastAPI Backend)
   # ============================================
   - type: web
-    name: ALİM-api
+    name: alim-api
     runtime: python
     plan: starter  # $7/month, can upgrade for production
     region: frankfurt  # Closest to Azerbaijan
@@ -18,21 +18,21 @@ services:
     healthCheckPath: /health
     envVars:
       # Deployment Configuration (Two-Axis Model)
-      - key: ALİM_ENVIRONMENT
+      - key: ALIM_ENVIRONMENT
         value: production
-      - key: ALİM_INFRASTRUCTURE_MODE
+      - key: ALIM_INFRASTRUCTURE_MODE
         value: cloud
-      - key: ALİM_LANGGRAPH_REQUIRED
+      - key: ALIM_LANGGRAPH_REQUIRED
         value: true
 
       # LangGraph Connector
-      - key: ALİM_LANGGRAPH_BASE_URL
-        value: https://ALİM-langgraph.onrender.com
-      - key: ALİM_LANGGRAPH_GRAPH_ID
-        value: ALİM_agent
+      - key: ALIM_LANGGRAPH_BASE_URL
+        value: https://alim-langgraph.onrender.com
+      - key: ALIM_LANGGRAPH_GRAPH_ID
+        value: alim_agent
 
       # LLM Provider (Gemini for cloud)
-      - key: ALİM_LLM_PROVIDER
+      - key: ALIM_LLM_PROVIDER
         value: gemini
       - key: GEMINI_API_KEY
         sync: false
@@ -40,32 +40,32 @@ services:
         value: gemini-2.0-flash
 
       # Database
-      - key: ALİM_DATABASE_URL
+      - key: ALIM_DATABASE_URL
         fromDatabase:
-          name: ALİM-db
+          name: alim-db
           property: connectionString
 
       # Security
-      - key: ALİM_JWT_SECRET
+      - key: ALIM_JWT_SECRET
         generateValue: true
-      - key: ALİM_JWT_ALGORITHM
+      - key: ALIM_JWT_ALGORITHM
         value: HS256
 
       # Observability
-      - key: ALİM_LANGFUSE_ENABLED
+      - key: ALIM_LANGFUSE_ENABLED
         value: true
-      - key: ALİM_LANGFUSE_HOST
-        value: https://ALİM-langfuse.onrender.com
+      - key: ALIM_LANGFUSE_HOST
+        value: https://alim-langfuse.onrender.com
       - key: LOG_LEVEL
         value: INFO
     depends_on:
-      - ALİM-langgraph
+      - alim-langgraph
 
   # ============================================
   # Chainlit Demo UI
   # ============================================
   - type: web
-    name: ALİM-demo
+    name: alim-demo
     runtime: python
     plan: starter
     region: frankfurt
@@ -74,60 +74,60 @@ services:
     healthCheckPath: /
     envVars:
       # Deployment settings
-      - key: ALİM_ENVIRONMENT
+      - key: ALIM_ENVIRONMENT
         value: production
-      - key: ALİM_INFRASTRUCTURE_MODE
+      - key: ALIM_INFRASTRUCTURE_MODE
         value: cloud
-      - key: ALİM_LANGGRAPH_REQUIRED
+      - key: ALIM_LANGGRAPH_REQUIRED
         value: true
 
       # Service Connectors
-      - key: ALİM_LANGGRAPH_BASE_URL
-        value: https://ALİM-langgraph.onrender.com
-      - key: ALİM_API_URL
-        value: https://ALİM-api.onrender.com
+      - key: ALIM_LANGGRAPH_BASE_URL
+        value: https://alim-langgraph.onrender.com
+      - key: ALIM_API_URL
+        value: https://alim-api.onrender.com
 
       # Database
-      - key: ALİM_DATABASE_URL
+      - key: ALIM_DATABASE_URL
         fromDatabase:
-          name: ALİM-db
+          name: alim-db
           property: connectionString
       - key: CHAINLIT_DATABASE_URL
         fromDatabase:
-          name: ALİM-db
+          name: alim-db
           property: connectionString
 
       # Python path
       - key: PYTHONPATH
         value: /opt/render/project/src/src:/opt/render/project/src/demo-ui
     depends_on:
-      - ALİM-api
-      - ALİM-langgraph
+      - alim-api
+      - alim-langgraph
 
 # ============================================
 # LangGraph Runtime (Production Agent Server)
 # ============================================
   - type: web
-    name: ALİM-langgraph
+    name: alim-langgraph
     runtime: docker
     plan: starter
     region: frankfurt
     dockerfilePath: Dockerfile.langgraph
     healthCheckPath: /health
     envVars:
-      - key: ALİM_ENVIRONMENT
+      - key: ALIM_ENVIRONMENT
         value: production
-      - key: ALİM_INFRASTRUCTURE_MODE
+      - key: ALIM_INFRASTRUCTURE_MODE
         value: cloud
-      - key: ALİM_LANGGRAPH_REQUIRED
+      - key: ALIM_LANGGRAPH_REQUIRED
         value: true
-      - key: ALİM_LLM_PROVIDER
+      - key: ALIM_LLM_PROVIDER
         value: gemini
       - key: GEMINI_API_KEY
         sync: false
       - key: LANGGRAPH_POSTGRES_URI
         fromDatabase:
-          name: ALİM-db
+          name: alim-db
           property: connectionString
       - key: PYTHONPATH
         value: /app/src
@@ -137,7 +137,7 @@ services:
 # ============================================
 # LLM tracing & analytics with 100% data residency
   - type: web
-    name: ALİM-langfuse
+    name: alim-langfuse
     runtime: docker
     plan: starter  # $7/month
     region: frankfurt
@@ -157,7 +157,7 @@ services:
       - key: SALT
         generateValue: true
       - key: NEXTAUTH_URL
-        value: https://ALİM-langfuse.onrender.com
+        value: https://alim-langfuse.onrender.com
       - key: TELEMETRY_ENABLED
         value: false
       - key: AUTH_DISABLE_SIGNUP
@@ -167,11 +167,11 @@ services:
 # Database (PostgreSQL - Application)
 # ============================================
 databases:
-  - name: ALİM-db
+  - name: alim-db
     plan: starter  # $7/month, 1GB storage
     region: frankfurt
-    databaseName: ALİM
-    user: ALİM
+    databaseName: alim
+    user: alim
     postgresMajorVersion: 15
 
   - name: langfuse-db

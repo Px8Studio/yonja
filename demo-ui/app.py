@@ -144,7 +144,6 @@ from services.thread_utils import (  # noqa: E402
     update_thread_presentation,
 )
 from services.yonca_client import YoncaClient  # noqa: E402
-
 from yonca.agent.graph import compile_agent_graph  # noqa: E402
 from yonca.agent.memory import get_checkpointer_async  # noqa: E402
 from yonca.config import AgentMode  # noqa: E402
@@ -207,8 +206,6 @@ if demo_settings.integration_mode == "direct":
 
     # Show ALEM Infrastructure Tier
     try:
-        from yonca.config import settings as yonca_settings
-
         print_infrastructure_tier(yonca_settings.inference_tier_spec)
     except Exception:
         pass  # Skip if config not available

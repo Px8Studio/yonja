@@ -47,7 +47,7 @@ class LangGraphClient:
     def __init__(
         self,
         base_url: str = "http://localhost:2024",
-        graph_id: str = "ALİM_agent",
+        graph_id: str = "alim_agent",
         timeout: float = 120.0,
         transport: httpx.BaseTransport | None = None,
     ):

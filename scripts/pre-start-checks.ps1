@@ -187,7 +187,7 @@ assert settings.llm_provider, 'LLM provider not configured'
 
 # Check for common mistakes
 if 'your_key_here' in str(settings.groq_api_key or ''):
-    raise ValueError('Groq API key is placeholder - set YONCA_GROQ_API_KEY')
+    raise ValueError('Groq API key is placeholder - set ALIM_GROQ_API_KEY')
 
 print('Config valid')
 "@

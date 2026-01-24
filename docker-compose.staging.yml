@@ -14,12 +14,12 @@ services:
       dockerfile: Dockerfile.langgraph
     container_name: yonca-langgraph-staging
     environment:
-      - YONCA_ENVIRONMENT=staging
-      - YONCA_INFRASTRUCTURE_MODE=cloud
-      - YONCA_LANGGRAPH_REQUIRED=true
-      - YONCA_LLM_PROVIDER=groq
+      - ALIM_ENVIRONMENT=staging
+      - ALIM_INFRASTRUCTURE_MODE=cloud
+      - ALIM_LANGGRAPH_REQUIRED=true
+      - ALIM_LLM_PROVIDER=groq
       - GROQ_API_KEY=${GROQ_API_KEY}
-      - LANGGRAPH_POSTGRES_URI=${YONCA_DATABASE_URL}
+      - LANGGRAPH_POSTGRES_URI=${ALIM_DATABASE_URL}
     depends_on:
       postgres:
         condition: service_healthy
@@ -39,13 +39,13 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - YONCA_ENVIRONMENT=staging
-      - YONCA_INFRASTRUCTURE_MODE=cloud
-      - YONCA_LANGGRAPH_REQUIRED=true
-      - YONCA_LANGGRAPH_BASE_URL=http://langgraph:2024
-      - YONCA_LLM_PROVIDER=groq
+      - ALIM_ENVIRONMENT=staging
+      - ALIM_INFRASTRUCTURE_MODE=cloud
+      - ALIM_LANGGRAPH_REQUIRED=true
+      - ALIM_LANGGRAPH_BASE_URL=http://langgraph:2024
+      - ALIM_LLM_PROVIDER=groq
       - GROQ_API_KEY=${GROQ_API_KEY}
-      - YONCA_DATABASE_URL=${YONCA_DATABASE_URL}
+      - ALIM_DATABASE_URL=${ALIM_DATABASE_URL}
     depends_on:
       postgres:
         condition: service_healthy
@@ -67,13 +67,13 @@ services:
     ports:
       - "8501:8501"
     environment:
-      - YONCA_ENVIRONMENT=staging
-      - YONCA_INFRASTRUCTURE_MODE=cloud
-      - YONCA_LANGGRAPH_REQUIRED=true
-      - YONCA_LANGGRAPH_BASE_URL=http://langgraph:2024
-      - YONCA_API_URL=http://api:8000
-      - YONCA_DATABASE_URL=${YONCA_DATABASE_URL}
-      - CHAINLIT_DATABASE_URL=${YONCA_DATABASE_URL}
+      - ALIM_ENVIRONMENT=staging
+      - ALIM_INFRASTRUCTURE_MODE=cloud
+      - ALIM_LANGGRAPH_REQUIRED=true
+      - ALIM_LANGGRAPH_BASE_URL=http://langgraph:2024
+      - ALIM_API_URL=http://api:8000
+      - ALIM_DATABASE_URL=${ALIM_DATABASE_URL}
+      - CHAINLIT_DATABASE_URL=${ALIM_DATABASE_URL}
     depends_on:
       postgres:
         condition: service_healthy

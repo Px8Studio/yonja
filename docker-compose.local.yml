@@ -20,40 +20,40 @@ services:
       - ./data:/app/data
     environment:
       # Deployment Configuration (Two-Axis Model)
-      - YONCA_ENVIRONMENT=development
-      - YONCA_INFRASTRUCTURE_MODE=local
-      - YONCA_DEBUG=true
-      - YONCA_LANGGRAPH_REQUIRED=true
+      - ALIM_ENVIRONMENT=development
+      - ALIM_INFRASTRUCTURE_MODE=local
+      - ALIM_DEBUG=true
+      - ALIM_LANGGRAPH_REQUIRED=true
 
       # API settings
-      - YONCA_API_HOST=0.0.0.0
-      - YONCA_API_PORT=8000
-      - YONCA_CORS_ORIGINS=http://localhost:3000,http://localhost:8501
+      - ALIM_API_HOST=0.0.0.0
+      - ALIM_API_PORT=8000
+      - ALIM_CORS_ORIGINS=http://localhost:3000,http://localhost:8501
 
       # LangGraph Connector
-      - YONCA_LANGGRAPH_BASE_URL=http://langgraph:2024
-      - YONCA_LANGGRAPH_GRAPH_ID=yonca_agent
+      - ALIM_LANGGRAPH_BASE_URL=http://langgraph:2024
+      - ALIM_LANGGRAPH_GRAPH_ID=ALIM_agent
 
       # LLM Provider
-      - YONCA_LLM_PROVIDER=ollama
-      - YONCA_OLLAMA_BASE_URL=http://ollama:11434
-      - YONCA_OLLAMA_MODEL=qwen3:4b
+      - ALIM_LLM_PROVIDER=ollama
+      - ALIM_OLLAMA_BASE_URL=http://ollama:11434
+      - ALIM_OLLAMA_MODEL=qwen3:4b
 
       # Database
-      - YONCA_DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
+      - ALIM_DATABASE_URL=postgresql+asyncpg://yonca:ALIM_dev_password@postgres:5432/yonca
 
       # Redis
-      - YONCA_REDIS_URL=redis://redis:6379/0
+      - ALIM_REDIS_URL=redis://redis:6379/0
 
       # Security
-      - YONCA_JWT_SECRET=dev-secret-change-in-production
-      - YONCA_JWT_ALGORITHM=HS256
+      - ALIM_JWT_SECRET=dev-secret-change-in-production
+      - ALIM_JWT_ALGORITHM=HS256
 
       # Observability
-      - YONCA_LANGFUSE_ENABLED=true
-      - YONCA_LANGFUSE_PUBLIC_KEY=${YONCA_LANGFUSE_PUBLIC_KEY:-}
-      - YONCA_LANGFUSE_SECRET_KEY=${YONCA_LANGFUSE_SECRET_KEY:-}
-      - YONCA_LANGFUSE_HOST=http://langfuse-server:3000
+      - ALIM_LANGFUSE_ENABLED=true
+      - ALIM_LANGFUSE_PUBLIC_KEY=${ALIM_LANGFUSE_PUBLIC_KEY:-}
+      - ALIM_LANGFUSE_SECRET_KEY=${ALIM_LANGFUSE_SECRET_KEY:-}
+      - ALIM_LANGFUSE_HOST=http://langfuse-server:3000
     depends_on:
       postgres:
         condition: service_healthy
@@ -176,7 +176,7 @@ services:
 
       # LangGraph PostgreSQL persistence (enables checkpoint/state storage)
       # Without this, LangGraph uses in-memory storage (data lost on restart)
-      - LANGGRAPH_POSTGRES_URI=postgresql://yonca:yonca_dev_password@postgres:5432/yonca
+      - LANGGRAPH_POSTGRES_URI=postgresql://yonca:ALIM_dev_password@postgres:5432/yonca
 
       # LLM Provider
       - LLM_PROVIDER=ollama
@@ -184,15 +184,15 @@ services:
       - OLLAMA_MODEL=qwen3:4b
 
       # Database (for app data, separate from LangGraph checkpoints)
-      - DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
+      - DATABASE_URL=postgresql+asyncpg://yonca:ALIM_dev_password@postgres:5432/yonca
 
       # Redis for caching (optional, LangGraph uses Postgres for checkpoints)
       - REDIS_URL=redis://redis:6379/0
 
       # Langfuse observability
       - LANGFUSE_ENABLED=true
-      - LANGFUSE_SECRET_KEY=${YONCA_LANGFUSE_SECRET_KEY:-}
-      - LANGFUSE_PUBLIC_KEY=${YONCA_LANGFUSE_PUBLIC_KEY:-}
+      - LANGFUSE_SECRET_KEY=${ALIM_LANGFUSE_SECRET_KEY:-}
+      - LANGFUSE_PUBLIC_KEY=${ALIM_LANGFUSE_PUBLIC_KEY:-}
       - LANGFUSE_HOST=http://langfuse-server:3000
     depends_on:
       postgres:
@@ -309,7 +309,7 @@ services:
     environment:
       - POSTGRES_DB=yonca
       - POSTGRES_USER=yonca
-      - POSTGRES_PASSWORD=yonca_dev_password
+      - POSTGRES_PASSWORD=ALIM_dev_password
     networks:
       - yonca-network
     restart: unless-stopped
@@ -338,33 +338,33 @@ services:
       - ./data:/app/data
     environment:
       # Deployment settings
-      - YONCA_ENVIRONMENT=development
-      - YONCA_INFRASTRUCTURE_MODE=local
-      - YONCA_DEBUG=true
-      - YONCA_LANGGRAPH_REQUIRED=true
+      - ALIM_ENVIRONMENT=development
+      - ALIM_INFRASTRUCTURE_MODE=local
+      - ALIM_DEBUG=true
+      - ALIM_LANGGRAPH_REQUIRED=true
 
       # Services
-      - YONCA_API_URL=http://api:8000
-      - YONCA_LANGGRAPH_BASE_URL=http://langgraph:2024
+      - ALIM_API_URL=http://api:8000
+      - ALIM_LANGGRAPH_BASE_URL=http://langgraph:2024
 
       # LLM settings
-      - YONCA_LLM_PROVIDER=ollama
-      - YONCA_OLLAMA_BASE_URL=http://ollama:11434
-      - YONCA_OLLAMA_MODEL=qwen3:4b
+      - ALIM_LLM_PROVIDER=ollama
+      - ALIM_OLLAMA_BASE_URL=http://ollama:11434
+      - ALIM_OLLAMA_MODEL=qwen3:4b
 
       # Redis
-      - YONCA_REDIS_URL=redis://redis:6379/0
+      - ALIM_REDIS_URL=redis://redis:6379/0
 
       # Database
-      - YONCA_DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
-      - CHAINLIT_DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
+      - ALIM_DATABASE_URL=postgresql+asyncpg://yonca:ALIM_dev_password@postgres:5432/yonca
+      - CHAINLIT_DATABASE_URL=postgresql+asyncpg://yonca:ALIM_dev_password@postgres:5432/yonca
       - ENABLE_DATA_PERSISTENCE=true
 
       # Observability
-      - YONCA_LANGFUSE_ENABLED=true
-      - YONCA_LANGFUSE_PUBLIC_KEY=${YONCA_LANGFUSE_PUBLIC_KEY:-}
-      - YONCA_LANGFUSE_SECRET_KEY=${YONCA_LANGFUSE_SECRET_KEY:-}
-      - YONCA_LANGFUSE_HOST=http://langfuse-server:3000
+      - ALIM_LANGFUSE_ENABLED=true
+      - ALIM_LANGFUSE_PUBLIC_KEY=${ALIM_LANGFUSE_PUBLIC_KEY:-}
+      - ALIM_LANGFUSE_SECRET_KEY=${ALIM_LANGFUSE_SECRET_KEY:-}
+      - ALIM_LANGFUSE_HOST=http://langfuse-server:3000
 
       # Python path
       - PYTHONPATH=/app/src:/app/demo-ui

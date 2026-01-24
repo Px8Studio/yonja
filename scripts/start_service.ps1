@@ -45,10 +45,10 @@ if (Test-Path $envFile) {
         [System.Environment]::SetEnvironmentVariable($key, $value, [System.EnvironmentVariableTarget]::Process)
 
         # COMPATIBILITY HACK:
-        # If variable starts with YONCA_, also set the non-prefixed version
+        # If variable starts with ALIM_, also set the non-prefixed version
         # so legacy code (demo-ui) works without changes.
-        if ($key -like "YONCA_*") {
-            $legacyKey = $key -replace "^YONCA_", ""
+        if ($key -like "ALIM_*") {
+            $legacyKey = $key -replace "^ALIM_", ""
             [System.Environment]::SetEnvironmentVariable($legacyKey, $value, [System.EnvironmentVariableTarget]::Process)
         }
     }

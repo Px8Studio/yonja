@@ -16,7 +16,7 @@ services:
     environment:
       - POSTGRES_DB=yonca
       - POSTGRES_USER=yonca
-      - POSTGRES_PASSWORD=${YONCA_POSTGRES_PASSWORD:-yonca_dev_password}
+      - POSTGRES_PASSWORD=${ALIM_POSTGRES_PASSWORD:-ALIM_dev_password}
     networks:
       - yonca-network
     restart: unless-stopped

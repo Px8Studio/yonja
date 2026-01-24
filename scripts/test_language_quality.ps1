@@ -6,7 +6,7 @@ param(
     [string]$Provider = "both",  # "groq", "ollama", or "both"
 
     [Parameter(Mandatory=$false)]
-    [string]$GroqApiKey = $env:YONCA_GROQ_API_KEY
+    [string]$GroqApiKey = $env:ALIM_GROQ_API_KEY
 )
 
 # Test cases with expected Azerbaijani words
@@ -49,7 +49,7 @@ function Test-GroqProvider {
     param($TestCase)
 
     if (-not $GroqApiKey) {
-        Write-Host "⚠️  Groq API key not found. Set YONCA_GROQ_API_KEY environment variable." -ForegroundColor Yellow
+        Write-Host "⚠️  Groq API key not found. Set ALIM_GROQ_API_KEY environment variable." -ForegroundColor Yellow
         return $null
     }
 

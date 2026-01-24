@@ -68,15 +68,15 @@ services:
       - ./langgraph.json:/app/langgraph.json
     environment:
       - PYTHONPATH=/app/src
-      - YONCA_ENVIRONMENT=development
-      - YONCA_INFRASTRUCTURE_MODE=local
-      - YONCA_LANGGRAPH_REQUIRED=true
+      - ALIM_ENVIRONMENT=development
+      - ALIM_INFRASTRUCTURE_MODE=local
+      - ALIM_LANGGRAPH_REQUIRED=true
       - LANGGRAPH_DEV_HOST=0.0.0.0
       - LANGGRAPH_DEV_PORT=2024
-      - LANGGRAPH_POSTGRES_URI=postgresql://yonca:yonca_dev_password@postgres:5432/yonca
-      - YONCA_LLM_PROVIDER=ollama
-      - YONCA_OLLAMA_BASE_URL=http://ollama:11434
-      - YONCA_OLLAMA_MODEL=qwen3:4b
+      - LANGGRAPH_POSTGRES_URI=postgresql://yonca:ALIM_dev_password@postgres:5432/yonca
+      - ALIM_LLM_PROVIDER=ollama
+      - ALIM_OLLAMA_BASE_URL=http://ollama:11434
+      - ALIM_OLLAMA_MODEL=qwen3:4b
     depends_on:
       postgres:
         condition: service_healthy
@@ -108,15 +108,15 @@ services:
       - ./prompts:/app/prompts
       - ./data:/app/data
     environment:
-      - YONCA_ENVIRONMENT=development
-      - YONCA_INFRASTRUCTURE_MODE=local
-      - YONCA_DEBUG=true
-      - YONCA_LANGGRAPH_REQUIRED=true
-      - YONCA_LANGGRAPH_BASE_URL=http://langgraph:2024
-      - YONCA_LLM_PROVIDER=ollama
-      - YONCA_OLLAMA_BASE_URL=http://ollama:11434
-      - YONCA_DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
-      - YONCA_REDIS_URL=redis://redis:6379/0
+      - ALIM_ENVIRONMENT=development
+      - ALIM_INFRASTRUCTURE_MODE=local
+      - ALIM_DEBUG=true
+      - ALIM_LANGGRAPH_REQUIRED=true
+      - ALIM_LANGGRAPH_BASE_URL=http://langgraph:2024
+      - ALIM_LLM_PROVIDER=ollama
+      - ALIM_OLLAMA_BASE_URL=http://ollama:11434
+      - ALIM_DATABASE_URL=postgresql+asyncpg://yonca:ALIM_dev_password@postgres:5432/yonca
+      - ALIM_REDIS_URL=redis://redis:6379/0
     depends_on:
       postgres:
         condition: service_healthy
@@ -150,15 +150,15 @@ services:
       - ./prompts:/app/prompts
       - ./data:/app/data
     environment:
-      - YONCA_ENVIRONMENT=development
-      - YONCA_INFRASTRUCTURE_MODE=local
-      - YONCA_LANGGRAPH_REQUIRED=true
-      - YONCA_LANGGRAPH_BASE_URL=http://langgraph:2024
-      - YONCA_API_URL=http://api:8000
-      - YONCA_LLM_PROVIDER=ollama
-      - YONCA_OLLAMA_BASE_URL=http://ollama:11434
-      - YONCA_DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
-      - CHAINLIT_DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
+      - ALIM_ENVIRONMENT=development
+      - ALIM_INFRASTRUCTURE_MODE=local
+      - ALIM_LANGGRAPH_REQUIRED=true
+      - ALIM_LANGGRAPH_BASE_URL=http://langgraph:2024
+      - ALIM_API_URL=http://api:8000
+      - ALIM_LLM_PROVIDER=ollama
+      - ALIM_OLLAMA_BASE_URL=http://ollama:11434
+      - ALIM_DATABASE_URL=postgresql+asyncpg://yonca:ALIM_dev_password@postgres:5432/yonca
+      - CHAINLIT_DATABASE_URL=postgresql+asyncpg://yonca:ALIM_dev_password@postgres:5432/yonca
       - PYTHONPATH=/app/src:/app/demo-ui
     depends_on:
       postgres:

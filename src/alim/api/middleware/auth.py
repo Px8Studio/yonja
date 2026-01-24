@@ -78,7 +78,7 @@ class JWTAuthenticator:
     """
 
     # Required scopes for ALİM API access
-    REQUIRED_SCOPES = {"ALİM:read", "ALİM:chat"}
+    REQUIRED_SCOPES = {"alim:read", "alim:chat"}
 
     def __init__(
         self,
@@ -366,7 +366,7 @@ def create_token(
         "iat": now,
         "exp": now + (expires_in_hours * 3600),
         "tier": tier,
-        "scope": " ".join(scopes or ["ALİM:read", "ALİM:chat"]),
+        "scope": " ".join(scopes or ["alim:read", "alim:chat"]),
     }
 
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)

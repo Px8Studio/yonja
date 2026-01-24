@@ -51,7 +51,7 @@ class RateLimiter:
     """
 
     # Key prefix for rate limit data
-    RATE_LIMIT_PREFIX = "ALİM:ratelimit:"
+    RATE_LIMIT_PREFIX = "alim:ratelimit:"
 
     def __init__(
         self,

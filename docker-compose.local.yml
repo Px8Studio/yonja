@@ -390,7 +390,7 @@ services:
   zekalab-mcp:
     build:
       context: .
-      dockerfile: Dockerfile.mcp
+      dockerfile: src/alim/mcp_server/Dockerfile
     container_name: alim-zekalab-mcp
     ports:
       - "7777:7777"

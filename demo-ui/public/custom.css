@@ -1,20 +1,22 @@
-/* Yonca AI Custom CSS
+/* ALİM Custom CSS
  * "Natural Tech" Design Language — Liquid Glass Aesthetics
  * Inspired by 2026 Azerbaijani government apps (SİMA, MyGov)
  */
 
 /* ============================================
- * Color Palette (Yonca Brand — Forest Green Authority)
+ * Color Palette (ALİM Brand — Forest Green Authority)
  * ============================================ */
 :root {
     /* Primary: Deep Forest Green (Azerbaijan Agriculture) */
-    --yonca-green-primary: #2D5A27;
-    --yonca-green-light: #A8E6CF;  /* Emerald Mint for highlights */
-    --yonca-green-dark: #1B4D1F;
-    --yonca-green-accent: #4CAF50;
+    --alim-green-primary: #2D5A27;
+    --alim-green-light: #A8E6CF;
+    /* Emerald Mint for highlights */
+    --alim-green-dark: #1B4D1F;
+    --alim-green-accent: #4CAF50;
 
     /* Neutral palette */
-    --yonca-charcoal: #1F2937;     /* Soft charcoal for text */
+    --yonca-charcoal: #1F2937;
+    /* Soft charcoal for text */
     --yonca-earth-brown: #5D4037;
     --yonca-sky-blue: #1976D2;
     --yonca-sun-yellow: #FFC107;
@@ -71,13 +73,13 @@
 
 /* ALEM 1 avatar styling */
 .cl-avatar[data-author="ALEM 1"] {
-    border: 2px solid var(--yonca-green-primary);
+    border: 2px solid var(--alim-green-primary);
     box-shadow: 0 4px 12px rgba(45, 90, 39, 0.2);
 }
 
 /* User avatar styling (from Google OAuth) */
 .cl-avatar[data-author="user"] {
-    border: 2px solid var(--yonca-sky-blue);
+    border: 2px solid var(--alim-sky-blue);
     box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
 }
 
@@ -95,12 +97,12 @@
 }
 
 .cl-message-container[data-author="user"] .cl-avatar {
-    background: linear-gradient(135deg, var(--yonca-sky-blue) 0%, #1565c0 100%);
+    background: linear-gradient(135deg, var(--alim-sky-blue) 0%, #1565c0 100%);
 }
 
 /* User messages */
 .cl-message[data-author="user"] {
-    background: linear-gradient(135deg, var(--yonca-sky-blue) 0%, #1565c0 100%) !important;
+    background: linear-gradient(135deg, var(--alim-sky-blue) 0%, #1565c0 100%) !important;
     border-radius: 18px 18px 4px 18px !important;
     box-shadow: 0 4px 15px rgba(25, 118, 210, 0.25);
 }
@@ -111,7 +113,7 @@
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
     border: 1px solid var(--glass-border);
-    border-left: 4px solid var(--yonca-green-primary);
+    border-left: 4px solid var(--alim-green-primary);
     border-radius: 4px 18px 18px 18px;
     box-shadow: var(--glass-shadow);
 }
@@ -119,14 +121,14 @@
 .dark .cl-message[data-author="ALEM 1"] {
     background: var(--glass-bg-dark);
     border: 1px solid var(--glass-border-dark);
-    border-left: 4px solid var(--yonca-green-light);
+    border-left: 4px solid var(--alim-green-light);
 }
 
 /* System messages */
 .cl-message[data-author="Sistem"] {
     background: rgba(255, 248, 225, 0.9);
     backdrop-filter: var(--glass-blur);
-    border-left: 4px solid var(--yonca-sun-yellow);
+    border-left: 4px solid var(--alim-sun-yellow);
     border-radius: 8px;
     font-size: 0.9em;
 }
@@ -137,7 +139,7 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(45, 90, 39, 0.15);
-    border-left: 5px solid var(--yonca-green-primary);
+    border-left: 5px solid var(--alim-green-primary);
     box-shadow: 0 12px 40px rgba(45, 90, 39, 0.12);
 }
 
@@ -149,7 +151,7 @@
  * Header / Logo Area
  * ============================================ */
 .cl-header {
-    background: linear-gradient(90deg, var(--yonca-green-dark) 0%, var(--yonca-green-primary) 100%);
+    background: linear-gradient(90deg, var(--alim-green-dark) 0%, var(--alim-green-primary) 100%);
 }
 
 .cl-header-title {
@@ -168,27 +170,34 @@
 }
 
 .cl-step-icon {
-    color: var(--yonca-green-primary);
+    color: var(--alim-green-primary);
 }
 
 .cl-step-name {
     font-weight: 500;
-    color: var(--yonca-earth-brown);
+    color: var(--alim-earth-brown);
 }
 
 /* Step states */
 .cl-step[data-state="running"] {
-    border-left: 3px solid var(--yonca-sun-yellow);
+    border-left: 3px solid var(--alim-sun-yellow);
     animation: pulse 1.5s infinite;
 }
 
 .cl-step[data-state="completed"] {
-    border-left: 3px solid var(--yonca-green-light);
+    border-left: 3px solid var(--alim-green-light);
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
 }
 
 /* ============================================
@@ -252,7 +261,7 @@
 }
 
 /* MCP badge near input composer */
-.yonca-mcp-badge {
+.alim-mcp-badge {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -277,7 +286,7 @@
     color: #e5e7eb;
 }
 
-.yonca-mcp-dot {
+.alim-mcp-dot {
     width: 10px;
     height: 10px;
     border-radius: 999px;
@@ -285,12 +294,23 @@
     box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.04);
 }
 
-.yonca-mcp-dot.ok { background: #22c55e; }
-.yonca-mcp-dot.warn { background: #f59e0b; }
-.yonca-mcp-dot.error { background: #ef4444; }
-.yonca-mcp-dot.off { background: #9ca3af; }
+.yonca-mcp-dot.ok {
+    background: #22c55e;
+}
 
-.yonca-mcp-tooltip {
+.yonca-mcp-dot.warn {
+    background: #f59e0b;
+}
+
+.yonca-mcp-dot.error {
+    background: #ef4444;
+}
+
+.yonca-mcp-dot.off {
+    background: #9ca3af;
+}
+
+.alim-mcp-tooltip {
     position: absolute;
     bottom: 36px;
     right: 0;
@@ -310,7 +330,7 @@
     z-index: 20;
 }
 
-.yonca-mcp-badge:hover .yonca-mcp-tooltip {
+.yonca-mcp-badge:hover .alim-mcp-tooltip {
     opacity: 1;
 }
 
@@ -326,14 +346,14 @@
 }
 
 .cl-input-textarea:focus {
-    border-color: var(--yonca-green-primary);
+    border-color: var(--alim-green-primary);
     background: rgba(255, 255, 255, 0.8);
     box-shadow: 0 0 0 3px rgba(45, 90, 39, 0.1);
 }
 
 /* Send button — Pill shape with pulse */
 .cl-send-button {
-    background: linear-gradient(135deg, var(--yonca-green-primary) 0%, var(--yonca-green-dark) 100%) !important;
+    background: linear-gradient(135deg, var(--alim-green-primary) 0%, var(--alim-green-dark) 100%) !important;
     border-radius: 999px;
     padding: 10px 20px;
     transition: all 0.3s ease;
@@ -341,15 +361,22 @@
 }
 
 .cl-send-button:hover {
-    background: linear-gradient(135deg, var(--yonca-green-accent) 0%, var(--yonca-green-primary) 100%) !important;
+    background: linear-gradient(135deg, var(--alim-green-accent) 0%, var(--alim-green-primary) 100%) !important;
     transform: scale(1.05);
     box-shadow: 0 6px 20px rgba(45, 90, 39, 0.4);
 }
 
 /* Pulse animation for send button on hover */
 @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 4px 15px rgba(45, 90, 39, 0.3); }
-    50% { box-shadow: 0 4px 25px rgba(45, 90, 39, 0.5), 0 0 40px rgba(168, 230, 207, 0.3); }
+
+    0%,
+    100% {
+        box-shadow: 0 4px 15px rgba(45, 90, 39, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 4px 25px rgba(45, 90, 39, 0.5), 0 0 40px rgba(168, 230, 207, 0.3);
+    }
 }
 
 .cl-send-button:hover {
@@ -361,11 +388,11 @@
  * ============================================ */
 .cl-settings-panel {
     background-color: white;
-    border-left: 4px solid var(--yonca-green-primary);
+    border-left: 4px solid var(--alim-green-primary);
 }
 
 .cl-settings-title {
-    color: var(--yonca-green-dark);
+    color: var(--alim-green-dark);
     font-weight: 600;
 }
 
@@ -376,7 +403,7 @@
 }
 
 .cl-select:focus {
-    border-color: var(--yonca-green-primary);
+    border-color: var(--alim-green-primary);
 }
 
 /* ============================================
@@ -440,13 +467,13 @@
     border-radius: 999px;
     padding: 6px 14px;
     font-size: 0.85em;
-    color: var(--yonca-green-primary);
+    color: var(--alim-green-primary);
     font-weight: 500;
 }
 
 .dark .sima-badge {
     background: linear-gradient(135deg, rgba(168, 230, 207, 0.1) 0%, rgba(45, 90, 39, 0.2) 100%);
-    color: var(--yonca-green-light);
+    color: var(--alim-green-light);
 }
 
 /* Quick action buttons */
@@ -460,14 +487,14 @@
     border-radius: 12px;
     padding: 12px 18px;
     font-weight: 500;
-    color: var(--yonca-charcoal);
+    color: var(--alim-charcoal);
     transition: all 0.2s ease;
     cursor: pointer;
 }
 
 .quick-action-btn:hover {
-    background: linear-gradient(135deg, var(--yonca-green-light) 0%, rgba(168, 230, 207, 0.6) 100%);
-    border-color: var(--yonca-green-primary);
+    background: linear-gradient(135deg, var(--alim-green-light) 0%, rgba(168, 230, 207, 0.6) 100%);
+    border-color: var(--alim-green-primary);
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(45, 90, 39, 0.15);
 }
@@ -520,7 +547,7 @@ body {
 .cl-message:focus-visible,
 .cl-send-button:focus-visible,
 .cl-feedback-button:focus-visible {
-    outline: 3px solid var(--yonca-green-primary);
+    outline: 3px solid var(--alim-green-primary);
     outline-offset: 2px;
 }
 
@@ -531,7 +558,7 @@ body {
     }
 
     .cl-step {
-        border: 2px solid var(--yonca-green-dark);
+        border: 2px solid var(--alim-green-dark);
     }
 }
 
@@ -568,21 +595,21 @@ body {
 
 /* Login title styling */
 .text-2xl.font-bold {
-    color: var(--yonca-green-dark);
+    color: var(--alim-green-dark);
 }
 
 .dark .text-2xl.font-bold {
-    color: var(--yonca-green-light);
+    color: var(--alim-green-light);
 }
 
-/* OAuth provider buttons - enhance with Yonca branding on hover */
+/* OAuth provider buttons - enhance with ALİM branding on hover */
 button[type="button"]:has(svg) {
     transition: all 0.3s ease;
     border-radius: 12px;
 }
 
 button[type="button"]:has(svg):hover {
-    border-color: var(--yonca-green-primary) !important;
+    border-color: var(--alim-green-primary) !important;
     box-shadow: 0 4px 15px rgba(45, 90, 39, 0.25);
     transform: translateY(-1px);
 }
@@ -591,7 +618,7 @@ button[type="button"]:has(svg):hover {
 button[type="submit"],
 .login-button,
 button.primary {
-    background: linear-gradient(135deg, var(--yonca-green-primary) 0%, var(--yonca-green-dark) 100%) !important;
+    background: linear-gradient(135deg, var(--alim-green-primary) 0%, var(--alim-green-dark) 100%) !important;
     border-radius: 999px !important;
     border: none !important;
     color: white !important;
@@ -610,13 +637,17 @@ button.primary:hover {
 }
 
 @keyframes login-pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         box-shadow: 0 4px 15px rgba(45, 90, 39, 0.3);
     }
+
     50% {
         box-shadow: 0 4px 30px rgba(45, 90, 39, 0.5), 0 0 50px rgba(168, 230, 207, 0.3);
     }
 }
+
 /* ============================================
  * Profile Dropdown Enhancement (Yonca User Menu)
  * ============================================ */
@@ -624,14 +655,14 @@ button.primary:hover {
 /* User avatar in header — add ring effect */
 [data-testid="user-button"] img,
 .MuiAvatar-root img {
-    border: 2px solid var(--yonca-green-light);
+    border: 2px solid var(--alim-green-light);
     border-radius: 50%;
     transition: all 0.3s ease;
 }
 
 [data-testid="user-button"]:hover img,
 .MuiAvatar-root:hover img {
-    border-color: var(--yonca-green-primary);
+    border-color: var(--alim-green-primary);
     box-shadow: 0 0 0 3px rgba(168, 230, 207, 0.4);
     transform: scale(1.05);
 }
@@ -691,10 +722,13 @@ button.primary:hover {
 
 /* Keyframe animations for spinners */
 @keyframes alem-pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 1;
         transform: scale(1);
     }
+
     50% {
         opacity: 0.6;
         transform: scale(1.1);
@@ -705,15 +739,19 @@ button.primary:hover {
     0% {
         transform: rotate(0deg);
     }
+
     100% {
         transform: rotate(360deg);
     }
 }
 
 @keyframes alem-bounce {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: translateY(0);
     }
+
     50% {
         transform: translateY(-10px);
     }
@@ -727,7 +765,7 @@ button.primary:hover {
     padding: 12px 20px;
     background: linear-gradient(135deg, rgba(45, 90, 39, 0.05) 0%, rgba(168, 230, 207, 0.1) 100%);
     border-radius: 12px;
-    border-left: 3px solid var(--yonca-green-primary);
+    border-left: 3px solid var(--alim-green-primary);
 }
 
 .alem-spinner .spinner-icon {
@@ -736,7 +774,7 @@ button.primary:hover {
 }
 
 .alem-spinner .spinner-text {
-    color: var(--yonca-green-dark);
+    color: var(--alim-green-dark);
     font-weight: 500;
     font-size: 0.95em;
 }
@@ -750,7 +788,7 @@ button.primary:hover {
 }
 
 .alem-progress .progress-label {
-    color: var(--yonca-green-dark);
+    color: var(--alim-green-dark);
     font-weight: 500;
     margin-bottom: 8px;
     font-size: 0.9em;
@@ -766,14 +804,14 @@ button.primary:hover {
 
 .alem-progress .progress-bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--yonca-green-primary) 0%, var(--yonca-clover) 100%);
+    background: linear-gradient(90deg, var(--alim-green-primary) 0%, var(--yonca-clover) 100%);
     border-radius: 4px;
     transition: width 0.3s ease;
 }
 
 .alem-progress .progress-percentage {
     text-align: right;
-    color: var(--yonca-green-primary);
+    color: var(--alim-green-primary);
     font-weight: 600;
     font-size: 0.85em;
 }
@@ -783,7 +821,7 @@ button.primary:hover {
     padding: 16px;
     background: linear-gradient(135deg, rgba(232, 245, 233, 0.9) 0%, rgba(200, 230, 201, 0.8) 100%);
     border-radius: 12px;
-    border-left: 4px solid var(--yonca-green-primary);
+    border-left: 4px solid var(--alim-green-primary);
 }
 
 .alem-step-indicator .step-header {
@@ -794,19 +832,19 @@ button.primary:hover {
 }
 
 .alem-step-indicator .step-number {
-    color: var(--yonca-green-dark);
+    color: var(--alim-green-dark);
     font-weight: 600;
     font-size: 0.85em;
 }
 
 .alem-step-indicator .step-percentage {
-    color: var(--yonca-green-primary);
+    color: var(--alim-green-primary);
     font-weight: 700;
     font-size: 0.9em;
 }
 
 .alem-step-indicator .step-name {
-    color: var(--yonca-green-dark);
+    color: var(--alim-green-dark);
     font-weight: 500;
     margin-bottom: 12px;
     font-size: 1em;
@@ -821,7 +859,7 @@ button.primary:hover {
 
 .alem-step-indicator .step-progress-fill {
     height: 100%;
-    background: var(--yonca-green-primary);
+    background: var(--alim-green-primary);
     border-radius: 3px;
     transition: width 0.4s ease;
 }
@@ -900,7 +938,7 @@ button.primary:hover {
 /* Login title — ALEM branding */
 .cl-login-title,
 [data-testid="login-title"] {
-    color: var(--yonca-green-dark) !important;
+    color: var(--alim-green-dark) !important;
     font-size: 1.75rem !important;
     font-weight: 600 !important;
     margin-bottom: 8px !important;
@@ -909,7 +947,7 @@ button.primary:hover {
 /* Login subtitle — brief message */
 .cl-login-subtitle,
 [data-testid="login-subtitle"] {
-    color: var(--yonca-charcoal) !important;
+    color: var(--alim-charcoal) !important;
     font-size: 0.95rem !important;
     opacity: 0.8;
     margin-bottom: 24px !important;
@@ -919,7 +957,7 @@ button.primary:hover {
 .cl-login-button,
 [data-testid="oauth-button"],
 button[class*="oauth"] {
-    background: linear-gradient(135deg, var(--yonca-green-primary) 0%, var(--yonca-green-dark) 100%) !important;
+    background: linear-gradient(135deg, var(--alim-green-primary) 0%, var(--alim-green-dark) 100%) !important;
     color: white !important;
     border: none !important;
     border-radius: 12px !important;
@@ -941,7 +979,7 @@ button[class*="oauth"]:hover {
 /* Loading state during OAuth redirect */
 .cl-login-loading,
 [data-testid="login-loading"] {
-    color: var(--yonca-green-primary) !important;
+    color: var(--alim-green-primary) !important;
 }
 
 /* Hide confusing elements on login page */
@@ -964,7 +1002,7 @@ button[class*="oauth"]:hover {
 
 .dark .cl-login-title,
 .dark [data-testid="login-title"] {
-    color: var(--yonca-green-light) !important;
+    color: var(--alim-green-light) !important;
 }
 
 .dark .cl-login-subtitle,
@@ -981,8 +1019,15 @@ button[class*="oauth"]:hover {
 
 /* Add subtle loading animation */
 @keyframes session-pulse {
-    0%, 100% { opacity: 0.6; }
-    50% { opacity: 1; }
+
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
 }
 
 .cl-login-loading .cl-spinner,

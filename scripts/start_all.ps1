@@ -1,5 +1,5 @@
 # ════════════════════════════════════════════════════════════════════════════
-# 🌿 YONCA AI — Start All (CLI Wrapper)
+# 🌿 ALİM — Start All (CLI Wrapper)
 # ════════════════════════════════════════════════════════════════════════════
 # Wrapper around start_service.ps1 to start everything in background.
 # ════════════════════════════════════════════════════════════════════════════
@@ -7,7 +7,7 @@
 $ErrorActionPreference = "Continue"
 $projectRoot = Split-Path -Parent $PSScriptRoot
 
-Write-Host "`n🌿 YONCA AI — Starting Services (CLI Mode)`n" -ForegroundColor Cyan
+Write-Host "`n🌿 ALİM — Starting Services (CLI Mode)`n" -ForegroundColor Cyan
 
 # 1. Start Docker (blocking, wait for it)
 Write-Host "🐳 Starting Docker..." -ForegroundColor Yellow

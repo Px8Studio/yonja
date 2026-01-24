@@ -3,7 +3,7 @@
 Import GGUF models into Ollama for local development.
 
 This script imports GGUF model files (e.g., from Hugging Face) into Ollama,
-making them available for use with the Yonca AI application.
+making them available for use with the ALİM application.
 
 Usage:
     # Import ATLLaMA model (default)

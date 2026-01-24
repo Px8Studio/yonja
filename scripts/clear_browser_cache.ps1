@@ -3,7 +3,7 @@
 # ════════════════════════════════════════════════════════════════════════════
 
 $ErrorActionPreference = 'SilentlyContinue'
-Write-Host "`n🧹 YONCA AI — Browser Cache Cleanup" -ForegroundColor Cyan
+Write-Host "`n🧹 ALİM — Browser Cache Cleanup" -ForegroundColor Cyan
 
 $cleared = 0
 
@@ -36,6 +36,7 @@ foreach ($browser in $browsers.GetEnumerator()) {
 
 if ($cleared -gt 0) {
     Write-Host "`n✨ Cleared $cleared cache locations." -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "✨ No browser cache found to clear." -ForegroundColor Gray
 }

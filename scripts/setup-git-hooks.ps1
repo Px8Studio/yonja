@@ -1,6 +1,6 @@
 # scripts/setup-git-hooks.ps1
 # ═══════════════════════════════════════════════════════════════════════════
-# 🛡️ Yonca AI — Git Hooks Setup Script
+# 🛡️ ALİM — Git Hooks Setup Script
 # ═══════════════════════════════════════════════════════════════════════════
 #
 # Purpose: Install pre-commit hooks for automatic quality checks
@@ -22,7 +22,7 @@ param(
 
 Write-Host ""
 Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Cyan
-Write-Host "🛡️  Yonca AI — Git Hooks Setup" -ForegroundColor Cyan
+Write-Host "🛡️  ALİM — Git Hooks Setup" -ForegroundColor Cyan
 Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Cyan
 Write-Host ""
 
@@ -36,7 +36,8 @@ if (-not $precommitInstalled) {
     # Use venv python if available, otherwise global
     $pythonCmd = if (Test-Path ".venv/Scripts/python.exe") {
         ".venv/Scripts/python.exe"
-    } else {
+    }
+    else {
         "python"
     }
 
@@ -48,7 +49,8 @@ if (-not $precommitInstalled) {
     }
 
     Write-Host "✅ pre-commit installed successfully" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "✅ pre-commit already installed" -ForegroundColor Green
 }
 
@@ -58,7 +60,8 @@ Write-Host "📋 Installing git hooks..." -ForegroundColor Yellow
 # Use venv pre-commit if available
 $precommitCmd = if (Test-Path ".venv/Scripts/pre-commit.exe") {
     ".venv/Scripts/pre-commit.exe"
-} else {
+}
+else {
     "pre-commit"
 }
 
@@ -82,7 +85,8 @@ if ($CheckAll) {
         Write-Host ""
         Write-Host "⚠️  Some checks failed. Fix the issues above and commit again." -ForegroundColor Yellow
         Write-Host "   Or skip hooks temporarily with: git commit --no-verify" -ForegroundColor Gray
-    } else {
+    }
+    else {
         Write-Host "✅ All checks passed!" -ForegroundColor Green
     }
 }

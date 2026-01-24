@@ -29,7 +29,7 @@ else
     echo "  ❌ Product name not ALEM 1"
 fi
 
-if grep -q "ALEM 1 — Yonca AI Assistant" demo-ui/.chainlit/config.toml; then
+if grep -q "ALEM 1 — ALİM AI Assistant" demo-ui/.chainlit/config.toml; then
     echo "  ✅ Description mentions ALEM 1"
 else
     echo "  ❌ Description doesn't mention ALEM 1"

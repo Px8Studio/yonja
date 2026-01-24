@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
-COPY src/yonca/mcp_server/requirements.txt .
+COPY src/alim/mcp_server/requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
@@ -28,4 +28,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 EXPOSE 7777
 
 # Run server
-CMD ["python", "-m", "uvicorn", "yonca.mcp_server.main:app", "--host", "0.0.0.0", "--port", "7777"]
+CMD ["python", "-m", "uvicorn", "alim.mcp_server.main:app", "--host", "0.0.0.0", "--port", "7777"]

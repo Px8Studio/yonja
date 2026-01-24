@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Environment Parity Checker for ALIM.
-Ensures that .env and .env.example stay in sync with the codebase configuration (src/yonca/config.py).
+Ensures that .env and .env.example stay in sync with the codebase configuration (src/alim/config.py).
 """
 
 import sys

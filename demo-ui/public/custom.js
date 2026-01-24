@@ -11,7 +11,7 @@
 
     const isLocalhost = Boolean(
       window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1'
+      window.location.hostname === '127.0.0.1'
     );
     const isSecure = window.location.protocol === 'https:' || isLocalhost;
 
@@ -46,7 +46,7 @@
         });
 
         // Store in window for backend to access
-        window.__yonca_mcp_connections__ = connections;
+        window.__alim_mcp_connections__ = connections;
 
         console.log('MCP connections captured from localStorage:', connections);
         clearInterval(checkInterval);
@@ -66,15 +66,15 @@
   const REFRESH_MS = 30000;
 
   function createBadge() {
-    const existing = document.querySelector('.yonca-mcp-badge');
+    const existing = document.querySelector('.alim-mcp-badge');
     if (existing) return existing;
 
     const badge = document.createElement('div');
-    badge.className = 'yonca-mcp-badge';
+    badge.className = 'alim-mcp-badge';
     badge.innerHTML = `
-      <div class="yonca-mcp-dot"></div>
-      <span class="yonca-mcp-label">MCP</span>
-      <div class="yonca-mcp-tooltip">Loading MCP status…</div>
+      <div class="alim-mcp-dot"></div>
+      <span class="alim-mcp-label">MCP</span>
+      <div class="alim-mcp-tooltip">Loading MCP status…</div>
     `;
 
     // Attach near input container when available

@@ -110,7 +110,7 @@ import chainlit as cl  # noqa: E402
 from alim.agent.graph import compile_agent_graph  # noqa: E402
 from alim.agent.memory import get_checkpointer_async  # noqa: E402
 from alim.config import AgentMode  # noqa: E402
-from alim.config import settings as yonca_settings  # noqa: E402
+from alim.config import settings as alim_settings  # noqa: E402
 from alim.langgraph.client import (  # noqa: E402
     LangGraphClient,
     LangGraphClientError,
@@ -205,7 +205,7 @@ if demo_settings.integration_mode == "direct":
 
     # Show ALİM Infrastructure Tier
     try:
-        print_infrastructure_tier(yonca_settings.inference_tier_spec)
+        print_infrastructure_tier(alim_settings.inference_tier_spec)
     except Exception:
         pass  # Skip if config not available
 else:
@@ -1126,7 +1126,7 @@ async def setup_chat_settings(user: cl.User | None = None):
                 label=AZ_STRINGS["settings_language"],
                 values=language_values,
                 initial_index=language_idx,
-                description="Yonca cavablarının dili",
+                description="ALİM cavablarının dili",
             ),
             Select(
                 id="currency",

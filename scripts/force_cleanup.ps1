@@ -1,12 +1,12 @@
 # ════════════════════════════════════════════════════════════════════════════
-# 🌿 YONCA AI — Force Cleanup
+# 🌿 ALİM — Port Cleanup
 # ════════════════════════════════════════════════════════════════════════════
 # Kills lingering processes that might hold onto ports (8000, 8501, etc.)
 # ════════════════════════════════════════════════════════════════════════════
 
 $ErrorActionPreference = 'SilentlyContinue'
 
-Write-Host "`n🧹 YONCA AI — Port Cleanup" -ForegroundColor Cyan
+Write-Host "`n🧹 ALİM — Port Cleanup" -ForegroundColor Cyan
 Write-Host "Checking for lingering processes (Python, Chainlit, LangGraph)..." -ForegroundColor DarkGray
 
 $targets = "python", "chainlit", "langgraph"
@@ -29,24 +29,7 @@ foreach ($target in $targets) {
 
 if ($count -gt 0) {
     Write-Host "`n🧹 Forcefully cleared $count process(es)" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "✨ Ports are clean (No lingering Python/Chainlit processes found)" -ForegroundColor Gray
-}
-
-# ════════════════════════════════════════════════════════════════════════════
-# 📂 Log Cleanup
-# ════════════════════════════════════════════════════════════════════════════
-$logDir = Join-Path $PSScriptRoot "..\logs"
-if (Test-Path $logDir) {
-    Write-Host "`n🧹 Cleaning logs directory..." -ForegroundColor Cyan
-    Get-ChildItem -Path $logDir -Include *.log, *.txt -Recurse | Remove-Item -Force -ErrorAction SilentlyContinue
-    Write-Host "   → Logs cleared" -ForegroundColor Green
-}
-
-# ════════════════════════════════════════════════════════════════════════════
-# 🌐 Browser Cache Cleanup
-# ════════════════════════════════════════════════════════════════════════════
-$cacheScript = Join-Path $PSScriptRoot "clear_browser_cache.ps1"
-if (Test-Path $cacheScript) {
-    & $cacheScript
 }

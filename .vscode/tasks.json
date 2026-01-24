@@ -7,6 +7,8 @@
       "dependsOn": [
         "✅ Quality & Sanity Checks",
         "🌿 ALİM: 🧹 Clear Ports",
+        "🌿 ALİM: 🧹 Clear Logs",
+        "🌿 ALİM: 🧹 Clear Browser Cache",
         "🌿 ALİM: 🐳 Docker Start",
         "🌿 ALİM: 🚀 Start Python Services"
       ],
@@ -54,6 +56,38 @@
       "args": [
         "-File",
         "${workspaceFolder}/scripts/force_cleanup.ps1"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "group": "ALİM-ops"
+      }
+    },
+    {
+      "label": "🌿 ALİM: 🧹 Clear Logs",
+      "detail": "Delete application log files",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-File",
+        "${workspaceFolder}/scripts/clear_logs.ps1"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "group": "ALİM-ops"
+      }
+    },
+    {
+      "label": "🌿 ALİM: 🧹 Clear Browser Cache",
+      "detail": "Clear Chrome, Edge, and Brave caches",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-File",
+        "${workspaceFolder}/scripts/clear_browser_cache.ps1"
       ],
       "presentation": {
         "reveal": "always",

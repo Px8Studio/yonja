@@ -5,8 +5,8 @@
 FROM python:3.12-slim
 
 # Labels
-LABEL maintainer="Yonca AI Team"
-LABEL description="Python Visualization MCP Server for Yonca AI"
+LABEL maintainer="ALİM Team"
+LABEL description="Python Visualization MCP Server for ALİM"
 LABEL version="1.0.0"
 
 # Set working directory
@@ -46,7 +46,7 @@ RUN pip install --no-cache-dir \
     structlog>=24.1.0
 
 # Copy source code
-COPY src/yonca/mcp_server/python_viz.py /app/src/yonca/mcp_server/python_viz.py
+COPY src/alim/mcp_server/python_viz.py /app/src/alim/mcp_server/python_viz.py
 
 # Set Python path
 ENV PYTHONPATH=/app/src
@@ -64,4 +64,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:7778/health || exit 1
 
 # Run the MCP server
-CMD ["python", "-m", "uvicorn", "yonca.mcp_server.python_viz:app", "--host", "0.0.0.0", "--port", "7778"]
+CMD ["python", "-m", "uvicorn", "alim.mcp_server.python_viz:app", "--host", "0.0.0.0", "--port", "7778"]

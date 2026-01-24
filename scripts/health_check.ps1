@@ -1,5 +1,5 @@
 # scripts/health_check.ps1
-# Health check script for Yonca AI development stack
+# Health check script for ALİM development stack
 # Checks all services and reports status
 
 param(
@@ -99,7 +99,7 @@ function Test-OllamaModels {
 # Main health check
 if (-not $Quiet) {
     Write-Host ""
-    Write-Host "🌿 YONCA AI — Health Check" -ForegroundColor Green
+    Write-Host "🌿 ALİM — Health Check" -ForegroundColor Green
     Write-Host "=" * 40
     Write-Host ""
 }

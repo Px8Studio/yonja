@@ -81,7 +81,7 @@ async def main():
     print("✨ FEATURE 4: SQL Execution & Results")
     print("-" * 70)
     print("Note: SQL executor requires live database connection.")
-    print("In production, this would query the Yonca App DB and format results.")
+    print("In production, this would query the ALİM App DB and format results.")
     print()
 
     # Feature 5: API Route
@@ -98,7 +98,7 @@ async def main():
     print("=" * 70)
     print()
     print("Next steps:")
-    print("1. Start FastAPI: poetry run uvicorn src.yonca.api.main:app")
+    print("1. Start FastAPI: poetry run uvicorn src.alim.api.main:app")
     print(
         "2. Upload image: curl -X POST -F 'files=@image.jpg' http://localhost:8000/api/vision/analyze"
     )

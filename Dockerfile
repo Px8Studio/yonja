@@ -1,4 +1,4 @@
-# Multi-stage build for Yonca AI
+# Multi-stage build for ALİM
 
 # ============================================
 # Stage 1: Base
@@ -32,7 +32,7 @@ RUN pip install -r requirements.txt
 
 ENV PYTHONPATH=/app/src
 
-CMD ["uvicorn", "yonca.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "alim.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 # ============================================
 # Stage 3: Production
@@ -40,18 +40,18 @@ CMD ["uvicorn", "yonca.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--
 FROM base AS production
 
 # Create non-root user
-RUN useradd -m -u 1000 yonca
+RUN useradd -m -u 1000 alim
 
 # Copy project files needed for installation
 COPY pyproject.toml README.md ./
 COPY requirements.txt .
-COPY --chown=yonca:yonca src/ ./src/
-COPY --chown=yonca:yonca prompts/ ./prompts/
+COPY --chown=alim:alim src/ ./src/
+COPY --chown=alim:alim prompts/ ./prompts/
 
 # Install production dependencies only
 RUN pip install --no-cache-dir -r requirements.txt
 
-USER yonca
+USER alim
 
 ENV PYTHONPATH=/app/src
 
@@ -60,4 +60,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
 
 EXPOSE 8000
 
-CMD ["uvicorn", "yonca.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "alim.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

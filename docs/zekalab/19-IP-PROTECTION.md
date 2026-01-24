@@ -37,7 +37,7 @@ graph TD
         AZ[("ZekaLab MMC<br/>(Baku)")]
         KOBIA["📜 KOBİA Startup Cert"]
         TEAM["👨‍💻 Dev Team (5)"]
-        CLIENTS["🏢 Local Clients<br/>(DigiRella, Yonca)"]
+        CLIENTS["🏢 Local Clients<br/>(DigiRella, ALİM)"]
 
         AZ --- KOBIA
         AZ --- TEAM
@@ -64,7 +64,7 @@ graph TD
 
 3.  **The Relationship**
     *   The Cyprus entity **licenses** the software to the Baku entity.
-    *   **Why?** When a third party (like Yonca) wants to license the code, they sign with **Cyprus**. This provides English Common Law protection and ease of payment (EUR/USD), skipping local banking friction.
+    *   **Why?** When a third party (like ALİM) wants to license the code, they sign with **Cyprus**. This provides English Common Law protection and ease of payment (EUR/USD), skipping local banking friction.
 
 ---
 
@@ -125,7 +125,7 @@ mindmap
 *   **Outcome:** ZekaLab becomes an international tech firm. Investable by global VCs.
 
 ### Phase 4: The "Ata" GTM (Go-To-Market)
-*   **Action:** Deploy the **"Salam Ata!"** icebreaker in the Yonca app.
+*   **Action:** Deploy the **"Salam Ata!"** icebreaker in the ALİM app.
 *   **Outcome:** High viral potential and brand stickiness (See *05-PROMPT-CONVERSATION.md*).
 
 ---

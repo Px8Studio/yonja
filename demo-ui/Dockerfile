@@ -1,5 +1,5 @@
 # Demo UI Dockerfile
-# Builds the Chainlit demo interface for Yonca AI
+# Builds the Chainlit demo interface for ALİM
 
 FROM python:3.11-slim as base
 

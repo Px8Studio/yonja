@@ -173,6 +173,19 @@ from chainlit.types import ThreadDict  # noqa: E402
 
 # Add missing helpers and persona types
 from components.spinners import LoadingStates  # noqa: E402
+from services.mcp_connector import (  # noqa: E402
+    get_mcp_status,
+)
+from services.mcp_resilience import (  # noqa: E402
+    get_mcp_manager,
+    initialize_mcp,
+)
+
+# NEW: Session persistence and MCP resilience
+from services.session_manager import (  # noqa: E402
+    SessionManager,
+    initialize_session_with_persistence,
+)
 from services.yonca_client import YoncaClient  # noqa: E402
 from yonca.agent.graph import compile_agent_graph  # noqa: E402
 from yonca.agent.memory import get_checkpointer_async  # noqa: E402
@@ -525,18 +538,18 @@ _api_client: YoncaClient | None = None
 LLM_MODEL_PROFILES = {
     AgentMode.FAST.value: {
         "name": "Fast",
-        "description": "**Fast Mode** — Speed-optimized. Best for quick queries and simple tasks.",
+        "description": "**Fast** — Speed only. No tools/connectors.",
         "icon": "⚡",
     },
     AgentMode.THINKING.value: {
         "name": "Thinking",
-        "description": "**Thinking Mode** — Reasoning-optimized. Best for complex logic and planning.",
+        "description": "**Thinking** — Reasoning-heavy. No tools/connectors.",
         "icon": "🧠",
     },
-    AgentMode.PRO.value: {
-        "name": "Pro",
-        "description": "**Pro Mode** — Quality-optimized. Highest fidelity for critical tasks.",
-        "icon": "🚀",
+    AgentMode.AGENT.value: {
+        "name": "Agent",
+        "description": "**Agent** — Full autonomy + MCP tools/connectors.",
+        "icon": "🤖",
     },
 }
 
@@ -564,7 +577,7 @@ def resolve_active_model() -> dict:
     # Get mode from chat profile (header dropdown) or settings
     selected_mode = None
     try:
-        # Chat Profile is now the Agent Mode (e.g., "fast", "thinking", "pro")
+        # Chat Profile is now the Agent Mode (e.g., "fast", "thinking", "agent")
         chat_profile = cl.user_session.get("chat_profile")
         if chat_profile and chat_profile in LLM_MODEL_PROFILES:
             selected_mode = chat_profile
@@ -638,10 +651,10 @@ async def get_api_client() -> YoncaClient:
 # These appear on the welcome screen to help users start conversations.
 
 # ============================================
-# CHAT PROFILES (Farmer Personas)
+# CHAT PROFILES (Agent Modes / LLM selection)
 # ============================================
-# Different profiles for different farming needs.
-# Each profile has specialized starters and system prompts.
+# These are NOT farmer personas. Personas come from ALEM profile & expertise.
+# Chat profiles represent AI operating modes and model choices (fast/thinking/pro).
 
 # ============================================
 # EXPERTISE AREAS — Smart Multi-Select System
@@ -962,6 +975,16 @@ async def update_ui_preferences(payload: ModeModelPayload):
     }
 
 
+@ui_router.get("/ui/mcp/status")
+async def ui_mcp_status(profile: str | None = None):
+    """Return MCP status for the requested profile (agent modes)."""
+    from services.mcp_connector import get_mcp_status
+
+    # Default to agent view so UI badge shows full connector state
+    selected_profile = profile or AgentMode.AGENT.value
+    return await get_mcp_status(profile=selected_profile)
+
+
 # ============================================
 # CHAT PROFILES (Header dropdown for LLM model selection)
 # ============================================
@@ -976,12 +999,11 @@ async def update_ui_preferences(payload: ModeModelPayload):
 
 @cl.set_chat_profiles
 async def chat_profiles(current_user: cl.User | None = None):
-    """Define available LLM models as chat profiles.
+    """Define agent modes as chat profiles (UI dropdown).
 
-    These appear as a dropdown in the Chainlit header, allowing users
-    to switch between different open-source LLM models.
-
-    The selected profile name IS the model name (e.g., 'qwen3:4b').
+    Chat profiles in Chainlit are UI-level *agent modes* (fast/thinking/pro).
+    They are not farmer personas; persona/context comes from ALEM profile and
+    expertise detection. The selected profile name is the AgentMode value.
     Access via: cl.user_session.get("chat_profile")
     """
     profiles = []
@@ -1979,7 +2001,7 @@ When providing recommendations, consider these farm-specific details.
 # BRANDING NOTE: Use "ALEM" as primary agent name. "Yonca" is the internal project name.
 # AVOID: "Sidecar" (internal term), "DigiRella", "ZekaLab" (business names)
 # ============================================
-async def send_dashboard_welcome(user: cl.User | None = None):
+async def send_dashboard_welcome(user: cl.User | None = None, mcp_status: dict | None = None):
     """Send primary welcome message to main chat with farm status and quick actions.
 
     This is the FIRST message users see after logging in (main chat).
@@ -2001,27 +2023,34 @@ async def send_dashboard_welcome(user: cl.User | None = None):
 
         # Check MCP service health (Phase 5 Enhancement)
         try:
-            from yonca.mcp.adapters import check_mcp_servers_health
+            # Prefer Agent mode status so users see full connector set
+            if mcp_status is None:
+                from services.mcp_connector import get_mcp_status as _get_mcp_status
 
-            mcp_status = await check_mcp_servers_health()
-            mcp_online = [name for name, health in mcp_status.items() if health.get("healthy")]
-            online_count = len(mcp_online)
-            total_count = len(mcp_status)
-            mcp_statuses = mcp_status
+                mcp_status = await _get_mcp_status(profile=AgentMode.AGENT.value)
 
-            if not mcp_status.get("zekalab", {}).get("healthy", True):
-                await cl.Message(
-                    content="⚠️ ZekaLab rules engine offline. Basic mode active.", author="system"
-                ).send()
+            servers = mcp_status.get("servers", {}) if isinstance(mcp_status, dict) else {}
+            online_count = sum(1 for info in servers.values() if info.get("status") == "online")
+            total_count = len(servers)
+            offline_servers = [
+                name for name, info in servers.items() if info.get("status") != "online"
+            ]
 
             # Build status lines
             system_status = "✓ LangGraph server online"
-            mcp_status_line = f"✓ MCP servers: {online_count}/{total_count} online"
+            if offline_servers:
+                mcp_status_line = f"⚠️ MCP servers: {online_count}/{total_count} online (offline: {', '.join(offline_servers)})"
+            else:
+                mcp_status_line = (
+                    f"✓ MCP servers: {online_count}/{total_count} online"
+                    if total_count
+                    else "⚠️ MCP status unknown"
+                )
         except Exception:
             # MCP check failed, use defaults
             system_status = "✓ LangGraph server online"
             mcp_status_line = "⚠️ MCP status unknown"
-            mcp_statuses = {}
+            servers = {}
             online_count = 0
             total_count = 0
 
@@ -2069,7 +2098,7 @@ Mən sizin virtual aqronomam — əkin, suvarma və subsidiya məsələlərində
         ).send()
 
         # Store MCP status in session for data flow visualization (Phase 5)
-        cl.user_session.set("mcp_status", mcp_statuses)
+        cl.user_session.set("mcp_status", mcp_status or {})
 
         logger.info(
             "welcome_message_sent",
@@ -2459,6 +2488,19 @@ async def on_chat_start():
     # Store thread_id for LangGraph (use session_id for continuity)
     cl.user_session.set("thread_id", session_id)
 
+    # ═══════════════════════════════════════════════════════════════
+    # SESSION PERSISTENCE: Restore from database on refresh
+    # ═══════════════════════════════════════════════════════════════
+    if user and user_email:
+        await initialize_session_with_persistence(user_id, user_email)
+
+        # Update farm_id if persisted (user may have selected different farm last time)
+        persisted_farm = SessionManager.get_session_state("farm_id")
+        if persisted_farm:
+            farm_id = persisted_farm
+            cl.user_session.set("farm_id", farm_id)
+            logger.info("farm_restored_from_persistence", farm_id=farm_id)
+
     # Initialize Chat Settings (sidebar preferences panel)
     # Pass user so settings can be loaded from database (if data persistence enabled)
     user_settings = await setup_chat_settings(user=user)
@@ -2532,11 +2574,78 @@ async def on_chat_start():
     )
 
     # ─────────────────────────────────────────────────────────────
+    # MCP CONNECTION INITIALIZATION (WITH RESILIENCE)
+    # ─────────────────────────────────────────────────────────────
+    # Initialize MCP with exponential backoff retry.
+    # If MCP is unavailable, continue with graceful degradation (no tools).
+    mcp_url = os.getenv("ZEKALAB_MCP_URL", "http://localhost:7777")
+
+    try:
+        # Initialize with retry logic (handles startup timing issues)
+        mcp_initialized = await initialize_mcp(mcp_url=mcp_url)
+
+        if mcp_initialized:
+            logger.info("mcp_resilience_initialized", url=mcp_url)
+        else:
+            logger.warning("mcp_resilience_unavailable", url=mcp_url)
+
+        # Get status for UI display
+        agent_mcp_status = await get_mcp_status(profile=AgentMode.AGENT.value)
+        mcp_manager_status = get_mcp_manager(mcp_url).get_status()
+
+        cl.user_session.set("mcp_status", agent_mcp_status)
+        cl.user_session.set("mcp_manager_status", mcp_manager_status)
+        cl.user_session.set("mcp_enabled", agent_mcp_status.get("connectors_enabled", False))
+
+        logger.info(
+            "mcp_initialized",
+            profile=AgentMode.AGENT.value,
+            servers=list(agent_mcp_status.get("servers", {}).keys()),
+            tool_count=agent_mcp_status.get("tool_count", 0),
+            mcp_available=mcp_manager_status.get("available", False),
+        )
+
+        # Display MCP status in UI
+        from services.mcp_connector import format_mcp_status
+
+        formatted_status = format_mcp_status(agent_mcp_status)
+        await cl.Message(
+            content=formatted_status,
+            author="System",
+        ).send()
+
+        offline_servers = [
+            name
+            for name, info in agent_mcp_status.get("servers", {}).items()
+            if info.get("status") != "online"
+        ]
+
+        if offline_servers:
+            cl.user_session.set("mcp_offline_warned", True)
+            await cl.Message(
+                content=f"⚠️ MCP offline: {', '.join(offline_servers)}. Agent tools limited until restored.",
+                author="System",
+            ).send()
+
+        if not agent_mcp_status.get("connectors_enabled"):
+            await cl.Message(
+                content="🔒 MCP connectors disabled for this mode. Switch to Agent to enable tools.",
+                author="System",
+            ).send()
+
+    except Exception as e:
+        logger.warning("mcp_initialization_error", error=str(e), exc_info=True)
+        cl.user_session.set("mcp_enabled", False)
+
+        # Continue anyway with graceful degradation
+        agent_mcp_status = None
+
+    # ─────────────────────────────────────────────────────────────
     # WELCOME EXPERIENCE (Two-Part Strategy)
     # ─────────────────────────────────────────────────────────────
     # WELCOME MESSAGE (Main Chat) - Primary interaction
     # ─────────────────────────────────────────────────────────────
-    await send_dashboard_welcome(user)
+    await send_dashboard_welcome(user, mcp_status=agent_mcp_status)
 
 
 # ============================================
@@ -2748,6 +2857,82 @@ async def on_consent_deny(action: cl.Action):
 
 
 # ============================================
+# AGENT MODE SWITCH (HITL)
+# ============================================
+
+
+@cl.action_callback("switch_to_agent_mode")
+async def on_switch_to_agent_mode(action: cl.Action):
+    """Enable Agent mode (tools/connectors) after user confirmation."""
+    cl.user_session.set("chat_profile", AgentMode.AGENT.value)
+
+    # Persist profile change to thread metadata
+    thread_id = cl.user_session.get("thread_id")
+    if thread_id:
+        await update_thread_presentation(
+            metadata_updates={"chat_profile": AgentMode.AGENT.value},
+        )
+        logger.info(
+            "chat_profile_switched",
+            thread_id=thread_id,
+            new_profile=AgentMode.AGENT.value,
+            trigger="user_action",
+        )
+
+    await cl.Message(
+        content="✅ Agent mode enabled. Tools/connectors are now available. Re-run your request.",
+        author="System",
+    ).send()
+
+    await action.remove()
+
+
+async def _prompt_agent_mode(reason: str, auto_switch: bool = False):
+    """Ask user to enable Agent mode before using tools/connectors.
+
+    Args:
+        reason: Why Agent mode is needed
+        auto_switch: If True, automatically switches without asking
+    """
+    if auto_switch:
+        # Auto-switch to Agent mode and persist
+        cl.user_session.set("chat_profile", AgentMode.AGENT.value)
+        thread_id = cl.user_session.get("thread_id")
+        if thread_id:
+            await update_thread_presentation(
+                metadata_updates={"chat_profile": AgentMode.AGENT.value},
+            )
+            logger.info(
+                "chat_profile_auto_switched",
+                thread_id=thread_id,
+                new_profile=AgentMode.AGENT.value,
+                reason=reason,
+            )
+
+        await cl.Message(
+            content=f"🤖 Automatically switched to Agent mode to {reason}.",
+            author="System",
+        ).send()
+        return
+
+    # Prompt user to switch
+    actions = [
+        cl.Action(
+            name="switch_to_agent_mode",
+            label="Enable Agent Mode",
+            value="agent",
+            description="Turn on tools & connectors",
+        )
+    ]
+
+    await cl.Message(
+        content=f"🔒 Agent mode required to {reason}. Enable Agent mode?",
+        author="System",
+        actions=actions,
+    ).send()
+
+
+# ============================================
 # MESSAGE HANDLER
 # ============================================
 @cl.on_message
@@ -2758,6 +2943,7 @@ async def on_message(message: cl.Message):
     - Text messages
     - File uploads (PDF, DOCX, images) → MCP document processing
     - Dual integration modes (direct/api)
+    - MCP status commands (/mcp, /mcp-status)
 
     Set via INTEGRATION_MODE environment variable.
     """
@@ -2765,6 +2951,16 @@ async def on_message(message: cl.Message):
     user_id = cl.user_session.get("user_id", "anonymous")
     farm_id = cl.user_session.get("farm_id")
     thread_id = cl.user_session.get("thread_id")
+    chat_profile = cl.user_session.get("chat_profile", AgentMode.FAST.value)
+
+    # ═══════════════════════════════════════════════════════
+    # COMMAND SYSTEM
+    # ═══════════════════════════════════════════════════════
+    from services.commands import get_command_registry, handle_command
+
+    command_registry = get_command_registry()
+    if await handle_command(message.content.strip(), command_registry):
+        return  # Command handled, don't process as chat message
 
     # ═══════════════════════════════════════════════════════
     # FILE UPLOAD HANDLING (MCP Document Processing)
@@ -2783,6 +2979,11 @@ async def on_message(message: cl.Message):
                 )
 
         if file_paths:
+            if chat_profile != AgentMode.AGENT.value:
+                # Auto-switch to Agent mode when files are uploaded
+                await _prompt_agent_mode("process files with tools", auto_switch=True)
+                chat_profile = AgentMode.AGENT.value
+
             # Store file paths in session for MCP processing
             cl.user_session.set("pending_files", file_paths)
 

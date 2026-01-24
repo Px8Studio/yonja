@@ -146,16 +146,6 @@ git checkout HEAD -- demo-ui/.chainlit/config.toml
 
 ## Next Steps (Optional)
 
-### 1. Remove Unwanted Translations from Repo
-Currently all 22 translation files are tracked. To clean up:
-```bash
-cd demo-ui/.chainlit/translations
-git rm bn.json de-DE.json el-GR.json es.json fr-FR.json gu.json he-IL.json hi.json it.json ja.json kn.json ko.json ml.json mr.json nl.json ta.json te.json zh-CN.json zh-TW.json
-git commit -m "chore: Remove unused auto-generated translation files"
-```
-
-**Note:** These will regenerate on next run but won't be tracked in git.
-
 ### 2. Enable MCP (Future)
 When implementing Model Context Protocol:
 1. Update `demo-ui/.chainlit/config.toml`:
@@ -165,7 +155,107 @@ When implementing Model Context Protocol:
    ```
 2. Implement MCP client connection logic
 
-### 3. Enable Thread Sharing (Future)
+---
+
+## Implementation Complete ✅
+
+### MCP Integration Steps Completed
+
+#### 1. MCP Configuration (Already Enabled)
+The MCP feature is already enabled in `demo-ui/.chainlit/config.toml`:
+```toml
+[features.mcp]
+enabled = true
+
+[features.mcp.sse]
+enabled = true
+
+[features.mcp.streamable-http]
+enabled = true
+
+[features.mcp.stdio]
+enabled = true
+allowed_executables = [ "npx", "uvx" ]
+```
+
+#### 2. MCP Client Connection Logic Implemented ✅
+
+**Created:** [demo-ui/services/mcp_connector.py](demo-ui/services/mcp_connector.py)
+- Bridges Chainlit UI with existing MCP infrastructure
+- Provides profile-based tool filtering
+- Auto-discovers available MCP servers and tools
+- Monitors connection status
+
+**Integrated into:** [demo-ui/app.py](demo-ui/app.py)
+- MCP initialization on chat start
+- Status display in UI
+- Command handler for `/mcp` or `/mcp-status`
+- Tool invocation support
+
+### Features
+
+1. **Auto-Discovery**: Automatically detects available MCP servers (ZekaLab, OpenWeather, etc.)
+2. **Profile-Based Access**: Different chat profiles get different tool sets
+   - `general`: ZekaLab only (basic rules)
+   - `orchard`, `cotton`, `wheat`: ZekaLab + OpenWeather
+   - `expert`: Full access to all servers
+3. **Health Monitoring**: Real-time connection status for all MCP servers
+4. **UI Commands**: Users can type `/mcp` to check connection status
+
+### Usage
+
+**Check MCP Status:**
+```bash
+# In the chat UI, type:
+/mcp
+# or
+/mcp-status
+```
+
+**MCP Status Display Shows:**
+- Active profile
+- Connected servers (🟢 online, 🔴 offline, 🟡 degraded)
+- Available tools with descriptions
+- Total tool count
+
+### Architecture
+
+```
+Chainlit UI (@cl.on_chat_start)
+   ↓
+services/mcp_connector.py
+   ↓
+yonca/mcp/adapters.py (LangChain MCP adapters)
+   ↓
+yonca/mcp/client.py (HTTP client)
+   ↓
+MCP Servers:
+   - ZekaLab MCP (port 7777) - Internal rules engine
+   - OpenWeather MCP - External weather API
+   - (Future: EKTIS, CBAR, etc.)
+```
+
+### Testing
+
+1. **Start MCP Servers:**
+   ```bash
+   # Run task: 🧠 ZekaLab MCP Start
+   # This starts the internal MCP server on port 7777
+   ```
+
+2. **Start Chat UI:**
+   ```bash
+   # Run task: 🚀 Start All
+   # Or: 🖥️ UI Start
+   ```
+
+3. **Check Status:**
+   - Type `/mcp` in chat
+   - Should see ZekaLab connection status and available tools
+
+### Next Steps (Optional)
+
+#### 3. Enable Thread Sharing (Future)
 When implementing thread sharing:
 1. Add `on_shared_thread_view` callback in `app.py`
 2. Update `demo-ui/.chainlit/config.toml`:

@@ -144,12 +144,12 @@ class AgentMode(str, Enum):
 
     FAST: Speed-optimized (Smaller models, lower latency)
     THINKING: Reasoning-optimized (CoT enabled / specific logic models)
-    PRO: Quality-optimized (Largest models, highest fidelity)
+    AGENT: Full autonomy + tools/connectors (highest fidelity)
     """
 
     FAST = "fast"
     THINKING = "thinking"
-    PRO = "pro"
+    AGENT = "agent"
 
 
 class Settings(BaseSettings):
@@ -335,13 +335,13 @@ class Settings(BaseSettings):
         # Default fallback models
         fast_model = "qwen3:4b"
         thinking_model = "qwen3:32b"  # or specialized CoT model
-        pro_model = "llama-3.3-70b-versatile"
+        agent_model = "llama-3.3-70b-versatile"
 
         # Tier-specific overrides could go here
         if self.llm_provider == LLMProvider.GROQ:
             fast_model = "llama-3.1-8b-instant"
             thinking_model = "llama-3.3-70b-versatile"  # approx for now
-            pro_model = "llama-3.3-70b-versatile"
+            agent_model = "llama-3.3-70b-versatile"
 
         # Override with specific config variables if set (future proofing)
         # ...
@@ -350,8 +350,8 @@ class Settings(BaseSettings):
             return fast_model
         elif mode == AgentMode.THINKING:
             return thinking_model
-        elif mode == AgentMode.PRO:
-            return pro_model
+        elif mode == AgentMode.AGENT:
+            return agent_model
 
         return fast_model  # Fallback
 

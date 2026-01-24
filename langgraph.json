@@ -9,5 +9,21 @@
     "store": {
         "type": "postgres",
         "uri": "postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST:-localhost}:${PGPORT:-5433}/${PGDATABASE:-yonca}"
+    },
+    "watch": {
+        "ignore": [
+            "__pycache__",
+            ".pytest_cache",
+            ".git",
+            "node_modules",
+            ".venv",
+            "*.pyc",
+            "*.pyo",
+            ".vscode",
+            ".idea",
+            "dist",
+            "build",
+            "*.egg-info"
+        ]
     }
 }

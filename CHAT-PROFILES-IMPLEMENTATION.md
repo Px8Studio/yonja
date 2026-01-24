@@ -1,8 +1,13 @@
 # ✅ Chat Profiles Implementation — Summary
 
 **Date:** January 21, 2026
-**Feature:** Expertise-Based AI Behavior (Chat Profiles)
+**Feature:** Agent Modes via Chat Profiles (UI dropdown)
 **Status:** ✅ Implemented & Tested
+
+> Important: In Chainlit, **chat profiles = agent modes**, not farmer personas.
+> Persona/context still comes from the ALEM persona + expertise detection flow.
+> Use profiles to switch AI operating mode (fast/thinking/pro); use persona to
+> convey who the farmer is.
 
 ---
 

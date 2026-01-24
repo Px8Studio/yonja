@@ -50,7 +50,7 @@ enable_telemetry = false
 unsafe_allow_html = true
 
 # Process and display mathematical expressions. This can clash with "$" characters in messages.
-latex = false
+latex = true
 
 # Autoscroll new user messages at the top of the window
 user_message_autoscroll = true
@@ -71,8 +71,8 @@ allow_thread_sharing = true
 favorites = true
 
 # Prompt Playground - allows users to experiment with prompts
-# RECOMMENDED: Disabled for end-users/farmers in production
-prompt_playground = false
+# ENABLED: Power users can test prompt variations
+prompt_playground = true
 
 # ════════════════════════════════════════════════════════════════════════════
 # CHAT SETTINGS LOCATION
@@ -112,13 +112,18 @@ reaction_on_message_received = false
     # Sample rate of the audio (16000 = standard, 24000 = high quality)
     sample_rate = 16000
 
+[features.llm_playground]
+    # Enable LLM Playground for debugging
+    enabled = true
+
 [features.mcp]
     # ════════════════════════════════════════════════════════════════════════════
     # MODEL CONTEXT PROTOCOL (MCP) - Shows 🔌 plug icon in input ribbon
     # ════════════════════════════════════════════════════════════════════════════
     # MCP allows connecting external tools/data sources to the chat.
     # When enabled, users see a plug icon to add MCP connections.
-    # Even if you don't use MCP yet, enabling shows the UI as a placeholder.
+    # UI stores connections in browser localStorage (client-side).
+    # Backend can read and use these connections for tool execution.
     enabled = true
 
 [features.mcp.sse]
@@ -133,6 +138,14 @@ reaction_on_message_received = false
     # Only need the base name of the executable, e.g. "npx", not "/usr/bin/npx".
     # Please don't comment this line for now, we need it to parse the executable name.
     allowed_executables = [ "npx", "uvx" ]
+
+[features.multi_modal]
+    # Enable multi-modal input (images, files, etc. in same message)
+    enabled = true
+
+[features.image_generation]
+    # Enable image generation if connected
+    enabled = true
 
 [UI]
 # Name of the assistant shown in chat messages.

@@ -20,7 +20,7 @@ import structlog
 from langchain_core.tools import BaseTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
-from yonca.mcp.config import get_settings
+from yonca.mcp.config import mcp_settings
 
 logger = structlog.get_logger(__name__)
 
@@ -38,7 +38,7 @@ def get_mcp_client_config() -> dict[str, dict[str, Any]]:
     Returns:
         Configuration dict for MultiServerMCPClient
     """
-    settings = get_settings()
+    settings = mcp_settings
     config: dict[str, dict[str, Any]] = {}
 
     # ZekaLab Internal MCP (Rules Engine)
@@ -150,13 +150,14 @@ async def get_mcp_tools() -> list[BaseTool]:
 # Profile-Based Tool Loading
 # ============================================================
 
-# Map chat profiles to allowed MCP servers
+# Map chat profiles (agent modes) to allowed MCP servers
+# fast      → zero connectors (text-only)
+# thinking  → zero connectors (reasoning-only)
+# agent     → full connectors (ZekaLab + external)
 PROFILE_MCP_SERVERS: dict[str, list[str]] = {
-    "general": ["zekalab"],  # Basic rules only
-    "orchard": ["zekalab", "openweather"],  # + Weather
-    "cotton": ["zekalab", "openweather"],  # + Weather
-    "wheat": ["zekalab", "openweather"],  # + Weather
-    "expert": ["zekalab", "openweather"],  # Full access
+    "fast": [],
+    "thinking": [],
+    "agent": ["zekalab", "openweather"],
 }
 
 
@@ -173,7 +174,7 @@ def get_mcp_client_for_profile(profile: str) -> MultiServerMCPClient | None:
         MultiServerMCPClient with profile-appropriate servers
     """
     full_config = get_mcp_client_config()
-    allowed_servers = PROFILE_MCP_SERVERS.get(profile, ["zekalab"])
+    allowed_servers = PROFILE_MCP_SERVERS.get(profile, [])
 
     # Filter config to allowed servers
     filtered_config = {
@@ -181,10 +182,10 @@ def get_mcp_client_for_profile(profile: str) -> MultiServerMCPClient | None:
     }
 
     if not filtered_config:
-        logger.warning(
-            "no_mcp_servers_for_profile",
+        logger.info(
+            "mcp_skipped_for_profile",
             profile=profile,
-            allowed=allowed_servers,
+            reason="no_servers_enabled_for_mode",
         )
         return None
 
@@ -253,16 +254,19 @@ async def check_mcp_servers_health() -> dict[str, dict[str, Any]]:
             async with httpx.AsyncClient(timeout=5.0) as client:
                 response = await client.get(url)
 
+                is_online = response.status_code == 200
                 results[server_name] = {
-                    "status": "online" if response.status_code == 200 else "degraded",
+                    "status": "online" if is_online else "degraded",
                     "response_code": response.status_code,
                     "url": url,
+                    "healthy": is_online,
                 }
         except Exception as e:
             results[server_name] = {
                 "status": "offline",
                 "error": str(e),
                 "url": url,
+                "healthy": False,
             }
 
     logger.info(

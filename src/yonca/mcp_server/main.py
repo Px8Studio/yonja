@@ -22,6 +22,7 @@ from enum import Enum
 
 import structlog
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 logger = structlog.get_logger(__name__)
@@ -767,6 +768,97 @@ async def health_check():
         "service": "zekalab-internal-mcp",
         "version": "1.0.0",
         "timestamp": datetime.now().isoformat(),
+    }
+
+
+@app.get("/", tags=["system"], summary="MCP Server Info")
+async def root():
+    """Root endpoint - MCP server information and available endpoints."""
+    return {
+        "name": "🧠 ZekaLab Internal MCP Server",
+        "version": "1.0.0",
+        "status": "operational",
+        "service": "zekalab-internal-mcp",
+        "port": PORT,
+        "endpoints": {
+            "health": "/health",
+            "docs": "/docs",
+            "redoc": "/redoc",
+            "openapi": "/openapi.json",
+            "tools": "/tools",
+            "resources": {
+                "rules": "/resources/rules",
+                "crop_profiles": "/resources/crop_profiles",
+                "subsidy_database": "/resources/subsidy_database",
+            },
+        },
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
+@app.post("/mcp", tags=["mcp"])
+async def mcp_endpoint():
+    """MCP protocol endpoint (SSE/streamable-http).
+
+    Chainlit native MCP modal expects Server-Sent Events (SSE) streaming.
+    Returns tools list and capabilities in proper MCP format.
+    """
+
+    async def sse_generator():
+        """Generate SSE stream for MCP protocol (JSON-RPC 2.0 over HTTP)."""
+        import json
+
+        # MCP Protocol: Initialize with empty result object (server capabilities)
+        init_message = {"jsonrpc": "2.0", "result": {}, "id": 1}
+        yield f"data: {json.dumps(init_message)}\n\n"
+
+        # Send tools available as a notification (after init)
+
+        # Send as proper MCP notification: tools/list_changed
+        tools_message = {
+            "jsonrpc": "2.0",
+            "method": "notifications/tools/list_changed",
+            "params": {},
+        }
+        yield f"data: {json.dumps(tools_message)}\n\n"
+
+    return StreamingResponse(
+        sse_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@app.get("/tools", tags=["mcp"])
+async def list_tools():
+    """List all available MCP tools (JSON endpoint for reference)."""
+    return {
+        "tools": [
+            {
+                "name": "evaluate_irrigation_rules",
+                "description": "Evaluate when to irrigate based on farm conditions",
+            },
+            {
+                "name": "evaluate_fertilization_rules",
+                "description": "Evaluate fertilization needs based on soil and crop",
+            },
+            {
+                "name": "evaluate_pest_control_rules",
+                "description": "Evaluate pest control recommendations",
+            },
+            {
+                "name": "calculate_subsidy_eligibility",
+                "description": "Calculate subsidy eligibility and amount",
+            },
+            {
+                "name": "predict_harvest_date",
+                "description": "Predict harvest date based on growing conditions",
+            },
+        ]
     }
 
 

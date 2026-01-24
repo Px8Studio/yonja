@@ -28,6 +28,9 @@ Write-Host "🧹 Cache cleared" -ForegroundColor Green
 $venvPath = "$projectRoot\.venv\Scripts"
 $env:PYTHONPATH = "$projectRoot\src"
 $env:DATABASE_URL = "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
+$env:ZEKALAB_MCP_ENABLED = "true"
+$env:ZEKALAB_MCP_URL = "http://localhost:7777"
+
 
 Write-Host "🎨 Starting LangGraph Dev Server..." -ForegroundColor Yellow
 $env:PYTHONPATH = "$projectRoot\src"
@@ -35,6 +38,9 @@ Start-Process -FilePath "$venvPath\langgraph.exe" -ArgumentList "dev" -WorkingDi
 
 Write-Host "🌿 Starting FastAPI..." -ForegroundColor Yellow
 Start-Process -FilePath "$venvPath\python.exe" -ArgumentList "-m uvicorn yonca.api.main:app --host localhost --port 8000 --reload" -WorkingDirectory $projectRoot -WindowStyle Hidden
+
+Write-Host "🧠 Starting ZekaLab MCP..." -ForegroundColor Yellow
+Start-Process -FilePath "$venvPath\python.exe" -ArgumentList "-m uvicorn yonca.mcp_server.main:app --port 7777 --reload" -WorkingDirectory $projectRoot -WindowStyle Hidden
 
 Write-Host "🖥️ Starting Chainlit..." -ForegroundColor Yellow
 $env:PYTHONPATH = "$projectRoot\src;$projectRoot\demo-ui"

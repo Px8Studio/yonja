@@ -204,6 +204,41 @@
     padding: 8px 12px;
     box-shadow: 0 8px 32px rgba(45, 90, 39, 0.1), 0 2px 8px rgba(0, 0, 0, 0.05);
     transition: box-shadow 0.3s ease, transform 0.2s ease;
+    position: relative;
+}
+
+/* Scrollbar theming (light/dark) */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(45, 90, 39, 0.35) rgba(0, 0, 0, 0.06);
+}
+
+*::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(45, 90, 39, 0.6), rgba(45, 90, 39, 0.35));
+    border-radius: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+*::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.dark * {
+    scrollbar-color: rgba(168, 230, 207, 0.55) rgba(255, 255, 255, 0.05);
+}
+
+.dark *::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(168, 230, 207, 0.7), rgba(75, 181, 134, 0.55));
+    border: 2px solid rgba(0, 0, 0, 0.15);
+}
+
+.dark *::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .cl-input-container:focus-within {
@@ -214,6 +249,69 @@
 .dark .cl-input-container {
     background: var(--glass-bg-dark);
     border: 1px solid var(--glass-border-dark);
+}
+
+/* MCP badge near input composer */
+.yonca-mcp-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    font-size: 12px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-left: 8px;
+    position: absolute;
+    right: 12px;
+    top: -34px;
+    cursor: default;
+    z-index: 12;
+}
+
+.dark .yonca-mcp-badge {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #e5e7eb;
+}
+
+.yonca-mcp-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: #9ca3af;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.04);
+}
+
+.yonca-mcp-dot.ok { background: #22c55e; }
+.yonca-mcp-dot.warn { background: #f59e0b; }
+.yonca-mcp-dot.error { background: #ef4444; }
+.yonca-mcp-dot.off { background: #9ca3af; }
+
+.yonca-mcp-tooltip {
+    position: absolute;
+    bottom: 36px;
+    right: 0;
+    min-width: 220px;
+    max-width: 320px;
+    padding: 10px 12px;
+    background: rgba(17, 24, 39, 0.95);
+    color: #f9fafb;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    font-size: 12px;
+    line-height: 1.4;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+    z-index: 20;
+}
+
+.yonca-mcp-badge:hover .yonca-mcp-tooltip {
+    opacity: 1;
 }
 
 .cl-input-textarea {

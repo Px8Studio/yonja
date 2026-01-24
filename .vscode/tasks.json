@@ -3,15 +3,16 @@
   "tasks": [
     {
       "label": "🌿 Yonca AI: 🚀 Start All",
-      "detail": "Quality checks → Stop existing → Clear cache → Docker → API + UI + LangGraph",
+      "detail": "Quality checks → Clean → Docker → FastAPI/MCP → LangGraph → UI",
       "dependsOn": [
         "🛡️ Pre-Start Quality Checks",
         "yonca:cleanup",
         "🌿 Yonca AI: 🧹 Clear Browser Cache",
         "🌿 Yonca AI: 🐳 Docker Start",
         "🌿 Yonca AI: ⚡ FastAPI Start",
-        "🌿 Yonca AI: 🖥️ UI Start",
-        "🌿 Yonca AI: 🎨 LangGraph Start"
+        "🌿 Yonca AI: 🧠 ZekaLab MCP Start",
+        "🌿 Yonca AI: 🎨 LangGraph Start",
+        "🌿 Yonca AI: 🖥️ UI Start"
       ],
       "dependsOrder": "sequence",
       "problemMatcher": [],
@@ -38,13 +39,13 @@
     },
     {
       "label": "🌿 Yonca AI: 🛑 Stop All",
-      "detail": "Stop all services + Docker containers",
+      "detail": "Stop all services (UI → LangGraph → FastAPI/MCP → Docker) + cleanup",
       "type": "shell",
       "command": "pwsh",
-      "args": ["-Command", "Write-Host '🛑 Stopping services...' -ForegroundColor Yellow; Get-Process -Name python,chainlit,langgraph -ErrorAction SilentlyContinue | Stop-Process -Force; docker-compose -f docker-compose.local.yml down; Write-Host '✅ All stopped' -ForegroundColor Green"],
+      "args": ["-Command", "Write-Host '🛑 Stopping services...' -ForegroundColor Yellow; Write-Host '  → Stopping UI (Chainlit)...' -ForegroundColor Cyan; Get-Process -Name chainlit -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Milliseconds 500; Write-Host '  → Stopping LangGraph...' -ForegroundColor Cyan; Get-Process -Name langgraph -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Milliseconds 500; Write-Host '  → Stopping FastAPI + MCP (uvicorn)...' -ForegroundColor Cyan; Get-Process -Name python -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Milliseconds 500; Write-Host '  → Stopping Docker infrastructure...' -ForegroundColor Cyan; docker-compose -f docker-compose.local.yml down; Write-Host '✅ All services stopped' -ForegroundColor Green"],
       "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "shared" }
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
     },
     {
       "label": "🌿 Yonca AI: 🐳 Docker Start",
@@ -54,7 +55,7 @@
       "args": ["-f", "docker-compose.local.yml", "up", "-d", "postgres", "ollama", "redis", "langfuse-db", "langfuse-server"],
       "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "shared", "clear": true }
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
     },
     {
       "label": "🌿 Yonca AI: 🐳 Docker Stop",
@@ -78,14 +79,14 @@
     },
     {
       "label": "🌿 Yonca AI: 🐳 Docker Logs",
-      "detail": "Stream all container logs (Postgres, Redis, Ollama, Langfuse)",
+      "detail": "Stream all container logs (Postgres, Redis, Ollama, Langfuse) with timestamps",
       "type": "shell",
       "command": "docker-compose",
-      "args": ["-f", "docker-compose.local.yml", "logs", "-f", "--tail=50"],
+      "args": ["-f", "docker-compose.local.yml", "logs", "-f", "--tail=50", "--timestamps"],
       "options": { "cwd": "${workspaceFolder}" },
       "isBackground": true,
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "dedicated" }
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
     },
     {
       "label": "🌿 Yonca AI: ⚡ FastAPI Start",
@@ -97,17 +98,19 @@
         "cwd": "${workspaceFolder}",
         "env": {
           "PYTHONPATH": "${workspaceFolder}/src",
-          "DATABASE_URL": "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca"
+          "DATABASE_URL": "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca",
+          "ZEKALAB_MCP_ENABLED": "true",
+          "ZEKALAB_MCP_URL": "http://localhost:7777"
         }
       },
       "isBackground": true,
       "problemMatcher": {
         "owner": "uvicorn",
-        "pattern": { "regexp": "^$" },
+        "pattern": { "regexp": "^ERROR.*", "message": 1 },
         "background": {
           "activeOnStart": true,
-          "beginsPattern": "Started reloader",
-          "endsPattern": "Application startup complete"
+          "beginsPattern": "^.*Uvicorn running.*",
+          "endsPattern": "^.*Application startup complete.*"
         }
       },
       "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
@@ -127,17 +130,19 @@
           "OLLAMA_BASE_URL": "http://localhost:11434",
           "REDIS_URL": "redis://localhost:6379/0",
           "DATABASE_URL": "postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca",
-          "ENABLE_DATA_PERSISTENCE": "true"
+          "ENABLE_DATA_PERSISTENCE": "true",
+          "ZEKALAB_MCP_ENABLED": "true",
+          "ZEKALAB_MCP_URL": "http://localhost:7777"
         }
       },
       "isBackground": true,
       "problemMatcher": {
         "owner": "chainlit",
-        "pattern": { "regexp": "^$" },
+        "pattern": { "regexp": "^ERROR.*", "message": 1 },
         "background": {
           "activeOnStart": true,
-          "beginsPattern": "Your app is available",
-          "endsPattern": "Your app is available"
+          "beginsPattern": "^.*(Your app is available|Listening on).*",
+          "endsPattern": "^.*shutdown.*"
         }
       },
       "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
@@ -155,11 +160,11 @@
       "isBackground": true,
       "problemMatcher": {
         "owner": "langgraph",
-        "pattern": { "regexp": "^$" },
+        "pattern": { "regexp": "^ERROR.*", "message": 1 },
         "background": {
           "activeOnStart": true,
-          "beginsPattern": "Starting",
-          "endsPattern": "Ready"
+          "beginsPattern": "^.*(Starting|Server started|Running).*",
+          "endsPattern": "^.*shutdown.*"
         }
       },
       "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
@@ -390,7 +395,8 @@
           "beginsPattern": "^.*Uvicorn running.*",
           "endsPattern": "^.*shutdown.*"
         }
-      }
+      },
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
     },
     {
       "label": "🌿 Yonca AI: 🧠 ZekaLab MCP Tests",

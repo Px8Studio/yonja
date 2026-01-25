@@ -15,6 +15,7 @@ from alim.agent.state import (
     add_assistant_message,
     create_initial_state,
     get_conversation_summary,
+    setup_node,
 )
 from langchain_core.messages import AIMessage, HumanMessage
 
@@ -271,3 +272,30 @@ class TestGetConversationSummary:
 
         # Message should be truncated to 200 chars
         assert len(summary) < 500
+
+
+class TestSetupNode:
+    """Tests for setup_node function."""
+
+    def test_setup_node_creates_messages(self):
+        """Test creating messages from input."""
+        state = {"current_input": "Salam"}
+        updates = setup_node(state)
+
+        assert "messages" in updates
+        assert len(updates["messages"]) == 1
+        assert updates["messages"][0].content == "Salam"
+        assert "processing_start" in updates
+        assert "nodes_visited" in updates
+
+    def test_setup_node_preserves_existing(self):
+        """Test preserving existing state."""
+        existing_msgs = [HumanMessage(content="Old")]
+        state = {"current_input": "New", "messages": existing_msgs, "nodes_visited": ["setup"]}
+        updates = setup_node(state)
+
+        # Should NOT overwrite messages if already present
+        assert "messages" not in updates
+        assert "nodes_visited" not in updates
+        # processing_start missing, so it should add it
+        assert "processing_start" in updates

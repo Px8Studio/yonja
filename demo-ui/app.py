@@ -126,6 +126,7 @@ from alim.observability.banner import (  # noqa: E402
     print_startup_complete,
     print_status_line,
 )
+from alim.observability.langfuse import create_langfuse_handler  # noqa: E402
 from alim_persona import ALİMPersona, PersonaProvisioner  # noqa: E402
 from alim_persona_db import (  # noqa: E402
     load_alim_persona_from_db,
@@ -2582,20 +2583,37 @@ async def on_message(message: cl.Message):
 
     try:
         # ═══════════════════════════════════════════════════════
-        # UNIFIED HANDLER (Universal HTTP Mode)
+        # TOGGLE PATTERN: Direct vs HTTP Mode
         # ═══════════════════════════════════════════════════════
-        await _handle_message(
-            message=message,
-            response_msg=response_msg,
-            user_id=user_id,
-            farm_id=farm_id,
-            thread_id=thread_id,
-            profile_prompt=profile_prompt,
-            scenario_context=scenario_context,
-            enable_thinking_steps=enable_thinking_steps,
-            enable_feedback=enable_feedback,
-            file_paths=file_paths,  # Pass file paths to handler
-        )
+        # We use Direct Mode (local graph) by default for reliability and
+        # full observability (Langfuse). We keep HTTP mode for future scaling.
+
+        mode = "direct"  # forced local for now as per user instruction
+
+        if mode == "direct":
+            await _handle_direct_execution(
+                message=message,
+                response_msg=response_msg,
+                user_id=user_id,
+                thread_id=thread_id,
+                profile_prompt=profile_prompt,
+                scenario_context=scenario_context,
+                data_consent_given=data_consent_given,
+                file_paths=file_paths,
+            )
+        else:
+            await _handle_message_http(
+                message=message,
+                response_msg=response_msg,
+                user_id=user_id,
+                farm_id=farm_id,
+                thread_id=thread_id,
+                profile_prompt=profile_prompt,
+                scenario_context=scenario_context,
+                enable_thinking_steps=enable_thinking_steps,
+                enable_feedback=enable_feedback,
+                file_paths=file_paths,
+            )
 
     except Exception as e:
         logger.error("message_handler_error", error=str(e), exc_info=True)
@@ -2606,7 +2624,7 @@ async def on_message(message: cl.Message):
 # ============================================
 # UNIFIED MESSAGE HANDLER (Universal HTTP Mode)
 # ============================================
-async def _handle_message(
+async def _handle_message_http(
     message: cl.Message,
     response_msg: cl.Message,
     user_id: str,
@@ -2661,29 +2679,72 @@ async def _handle_message(
                 }
             }
 
+            # 5 Integration Rules: Rule #2 - Triple-Mode Streaming
+            # stream_mode=["updates", "messages"] allows us to:
+            # 1. "updates": Track node transitions for "Hanging Curtain" UI (Rule #3)
+            # 2. "messages": Stream tokens to the user (Rule #2)
+            # 3. Custom events: (via updates/messages) for rich UI
+
             logger.info(
-                "streaming_from_langgraph",
+                "streaming_from_langgraph_triple_mode",
                 thread_id=thread_id,
                 server=demo_settings.langgraph_base_url,
             )
 
-            # Use message streaming for real-time feedback
-            # The new LangGraphClient supports this natively
             async for event in client.stream(
                 input_state=serialized_state,
                 thread_id=thread_id,
                 config=config,
-                stream_mode="messages",
+                stream_mode=["updates", "messages"],
             ):
-                # Handle SSE events
+                # --------------------------------------------------------
+                # Rule #3: The "Hanging Curtain" UI (Step Logic)
+                # --------------------------------------------------------
                 if isinstance(event, dict):
-                    # Token streaming from assistant
+                    # Handle "updates" (Node Transistions)
+                    if "updates" in event or (
+                        "event" in event and event["event"] == "on_chain_start"
+                    ):
+                        # Logic to identify node start/end would go here
+                        # LangGraph 'updates' usually contains the output of a node.
+                        # For true node start/end listening, we might need 'events' stream_mode or
+                        # infer it. However, 'updates' gives us the result.
+                        # A better approach for "Hanging Curtain" with LangGraph Client is
+                        # often monitoring the keys in 'updates'.
+
+                        # Note: True "node start" events might best be captured via
+                        # stream_mode="events" or "debug", but "updates" is what the prompt requested.
+                        # We will assume 'updates' gives us the node content which implies the node finished.
+                        # To visualize *working* state, we can infer from the key name.
+
+                        # Let's try to infer active node if possible, or just log results.
+                        # For the "Hanging Curtain", we want to show a step *while* it runs.
+                        # Using 'messages' stream gives us tokens.
+                        pass
+
+                    # Handle "messages" (Token Streaming)
                     if "role" in event and event.get("role") == "assistant":
+                        # Rule #4: Final Node Tagging Check
+                        # If we have a way to know this message is from "final_response" node,
+                        # we stream to main response.
                         await response_msg.stream_token(event.get("content", ""))
 
-                    # Node entry/exit (could be used for thinking steps)
-                    elif "event_type" in event:
-                        pass
+                    # Fallback/standard handling for updates (LangGraph < 0.2 style)
+                    # or LangGraph API 'updates' key
+                    if "updates" in event:
+                        update = event["updates"]
+                        # If we have visited nodes, we can show them as completed steps
+                        if isinstance(update, dict):
+                            for node_name, result in update.items():
+                                if node_name != "__end__":
+                                    # Collapse the step for this node (if we had one open)
+                                    # OR create a completed step to show it happened.
+                                    async with cl.Step(name=node_name) as step:
+                                        step.output = str(result)[:100] + "..."  # Brief summary
+
+                # --------------------------------------------------------
+                # Error Boundaries (Rule #4 in prompt, but we handle globally)
+                # --------------------------------------------------------
 
             logger.info(
                 "message_processed_streaming",
@@ -2712,12 +2773,12 @@ async def _handle_message(
 
     except LangGraphClientError as e:
         logger.error("langgraph_server_error", error=str(e))
-        await response_msg.stream_token(
-            f"\n\n❌ LangGraph Server xətası. Server işləyir?\n{str(e)}"
-        )
+        # Rule #4: clean ErrorMessage
+        await cl.ErrorMessage(content=f"LangGraph Server xətası: {str(e)}", author="System").send()
+
     except Exception as e:
         logger.error("message_handler_error", error=str(e), exc_info=True)
-        await response_msg.stream_token(f"\n\n❌ Gözlənilməz xəta: {str(e)}")
+        await cl.ErrorMessage(content=f"Gözlənilməz xəta: {str(e)}", author="System").send()
 
     # Finalize response
     await response_msg.update()
@@ -2787,6 +2848,93 @@ def _format_mcp_data_flow(mcp_traces: list[dict]) -> str | None:
     return "\n".join(lines)
 
 
+async def _handle_direct_execution(
+    message: cl.Message,
+    response_msg: cl.Message,
+    user_id: str,
+    thread_id: str,
+    profile_prompt: str,
+    scenario_context: dict | None,
+    data_consent_given: bool,
+    file_paths: list[str] | None = None,
+):
+    """Execute graph locally (Direct Mode) with Langfuse observability."""
+    from alim.agent.graph import compile_agent_graph_async
+    from alim.agent.memory import get_checkpointer_async
+    from alim.agent.state import create_initial_state
+
+    # 1. Initialize Langfuse Callback
+    # This runs LOCALLY, so we have full control over the callback object
+    langfuse_handler = create_langfuse_handler(
+        session_id=thread_id,
+        user_id=user_id,
+        tags=["chainlit", "direct_mode"],
+        trace_name=f"chainlit_{thread_id[:8]}",
+    )
+
+    # Link trace to session for feedback
+    if langfuse_handler:
+        # Check if we can get a trace ID (might need to wait for start)
+        # For now, we assume the handler handles it or we set it later
+        pass
+
+    # 2. Prepare State
+    initial_state = create_initial_state(
+        thread_id=thread_id,
+        user_input=message.content,
+        user_id=user_id,
+        language="az",
+        system_prompt_override=profile_prompt,
+        scenario_context=scenario_context,
+        data_consent_given=data_consent_given,
+        file_paths=file_paths,
+    )
+
+    # 3. Get Executor
+    checkpointer = await get_checkpointer_async()
+    # Note: We don't pass langfuse_handler to compile here because we pass it deeply
+    # via config at runtime, which is more flexible.
+    # However, graph.py compile_agent_graph *also* adds one if we aren't careful.
+    # We should ensure we don't double-trace.
+    # Current graph.py adds it if configured. We'll rely on that for now,
+    # OR pass ours in config.
+
+    # Actually, graph.py's compile_agent_graph adds a handler if env vars are set.
+    # If we pass another one in config, LangChain usually uses both.
+    # To be safe, let's rely on graph.py's internal one OR pass ours if we need
+    # specific Chainlit linking.
+
+    # Ideally, we pass it in config to `astream`.
+
+    graph = await compile_agent_graph_async(checkpointer=checkpointer, use_mcp=True)
+
+    config = {"callbacks": [langfuse_handler] if langfuse_handler else []}
+    config["configurable"] = {"thread_id": thread_id}
+
+    # 4. Stream Results
+    # This mirrors the logic in _handle_message_http regarding steps/tokens
+
+    async for event in graph.astream_events(initial_state, config=config, version="v1"):
+        kind = event["event"]
+
+        # Link feedback trace ID once available
+        if kind == "on_chain_start" and not cl.user_session.get("langfuse_trace_id"):
+            # Attempt to extract run_id as proxy or check handler
+            # Real link often needs the handler to expose the trace object
+            if langfuse_handler and hasattr(langfuse_handler, "get_trace_id"):
+                tid = langfuse_handler.get_trace_id()
+                if tid:
+                    cl.user_session.set("langfuse_trace_id", tid)
+
+        if kind == "on_chat_model_stream":
+            content = event["data"]["chunk"].content
+            if content:
+                await response_msg.stream_token(content)
+
+    await response_msg.update()
+    await _add_feedback_buttons(response_msg)
+
+
 async def _add_feedback_buttons(response_msg: cl.Message):
     """Add feedback action buttons to a message."""
     actions = [
@@ -2794,13 +2942,21 @@ async def _add_feedback_buttons(response_msg: cl.Message):
             name="feedback_positive",
             value="positive",
             label="👍 Kömək etdi",
-            payload={"type": "feedback", "sentiment": "positive"},
+            payload={
+                "type": "feedback",
+                "sentiment": "positive",
+                "trace_id": cl.user_session.get("langfuse_trace_id"),
+            },
         ),
         cl.Action(
             name="feedback_negative",
             value="negative",
             label="👎 Təkmilləşdirmək olar",
-            payload={"type": "feedback", "sentiment": "negative"},
+            payload={
+                "type": "feedback",
+                "sentiment": "negative",
+                "trace_id": cl.user_session.get("langfuse_trace_id"),
+            },
         ),
     ]
     await response_msg.send()

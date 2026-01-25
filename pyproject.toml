@@ -57,6 +57,7 @@ plotly = ">=5.18.0"
 fastmcp = ">=2.14.4"
 aiohttp = ">=3.8"
 pyyaml = ">=6.0"
+langgraph-sdk = "^0.3.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"

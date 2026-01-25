@@ -336,6 +336,9 @@ def create_initial_state(
 ) -> AgentState:
     """Create initial state for a new conversation turn.
 
+    DEPRECATED: Use setup_node() in the graph instead.
+    This function is kept for backward compatibility with tests.
+
     Args:
         thread_id: Unique conversation identifier
         user_input: The user's message
@@ -508,3 +511,65 @@ def get_conversation_summary(state: AgentState, max_messages: int = 10) -> str:
         lines.append(f"{role}: {content}")
 
     return "\n".join(lines)
+
+
+def setup_node(state: AgentState) -> dict:
+    """Entry node to hydrate state from simple inputs.
+
+    This replaces the need for create_initial_state() wrapper.
+    It inspects the input state (which might be partial) and
+    ensures all required fields are initialized.
+
+    Args:
+        state: Input state (potentially partial)
+
+    Returns:
+        State updates (will be merged by LangGraph)
+    """
+    updates = {}
+
+    # 1. Initialize Metadata Defaults
+    if not state.get("processing_start"):
+        updates["processing_start"] = datetime.now(UTC)
+
+    if "nodes_visited" not in state:
+        updates["nodes_visited"] = []
+
+    # 2. Handle Message Creation from current_input
+    # If messages are missing but we have input, create the message objects
+    if not state.get("messages") and state.get("current_input"):
+        new_messages = []
+
+        # Add system prompt if override provided or not yet present
+        # Note: We usually rely on the graph to have a system prompt,
+        # but if we support overrides in input, we handle it here.
+        # Check if system_prompt_override was passed in some way?
+        # It's not in AgentState explicitly, but might be in input config or we assume
+        # it was added to messages if provided.
+        # Let's assume standard behavior: user input -> human message.
+
+        from langchain_core.messages import HumanMessage
+
+        new_messages.append(HumanMessage(content=state["current_input"]))
+
+        updates["messages"] = new_messages
+
+    # 3. Initialize Context Placeholders if missing
+    # (These are Optional in TypedDict so None is fine, but we can set explicit None if needed)
+
+    # 4. Initialize Phase 2/3 Defaults (MCP, etc)
+    if "mcp_server_health" not in state:
+        updates["mcp_server_health"] = {
+            "openweather": True,
+            "zekalab": True,
+        }
+
+    if "mcp_config" not in state:
+        updates["mcp_config"] = {
+            "use_mcp": True,
+            "fallback_to_synthetic": True,
+            "max_mcp_calls_per_turn": 10,
+            "mcp_timeout_seconds": 5,
+        }
+
+    return updates

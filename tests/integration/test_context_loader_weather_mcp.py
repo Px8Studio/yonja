@@ -149,7 +149,7 @@ async def test_context_loader_respects_consent(initial_state):
 
                 # Should use synthetic weather instead
                 assert "weather" in result
-                assert result["weather"]["forecast_summary"] is not None
+                assert result["weather"].forecast_summary is not None
 
 
 @pytest.mark.asyncio
@@ -161,7 +161,7 @@ async def test_context_loader_fallback_on_mcp_failure(initial_state):
         target_node="agronomist",
         intent=UserIntent.IRRIGATION,
         confidence=0.95,
-        requires_context=["weather"],
+        requires_context=["farm", "weather"],
     )
 
     with patch("alim.agent.nodes.context_loader.get_db_session") as mock_get_db:
@@ -196,4 +196,4 @@ async def test_context_loader_fallback_on_mcp_failure(initial_state):
                 # Should fallback to synthetic weather
                 assert "weather" in result
                 assert result["weather"] is not None
-                assert result["weather"]["forecast_summary"] is not None
+                assert result["weather"].forecast_summary is not None

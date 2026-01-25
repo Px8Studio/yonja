@@ -20,7 +20,7 @@ Example:
     ```
 """
 
-from alim.agent.graph import AgentResponse, AlimAgent, get_agent
+from alim.agent.graph import compile_agent_graph, get_agent, make_graph
 from alim.agent.memory import (
     configure_windows_event_loop,
     get_checkpointer,
@@ -41,10 +41,10 @@ from alim.agent.state import (
 )
 
 __all__ = [
-    # Main agent
-    "AlimAgent",
-    "AgentResponse",
+    # Graph Factory
+    "compile_agent_graph",
     "get_agent",
+    "make_graph",
     # State
     "AgentState",
     "UserIntent",

@@ -144,13 +144,15 @@ async def test_get_current_conditions(weather_handler, mock_mcp_client):
 
     mock_mcp_client.call_tool.return_value = mock_result
 
-    # Call handler
-    conditions = await weather_handler.get_current_conditions("farm_123")
+    # Mock the get_forecast to avoid database calls
+    with patch.object(weather_handler, "get_forecast", return_value=mock_result.data):
+        # Call handler
+        conditions = await weather_handler.get_current_conditions("farm_123")
 
-    # Assertions
-    assert conditions.temperature_c == 28.5
-    assert conditions.humidity_percent == 65
-    assert conditions.wind_speed_kmh == 12
+        # Assertions
+        assert conditions.temperature_c == 28.5
+        assert conditions.humidity_percent == 65
+        assert conditions.wind_speed_kmh == 12
 
 
 @pytest.mark.asyncio

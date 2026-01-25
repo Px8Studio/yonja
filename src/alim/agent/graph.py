@@ -16,22 +16,22 @@ Graph Flow (with visualizer):
 from typing import Any
 
 import structlog
-from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode
 
-from alim.agent.memory import get_checkpointer
+from alim.agent.memory import get_checkpointer_async
 from alim.agent.nodes.agronomist import agronomist_node
 from alim.agent.nodes.context_loader import context_loader_node, route_after_context
 from alim.agent.nodes.nl_to_sql import nl_to_sql_node
+from alim.agent.nodes.pii import pii_masking_node
 from alim.agent.nodes.sql_executor import sql_executor_node
 from alim.agent.nodes.supervisor import route_from_supervisor, supervisor_node
 from alim.agent.nodes.validator import validator_node
 from alim.agent.nodes.vision_to_action import vision_to_action_node
 from alim.agent.nodes.visualizer import route_after_visualizer, visualizer_node
 from alim.agent.nodes.weather import weather_node
-from alim.agent.state import AgentState, create_initial_state
+from alim.agent.state import AgentState, setup_node
 from alim.observability.langfuse import create_langfuse_handler
 
 logger = structlog.get_logger(__name__)
@@ -107,6 +107,8 @@ def create_agent_graph() -> StateGraph:
     graph = StateGraph(AgentState)
 
     # Add nodes
+    graph.add_node("setup", setup_node)
+    graph.add_node("pii_masking", pii_masking_node)
     graph.add_node("supervisor", supervisor_node)
     graph.add_node("context_loader", context_loader_node)
     graph.add_node("agronomist", agronomist_node)
@@ -115,10 +117,16 @@ def create_agent_graph() -> StateGraph:
     graph.add_node("sql_executor", sql_executor_node)
     graph.add_node("vision_to_action", vision_to_action_node)
     graph.add_node("validator", validator_node)
-    graph.add_node("visualizer", visualizer_node)
+    graph.add_node("visualizer", visualizer_node.with_config(tags=["final_response"]))
 
     # Set entry point
-    graph.set_entry_point("supervisor")
+    graph.set_entry_point("setup")
+
+    # Connect setup to PII masking
+    graph.add_edge("setup", "pii_masking")
+
+    # Connect PII masking to supervisor
+    graph.add_edge("pii_masking", "supervisor")
 
     # Conditional routing from supervisor
     graph.add_conditional_edges(
@@ -198,9 +206,12 @@ async def create_agent_graph_with_mcp() -> StateGraph:
     python_viz_tools = await get_python_viz_tools()
 
     # Create base graph
+    # Create base graph
     graph = StateGraph(AgentState)
 
     # Add standard nodes
+    graph.add_node("setup", setup_node)
+    graph.add_node("pii_masking", pii_masking_node)
     graph.add_node("supervisor", supervisor_node)
     graph.add_node("context_loader", context_loader_node)
     graph.add_node("agronomist", agronomist_node)
@@ -238,7 +249,15 @@ async def create_agent_graph_with_mcp() -> StateGraph:
         logger.info("python_viz_tools_not_available", reason="no_tools_loaded")
 
     # Set entry point
-    graph.set_entry_point("supervisor")
+    # Set entry point
+    # Set entry point
+    graph.set_entry_point("setup")
+
+    # Connect setup to PII masking
+    graph.add_edge("setup", "pii_masking")
+
+    # Connect PII masking to supervisor
+    graph.add_edge("pii_masking", "supervisor")
 
     # Build routing destinations
     routing_map = {
@@ -390,342 +409,9 @@ def compile_agent_graph(checkpointer: BaseCheckpointSaver | None = None, verbose
 # ============================================================
 
 
-class AlimAgent:
-    """Main ALİM agent interface.
-
-    Provides a clean API for interacting with the agent graph,
-    handling thread management and state persistence.
-
-    Example:
-        ```python
-        agent = AlimAgent()
-
-        # Start a new conversation
-        response = await agent.chat(
-            message="Pomidorları nə vaxt suvarmaq lazımdır?",
-            user_id="user_123",
-        )
-        print(response.content)
-
-        # Continue the conversation
-        response = await agent.chat(
-            message="Bəs gübrə?",
-            thread_id=response.thread_id,
-        )
-        ```
-    """
-
-    def __init__(self, use_checkpointer: bool = True):
-        """Initialize the agent.
-
-        Args:
-            use_checkpointer: Whether to enable state persistence
-        """
-        self.use_checkpointer = use_checkpointer
-        self._graph = None
-        self._checkpointer = None
-
-    async def _get_graph(self):
-        """Get or create the compiled graph."""
-        if self._graph is None:
-            if self.use_checkpointer:
-                self._checkpointer = get_checkpointer()
-                self._graph = compile_agent_graph(self._checkpointer)
-            else:
-                self._graph = compile_agent_graph()
-
-        return self._graph
-
-    async def chat(
-        self,
-        message: str,
-        thread_id: str | None = None,
-        user_id: str | None = None,
-        session_id: str | None = None,
-        language: str = "az",
-    ) -> "AgentResponse":
-        """Send a message and get a response.
-
-        Args:
-            message: The user's message
-            thread_id: Conversation thread ID (creates new if None)
-            user_id: Authenticated user ID (for context loading)
-            session_id: API session ID
-            language: Response language (default: Azerbaijani)
-
-        Returns:
-            AgentResponse with the response and metadata
-        """
-        import uuid
-
-        # Create or use thread ID
-        if thread_id is None:
-            thread_id = f"thread_{uuid.uuid4().hex[:12]}"
-
-        # Create initial state
-        initial_state = create_initial_state(
-            thread_id=thread_id,
-            user_input=message,
-            user_id=user_id,
-            session_id=session_id,
-            language=language,
-        )
-
-        # Run the graph
-        graph = await self._get_graph()
-
-        config: RunnableConfig = {
-            "configurable": {
-                "thread_id": thread_id,
-            }
-        }
-
-        # Add Langfuse callback for self-hosted observability
-        # Traces appear at: http://localhost:3001 (Langfuse dashboard)
-        # ✅ CRITICAL: session_id parameter maps to thread_id for correlation
-        #    This ensures Langfuse traces are grouped by conversation thread
-        langfuse_handler = create_langfuse_handler(
-            session_id=thread_id,  # ✅ Maps thread_id → Langfuse session
-            user_id=user_id,
-            tags=["ALİM", "chat", language],
-            metadata={
-                "session_id": session_id,  # API session ID (different from thread)
-                "language": language,
-            },
-            trace_name=f"ALİM_chat_{thread_id[:8]}",
-        )
-
-        if langfuse_handler:
-            config["callbacks"] = [langfuse_handler]
-
-        final_state = await graph.ainvoke(initial_state, config=config)
-
-        # Extract response
-        response_content = final_state.get("current_response", "")
-
-        return AgentResponse(
-            content=response_content,
-            thread_id=thread_id,
-            intent=final_state.get("intent"),
-            intent_confidence=final_state.get("intent_confidence", 0.0),
-            nodes_visited=final_state.get("nodes_visited", []),
-            alerts=[a for a in final_state.get("alerts", [])],
-            matched_rules=[r for r in final_state.get("matched_rules", [])],
-            error=final_state.get("error"),
-        )
-
-    async def stream_chat(
-        self,
-        message: str,
-        thread_id: str | None = None,
-        user_id: str | None = None,
-        session_id: str | None = None,
-        language: str = "az",
-    ):
-        """Stream a response token by token.
-
-        Yields tokens as they are generated for real-time display.
-
-        Args:
-            message: The user's message
-            thread_id: Conversation thread ID
-            user_id: Authenticated user ID
-            session_id: API session ID
-            language: Response language
-
-        Yields:
-            Dict with 'type' (token/metadata/final) and content
-        """
-        import uuid
-
-        if thread_id is None:
-            thread_id = f"thread_{uuid.uuid4().hex[:12]}"
-
-        initial_state = create_initial_state(
-            thread_id=thread_id,
-            user_input=message,
-            user_id=user_id,
-            session_id=session_id,
-            language=language,
-        )
-
-        graph = await self._get_graph()
-
-        config: RunnableConfig = {
-            "configurable": {
-                "thread_id": thread_id,
-            }
-        }
-
-        # Add Langfuse callback for streaming observability
-        # ✅ CRITICAL: session_id=thread_id for conversation tracking
-        langfuse_handler = create_langfuse_handler(
-            session_id=thread_id,  # ✅ Maps thread_id → Langfuse session
-            user_id=user_id,
-            tags=["ALİM", "stream", language],
-            metadata={"session_id": session_id, "language": language},
-            trace_name=f"ALİM_stream_{thread_id[:8]}",
-        )
-
-        if langfuse_handler:
-            config["callbacks"] = [langfuse_handler]
-
-        # Stream execution
-        async for event in graph.astream(initial_state, config=config):
-            # Yield intermediate states
-            for node_name, node_output in event.items():
-                if node_name == "agronomist":
-                    # Check for response
-                    if "current_response" in node_output:
-                        yield {
-                            "type": "response",
-                            "content": node_output["current_response"],
-                            "node": node_name,
-                        }
-                elif node_name == "weather":
-                    if "current_response" in node_output:
-                        yield {
-                            "type": "response",
-                            "content": node_output["current_response"],
-                            "node": node_name,
-                        }
-                elif node_name == "supervisor":
-                    if "current_response" in node_output:
-                        yield {
-                            "type": "response",
-                            "content": node_output["current_response"],
-                            "node": node_name,
-                        }
-                elif node_name == "validator":
-                    if "matched_rules" in node_output and node_output["matched_rules"]:
-                        yield {
-                            "type": "rules",
-                            "content": node_output["matched_rules"],
-                            "node": node_name,
-                        }
-
-        yield {
-            "type": "final",
-            "thread_id": thread_id,
-        }
-
-    async def get_conversation_history(
-        self,
-        thread_id: str,
-    ) -> list[dict]:
-        """Get conversation history for a thread.
-
-        Uses LangGraph's checkpointer to retrieve the latest state.
-
-        Args:
-            thread_id: Thread ID
-
-        Returns:
-            List of messages
-        """
-        if not self._checkpointer:
-            return []
-
-        try:
-            # Use LangGraph's standard interface
-            config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
-            checkpoint_tuple = await self._checkpointer.aget_tuple(config)
-            if checkpoint_tuple and checkpoint_tuple.checkpoint:
-                return checkpoint_tuple.checkpoint.get("channel_values", {}).get("messages", [])
-        except Exception:
-            pass
-
-        return []
-
-    async def delete_conversation(self, thread_id: str) -> bool:
-        """Delete a conversation and its history.
-
-        Uses LangGraph's checkpointer to delete thread data.
-
-        Args:
-            thread_id: Thread ID to delete
-
-        Returns:
-            True if deleted successfully
-        """
-        if not self._checkpointer:
-            return False
-
-        try:
-            # Use LangGraph's standard interface - adelete_thread takes thread_id directly
-            await self._checkpointer.adelete_thread(thread_id)
-            return True
-        except Exception:
-            return False
-
-
-class AgentResponse:
-    """Response from the ALİM agent."""
-
-    def __init__(
-        self,
-        content: str,
-        thread_id: str,
-        intent: Any = None,
-        intent_confidence: float = 0.0,
-        nodes_visited: list[str] | None = None,
-        alerts: list[dict] | None = None,
-        matched_rules: list[dict] | None = None,
-        error: str | None = None,
-    ):
-        self.content = content
-        self.thread_id = thread_id
-        self.intent = intent
-        self.intent_confidence = intent_confidence
-        self.nodes_visited = nodes_visited or []
-        self.alerts = alerts or []
-        self.matched_rules = matched_rules or []
-        self.error = error
-
-    @property
-    def has_alerts(self) -> bool:
-        """Check if there are any alerts."""
-        return len(self.alerts) > 0
-
-    @property
-    def has_errors(self) -> bool:
-        """Check if there were any errors."""
-        return self.error is not None
-
-    def to_dict(self) -> dict:
-        """Convert to dictionary."""
-        return {
-            "content": self.content,
-            "thread_id": self.thread_id,
-            "intent": self.intent.value if self.intent else None,
-            "intent_confidence": self.intent_confidence,
-            "nodes_visited": self.nodes_visited,
-            "alerts": self.alerts,
-            "matched_rules": self.matched_rules,
-            "error": self.error,
-        }
-
-
 # ============================================================
-# Singleton Agent Instance
+# Graph Factory (Async) - For LangGraph API
 # ============================================================
-
-_agent: AlimAgent | None = None
-
-
-def get_agent(use_checkpointer: bool = True) -> AlimAgent:
-    """Get the singleton agent instance.
-
-    Args:
-        use_checkpointer: Whether to use Redis checkpointing
-
-    Returns:
-        AlimAgent instance
-    """
-    global _agent
-    if _agent is None:
-        _agent = AlimAgent(use_checkpointer=use_checkpointer)
-    return _agent
 
 
 async def make_graph():
@@ -737,12 +423,28 @@ async def make_graph():
     Returns:
         Compiled StateGraph with MCP tools
     """
-    from alim.agent.memory import get_checkpointer_async
 
     # Get async checkpointer
     checkpointer = await get_checkpointer_async()
 
     # Compile with MCP tools
+    return await compile_agent_graph_async(
+        checkpointer=checkpointer,
+        verbose=True,
+        use_mcp=True,
+    )
+
+
+async def get_agent():
+    """Get a compiled agent instance with MCP tools.
+
+    Convenience function for API routes that need a ready-to-use agent.
+    Creates a fresh agent with async checkpointer and MCP tools.
+
+    Returns:
+        Compiled agent graph ready for execution
+    """
+    checkpointer = await get_checkpointer_async()
     return await compile_agent_graph_async(
         checkpointer=checkpointer,
         verbose=True,

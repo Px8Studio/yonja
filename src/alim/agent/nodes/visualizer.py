@@ -20,8 +20,12 @@ Architecture:
 from typing import Any
 
 import structlog
+from langchain_core.runnables import RunnableConfig
+from typing_extensions import TypedDict
 
 from alim.agent.state import AgentState, UserIntent
+from alim.llm.factory import get_llm_from_config
+from alim.llm.providers.base import LLMMessage
 
 logger = structlog.get_logger(__name__)
 
@@ -117,74 +121,84 @@ VIZ_LIBRARY_MAP = {
 def analyze_content_for_viz(content: str) -> dict[str, float]:
     """Analyze content to determine visualization suitability.
 
-    Args:
-        content: The specialist's response text
-
-    Returns:
-        Dict of visualization type → confidence score (0-1)
+    Enhanced to look for:
+    1. Keywords (AZ)
+    2. Numerical data density
+    3. List/Table structures
     """
     content_lower = content.lower()
     scores: dict[str, float] = {}
 
+    # 1. Keyword analysis
     for viz_type, triggers in VIZ_TRIGGERS_AZ.items():
         matches = sum(1 for trigger in triggers if trigger in content_lower)
-        # Normalize: 3+ matches = high confidence
-        confidence = min(matches / 3, 1.0)
-        if confidence > 0.3:  # Threshold
-            scores[viz_type] = confidence
+        scores[viz_type] = min(matches / 3, 0.8)  # Cap keyword score at 0.8
+
+    # 2. Data density analysis (Numbers/Dates)
+    import re
+
+    numbers = re.findall(r"\d+", content)
+    num_density = min(len(numbers) / 10, 0.2)
+
+    # 3. Structure analysis (Markdown lists/tables)
+    list_items = re.findall(r"^[\*\-\d\.]+\s+", content, re.MULTILINE)
+    structure_score = min(len(list_items) / 5, 0.2)
+
+    # Add data markers to all scores
+    for viz_type in scores:
+        scores[viz_type] += num_density + structure_score
+        scores[viz_type] = min(scores[viz_type], 1.0)
 
     return scores
 
 
-def should_visualize(state: AgentState) -> tuple[bool, str | None, float]:
+async def should_visualize(
+    state: AgentState, config: RunnableConfig | None = None
+) -> tuple[bool, str | None, float]:
     """Determine if visualization would help the user.
 
-    Decision factors:
-    1. Intent type (some intents naturally need visuals)
-    2. Content analysis (keywords suggest data/comparisons)
-    3. Data presence (structured data in response)
-
-    Args:
-        state: Current agent state
-
-    Returns:
-        Tuple of (should_visualize, viz_type, confidence)
+    Uses a hybrid approach:
+    1. Fast heuristic check (Keywords + Structure)
+    2. Precision LLM check (if heuristic is ambiguous)
     """
-    response = state.get("current_response", "")
-    intent = state.get("intent")
+    content = state.get("current_response", "") or ""
+    scores = analyze_content_for_viz(content)
 
-    # Skip if no response
-    if not response or len(response) < 50:
+    if not scores:
         return False, None, 0.0
 
-    # 1. Check intent-based visualization
-    if intent and intent in INTENT_VIZ_MAP:
-        viz_type = INTENT_VIZ_MAP[intent]
-        # Intent suggests visualization, check content for confirmation
-        content_scores = analyze_content_for_viz(response)
-        if viz_type in content_scores and content_scores[viz_type] > 0.4:
-            logger.debug(
-                "viz_intent_match",
-                intent=intent.value,
-                viz_type=viz_type,
-                confidence=content_scores[viz_type],
-            )
-            return True, viz_type, content_scores[viz_type]
+    # Get best viz type
+    best_viz = max(scores, key=scores.get)
+    confidence = scores[best_viz]
 
-    # 2. Check content-based visualization
-    content_scores = analyze_content_for_viz(response)
-    if content_scores:
-        # Pick highest confidence visualization type
-        best_type = max(content_scores, key=lambda k: content_scores.get(k, 0.0))
-        best_score = content_scores[best_type]
-        if best_score > 0.5:
-            logger.debug(
-                "viz_content_match",
-                viz_type=best_type,
-                confidence=best_score,
-            )
-            return True, best_type, best_score
+    # Heuristic confidence levels
+    if confidence >= 0.8:
+        return True, best_viz, confidence
 
+    if confidence < 0.4:
+        return False, None, confidence
+
+    # Ambiguous case (0.4 - 0.8): Use LLM for precise validation
+    logger.info(
+        "visualizer_ambiguous_trigger_llm_validation", confidence=confidence, viz_type=best_viz
+    )
+
+    llm = get_llm_from_config(config)
+    prompt = f"""Təhlil et və qərar ver: Bu aqrar məsləhət üçün vizuallaşdırma (diaqram/cədvəl) lazımdır?
+Cavab YALNIZ 'YES' və ya 'NO' olmalıdır.
+
+Məsləhət:
+{content}
+
+Vizuallaşdırma tipi: {best_viz}
+"""
+    try:
+        response = await llm.generate([LLMMessage.user(prompt)], max_tokens=10)
+        is_needed = "YES" in response.content.upper()
+        return is_needed, best_viz if is_needed else None, confidence
+    except Exception as e:
+        logger.error("visualizer_llm_validation_failed", error=str(e))
+        return confidence > 0.5, best_viz, confidence  # Fallback to heuristic
     return False, None, 0.0
 
 
@@ -310,7 +324,34 @@ Return as JSON using fig.to_json().
 # ============================================================
 
 
-async def visualizer_node(state: AgentState) -> dict[str, Any]:
+# ============================================================
+# Node Schemas (State Isolation)
+# ============================================================
+
+
+class VisualizerInput(TypedDict):
+    """Input schema for visualizer node."""
+
+    current_response: str
+    intent: Any
+    nodes_visited: list[str]
+
+
+class VisualizerOutput(TypedDict):
+    """Output schema for visualizer node."""
+
+    nodes_visited: list[str]
+    visualization_request: dict | None
+    visualization_type: str | None
+    visualization: Any | None
+
+
+# ============================================================
+# Visualizer Node
+# ============================================================
+
+
+async def visualizer_node(state: VisualizerInput) -> VisualizerOutput:
     """Visualizer node for intelligent chart generation.
 
     Analyzes the specialist's response and decides if visualization
@@ -372,23 +413,6 @@ async def visualizer_node(state: AgentState) -> dict[str, Any]:
         "visualization": None,  # Will be populated after MCP call
         "visualization_type": viz_type,
     }
-
-
-async def route_after_visualizer(state: AgentState) -> str:
-    """Route after visualizer node.
-
-    If visualization was requested, route to MCP tools.
-    Otherwise, go to END.
-
-    Args:
-        state: Current agent state
-
-    Returns:
-        Next node name ("python_viz_tools" or "end")
-    """
-    if state.get("visualization_request"):
-        return "python_viz_tools"
-    return "end"
 
 
 # ============================================================

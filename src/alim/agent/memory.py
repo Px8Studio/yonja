@@ -142,16 +142,17 @@ async def get_checkpointer_async(
     if backend == "postgres" or (backend == "auto" and postgres):
         if postgres and POSTGRES_CHECKPOINTER_AVAILABLE and AsyncPostgresSaver is not None:
             try:
-                # Convert asyncpg URL to psycopg format if needed
+                # Convert asyncpg/other URLs to standard PostgreSQL format for psycopg
                 pg_url = postgres.replace("postgresql+asyncpg://", "postgresql://")
+                pg_url = pg_url.replace("postgres://", "postgresql://")  # Standardize prefix
+
                 log.debug(f"Attempting PostgreSQL checkpointer with: {pg_url[:50]}...")
 
-                # v3.x API: from_conn_string is an async context manager
-                # We need to enter the context and keep the reference
+                # Use async context manager for singleton/reusable connection pool
                 async_cm = AsyncPostgresSaver.from_conn_string(pg_url)
                 checkpointer = await async_cm.__aenter__()
 
-                # Setup tables (required on first use)
+                # Setup tables
                 await checkpointer.setup()
 
                 log.info(
@@ -161,20 +162,12 @@ async def get_checkpointer_async(
                     _checkpointer = checkpointer
                 return checkpointer
             except Exception as e:
-                # On Windows, this commonly fails due to event loop incompatibility
-                error_str = str(e)
-                if "ProactorEventLoop" in error_str:
-                    log.info(
-                        f"{EMOJI_ALİM} PostgreSQL checkpointer not available on Windows "
-                        "(ProactorEventLoop incompatibility), using Redis fallback"
-                    )
-                else:
-                    log.warning(
-                        f"{EMOJI_ALİM} {EMOJI_ERROR} PostgreSQL checkpointer failed, will try Redis",
-                        error=error_str,
-                    )
+                log.warning(
+                    f"{EMOJI_ALİM} {EMOJI_ERROR} PostgreSQL checkpointer initialization failed",
+                    error=str(e),
+                )
                 if backend == "postgres":
-                    raise  # Don't fallback if explicitly requested
+                    raise
         else:
             reasons = []
             if not postgres:

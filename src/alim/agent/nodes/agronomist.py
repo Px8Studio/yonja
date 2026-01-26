@@ -7,11 +7,13 @@ for irrigation, fertilization, pest control, planting, and harvesting.
 
 from datetime import UTC
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 import structlog
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
+from langgraph.graph.message import add_messages
+from typing_extensions import TypedDict
 
 from alim.agent.state import AgentState, UserIntent, add_assistant_message
 from alim.llm.factory import get_llm_from_config
@@ -146,14 +148,35 @@ def build_intent_prompt(intent: UserIntent | None) -> str:
     return prompts.get(intent, "")
 
 
+class AgronomistInput(TypedDict):
+    """Input schema for agronomist node."""
+
+    current_input: str
+    intent: UserIntent | None
+    messages: Annotated[list[BaseMessage], add_messages]
+    farm_context: Any
+    weather: Any
+    matched_rules: Annotated[list[dict], "merge"]
+    nodes_visited: list[str]
+
+
+class AgronomistOutput(TypedDict):
+    """Output schema for agronomist node."""
+
+    current_response: str | None
+    nodes_visited: list[str]
+    messages: Annotated[list[BaseMessage], add_messages]
+    mcp_traces: Annotated[list[dict], "merge"]
+
+
 # ============================================================
 # Agronomist Node
 # ============================================================
 
 
 async def agronomist_node(
-    state: AgentState, config: RunnableConfig | None = None
-) -> dict[str, Any]:
+    state: AgronomistInput, config: RunnableConfig | None = None
+) -> AgronomistOutput:
     """Agronomist specialist node.
 
     Generates agricultural advice based on:

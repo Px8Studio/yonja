@@ -8,6 +8,7 @@ returning to user. Ensures advice is safe and accurate.
 from typing import Any
 
 import structlog
+from typing_extensions import TypedDict
 
 from alim.agent.state import AgentState
 
@@ -94,7 +95,34 @@ AGRONOMIC_VALIDATIONS = {
 # ============================================================
 
 
-async def validator_node(state: AgentState) -> dict[str, Any]:
+# ============================================================
+# Node Schemas (State Isolation)
+# ============================================================
+
+
+class ValidatorInput(TypedDict):
+    """Input schema for validator node."""
+
+    current_response: str
+    intent: Any
+    weather: Any
+    nodes_visited: list[str]
+
+
+class ValidatorOutput(TypedDict):
+    """Output schema for validator node."""
+
+    matched_rules: list[dict]
+    current_response: str
+    nodes_visited: list[str]
+
+
+# ============================================================
+# Validator Node
+# ============================================================
+
+
+async def validator_node(state: ValidatorInput) -> ValidatorOutput:
     """Validator node for rule-based checks.
 
     Checks the generated response against safety and agronomic rules.

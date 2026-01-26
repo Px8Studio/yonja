@@ -10,24 +10,25 @@ Each node handles a specific aspect of the conversation:
 """
 
 from alim.agent.nodes.agronomist import agronomist_node
-from alim.agent.nodes.context_loader import context_loader_node, route_after_context
-from alim.agent.nodes.supervisor import (
-    route_from_supervisor,
-    supervisor_node,
-)
-from alim.agent.nodes.validator import quick_validate, validator_node
+from alim.agent.nodes.context_loader import context_loader_node
+from alim.agent.nodes.nl_to_sql import nl_to_sql_node
+from alim.agent.nodes.pii import pii_masking_node
+from alim.agent.nodes.sql_executor import sql_executor_node
+from alim.agent.nodes.supervisor import supervisor_node
+from alim.agent.nodes.validator import validator_node
+from alim.agent.nodes.vision_to_action import vision_to_action_node
+from alim.agent.nodes.visualizer import visualizer_node
 from alim.agent.nodes.weather import weather_node
 
 __all__ = [
-    # Nodes
     "supervisor_node",
     "context_loader_node",
     "agronomist_node",
     "weather_node",
     "validator_node",
-    # Routing functions
-    "route_from_supervisor",
-    "route_after_context",
-    # Utilities
-    "quick_validate",
+    "nl_to_sql_node",
+    "sql_executor_node",
+    "vision_to_action_node",
+    "visualizer_node",
+    "pii_masking_node",
 ]

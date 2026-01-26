@@ -7,11 +7,15 @@ tables like farms, parcels, crops, users. Validation ensures output
 contains a SELECT statement.
 """
 
-from typing import Any
+
+from typing import Annotated
 
 import structlog
+from langchain_core.messages import BaseMessage
+from langgraph.graph.message import add_messages
+from typing_extensions import TypedDict
 
-from alim.agent.state import AgentState, UserIntent, add_assistant_message
+from alim.agent.state import UserIntent, add_assistant_message
 from alim.llm.inference_engine import InferenceEngine
 from alim.llm.providers.base import LLMMessage
 
@@ -25,7 +29,33 @@ SYSTEM_PROMPT = (
 )
 
 
-async def nl_to_sql_node(state: AgentState) -> dict[str, Any]:
+# ============================================================
+# Node Schemas (State Isolation)
+# ============================================================
+
+
+class NLToSQLInput(TypedDict):
+    """Input schema for NL-to-SQL node."""
+
+    current_input: str
+    nodes_visited: list[str]
+
+
+class NLToSQLOutput(TypedDict):
+    """Output schema for NL-to-SQL node."""
+
+    current_response: str
+    nodes_visited: list[str]
+    messages: Annotated[list[BaseMessage], add_messages]
+    error: str | None
+
+
+# ============================================================
+# NL-to-SQL Node
+# ============================================================
+
+
+async def nl_to_sql_node(state: NLToSQLInput) -> NLToSQLOutput:
     """Generate SQL from natural language input.
 
     Args:

@@ -166,7 +166,8 @@ async def test_context_loader_mcp_disabled():
         mock_session = AsyncMock()
         mock_db.return_value.__aenter__.return_value = mock_session
 
-        updates = await context_loader_node(state)
+        command = await context_loader_node(state)
+        updates = command
 
         assert "weather" in updates
         assert updates["weather"].temperature_c is not None
@@ -208,7 +209,8 @@ async def test_context_loader_no_consent():
         mock_session = AsyncMock()
         mock_db.return_value.__aenter__.return_value = mock_session
 
-        updates = await context_loader_node(state)
+        command = await context_loader_node(state)
+        updates = command
 
         assert "weather" in updates
         # Should use synthetic fallback due to no consent
@@ -278,7 +280,8 @@ async def test_context_loader_parallel_mcp_calls():
                 ),
             )
 
-            updates = await context_loader_node(state)
+            command = await context_loader_node(state)
+            updates = command
 
             # Verify both MCP handlers were called
             mock_weather.assert_called_once()
@@ -344,7 +347,8 @@ async def test_context_loader_partial_mcp_failure():
             # ZekaLab fails (returns exception)
             mock_zekalab.side_effect = Exception("ZekaLab API error")
 
-            updates = await context_loader_node(state)
+            command = await context_loader_node(state)
+            updates = command
 
             # Should have weather loaded via MCP
             assert "weather" in updates
@@ -413,7 +417,8 @@ async def test_context_loader_timeout_handling():
                 ),
             )
 
-            updates = await context_loader_node(state)
+            command = await context_loader_node(state)
+            updates = command
 
             # Should have fallback weather due to timeout
             assert "weather" in updates
@@ -492,7 +497,8 @@ async def test_mcp_trace_consolidation():
                 ),
             )
 
-            updates = await context_loader_node(state)
+            command = await context_loader_node(state)
+            updates = command
 
             # Should have 3 traces total (1 existing + 2 new)
             traces = updates.get("mcp_traces", [])

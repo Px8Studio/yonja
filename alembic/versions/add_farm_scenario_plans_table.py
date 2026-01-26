@@ -210,6 +210,7 @@ def upgrade() -> None:
     )
 
     # Trigger to auto-update updated_at timestamp
+    # Trigger to auto-update updated_at timestamp
     op.execute(
         """
         CREATE OR REPLACE FUNCTION update_farm_scenario_plans_updated_at()
@@ -219,7 +220,11 @@ def upgrade() -> None:
             RETURN NEW;
         END;
         $$ LANGUAGE plpgsql;
+    """
+    )
 
+    op.execute(
+        """
         CREATE TRIGGER farm_scenario_plans_updated_at_trigger
         BEFORE UPDATE ON farm_scenario_plans
         FOR EACH ROW

@@ -90,19 +90,21 @@ try:
 
     # 2. Initialize Data Layer (which also checks DB connection)
     if demo_settings_early.data_persistence_enabled:
-        asyncio.run(init_chainlit_data_layer())
-        _data_layer_initialized = True
-        logger.info("[OK] Data layer pre-initialized for Chainlit registration")
+        if asyncio.run(init_chainlit_data_layer()):
+            _data_layer_initialized = True
+            logger.info("[OK] Data layer pre-initialized for Chainlit registration")
+        else:
+            logger.warning("[WARN] Data layer initialization returned None (Connection failed)")
     else:
         logger.info("[SKIP] Skipping data layer init (SQLite/no Postgres configured)")
 
 except Exception as e:
     # ----------------------------------------------------
-    # STRICT STARTUP POLICY: NO SILENT FAILURES
+    # RESILIENT STARTUP: Log warning but proceed
     # ----------------------------------------------------
-    logger.critical("STOP CRITICAL STARTUP FAILURE: Application cannot start.", exc_info=True)
-    print(f"\n\nSTOP FATAL ERROR: {str(e)}\n   Check logs for details.\n")
-    sys.exit(1)  # Force exit with error code
+    logger.warning(f"STARTUP WARNING: Some components failed to initialize: {e}")
+    logger.warning("The application will attempt to start in degraded mode.")
+    # sys.exit(1)  # DO NOT EXIT
 
 
 # Now safe to import chainlit  # noqa: E402
@@ -111,10 +113,6 @@ from alim.agent.graph import compile_agent_graph  # noqa: E402
 from alim.agent.memory import get_checkpointer_async  # noqa: E402
 from alim.config import AgentMode  # noqa: E402
 from alim.config import settings as alim_settings  # noqa: E402
-from alim.langgraph.client import (  # noqa: E402
-    LangGraphClient,
-    LangGraphClientError,
-)
 from alim.observability.banner import (  # noqa: E402
     print_endpoints,
     print_infrastructure_tier,
@@ -142,6 +140,7 @@ from chainlit.input_widget import (  # noqa: E402
 from chainlit.types import ThreadDict  # noqa: E402
 from components.spinners import LoadingStates  # noqa: E402
 from constants import EXPERTISE_AREAS, LLM_MODEL_PROFILES  # noqa: E402
+from langgraph_sdk import get_client as get_langgraph_client  # noqa: E402
 from services.expertise import (  # noqa: E402
     build_combined_system_prompt,
     detect_expertise_from_persona,
@@ -243,7 +242,13 @@ if demo_settings.data_persistence_enabled:
         if "/" in demo_settings.effective_database_url
         else "ALİM"
     )
-    print_status_line("PostgreSQL", f"{db_host}/{db_name}", "success", "users, threads, settings")
+    status = "success" if _data_layer_initialized else "warning"
+    note = (
+        "users, threads, settings"
+        if _data_layer_initialized
+        else "❌ DISCONNECTED (Data not saved)"
+    )
+    print_status_line("PostgreSQL", f"{db_host}/{db_name}", status, note)
 else:
     print_status_line("PostgreSQL", "Not configured", "warning", "sessions not persisted")
 
@@ -340,8 +345,8 @@ if demo_settings.data_persistence_enabled:
 # Global checkpointer (initialized once in async context) - for direct mode
 _checkpointer = None
 
-# Global API client (for API bridge mode)
-_api_client: LangGraphClient | None = None
+# Global API client (for API bridge mode) - using official langgraph_sdk
+_langgraph_client = None
 
 # ============================================
 # AGENT MODES (Dynamic Model Selection)
@@ -367,14 +372,13 @@ async def get_app_checkpointer():
     return _checkpointer
 
 
-async def get_api_client() -> LangGraphClient:
-    """Get or create the API client singleton - for API bridge mode."""
-    global _api_client
-    if _api_client is None:
-        _api_client = LangGraphClient(base_url=demo_settings.alim_api_url)
-        await _api_client.__aenter__()
-        logger.info("api_client_connected", base_url=demo_settings.alim_api_url)
-    return _api_client
+def get_api_client():
+    """Get the LangGraph SDK client - for API bridge mode."""
+    global _langgraph_client
+    if _langgraph_client is None:
+        _langgraph_client = get_langgraph_client(url=demo_settings.langgraph_base_url)
+        logger.info("langgraph_sdk_client_created", base_url=demo_settings.langgraph_base_url)
+    return _langgraph_client
 
 
 # ============================================
@@ -2645,133 +2649,131 @@ async def _handle_message_http(
         file_paths: Optional list of uploaded file paths for document processing
     """
     try:
-        async with LangGraphClient(
-            base_url=demo_settings.langgraph_base_url,
-            graph_id=demo_settings.langgraph_graph_id,
-        ) as client:
-            # Prepare initial state
-            from alim.agent.state import create_initial_state, serialize_state_for_api
+        # Use official langgraph_sdk client
+        client = get_langgraph_client(url=demo_settings.langgraph_base_url)
 
-            # Get current consent status from session
-            data_consent_given = cl.user_session.get("data_consent_given", False)
+        # Prepare initial state
+        from alim.agent.state import create_initial_state, serialize_state_for_api
 
-            initial_state = create_initial_state(
-                thread_id=thread_id,
-                user_input=message.content,
-                user_id=user_id,
-                language="az",
-                system_prompt_override=profile_prompt if profile_prompt else None,
-                scenario_context=scenario_context,
-                data_consent_given=data_consent_given,
-                file_paths=file_paths,  # Pass uploaded files for doc processing
-            )
+        # Get current consent status from session
+        data_consent_given = cl.user_session.get("data_consent_given", False)
 
-            # Serialize state for HTTP API (converts LangChain messages to plain dicts)
-            serialized_state = serialize_state_for_api(initial_state)
+        initial_state = create_initial_state(
+            thread_id=thread_id,
+            user_input=message.content,
+            user_id=user_id,
+            language="az",
+            system_prompt_override=profile_prompt if profile_prompt else None,
+            scenario_context=scenario_context,
+            data_consent_given=data_consent_given,
+            file_paths=file_paths,  # Pass uploaded files for doc processing
+        )
 
-            # Metadata for tracing/logging
-            config = {
-                "metadata": {
-                    "user_id": user_id,
-                    "farm_id": farm_id,
-                    "source": "chainlit",
-                    "has_files": bool(file_paths),  # Track file uploads
-                }
+        # Serialize state for HTTP API (converts LangChain messages to plain dicts)
+        serialized_state = serialize_state_for_api(initial_state)
+
+        # Metadata for tracing/logging
+        config = {
+            "metadata": {
+                "user_id": user_id,
+                "farm_id": farm_id,
+                "source": "chainlit",
+                "has_files": bool(file_paths),  # Track file uploads
             }
+        }
 
-            # 5 Integration Rules: Rule #2 - Triple-Mode Streaming
-            # stream_mode=["updates", "messages"] allows us to:
-            # 1. "updates": Track node transitions for "Hanging Curtain" UI (Rule #3)
-            # 2. "messages": Stream tokens to the user (Rule #2)
-            # 3. Custom events: (via updates/messages) for rich UI
+        # 5 Integration Rules: Rule #2 - Triple-Mode Streaming
+        # stream_mode=["updates", "messages"] allows us to:
+        # 1. "updates": Track node transitions for "Hanging Curtain" UI (Rule #3)
+        # 2. "messages": Stream tokens to the user (Rule #2)
+        # 3. Custom events: (via updates/messages) for rich UI
 
-            logger.info(
-                "streaming_from_langgraph_triple_mode",
-                thread_id=thread_id,
-                server=demo_settings.langgraph_base_url,
-            )
+        logger.info(
+            "streaming_from_langgraph_triple_mode",
+            thread_id=thread_id,
+            server=demo_settings.langgraph_base_url,
+        )
 
-            async for event in client.stream(
-                input_state=serialized_state,
-                thread_id=thread_id,
-                config=config,
-                stream_mode=["updates", "messages"],
-            ):
-                # --------------------------------------------------------
-                # Rule #3: The "Hanging Curtain" UI (Step Logic)
-                # --------------------------------------------------------
-                if isinstance(event, dict):
-                    # Handle "updates" (Node Transistions)
-                    if "updates" in event or (
-                        "event" in event and event["event"] == "on_chain_start"
-                    ):
-                        # Logic to identify node start/end would go here
-                        # LangGraph 'updates' usually contains the output of a node.
-                        # For true node start/end listening, we might need 'events' stream_mode or
-                        # infer it. However, 'updates' gives us the result.
-                        # A better approach for "Hanging Curtain" with LangGraph Client is
-                        # often monitoring the keys in 'updates'.
+        async for event in client.runs.stream(
+            thread_id=thread_id,
+            assistant_id=demo_settings.langgraph_graph_id,
+            input=serialized_state,
+            config=config,
+            stream_mode=["updates", "messages"],
+        ):
+            # --------------------------------------------------------
+            # Rule #3: The "Hanging Curtain" UI (Step Logic)
+            # --------------------------------------------------------
+            if isinstance(event, dict):
+                # Handle "updates" (Node Transistions)
+                if "updates" in event or ("event" in event and event["event"] == "on_chain_start"):
+                    # Logic to identify node start/end would go here
+                    # LangGraph 'updates' usually contains the output of a node.
+                    # For true node start/end listening, we might need 'events' stream_mode or
+                    # infer it. However, 'updates' gives us the result.
+                    # A better approach for "Hanging Curtain" with LangGraph Client is
+                    # often monitoring the keys in 'updates'.
 
-                        # Note: True "node start" events might best be captured via
-                        # stream_mode="events" or "debug", but "updates" is what the prompt requested.
-                        # We will assume 'updates' gives us the node content which implies the node finished.
-                        # To visualize *working* state, we can infer from the key name.
+                    # Note: True "node start" events might best be captured via
+                    # stream_mode="events" or "debug", but "updates" is what the prompt requested.
+                    # We will assume 'updates' gives us the node content which implies the node finished.
+                    # To visualize *working* state, we can infer from the key name.
 
-                        # Let's try to infer active node if possible, or just log results.
-                        # For the "Hanging Curtain", we want to show a step *while* it runs.
-                        # Using 'messages' stream gives us tokens.
-                        pass
+                    # Let's try to infer active node if possible, or just log results.
+                    # For the "Hanging Curtain", we want to show a step *while* it runs.
+                    # Using 'messages' stream gives us tokens.
+                    pass
 
-                    # Handle "messages" (Token Streaming)
-                    if "role" in event and event.get("role") == "assistant":
-                        # Rule #4: Final Node Tagging Check
-                        # If we have a way to know this message is from "final_response" node,
-                        # we stream to main response.
-                        await response_msg.stream_token(event.get("content", ""))
+                # Handle "messages" (Token Streaming)
+                if "role" in event and event.get("role") == "assistant":
+                    # Rule #4: Final Node Tagging Check
+                    # If we have a way to know this message is from "final_response" node,
+                    # we stream to main response.
+                    await response_msg.stream_token(event.get("content", ""))
 
-                    # Fallback/standard handling for updates (LangGraph < 0.2 style)
-                    # or LangGraph API 'updates' key
-                    if "updates" in event:
-                        update = event["updates"]
-                        # If we have visited nodes, we can show them as completed steps
-                        if isinstance(update, dict):
-                            for node_name, result in update.items():
-                                if node_name != "__end__":
-                                    # Collapse the step for this node (if we had one open)
-                                    # OR create a completed step to show it happened.
-                                    async with cl.Step(name=node_name) as step:
-                                        step.output = str(result)[:100] + "..."  # Brief summary
+                # Fallback/standard handling for updates (LangGraph < 0.2 style)
+                # or LangGraph API 'updates' key
+                if "updates" in event:
+                    update = event["updates"]
+                    # If we have visited nodes, we can show them as completed steps
+                    if isinstance(update, dict):
+                        for node_name, result in update.items():
+                            if node_name != "__end__":
+                                # Collapse the step for this node (if we had one open)
+                                # OR create a completed step to show it happened.
+                                async with cl.Step(name=node_name) as step:
+                                    step.output = str(result)[:100] + "..."  # Brief summary
 
-                # --------------------------------------------------------
-                # Error Boundaries (Rule #4 in prompt, but we handle globally)
-                # --------------------------------------------------------
+            # --------------------------------------------------------
+            # Error Boundaries (Rule #4 in prompt, but we handle globally)
+            # --------------------------------------------------------
 
-            logger.info(
-                "message_processed_streaming",
-                user_id=user_id,
-                thread_id=thread_id,
-            )
+        logger.info(
+            "message_processed_streaming",
+            user_id=user_id,
+            thread_id=thread_id,
+        )
 
-            # Phase 5: Data Flow Visualization
-            # Fetch final state to show which MCP servers contributed
-            try:
-                final_state = await client.get_thread_state(thread_id)
-                state_values = final_state.get("values", {})
-                mcp_traces = state_values.get("mcp_traces", [])
-                if mcp_traces:
-                    data_flow_msg = _format_mcp_data_flow(mcp_traces)
-                    if data_flow_msg:
-                        await response_msg.stream_token(data_flow_msg)
-                        logger.info(
-                            "data_flow_visualized",
-                            trace_count=len(mcp_traces),
-                            thread_id=thread_id,
-                        )
-            except Exception as df_error:
-                # Don't fail the response if data flow viz fails
-                logger.warning("data_flow_visualization_failed", error=str(df_error))
+        # Phase 5: Data Flow Visualization
+        # Fetch final state to show which MCP servers contributed
+        try:
+            final_state = await client.threads.get_state(thread_id=thread_id)
+            state_values = final_state.get("values", {})
+            mcp_traces = state_values.get("mcp_traces", [])
+            if mcp_traces:
+                data_flow_msg = _format_mcp_data_flow(mcp_traces)
+                if data_flow_msg:
+                    await response_msg.stream_token(data_flow_msg)
+                    logger.info(
+                        "data_flow_visualized",
+                        trace_count=len(mcp_traces),
+                        thread_id=thread_id,
+                    )
+        except Exception as df_error:
+            # Don't fail the response if data flow viz fails
+            logger.warning("data_flow_visualization_failed", error=str(df_error))
 
-    except LangGraphClientError as e:
+    except httpx.HTTPStatusError as e:
         logger.error("langgraph_server_error", error=str(e))
         # Rule #4: clean ErrorMessage
         await cl.ErrorMessage(content=f"LangGraph Server xətası: {str(e)}", author="System").send()

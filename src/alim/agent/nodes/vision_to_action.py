@@ -7,11 +7,14 @@ Currently, this is text-only due to multimodal transport constraints.
 It summarizes intent and produces a farmer-facing action plan.
 """
 
-from typing import Any
+from typing import Annotated, Any
 
 import structlog
+from langchain_core.messages import BaseMessage
+from langgraph.graph.message import add_messages
+from typing_extensions import TypedDict
 
-from alim.agent.state import AgentState, UserIntent, add_assistant_message
+from alim.agent.state import UserIntent, add_assistant_message
 from alim.llm.inference_engine import InferenceEngine
 from alim.llm.providers.base import LLMMessage
 
@@ -29,7 +32,35 @@ SYSTEM_PROMPT = (
 )
 
 
-async def vision_to_action_node(state: AgentState) -> dict[str, Any]:
+# ============================================================
+# Node Schemas (State Isolation)
+# ============================================================
+
+
+class VisionToActionInput(TypedDict):
+    """Input schema for vision node."""
+
+    file_paths: list[str]
+    current_input: str
+    intent: Any
+    farm_context: Any
+    nodes_visited: list[str]
+
+
+class VisionToActionOutput(TypedDict):
+    """Output schema for vision node."""
+
+    current_response: str
+    nodes_visited: list[str]
+    messages: Annotated[list[BaseMessage], add_messages]
+
+
+# ============================================================
+# Vision Node
+# ============================================================
+
+
+async def vision_to_action_node(state: VisionToActionInput) -> VisionToActionOutput:
     """Propose actions based on image descriptions.
 
     Args:

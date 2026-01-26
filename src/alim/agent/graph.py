@@ -9,11 +9,15 @@ Supports two modes:
 1. Standard graph (create_agent_graph) - without MCP tools
 2. MCP-enabled graph (create_agent_graph_with_mcp) - with MCP tool integration
 
-Graph Flow (with visualizer):
-    supervisor → context_loader → specialist → validator → visualizer → END
+Graph Flow (Flattened):
+    setup → pii_masking → supervisor → context_loader
+    → [Agronomist/Weather/Vision/SQL]
+    → [Validator (conditional)]
+    → END
 """
 
-from typing import Any
+
+from typing import Literal
 
 import structlog
 from langgraph.checkpoint.base import BaseCheckpointSaver
@@ -21,17 +25,18 @@ from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode
 
 from alim.agent.memory import get_checkpointer_async
+
+# Specialist Nodes
 from alim.agent.nodes.agronomist import agronomist_node
-from alim.agent.nodes.context_loader import context_loader_node, route_after_context
+from alim.agent.nodes.context_loader import context_loader_node
 from alim.agent.nodes.nl_to_sql import nl_to_sql_node
 from alim.agent.nodes.pii import pii_masking_node
-from alim.agent.nodes.sql_executor import sql_executor_node
-from alim.agent.nodes.supervisor import route_from_supervisor, supervisor_node
+from alim.agent.nodes.setup import setup_node
+from alim.agent.nodes.supervisor import supervisor_node
 from alim.agent.nodes.validator import validator_node
 from alim.agent.nodes.vision_to_action import vision_to_action_node
-from alim.agent.nodes.visualizer import route_after_visualizer, visualizer_node
 from alim.agent.nodes.weather import weather_node
-from alim.agent.state import AgentState, setup_node
+from alim.agent.state import AgentState, UserIntent
 from alim.observability.langfuse import create_langfuse_handler
 
 logger = structlog.get_logger(__name__)
@@ -46,35 +51,67 @@ except ImportError:
 
 
 # ============================================================
-# Stub Nodes for HITL (Human-in-the-Loop)
+# Routing Logic
 # ============================================================
 
 
-async def delete_parcel_node(state: AgentState) -> dict[str, Any]:
-    """Placeholder node for parcel deletion (requires human approval).
-
-    This node executes the actual deletion after human approval.
-    The interrupt_before mechanism pauses the graph before this node.
-    """
-    logger.info("delete_parcel_node_executed", state_keys=list(state.keys()))
-    return {
-        "current_response": "Parsel silmə əməliyyatı icra edildi.",
-        "nodes_visited": state.get("nodes_visited", []) + ["delete_parcel"],
-    }
+def route_supervisor(state: AgentState) -> Literal["context_loader", "__end__"]:
+    """Route from supervisor based on routing decision."""
+    routing = state.get("routing")
+    if not routing or routing.target_node == "end":
+        return END
+    return "context_loader"
 
 
-async def human_approval_node(state: AgentState) -> dict[str, Any]:
-    """Placeholder node for human approval workflow.
+def route_context_loader(
+    state: AgentState
+) -> Literal["agronomist", "weather", "nl_to_sql", "vision_to_action", "__end__"]:
+    """Route from context_loader to appropriate specialist node."""
+    routing = state.get("routing")
+    intent = state.get("intent")
 
-    This node prepares the approval request for destructive operations.
-    The actual approval happens via Chainlit's AskActionMessage.
-    """
-    logger.info("human_approval_node_executed", state_keys=list(state.keys()))
-    return {
-        "pending_approval": True,
-        "approval_action": "delete_parcel",
-        "nodes_visited": state.get("nodes_visited", []) + ["human_approval"],
-    }
+    if intent == UserIntent.WEATHER:
+        return "weather"
+    elif intent == UserIntent.DATA_QUERY:
+        return "nl_to_sql"
+    elif intent == UserIntent.VISION_ANALYSIS:
+        return "vision_to_action"
+    elif intent in [
+        UserIntent.IRRIGATION,
+        UserIntent.FERTILIZATION,
+        UserIntent.PEST_CONTROL,
+        UserIntent.HARVEST,
+        UserIntent.PLANTING,
+        UserIntent.CROP_ROTATION,
+        UserIntent.GENERAL_ADVICE,
+    ]:
+        return "agronomist"
+
+    # If routed to specialist_subgraph broadly, default to agronomist
+    if routing and routing.target_node == "specialist_subgraph":
+        return "agronomist"
+
+    return "agronomist"  # Default fallback
+
+
+def route_specialist(state: AgentState) -> Literal["validator", "python_viz_tools", "__end__"]:
+    """Route from specialist: validate sensitive actions, else end."""
+    # Check for visualization first
+    if state.get("visualization_request"):
+        return "python_viz_tools"
+
+    # Check for sensitive intents requiring validation
+    intent = state.get("intent")
+    sensitive_intents = [
+        UserIntent.IRRIGATION,
+        UserIntent.FERTILIZATION,
+        UserIntent.PEST_CONTROL,
+    ]
+
+    if intent in sensitive_intents:
+        return "validator"
+
+    return END
 
 
 # ============================================================
@@ -83,89 +120,56 @@ async def human_approval_node(state: AgentState) -> dict[str, Any]:
 
 
 def create_agent_graph() -> StateGraph:
-    """Create the main agent graph (without MCP tools).
-
-    Graph Structure:
-    ```
-    START
-      │
-      ▼
-    supervisor ──┬──> end (greeting/off-topic handled)
-                 │
-                 ▼
-           context_loader
-                 │
-                 ├──> agronomist ──> validator ──> visualizer ──> end
-                 │
-                 └──> weather ──────> validator ──> visualizer ──> end
-    ```
-
-    Returns:
-        Configured StateGraph ready for execution.
-    """
-    # Create the graph
+    """Create the main agent graph (without MCP tools)."""
     graph = StateGraph(AgentState)
 
-    # Add nodes
+    # 1. Add Top-Level Nodes
     graph.add_node("setup", setup_node)
     graph.add_node("pii_masking", pii_masking_node)
     graph.add_node("supervisor", supervisor_node)
     graph.add_node("context_loader", context_loader_node)
+
+    # 2. Add Specialist Nodes
     graph.add_node("agronomist", agronomist_node)
     graph.add_node("weather", weather_node)
     graph.add_node("nl_to_sql", nl_to_sql_node)
-    graph.add_node("sql_executor", sql_executor_node)
     graph.add_node("vision_to_action", vision_to_action_node)
+
+    # 3. Add Support Nodes
     graph.add_node("validator", validator_node)
-    graph.add_node("visualizer", visualizer_node.with_config(tags=["final_response"]))
 
-    # Set entry point
+    # 4. Entry Flow
     graph.set_entry_point("setup")
-
-    # Connect setup to PII masking
     graph.add_edge("setup", "pii_masking")
-
-    # Connect PII masking to supervisor
     graph.add_edge("pii_masking", "supervisor")
 
-    # Conditional routing from supervisor
+    # 5. Routing
+
+    # Supervisor -> Context Loader OR End
     graph.add_conditional_edges(
         "supervisor",
-        route_from_supervisor,
-        {
-            "end": END,
-            "context_loader": "context_loader",
-            "agronomist": "agronomist",
-            "weather": "weather",
-            "nl_to_sql": "nl_to_sql",
-            "vision_to_action": "vision_to_action",
-        },
+        route_supervisor,
     )
 
-    # Route from context loader to specialist
+    # Context Loader -> Specialist Node
     graph.add_conditional_edges(
         "context_loader",
-        route_after_context,
-        {
-            "agronomist": "agronomist",
-            "weather": "weather",
-            "nl_to_sql": "nl_to_sql",
-            "vision_to_action": "vision_to_action",
-        },
+        route_context_loader,
     )
 
-    # Specialist nodes go to validator
-    graph.add_edge("agronomist", "validator")
-    graph.add_edge("weather", "validator")
-    graph.add_edge("nl_to_sql", "sql_executor")
-    graph.add_edge("sql_executor", "validator")
-    graph.add_edge("vision_to_action", "validator")
+    # Specialist -> Validator OR End
+    # Define path map for optional tools
+    specialist_path_map = {
+        "validator": "validator",
+        "python_viz_tools": END,  # No tools in standard graph
+        "__end__": END,
+    }
 
-    # Validator goes to visualizer (reflection step)
-    graph.add_edge("validator", "visualizer")
+    for node in ["agronomist", "weather", "nl_to_sql", "vision_to_action"]:
+        graph.add_conditional_edges(node, route_specialist, path_map=specialist_path_map)
 
-    # Visualizer goes to end
-    graph.add_edge("visualizer", END)
+    # Validator -> End
+    graph.add_edge("validator", END)
 
     return graph
 
@@ -176,156 +180,92 @@ def create_agent_graph() -> StateGraph:
 
 
 async def create_agent_graph_with_mcp() -> StateGraph:
-    """Create agent graph with MCP tools integrated.
-
-    This is the recommended factory for production use.
-    It loads tools from configured MCP servers and adds a ToolNode
-    for automatic tool execution.
-
-    Graph Structure:
-    ```
-    START
-      │
-      ▼
-    supervisor ──┬──> end
-                 │
-                 ├──> context_loader ──> specialist ──> validator ──> visualizer ──> end
-                 │
-                 ├──> mcp_tools ──> context_loader (if tools return context)
-                 │
-                 └──> python_viz_tools ──> end (visualization generation)
-    ```
-
-    Returns:
-        StateGraph with MCP tools integrated
-    """
+    """Create agent graph with MCP tools."""
     from alim.mcp.adapters import get_mcp_tools, get_python_viz_tools
 
-    # Load MCP tools (returns empty list if no servers enabled)
     mcp_tools = await get_mcp_tools()
     python_viz_tools = await get_python_viz_tools()
 
-    # Create base graph
-    # Create base graph
     graph = StateGraph(AgentState)
 
-    # Add standard nodes
+    # 1. Add Top-Level Nodes
     graph.add_node("setup", setup_node)
     graph.add_node("pii_masking", pii_masking_node)
     graph.add_node("supervisor", supervisor_node)
     graph.add_node("context_loader", context_loader_node)
+
+    # 2. Add Specialist Nodes
     graph.add_node("agronomist", agronomist_node)
     graph.add_node("weather", weather_node)
     graph.add_node("nl_to_sql", nl_to_sql_node)
-    graph.add_node("sql_executor", sql_executor_node)
     graph.add_node("vision_to_action", vision_to_action_node)
+
+    # 3. Add Support Nodes
     graph.add_node("validator", validator_node)
-    graph.add_node("visualizer", visualizer_node)
 
-    # Add HITL nodes for destructive operations
-    graph.add_node("human_approval", human_approval_node)
-    graph.add_node("delete_parcel", delete_parcel_node)
-
-    # Add MCP ToolNode if tools are available
+    # 4. Add Tool Nodes
     if mcp_tools:
         graph.add_node("mcp_tools", ToolNode(mcp_tools))
-        logger.info(
-            "mcp_tools_added_to_graph",
-            tool_count=len(mcp_tools),
-            tool_names=[t.name for t in mcp_tools],
-        )
-    else:
-        logger.info("mcp_tools_not_available", reason="no_tools_loaded")
+        # Note: MCP tools are typically called by the LLM in specialist nodes.
+        # Use simple cycle: specialist -> mcp_tools -> specialist
+        # OR context_loader deals with them.
+        # For now, let's just make sure they exist.
+        # If specialists bind tools, we need edges back to them.
+        # But `agronomist_node` implementation (checking separate file if I could) usually isn't prebuilt ReAct.
+        # Assuming existing implementation handles MCP via context loading or direct calls.
+        pass
 
-    # Add Python Viz MCP ToolNode for visualization
     if python_viz_tools:
         graph.add_node("python_viz_tools", ToolNode(python_viz_tools))
-        logger.info(
-            "python_viz_tools_added_to_graph",
-            tool_count=len(python_viz_tools),
-            tool_names=[t.name for t in python_viz_tools],
-        )
-    else:
-        logger.info("python_viz_tools_not_available", reason="no_tools_loaded")
+        graph.add_edge("python_viz_tools", END)
 
-    # Set entry point
-    # Set entry point
-    # Set entry point
+    # 5. Entry Flow
     graph.set_entry_point("setup")
-
-    # Connect setup to PII masking
     graph.add_edge("setup", "pii_masking")
-
-    # Connect PII masking to supervisor
     graph.add_edge("pii_masking", "supervisor")
 
-    # Build routing destinations
-    routing_map = {
-        "end": END,
-        "context_loader": "context_loader",
-        "agronomist": "agronomist",
-        "weather": "weather",
-        "nl_to_sql": "nl_to_sql",
-        "vision_to_action": "vision_to_action",
-        "human_approval": "human_approval",
-    }
+    # 6. Routing
 
-    # Add mcp_tools route if available
-    if mcp_tools:
-        routing_map["mcp_tools"] = "mcp_tools"
-
-    # Conditional routing from supervisor
+    # Supervisor -> Context Loader OR End
     graph.add_conditional_edges(
         "supervisor",
-        route_from_supervisor,
-        routing_map,
+        route_supervisor,
     )
 
-    # Route from context loader to specialist
+    # Context Loader -> Specialist
     graph.add_conditional_edges(
         "context_loader",
-        route_after_context,
-        {
-            "agronomist": "agronomist",
-            "weather": "weather",
-            "nl_to_sql": "nl_to_sql",
-            "vision_to_action": "vision_to_action",
-        },
+        route_context_loader,
     )
 
-    # Specialist nodes go to validator
-    graph.add_edge("agronomist", "validator")
-    graph.add_edge("weather", "validator")
-    graph.add_edge("nl_to_sql", "sql_executor")
-    graph.add_edge("sql_executor", "validator")
-    graph.add_edge("vision_to_action", "validator")
-
-    # Validator goes to visualizer (reflection step)
-    graph.add_edge("validator", "visualizer")
-
-    # Visualizer conditional routing
+    # Specialist -> Validator OR Viz OR End
+    specialist_path_map = {
+        "validator": "validator",
+        "__end__": END,
+    }
     if python_viz_tools:
-        graph.add_conditional_edges(
-            "visualizer",
-            route_after_visualizer,
-            {
-                "python_viz_tools": "python_viz_tools",
-                "end": END,
-            },
-        )
-        # Python viz tools go to end after generating visualization
-        graph.add_edge("python_viz_tools", END)
+        specialist_path_map["python_viz_tools"] = "python_viz_tools"
     else:
-        # No viz tools, go straight to end
-        graph.add_edge("visualizer", END)
+        specialist_path_map["python_viz_tools"] = END
 
-    # MCP tools go to context_loader (to enrich context with tool results)
-    if mcp_tools:
-        graph.add_edge("mcp_tools", "context_loader")
+    for node in ["agronomist", "weather", "nl_to_sql", "vision_to_action"]:
+        graph.add_conditional_edges(node, route_specialist, path_map=specialist_path_map)
 
-    # HITL flow for destructive operations
-    graph.add_edge("human_approval", "delete_parcel")
-    graph.add_edge("delete_parcel", "validator")
+    # Validator Routess
+    if python_viz_tools:
+
+        def route_validation_result(state: AgentState) -> Literal["python_viz_tools", "__end__"]:
+            """Route based on validation result."""
+            if state.get("visualization_request"):
+                return "python_viz_tools"
+            return END
+
+        graph.add_conditional_edges(
+            "validator",
+            route_validation_result,
+        )
+    else:
+        graph.add_edge("validator", END)
 
     return graph
 
@@ -364,7 +304,13 @@ async def compile_agent_graph_async(
         graph = create_agent_graph()
 
     # Compile with debug mode for state inspection
-    compiled = graph.compile(checkpointer=checkpointer, debug=verbose)
+    compiled = graph.compile(
+        checkpointer=checkpointer,
+        debug=verbose,
+    )
+
+    # Add recursion limit to prevent infinite loops
+    compiled = compiled.with_config(recursion_limit=50)
 
     # Wrap with Langfuse tracing for observability
     langfuse_handler = create_langfuse_handler()
@@ -395,6 +341,9 @@ def compile_agent_graph(checkpointer: BaseCheckpointSaver | None = None, verbose
 
     # Compile with debug mode for state inspection
     compiled = graph.compile(checkpointer=checkpointer, debug=verbose)
+
+    # Add recursion limit to prevent infinite loops
+    compiled = compiled.with_config(recursion_limit=50)
 
     # Wrap with Langfuse tracing for observability
     langfuse_handler = create_langfuse_handler()

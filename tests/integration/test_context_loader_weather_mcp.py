@@ -36,8 +36,11 @@ async def test_context_loader_calls_weather_mcp(initial_state):
 
     # Mock database calls
     with patch("alim.agent.nodes.context_loader.get_db_session") as mock_get_db:
-        mock_session = AsyncMock()
-        mock_get_db.return_value.__aenter__.return_value = mock_session
+        # Mock Redis Cache to avoid connection errors
+        with patch("alim.agent.nodes.context_loader.CachedUserRepository.get_context_for_ai"):
+            with patch("alim.agent.nodes.context_loader.CachedFarmRepository.get_context_for_ai"):
+                mock_session = AsyncMock()
+                mock_get_db.return_value.__aenter__.return_value = mock_session
 
         # Mock user and farm repos
         with patch("alim.agent.nodes.context_loader.UserRepository") as mock_user_repo_class:
@@ -93,16 +96,17 @@ async def test_context_loader_calls_weather_mcp(initial_state):
                     }
 
                     # Call context_loader
-                    result = await context_loader_node(initial_state)
+                    command = await context_loader_node(initial_state)
 
                     # Assertions
-                    assert result is not None
-                    assert "mcp_traces" in result
-                    assert len(result["mcp_traces"]) > 0
-                    assert result["mcp_traces"][0]["server"] == "openweather"
-                    assert result["mcp_traces"][0]["success"] is True
-                    assert "weather" in result
-                    assert result["weather"] is not None
+                    assert command is not None
+                    updates = command.update
+                    assert "mcp_traces" in updates
+                    assert len(updates["mcp_traces"]) > 0
+                    assert updates["mcp_traces"][0]["server"] == "openweather"
+                    assert updates["mcp_traces"][0]["success"] is True
+                    assert "weather" in updates
+                    assert updates["weather"] is not None
 
 
 @pytest.mark.asyncio
@@ -142,14 +146,15 @@ async def test_context_loader_respects_consent(initial_state):
                 mock_handler = AsyncMock()
                 mock_handler_class.return_value = mock_handler
 
-                result = await context_loader_node(initial_state)
+                command = await context_loader_node(initial_state)
 
                 # Weather MCP should not have been called
                 mock_handler.get_forecast.assert_not_called()
 
                 # Should use synthetic weather instead
-                assert "weather" in result
-                assert result["weather"].forecast_summary is not None
+                updates = command.update
+                assert "weather" in updates
+                assert updates["weather"].forecast_summary is not None
 
 
 @pytest.mark.asyncio
@@ -187,13 +192,14 @@ async def test_context_loader_fallback_on_mcp_failure(initial_state):
                 mock_handler_class.return_value = mock_handler
                 mock_handler.get_forecast.side_effect = Exception("API error")
 
-                result = await context_loader_node(initial_state)
+                command = await context_loader_node(initial_state)
 
                 # Should have MCP trace with failure
-                assert len(result["mcp_traces"]) > 0
-                assert result["mcp_traces"][0]["success"] is False
+                updates = command.update
+                assert len(updates["mcp_traces"]) > 0
+                assert updates["mcp_traces"][0]["success"] is False
 
                 # Should fallback to synthetic weather
-                assert "weather" in result
-                assert result["weather"] is not None
-                assert result["weather"].forecast_summary is not None
+                assert "weather" in updates
+                assert updates["weather"] is not None
+                assert updates["weather"].forecast_summary is not None

@@ -83,27 +83,47 @@ async def save_alim_persona_to_db(
         async with get_db_session() as session:
             # Ensure FK uses users.id (UUID), not the email identifier
             if not chainlit_user_id or "-" not in chainlit_user_id:
-                result = await session.execute(
-                    text('SELECT "id" FROM users WHERE "identifier" = :identifier'),
-                    {"identifier": email},
-                )
-                row = result.first()
-                if row:
-                    chainlit_user_id = row[0]
-                else:
-                    chainlit_user_id = str(uuid.uuid4())
+                # OPTIMISTIC STRATEGY: Try to insert, if fails, then select.
+                # This avoids race conditions better than Select-then-Insert.
+
+                # Check if user exists first to respect existing ID if possible (backward copmatibility)
+                # But to be safe against concurrency, we rely on the DB constraint.
+
+                try:
+                    new_user_uuid = str(uuid.uuid4())
                     await session.execute(
                         text(
                             'INSERT INTO users ("id", "identifier", "createdAt", "metadata") '
                             "VALUES (:id, :identifier, :created_at, :metadata)"
                         ),
                         {
-                            "id": chainlit_user_id,
+                            "id": new_user_uuid,
                             "identifier": email,
                             "created_at": datetime.utcnow().isoformat(),
                             "metadata": "{}",
                         },
                     )
+                    chainlit_user_id = new_user_uuid
+                except Exception as e:
+                    # If duplicate key (IntegrityError), ignore and fetch existing
+                    # We catch general Exception to be safe, but ideally check for IntegrityError
+                    # if "unique constraint" in str(e) or "IntegrityError" in str(type(e)):
+                    result = await session.execute(
+                        text('SELECT "id" FROM users WHERE "identifier" = :identifier'),
+                        {"identifier": email},
+                    )
+                    row = result.first()
+                    if row:
+                        chainlit_user_id = row[0]
+                        logger.info(
+                            "user_already_exists_using_id", user_id=chainlit_user_id, email=email
+                        )
+                    else:
+                        # Genuine error if we can't find it after failed insert
+                        logger.error("user_creation_failed_and_not_found", error=str(e))
+                        raise e
+                # else:
+                #     raise e
 
             persona_id = str(uuid.uuid4())
             await session.execute(

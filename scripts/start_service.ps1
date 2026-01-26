@@ -1,11 +1,8 @@
 # ════════════════════════════════════════════════════════════════════════════
-# 🌿 ALİM — Start Service Helper
+# 🌿 ALİM — Start Service Entrypoint
 # ════════════════════════════════════════════════════════════════════════════
-# centralized script to start individual services with correct environment
-#
-# Usage:
-#   ./start_service.ps1 -Service "FastAPI"
-#   ./start_service.ps1 -Service "UI" -Headless
+# Professional, simplified service starter.
+# Usage: ./start_service.ps1 -Service "FastAPI"
 # ════════════════════════════════════════════════════════════════════════════
 
 param (
@@ -16,92 +13,52 @@ param (
     [switch]$Headless = $false
 )
 
-$ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$envFile = "$projectRoot\.env"
+Set-Location $projectRoot
 
-# Force UTF-8 for Python output to prevent emoji crashes on Windows
-$env:PYTHONUTF8 = "1"
-
-
-# 1. Load .env file
-if (Test-Path $envFile) {
-    Get-Content $envFile | Where-Object { $_ -match '^\s*[^#]' -and $_ -match '=' } | ForEach-Object {
-        $key, $value = $_ -split '=', 2
-        $key = $key.Trim()
-        $value = $value.Trim()
-
-        # Remove trailing comments (e.g., "value # comment" -> "value")
-        if ($value -match '^(.*?)(\s+#.*)$') {
-            $value = $matches[1].Trim()
-        }
-
-        # Remove quotes if present
-
-        if ($value -match '^"(.*)"$') { $value = $matches[1] }
-        elseif ($value -match "^'(.*)'$") { $value = $matches[1] }
-
-        # Set environment variable
-        [System.Environment]::SetEnvironmentVariable($key, $value, [System.EnvironmentVariableTarget]::Process)
-
-        # COMPATIBILITY HACK:
-        # If variable starts with ALIM_, also set the non-prefixed version
-        # so legacy code (demo-ui) works without changes.
-        if ($key -like "ALIM_*") {
-            $legacyKey = $key -replace "^ALIM_", ""
-            [System.Environment]::SetEnvironmentVariable($legacyKey, $value, [System.EnvironmentVariableTarget]::Process)
-        }
-    }
-}
-else {
-    Write-Warning "⚠️  .env file not found at $envFile. Using defaults."
-}
-
-# 2. Set Dynamic Environment Variables
-$venvScripts = "$projectRoot\.venv\Scripts"
+# 1. Prepare Environment
 $env:PYTHONPATH = "$projectRoot\src"
-if ($Service -eq "UI") {
-    $env:PYTHONPATH = "$projectRoot\src;$projectRoot\demo-ui"
+$venv = "$projectRoot\.venv\Scripts"
+
+# Load .env natively
+if (Test-Path ".env") {
+    Get-Content ".env" | ForEach-Object {
+        $line = $_.Trim()
+        if ($line -and -not $line.StartsWith("#") -and $line.Contains("=")) {
+            # Strip inline comments (everything after #)
+            $content = $line -split "#", 2 | Select-Object -First 1
+            $parts = $content.Trim() -split '=', 2
+            if ($parts.Count -eq 2) {
+                $key = $parts[0].Trim()
+                $value = $parts[1].Trim()
+                [System.Environment]::SetEnvironmentVariable($key, $value, [System.EnvironmentVariableTarget]::Process)
+            }
+        }
+    }
 }
 
-# 3. Define Commands
+# 2. Define Commands
 $commands = @{
-    "FastAPI"   = {
-        & "$venvScripts\python.exe" -m uvicorn alim.api.main:app --host localhost --port 8000 --reload --log-level info
-    }
+    "FastAPI"   = { & "$venv\uvicorn.exe" alim.api.main:app --host localhost --port 8000 --reload }
     "UI"        = {
-        if ($Headless) {
-            & "$venvScripts\chainlit.exe" run app.py -w --port 8501 --headless
-        }
-        else {
-            & "$venvScripts\chainlit.exe" run app.py -w --port 8501
-        }
+        $env:PYTHONPATH = "$projectRoot\src;$projectRoot\demo-ui"
+        Set-Location "demo-ui"
+        $args = @("run", "app.py", "-w", "--port", "8501")
+        if ($Headless) { $args += "--headless" }
+        & "$venv\chainlit.exe" $args
     }
     "LangGraph" = {
-        & "$venvScripts\langgraph.exe" dev --no-browser
+        Set-Location "deploy\langgraph"
+        & "$venv\langgraph.exe" dev --config "langgraph.json" --no-browser
     }
-    "MCP"       = {
-        & "$venvScripts\python.exe" -m uvicorn alim.mcp_server.main:app --port 7777 --reload
-    }
-    "Docker"    = {
-        docker-compose -f "$projectRoot\docker-compose.local.yml" up -d postgres ollama redis langfuse-db langfuse-server
-    }
+    "MCP"       = { & "$venv\python.exe" -m uvicorn alim.mcp_server.main:app --port 7777 --reload }
+    "Docker"    = { docker-compose -f "docker-compose.local.yml" up -d postgres ollama redis langfuse-db langfuse-server }
 }
 
-# 4. Execute
+# 3. Execute
 Write-Host "🌿 Starting $Service..." -ForegroundColor Cyan
 if ($commands.ContainsKey($Service)) {
-    # Change specific working directories if needed
-    if ($Service -eq "UI") { Set-Location "$projectRoot\demo-ui" }
-    else { Set-Location $projectRoot }
-
-    try {
-        & $commands[$Service]
-    }
-    catch {
-        Write-Error "Failed to start $Service : $_"
-        exit 1
-    }
+    & $commands[$Service]
 }
 else {
     Write-Error "Unknown service: $Service"

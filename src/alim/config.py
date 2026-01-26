@@ -233,6 +233,8 @@ class Settings(BaseSettings):
     jwt_secret: str = "dev-secret-change-in-production"
     jwt_algorithm: str = "HS256"
     jwt_expiry_hours: int = 24
+    api_key_header: str = "X-API-Key"
+    api_key_secret: str = "dev-api-key-change-in-production"  # For 3rd party access
 
     # ===== Rate Limiting =====
     rate_limit_requests_per_minute: int = 30

@@ -5,14 +5,15 @@ These routes proxy to the LangGraph Dev Server using the official SDK.
 """
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from langgraph_sdk import get_client
 from pydantic import BaseModel, Field
 
+from alim.api.dependencies.api_key import get_api_key
 from alim.config import settings
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_api_key)])
 
 
 # ============================================================
@@ -118,21 +119,7 @@ async def invoke_graph(request: GraphInvokeRequest):
     }
 
     try:
-        # 3. Invoke (Wait for completion)
-        # client.runs.wait returns the final state usually in the 'output' key or similar depending on implementation
-        # However, it often returns the run object.
-        # Standard pattern for 'invoke' equivalent is waiting and then getting state,
-        # but let's assume wait returns the full result as the custom client did, or we use client.runs.wait()
-
-        # Note: SDK 'wait' might return the run. We might need to fetch state.
-        # But SDK usually has a convenience method?
-        # Let's use the low-level 'wait' which corresponds to POST /runs?wait=true
-
-        # Using stream with stream_mode='values' and taking the last event is arguably safer/more uniform
-        # but let's try the wait method if available.
-        # Recent SDK has `client.runs.wait`.
-
-        # We will iterate stream with values to get the final state, which is robust.
+        # 3. Invoke using stream(stream_mode="values") to get final state
         final_state = {}
         async for event in client.runs.stream(
             thread_id=thread_id,
@@ -144,127 +131,71 @@ async def invoke_graph(request: GraphInvokeRequest):
             if event.get("event") == "values":
                 final_state = event.get("data", {})
 
-        # Alternatively, if we want strict 'wait' behavior without streaming overhead:
-        # run = await client.runs.wait(thread_id=thread_id, assistant_id=..., input=...)
-        # But `wait` signature might vary. `stream` is very standard in LangGraph.
-
-        # Extract response from final state
-        response_text = final_state.get("current_response", "")
+        # Extract response - priority order
+        response_text = final_state.get("current_response")
         if not response_text:
-            # Fallback checks
             messages = final_state.get("messages", [])
             if messages:
                 last_msg = messages[-1]
-                if isinstance(last_msg, dict):
-                    response_text = last_msg.get("content", "")
+                response_text = (
+                    last_msg.get("content")
+                    if isinstance(last_msg, dict)
+                    else getattr(last_msg, "content", "")
+                )
 
         return GraphInvokeResponse(
-            response=response_text or "Cavab əldə edilmədi.",
+            response=response_text or "Bağışlayın, cavab hazırlana bilmədi.",
             thread_id=thread_id,
             model=settings.active_llm_model,
             metadata={
-                "provider": settings.llm_provider.value,
-                "user_id": request.user_id,
-                "farm_id": request.farm_id,
+                "nodes_visited": final_state.get("nodes_visited", []),
+                "intent": final_state.get("intent"),
             },
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Graph execution failed: {e}") from e
+        raise HTTPException(status_code=500, detail=f"Graph execution failed: {str(e)}")
 
 
 @router.post("/graph/stream", tags=["Graph"])
 async def stream_graph(request: GraphInvokeRequest):
-    """Stream graph execution events in real-time using official SDK."""
+    """Stream graph execution events in real-time."""
     client = _get_sdk_client()
 
     async def event_generator():
-        # 1. Ensure Thread (Simplified for streaming, might need creation)
         nonlocal request
         thread_id = request.thread_id
         if not thread_id:
-            try:
-                thread = await client.threads.create(metadata={"user_id": request.user_id})
-                thread_id = thread["thread_id"]
-                # We should probably inform client of new thread_id, but SSE is one-way usually.
-                # The client will see it in events if we send it.
-            except Exception as e:
-                yield f"event: error\ndata: Thread creation failed: {e}\n\n"
-                return
+            thread = await client.threads.create()
+            thread_id = thread["thread_id"]
 
-        # 2. Input
         serialized_state = {
             "current_input": request.message,
             "user_id": request.user_id,
             "language": request.language,
-            "thread_id": thread_id,
-        }
-        if request.scenario_context:
-            serialized_state["scenario_context"] = request.scenario_context
-
-        config = {
-            "metadata": {
-                "model": settings.active_llm_model,
-                "provider": settings.llm_provider.value,
-                "user_id": request.user_id,
-                "farm_id": request.farm_id,
-            }
         }
 
         try:
-            # 3. Stream
-            # Native SDK stream usage
             async for event in client.runs.stream(
                 thread_id=thread_id,
                 assistant_id=settings.langgraph_graph_id,
                 input=serialized_state,
-                config=config,
-                stream_mode=["messages", "updates"],  # Request both messages and updates
+                stream_mode=["messages", "updates"],
             ):
-                # Handle 'messages' event (LLM tokens)
-                if event.get("event") == "messages/partial":
-                    # This might differ based on SDK version.
-                    # SDK usually emits:
-                    # event: messages
-                    # data: [chunk]
-                    #
-                    # Or event: metadata, etc.
-                    #
-                    # Let's map SDK events to our frontend SSE format.
-                    # Our frontend expects:
-                    # event: node -> node name
-                    # event: token -> text content
-                    # event: done
+                # Map LangGraph SDK events to Frontend SSE format
+                if event["event"] == "messages/partial":
+                    for chunk in event["data"]:
+                        if chunk.get("role") == "assistant" and "content" in chunk:
+                            yield f"event: token\ndata: {chunk['content']}\n\n"
 
-                    # Note: SDK events are structurally different.
-                    # We need to map them.
-                    # event types: "values", "messages", "updates", "error" etc.
-
-                    data = event.get("data", [])
-                    if event.get("event") == "messages":
-                        # data is list of message chunks
-                        for chunk in data:
-                            if chunk.get("role") == "assistant" and "content" in chunk:
-                                yield f"event: token\ndata: {chunk['content']}\n\n"
-
-                elif event.get("event") == "updates":
-                    # Node update
-                    data = event.get("data", {})
-                    for node_name, node_state in data.items():
-                        if node_name == "__start__":
-                            continue
+                elif event["event"] == "updates":
+                    for node_name, updates in event["data"].items():
                         yield f"event: node\ndata: {node_name}\n\n"
-
-                        # If there is a response in the state update (not streamed via messages)
-                        if isinstance(node_state, dict):
-                            # Response access for debugging or future use, but avoiding lint error
-                            _ = node_state.get("current_response", "")
-                            pass
 
             yield "event: done\ndata: [DONE]\n\n"
 
         except Exception as e:
-            yield f"event: error\ndata: Graph execution failed: {e}\n\n"
+            yield f"event: error\ndata: {str(e)}\n\n"
 
     return StreamingResponse(
         event_generator(),

@@ -9,10 +9,10 @@ The Supervisor is the entry point for all user messages. It:
 
 import json
 import re
-from typing import Any
 
 import structlog
 from langchain_core.runnables import RunnableConfig
+from langgraph.graph import END
 
 from alim.agent.state import (
     AgentState,
@@ -70,11 +70,12 @@ INTENT_TO_NODE = {
     UserIntent.PLANTING: "agronomist",
     UserIntent.CROP_ROTATION: "agronomist",
     UserIntent.WEATHER: "weather",
-    UserIntent.GREETING: "end",  # Handled directly in supervisor_node
+    UserIntent.GREETING: END,  # Handled directly in supervisor_node
     UserIntent.GENERAL_ADVICE: "agronomist",
-    UserIntent.OFF_TOPIC: "end",  # Handled directly in supervisor_node
-    UserIntent.CLARIFICATION: "end",  # Needs clarification, ask user to be more specific
+    UserIntent.OFF_TOPIC: END,  # Handled directly in supervisor_node
+    UserIntent.CLARIFICATION: END,  # Needs clarification, ask user to be more specific
     UserIntent.DATA_QUERY: "nl_to_sql",
+    UserIntent.VISION_ANALYSIS: "vision_to_action",
 }
 
 INTENT_REQUIRES_CONTEXT = {
@@ -193,166 +194,95 @@ async def classify_intent(
     return UserIntent.GENERAL_ADVICE, 0.5, "Standart təsnifat (LLM xətası)"
 
 
-async def supervisor_node(
-    state: AgentState, config: RunnableConfig | None = None
-) -> dict[str, Any]:
+async def supervisor_node(state: AgentState, config: RunnableConfig | None = None) -> dict:
     """Supervisor node - routes messages to appropriate handlers.
 
     This is the entry point for all user messages. It:
     1. Classifies the intent
-    2. Handles simple cases (greetings, off-topic) directly
-    3. Routes complex cases to specialist nodes
+    2. Determines routing (but lets graph.py handle the edge)
 
     Args:
         state: Current agent state
-        config: RunnableConfig with metadata (including model override from Chat Profiles)
+        config: RunnableConfig with metadata
 
     Returns:
-        State updates with routing decision
+        State updates (routing decision, intent, response for simple cases)
     """
     user_input = state.get("current_input", "")
     nodes_visited = state.get("nodes_visited", []).copy()
     nodes_visited.append("supervisor")
 
-    # Get conversation context if available
-    conversation_context = state.get("conversation_context", {})
-
-    logger.info(
-        "supervisor_node_start",
-        message=user_input[:100],
-        nodes_visited_count=len(nodes_visited),
-        conversation_stage=conversation_context.get("conversation_stage"),
-        crop=conversation_context.get("specific_crop"),
-    )
-
-    # Classify intent (passing config for model selection)
+    # Classify intent
     intent, confidence, reasoning = await classify_intent(user_input, config)
 
     logger.info(
-        "intent_classified",
+        "supervisor_node_process",
         intent=intent.value if intent else "unknown",
         confidence=confidence,
-        reasoning=reasoning[:100] if reasoning else "",
     )
 
-    # Determine target node
-    target_node = INTENT_TO_NODE.get(intent, "agronomist")
-    requires_context = INTENT_REQUIRES_CONTEXT.get(intent, [])
-
-    # Handle simple cases directly
-    if intent == UserIntent.GREETING:
-        import random
-
-        response = random.choice(GREETING_RESPONSES)
-
-        logger.info(
-            "supervisor_node_complete",
-            route="end",
-            intent=intent.value,
-            handler="direct_response",
-        )
-
-        return {
-            "routing": RoutingDecision(
-                target_node="end",
-                intent=intent,
-                confidence=confidence,
-                reasoning=reasoning,
-            ),
-            "intent": intent,
-            "intent_confidence": confidence,
-            "current_response": response,
-            "nodes_visited": nodes_visited,
-            "messages": [add_assistant_message(state, response, "supervisor", intent)],
-        }
-
-    if intent == UserIntent.OFF_TOPIC:
-        logger.info(
-            "supervisor_node_complete",
-            route="end",
-            intent=intent.value,
-            handler="off_topic",
-        )
-
-        return {
-            "routing": RoutingDecision(
-                target_node="end",
-                intent=intent,
-                confidence=confidence,
-                reasoning=reasoning,
-            ),
-            "intent": intent,
-            "intent_confidence": confidence,
-            "current_response": OFF_TOPIC_RESPONSE,
-            "nodes_visited": nodes_visited,
-            "messages": [add_assistant_message(state, OFF_TOPIC_RESPONSE, "supervisor", intent)],
-        }
-
-    if intent == UserIntent.CLARIFICATION:
-        clarification_response = (
-            "Zəhmət olmasa daha konkret ola bilərsinizmi? "
-            "Məsələn, hansı məhsul haqqında soruşursunuz və ya hansı mövzuda məlumat lazımdır?"
-        )
-        return {
-            "routing": RoutingDecision(
-                target_node="end",
-                intent=intent,
-                confidence=confidence,
-                reasoning=reasoning,
-            ),
-            "intent": intent,
-            "intent_confidence": confidence,
-            "current_response": clarification_response,
-            "nodes_visited": nodes_visited,
-            "messages": [
-                add_assistant_message(state, clarification_response, "supervisor", intent)
-            ],
-        }
-
-    # Route to specialist
-    logger.info(
-        "supervisor_node_complete",
-        route=target_node,
-        intent=intent.value,
-        confidence=confidence,
-        requires_context=requires_context,
-    )
-
-    return {
-        "routing": RoutingDecision(
-            target_node=target_node,
-            intent=intent,
-            confidence=confidence,
-            reasoning=reasoning,
-            requires_context=requires_context,
-        ),
+    updates = {
         "intent": intent,
         "intent_confidence": confidence,
         "nodes_visited": nodes_visited,
     }
 
+    # Handle simple cases directly (generating response but not ending flow here)
+    if intent == UserIntent.GREETING:
+        import random
 
-# ============================================================
-# Conditional Edge Functions
-# ============================================================
+        response = random.choice(GREETING_RESPONSES)
+        updates["current_response"] = response
+        updates["messages"] = [add_assistant_message(state, response, "supervisor", intent)]
+        # Routing: End immediately
+        updates["routing"] = RoutingDecision(
+            target_node="end",
+            intent=intent,
+            confidence=confidence,
+            reasoning="Greeting handled directly",
+        )
+        return updates
 
+    if intent == UserIntent.OFF_TOPIC:
+        updates["current_response"] = OFF_TOPIC_RESPONSE
+        updates["messages"] = [
+            add_assistant_message(state, OFF_TOPIC_RESPONSE, "supervisor", intent)
+        ]
+        updates["routing"] = RoutingDecision(
+            target_node="end",
+            intent=intent,
+            confidence=confidence,
+            reasoning="Off-topic handled directly",
+        )
+        return updates
 
-def route_from_supervisor(state: AgentState) -> str:
-    """Determine next node based on supervisor's routing decision.
+    if intent == UserIntent.CLARIFICATION:
+        response = "Zəhmət olmasa daha konkret ola bilərsinizmi?"
+        updates["current_response"] = response
+        updates["messages"] = [add_assistant_message(state, response, "supervisor", intent)]
+        updates["routing"] = RoutingDecision(
+            target_node="end",
+            intent=intent,
+            confidence=confidence,
+            reasoning="Clarification requested",
+        )
+        return updates
 
-    Used as a conditional edge in the graph.
-    """
-    routing = state.get("routing")
+    # Complex cases: Determine required context and next step
+    requires_context = INTENT_REQUIRES_CONTEXT.get(intent, [])
 
-    if routing is None:
-        return "agronomist"  # Default
+    # Determine target subgraph
+    target_node = "specialist_subgraph"
+    if intent == UserIntent.DELETE_PARCEL:
+        target_node = "hitl_subgraph"
 
-    # If response already generated (greeting/off-topic), end
-    if routing.target_node == "end":
-        return "end"
+    # Update routing decision
+    updates["routing"] = RoutingDecision(
+        target_node=target_node,
+        intent=intent,
+        confidence=confidence,
+        reasoning=reasoning,
+        requires_context=requires_context,
+    )
 
-    # Check if context loading is needed
-    if routing.requires_context:
-        return "context_loader"
-
-    return routing.target_node
+    return updates

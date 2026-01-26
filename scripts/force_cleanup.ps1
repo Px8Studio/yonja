@@ -9,7 +9,7 @@ $ErrorActionPreference = 'SilentlyContinue'
 Write-Host "`n🧹 ALİM — Port Cleanup" -ForegroundColor Cyan
 Write-Host "Checking for lingering processes (Python, Chainlit, LangGraph)..." -ForegroundColor DarkGray
 
-$targets = "python", "chainlit", "langgraph"
+$targets = "python", "chainlit", "langgraph", "uvicorn"
 $count = 0
 
 foreach ($target in $targets) {

@@ -1,29 +1,18 @@
-# ════════════════════════════════════════════════════════════════════════════
-# 🌿 ALİM — Start All (CLI Wrapper)
-# ════════════════════════════════════════════════════════════════════════════
-# Wrapper around start_service.ps1 to start everything in background.
-# ════════════════════════════════════════════════════════════════════════════
+# 🌿 ALİM — Start All (Simplified)
+# Starts all services in foreground/background windows.
 
-$ErrorActionPreference = "Continue"
 $projectRoot = Split-Path -Parent $PSScriptRoot
 
-Write-Host "`n🌿 ALİM — Starting Services (CLI Mode)`n" -ForegroundColor Cyan
+Write-Host "`n🌿 ALİM — Starting All Services`n" -ForegroundColor Cyan
 
-# 1. Start Docker (blocking, wait for it)
-Write-Host "🐳 Starting Docker..." -ForegroundColor Yellow
+# 1. Start Docker
 pwsh -File "$projectRoot\scripts\start_service.ps1" -Service Docker
-Write-Host "✅ Docker started" -ForegroundColor Green
 
-# 2. Start Python Services (Hidden Background Windows)
-$services = "FastAPI", "LangGraph", "MCP"
+# 2. Start Others in Background Windows
+$services = "FastAPI", "LangGraph", "MCP", "UI"
 foreach ($s in $services) {
-    Write-Host "🌿 Starting $s..." -ForegroundColor Yellow
-    Start-Process pwsh -ArgumentList "-File", "$projectRoot\scripts\start_service.ps1", "-Service", $s -WindowStyle Hidden
+    Write-Host "🚀 Starting $s..." -ForegroundColor Green
+    Start-Process "pwsh" -ArgumentList "-File", "$projectRoot\scripts\start_service.ps1", "-Service", $s -NoNewWindow:$false
 }
 
-# 3. Start UI (Headless, Background)
-Write-Host "🖥️ Starting UI..." -ForegroundColor Yellow
-Start-Process pwsh -ArgumentList "-File", "$projectRoot\scripts\start_service.ps1", "-Service", "UI", "-Headless" -WindowStyle Hidden
-
-Write-Host "`n✅ All services started in background windows!" -ForegroundColor Green
-Write-Host "   Run 'scripts/stop_all.ps1' or check Task Manager to stop." -ForegroundColor DarkGray
+Write-Host "`n✅ Done." -ForegroundColor Green

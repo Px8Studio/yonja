@@ -14,7 +14,13 @@ from typing import Any
 
 import structlog
 
-from alim.agent.state import AgentState, FarmContext, MCPTrace, UserContext, WeatherContext
+from alim.agent.state import (
+    AgentState,
+    FarmContext,
+    MCPTrace,
+    UserContext,
+    WeatherContext,
+)
 from alim.data.cache import CachedFarmRepository, CachedUserRepository
 from alim.data.database import get_db_session
 from alim.data.repositories.farm_repo import FarmRepository
@@ -25,7 +31,7 @@ from alim.mcp.handlers.zekalab_handler import get_zekalab_handler
 logger = structlog.get_logger(__name__)
 
 
-async def context_loader_node(state: AgentState) -> dict[str, Any]:
+async def context_loader_node(state: AgentState) -> dict:
     """Load required context from database and cache.
 
     Checks the routing decision for what context is needed:
@@ -55,214 +61,79 @@ async def context_loader_node(state: AgentState) -> dict[str, Any]:
 
     updates: dict[str, Any] = {"nodes_visited": nodes_visited}
 
-    if routing is None:
-        return updates
+    # NOTE: Routing logic is now handled by graph.py using the 'routing' state
+    # We just focus on loading data here.
 
-    requires_context = routing.requires_context or []
+    if not routing:
+        # Should technically not happen if graph structure is correct,
+        # but if it does, the graph edge will handle it (or error out).
+        return updates
 
     async with get_db_session() as session:
         # Load user context
         if "user" in requires_context and user_id:
-            base_user_repo = UserRepository(session)
-            user_repo = CachedUserRepository(base_user_repo)
-            user_context = await user_repo.get_context_for_ai(user_id)
+            # OPTIMIZATION: Check if already loaded in state (persistence)
+            if state.get("user_context"):
+                logger.info("context_loader_user_cached_in_state")
+            else:
+                base_user_repo = UserRepository(session)
+                user_repo = CachedUserRepository(base_user_repo)
+                user_context = await user_repo.get_context_for_ai(user_id)
 
-            if user_context:
-                updates["user_context"] = UserContext(
-                    user_id=user_context["user_id"],
-                    display_name=user_context["display_name"],
-                    experience_level=user_context["experience_level"],
-                    preferred_language=user_context.get("preferred_language", "az"),
-                    farm_count=user_context.get("farm_count", 0),
-                    total_area_ha=user_context.get("total_area_ha", 0.0),
-                    primary_activities=user_context.get("primary_activities", []),
-                )
+                if user_context:
+                    updates["user_context"] = UserContext(
+                        user_id=user_context["user_id"],
+                        display_name=user_context["display_name"],
+                        experience_level=user_context["experience_level"],
+                        preferred_language=user_context.get("preferred_language", "az"),
+                        farm_count=user_context.get("farm_count", 0),
+                        total_area_ha=user_context.get("total_area_ha", 0.0),
+                        primary_activities=user_context.get("primary_activities", []),
+                    )
 
         # Load farm context
         if "farm" in requires_context and user_id:
-            base_farm_repo = FarmRepository(session)
-            farm_repo = CachedFarmRepository(base_farm_repo)
+            # OPTIMIZATION: Check if already loaded in state
+            if state.get("farm_context"):
+                logger.info("context_loader_farm_cached_in_state")
+            else:
+                base_farm_repo = FarmRepository(session)
+                farm_repo = CachedFarmRepository(base_farm_repo)
 
-            # Get primary farm for user
-            primary_farm = await base_farm_repo.get_primary_farm(user_id)
+                # Get primary farm for user
+                primary_farm = await base_farm_repo.get_primary_farm(user_id)
 
-            if primary_farm:
-                farm_context = await farm_repo.get_context_for_ai(primary_farm.farm_id)
+                if primary_farm:
+                    farm_context = await farm_repo.get_context_for_ai(primary_farm.farm_id)
 
-                if farm_context:
-                    # Collect alerts from context
-                    alerts = farm_context.get("alerts", [])
+                    if farm_context:
+                        # Collect alerts from context
+                        alerts = farm_context.get("alerts", [])
 
-                    updates["farm_context"] = FarmContext(
-                        farm_id=farm_context["farm_id"],
-                        farm_name=farm_context["farm_name"],
-                        farm_type=farm_context["farm_type"],
-                        region=farm_context["region"],
-                        total_area_ha=farm_context["total_area_ha"],
-                        parcel_count=farm_context.get("parcel_count", 0),
-                        parcels=farm_context.get("parcels", []),
-                        active_crops=farm_context.get("active_crops", []),
-                        alerts=alerts,
-                        center_coordinates=farm_context.get("center_coordinates"),
-                    )
+                        updates["farm_context"] = FarmContext(
+                            farm_id=farm_context["farm_id"],
+                            farm_name=farm_context["farm_name"],
+                            farm_type=farm_context["farm_type"],
+                            region=farm_context["region"],
+                            total_area_ha=farm_context["total_area_ha"],
+                            parcel_count=farm_context.get("parcel_count", 0),
+                            parcels=farm_context.get("parcels", []),
+                            active_crops=farm_context.get("active_crops", []),
+                            alerts=alerts,
+                            center_coordinates=farm_context.get("center_coordinates"),
+                        )
 
-                    # Merge alerts into state
-                    if alerts:
-                        updates["alerts"] = alerts
+                        # Merge alerts into state
+                        if alerts:
+                            updates["alerts"] = alerts
 
-        # Load weather context (Phase 4.3: Parallel MCP Orchestration)
-        if "weather" in requires_context:
+        # Load weather context & ZekaLab rules (Phase 4.3: Parallel MCP Orchestration)
+        if "weather" in requires_context or "rules" in requires_context:
             farm_context_obj = updates.get("farm_context") or state.get("farm_context")
             farm_id = farm_context_obj.farm_id if farm_context_obj else None
-            region = farm_context_obj.region if farm_context_obj else "aran"
 
-            mcp_traces = list(state.get("mcp_traces", []))
-            use_mcp = state.get("mcp_config", {}).get("use_mcp", True)
-            allow_fallback = state.get("mcp_config", {}).get("fallback_to_synthetic", True)
-            data_consent = state.get("data_consent_given", False)
-
-            weather = None
-            mcp_context = {}  # Stores additional MCP results (rules, GDD, etc.)
-
-            # Phase 4.3: Orchestrate parallel Weather + ZekaLab MCP calls
-            if use_mcp and data_consent and farm_id:
-                logger.info(
-                    "mcp_orchestration_start",
-                    farm_id=farm_id,
-                    mcp_servers=["openweather", "zekalab"],
-                )
-
-                # Prepare parallel MCP calls with timeout
-                mcp_tasks = []
-
-                # Task 1: Weather forecast
-                mcp_tasks.append(_fetch_weather_mcp(farm_id))
-
-                # Task 2: ZekaLab rules (if crop context available)
-                active_crops = farm_context_obj.active_crops if farm_context_obj else []
-                if active_crops:
-                    crop_type = active_crops[0] if isinstance(active_crops, list) else active_crops
-                    mcp_tasks.append(_fetch_zekalab_rules_mcp(farm_id, str(crop_type)))
-                else:
-                    mcp_tasks.append(_noop_task("zekalab_rules"))
-
-                try:
-                    # Execute all MCP calls in parallel with timeout
-                    results = await asyncio.wait_for(
-                        asyncio.gather(*mcp_tasks, return_exceptions=True),
-                        timeout=5.0,  # 5 second global timeout
-                    )
-
-                    # Process Weather result
-                    weather_result = results[0]
-                    if isinstance(weather_result, tuple) and len(weather_result) == 2:
-                        forecast_data, weather_trace = weather_result
-                        mcp_traces.append(weather_trace.model_dump())
-
-                        # Convert to WeatherContext
-                        from datetime import datetime
-
-                        current = forecast_data.get("current", {})
-                        weather = WeatherContext(
-                            temperature_c=current.get("temperature", 25.0),
-                            humidity_percent=current.get("humidity", 60.0),
-                            precipitation_mm=current.get("rainfall_mm", 0.0),
-                            wind_speed_kmh=current.get("wind_speed", 0.0),
-                            forecast_summary=forecast_data.get("forecast_summary"),
-                            last_updated=datetime.now(UTC),
-                        )
-                        logger.info("weather_mcp_success", farm_id=farm_id)
-
-                    elif isinstance(weather_result, Exception):
-                        logger.warning("weather_mcp_exception", error=str(weather_result))
-                        mcp_traces.append(
-                            MCPTrace(
-                                server="openweather",
-                                tool="get_forecast",
-                                input_args={"farm_id": farm_id},
-                                output={},
-                                duration_ms=0,
-                                success=False,
-                                error_message=str(weather_result),
-                            ).model_dump()
-                        )
-
-                    # Process ZekaLab result
-                    if len(results) > 1:
-                        zekalab_result = results[1]
-                        if isinstance(zekalab_result, tuple) and len(zekalab_result) == 2:
-                            rules_data, rules_trace = zekalab_result
-                            mcp_traces.append(rules_trace.model_dump())
-                            mcp_context["zekalab_rules"] = rules_data
-                            logger.info("zekalab_mcp_success", farm_id=farm_id)
-                        elif isinstance(zekalab_result, Exception):
-                            logger.warning("zekalab_mcp_exception", error=str(zekalab_result))
-                            mcp_traces.append(
-                                MCPTrace(
-                                    server="zekalab",
-                                    tool="get_rules",
-                                    input_args={"farm_id": farm_id},
-                                    output={},
-                                    duration_ms=0,
-                                    success=False,
-                                    error_message=str(zekalab_result),
-                                ).model_dump()
-                            )
-
-                    logger.info(
-                        "mcp_orchestration_complete",
-                        farm_id=farm_id,
-                        weather_success=bool(weather),
-                        zekalab_success=bool(mcp_context.get("zekalab_rules")),
-                        total_traces=len(mcp_traces),
-                    )
-
-                except asyncio.TimeoutError:
-                    logger.error("mcp_orchestration_timeout", farm_id=farm_id, timeout_s=5.0)
-                    mcp_traces.append(
-                        MCPTrace(
-                            server="orchestration",
-                            tool="parallel_mcp_calls",
-                            input_args={"farm_id": farm_id},
-                            output={},
-                            duration_ms=5000,
-                            success=False,
-                            error_message="Global MCP orchestration timeout (5s)",
-                        ).model_dump()
-                    )
-
-                except BaseException as e:
-                    logger.error("mcp_orchestration_error", farm_id=farm_id, error=str(e))
-                    mcp_traces.append(
-                        MCPTrace(
-                            server="orchestration",
-                            tool="parallel_mcp_calls",
-                            input_args={"farm_id": farm_id},
-                            output={},
-                            duration_ms=0,
-                            success=False,
-                            error_message=f"Orchestration error: {str(e)}",
-                        ).model_dump()
-                    )
-
-            # Fallback to synthetic if MCP didn't work
-            if not weather and allow_fallback:
-                logger.info(
-                    "using_synthetic_weather_fallback",
-                    farm_id=farm_id,
-                    reason="mcp_disabled_or_failed",
-                )
-                weather = await _get_synthetic_weather(region)
-
-            if weather:
-                updates["weather"] = weather
-
-            if mcp_traces:
-                updates["mcp_traces"] = mcp_traces
-
-            # Store additional MCP context if available
-            if mcp_context:
-                updates["mcp_context"] = mcp_context
+            mcp_data = await _orchestrate_parallel_mcp(state, farm_id, farm_context_obj)
+            updates.update(mcp_data)
 
     logger.info(
         "context_loader_node_complete",
@@ -276,8 +147,128 @@ async def context_loader_node(state: AgentState) -> dict[str, Any]:
 
 
 # ============================================================
-# Phase 4.3: Parallel MCP Helper Functions
+# Phase 4.3: Parallel MCP Orchestration
 # ============================================================
+
+
+async def _orchestrate_parallel_mcp(
+    state: AgentState, farm_id: str | None, farm_context_obj: FarmContext | None
+) -> dict[str, Any]:
+    """Orchestrate parallel Weather + ZekaLab MCP calls.
+
+    Returns:
+        Dict of state updates (weather, mcp_traces, mcp_context)
+    """
+    region = farm_context_obj.region if farm_context_obj else "aran"
+    mcp_traces = list(state.get("mcp_traces", []))
+    use_mcp = state.get("mcp_config", {}).get("use_mcp", True)
+    allow_fallback = state.get("mcp_config", {}).get("fallback_to_synthetic", True)
+    data_consent = state.get("data_consent_given", False)
+
+    updates: dict[str, Any] = {}
+    weather = None
+    mcp_context = {}
+
+    if use_mcp and data_consent and farm_id:
+        logger.info(
+            "mcp_orchestration_start",
+            farm_id=farm_id,
+            mcp_servers=["openweather", "zekalab"],
+        )
+
+        mcp_tasks = []
+        mcp_tasks.append(_fetch_weather_mcp(farm_id))
+
+        active_crops = farm_context_obj.active_crops if farm_context_obj else []
+        if active_crops:
+            crop_type = active_crops[0] if isinstance(active_crops, list) else active_crops
+            mcp_tasks.append(_fetch_zekalab_rules_mcp(farm_id, str(crop_type)))
+        else:
+            mcp_tasks.append(_noop_task("zekalab_rules"))
+
+        try:
+            results = await asyncio.wait_for(
+                asyncio.gather(*mcp_tasks, return_exceptions=True),
+                timeout=5.0,
+            )
+
+            # Process Weather
+            weather_result = results[0]
+            if isinstance(weather_result, tuple) and len(weather_result) == 2:
+                forecast_data, weather_trace = weather_result
+                mcp_traces.append(weather_trace.model_dump())
+
+                from datetime import datetime
+
+                current = forecast_data.get("current", {})
+                weather = WeatherContext(
+                    temperature_c=current.get("temperature", 25.0),
+                    humidity_percent=current.get("humidity", 60.0),
+                    precipitation_mm=current.get("rainfall_mm", 0.0),
+                    wind_speed_kmh=current.get("wind_speed", 0.0),
+                    forecast_summary=forecast_data.get("forecast_summary"),
+                    last_updated=datetime.now(UTC),
+                )
+            elif isinstance(weather_result, Exception):
+                logger.warning("weather_mcp_exception", error=str(weather_result))
+                mcp_traces.append(
+                    MCPTrace(
+                        server="openweather",
+                        tool="get_forecast",
+                        input_args={"farm_id": farm_id},
+                        output={},
+                        duration_ms=0,
+                        success=False,
+                        error_message=str(weather_result),
+                    ).model_dump()
+                )
+
+            # Process ZekaLab
+            if len(results) > 1:
+                zekalab_result = results[1]
+                if isinstance(zekalab_result, tuple) and len(zekalab_result) == 2:
+                    rules_data, rules_trace = zekalab_result
+                    mcp_traces.append(rules_trace.model_dump())
+                    mcp_context["zekalab_rules"] = rules_data
+                elif isinstance(zekalab_result, Exception):
+                    logger.warning("zekalab_mcp_exception", error=str(zekalab_result))
+                    mcp_traces.append(
+                        MCPTrace(
+                            server="zekalab",
+                            tool="get_rules",
+                            input_args={"farm_id": farm_id},
+                            output={},
+                            duration_ms=0,
+                            success=False,
+                            error_message=str(zekalab_result),
+                        ).model_dump()
+                    )
+
+        except (asyncio.TimeoutError, Exception) as e:
+            logger.error("mcp_orchestration_failed", error=str(e))
+            mcp_traces.append(
+                MCPTrace(
+                    server="orchestration",
+                    tool="parallel_mcp",
+                    input_args={"farm_id": farm_id},
+                    output={},
+                    duration_ms=0,
+                    success=False,
+                    error_message=str(e),
+                ).model_dump()
+            )
+
+    if not weather and allow_fallback:
+        weather = await _get_synthetic_weather(region)
+
+    if weather:
+        updates["weather"] = weather
+    if mcp_traces:
+        updates["mcp_traces"] = mcp_traces
+    if mcp_context:
+        updates["mcp_context"] = mcp_context
+
+    return updates
 
 
 async def _fetch_weather_mcp(farm_id: str) -> tuple[dict[str, Any], MCPTrace]:
@@ -394,16 +385,3 @@ async def _get_synthetic_weather(region: str) -> WeatherContext:
         forecast_summary=summary,
         last_updated=datetime.now(UTC),
     )
-
-
-def route_after_context(state: AgentState) -> str:
-    """Determine next node after context loading.
-
-    Routes to the target node specified in the routing decision.
-    """
-    routing = state.get("routing")
-
-    if routing is None:
-        return "default_node"  # Specify a default node if routing is None
-
-    return routing.target_node

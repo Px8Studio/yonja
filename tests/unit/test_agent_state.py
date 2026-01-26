@@ -3,6 +3,7 @@
 
 from datetime import datetime
 
+from alim.agent.nodes.setup import setup_node
 from alim.agent.state import (
     Alert,
     FarmContext,
@@ -15,7 +16,6 @@ from alim.agent.state import (
     add_assistant_message,
     create_initial_state,
     get_conversation_summary,
-    setup_node,
 )
 from langchain_core.messages import AIMessage, HumanMessage
 
@@ -291,7 +291,7 @@ class TestSetupNode:
     def test_setup_node_preserves_existing(self):
         """Test preserving existing state."""
         existing_msgs = [HumanMessage(content="Old")]
-        state = {"current_input": "New", "messages": existing_msgs, "nodes_visited": ["setup"]}
+        state = {"current_input": "Old", "messages": existing_msgs, "nodes_visited": ["setup"]}
         updates = setup_node(state)
 
         # Should NOT overwrite messages if already present

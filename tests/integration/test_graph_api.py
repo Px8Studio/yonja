@@ -17,16 +17,24 @@ from httpx import AsyncClient
 @pytest.fixture
 async def client():
     """Create async HTTP client for testing."""
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    from alim.config import settings
+    from httpx import ASGITransport
+
+    headers = {settings.api_key_header: settings.api_key_secret}
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test", headers=headers
+    ) as ac:
         yield ac
 
 
 @pytest.fixture
 def sample_message():
     """Sample message payload for graph execution."""
+    import uuid
+
     return {
         "message": "Kartof əkmək istəyirəm",
-        "thread_id": "test-thread-123",
+        "thread_id": str(uuid.uuid4()),
         "user_id": "test-user",
         "farm_id": "test-farm",
         "language": "az",
@@ -88,7 +96,7 @@ async def test_graph_invoke_with_scenario_context(client: AsyncClient, sample_me
 async def test_graph_invoke_missing_message(client: AsyncClient):
     """Test graph invocation with missing message field."""
     payload = {
-        "thread_id": "test-thread",
+        "thread_id": "00000000-0000-0000-0000-000000000000",
         "user_id": "test-user",
         "language": "az",
     }
@@ -135,7 +143,7 @@ async def test_graph_stream_success(client: AsyncClient, sample_message):
 async def test_graph_stream_missing_message(client: AsyncClient):
     """Test graph streaming with missing message field."""
     payload = {
-        "thread_id": "test-thread",
+        "thread_id": "00000000-0000-0000-0000-000000000000",
         "user_id": "test-user",
         "language": "az",
     }
@@ -214,7 +222,7 @@ async def test_get_thread_history(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_get_thread_not_found(client: AsyncClient):
     """Test retrieving non-existent thread."""
-    response = await client.get("/api/v1/graph/threads/non-existent-thread")
+    response = await client.get("/api/v1/graph/threads/00000000-0000-0000-0000-000000000001")
 
     # Should return empty history or 404
     assert response.status_code in (status.HTTP_200_OK, status.HTTP_404_NOT_FOUND)
@@ -241,7 +249,7 @@ async def test_delete_thread_success(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_delete_thread_not_found(client: AsyncClient):
     """Test deleting non-existent thread."""
-    response = await client.delete("/api/v1/graph/threads/non-existent-thread")
+    response = await client.delete("/api/v1/graph/threads/00000000-0000-0000-0000-000000000001")
 
     # Should still return success (idempotent)
     assert response.status_code in (status.HTTP_200_OK, status.HTTP_404_NOT_FOUND)

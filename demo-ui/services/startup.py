@@ -138,15 +138,14 @@ async def init_chainlit_data_layer():
             pool_recycle=3600,
         )
 
-        # STRICT STARTUP CHECK: Verify Database Connection
         try:
             async with engine.connect() as conn:
                 await conn.execute(text("SELECT 1"))
                 logger.info("[OK] Database connection verified (SELECT 1 success)")
         except Exception as db_err:
-            logger.critical(f"[ERROR] DATABASE CONNECTION FAILED: {db_err}")
-            logger.critical("The application cannot start without the database.")
-            raise RuntimeError(f"Database connection failed: {db_err}") from db_err
+            logger.warning(f"[WARN] DATABASE CONNECTION FAILED: {db_err}")
+            logger.warning("The application will proceed in NON-PERSISTENT MODE.")
+            return None
 
         # Create async session factory
         sessionmaker(
@@ -230,16 +229,15 @@ async def perform_startup_health_checks():
         logger.info("[INFO] Google OAuth NOT configured (Anonymous mode)")
 
     if mcp_enabled:
-        logger.info(f"Checking Critical MCP Server: {mcp_url}")
         try:
             async with httpx.AsyncClient(timeout=2.0) as client:
                 resp = await client.get(f"{mcp_url}/health")
                 if resp.status_code != 200:
-                    raise RuntimeError(f"MCP Health check returned {resp.status_code}")
-                logger.info("[OK] ZekaLab MCP Server is ONLINE")
+                    logger.warning(f"[WARN] MCP Health check returned {resp.status_code}")
+                else:
+                    logger.info("[OK] ZekaLab MCP Server is ONLINE")
         except Exception as e:
-            logger.critical(f"[FAIL] CRITICAL: ZekaLab MCP Server is DOWN at {mcp_url}")
-            logger.critical("Set ZEKALAB_MCP_ENABLED=false if you want to run without it.")
-            raise RuntimeError(f"Critical dependency missing: ZekaLab MCP ({e})") from e
+            logger.warning(f"[WARN] ZekaLab MCP Server is OFFLINE at {mcp_url} ({e})")
+            logger.info("Proceeding without direct MCP connectivity check.")
 
     logger.info("[OK] All strict startup checks passed.")

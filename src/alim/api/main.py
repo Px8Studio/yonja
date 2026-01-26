@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from alim.agent.memory import configure_windows_event_loop
 from alim.api.middleware.rate_limit import RateLimiter, RateLimitExceeded, RateLimitMiddleware
 from alim.api.routes import auth, chat, graph, health, models, vision
 from alim.config import settings
@@ -26,6 +27,9 @@ from alim.observability import (
     print_startup_complete,
     print_status_line,
 )
+
+# Configure Windows event loop for psycopg/PostgreSQL compatibility
+configure_windows_event_loop()
 
 
 @asynccontextmanager

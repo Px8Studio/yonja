@@ -1,9 +1,9 @@
 MÜQAVİLƏNİN PREDMETİ
-Bu müqavilə Şirkətin məhsulu olan və kənd təsərrüfatı sahəsində fəaliyyət göstərən şəxslər üçün rəqəmsal həllər təqdim edən “Yonca” mobil tətbiqinin istifadəçiləri ilə Şirkət arasındakı münasibətləri tənzimləyir.
+Bu müqavilə Şirkətin məhsulu olan və kənd təsərrüfatı sahəsində fəaliyyət göstərən şəxslər üçün rəqəmsal həllər təqdim edən “ALİM” mobil tətbiqinin istifadəçiləri ilə Şirkət arasındakı münasibətləri tənzimləyir.
 
 
 ÜMUMİ MÜDDƏALAR
-İstifadəçi “Yonca” mobil tətbiqində qeydiyyatdan keçməzdən əvvəl bu Müqavilənin şərtləri ilə tanış olmalıdır. İstifadəçinin Mobil tətbiqindən qeydiyyatdan keçməsi Müqavilənin tələbləri ilə razılaşması kimi qəbul edilir.
+İstifadəçi “ALİM” mobil tətbiqində qeydiyyatdan keçməzdən əvvəl bu Müqavilənin şərtləri ilə tanış olmalıdır. İstifadəçinin Mobil tətbiqindən qeydiyyatdan keçməsi Müqavilənin tələbləri ilə razılaşması kimi qəbul edilir.
 Müqavilənin tələblərinin rəqəmsal sahədəki irəliləyişlərə uyğunlaşdırılması məqsədilə Azərbaycan Respublikasının qanunvericiliyi də nəzərə alınmaqla, Şirkət tərəfindən birtərəfli qaydada təkmilləşdirilə bilər. Müqavilənin tələblərinə dəyişiklik edildikdə İstifadəçi mobil tətbiqinə daxil olan elektron bildiriş vasitəsilə məlumatlandırılır.
 Müqavilənin bir hissəsinin qüvvəsini itirməsi və ya ləğvi onun qüvvəsini itirməsinə səbəb olmur.
 Şirkət Fərdi İdentifikasiya Nömrəsi və ya “Asan imza” vasitəsilə Mobil tətbiqdən qeydiyyatdan keçmiş və Mobil tətbiqdən onun funksional təyinatı üzrə istifadə edən istənilən şəxsi İstifadəçi kimi tanıyır.
@@ -15,7 +15,7 @@ Bu Müqavilə Bakı şəhərində bağlanılmış hesab olunur.
 Şirkət istənilən vaxt hazırkı Müqaviləyə dəyişikliklər və (və ya) əlavələr edə bilər. Bu zaman dəyişdirilmiş Müqavilə barədə İstifadəçiyə proqramdan növbəti istifadədən öncə elektron bildiriş vasitəsilə məlumat verilir və yeni şərtlərin qəbul edilməsi xahiş olunur. İstifadəçinin Mobil tətbiqdən istifadəyə davam etməsi dəyişiklikləri (və ya əlavələri) təsdiq etməsi hesab olunur. Bu Müqavilənin şərtləri ilə razı olmadıqda Mobil tətbiqin istifadəsindən imtina edə bilər.
 İstifadəçi bu Müqavilənin şərtlərini qəbul etdikdən və qeydiyyat prosedurunu tamamladıqdan sonra Mobil tətbiqdən istifadə etmə hüququnu əldə edir.
 Bu müqavilənin məqsədləri üçün istifadə olunan əsas anlayışlar aşağıdakı mənaları ifadə edir:
-“Mobil tətbiq” – İstifadəçi tərəfindən İstifadəçinin mobil cihazına yüklənən, kənd təsərrüfatı sahəsində fəaliyyət göstərən şəxslər üçün rəqəmsal həllər təqdim edən “Yonca” mobil tətbiqi;
+“Mobil tətbiq” – İstifadəçi tərəfindən İstifadəçinin mobil cihazına yüklənən, kənd təsərrüfatı sahəsində fəaliyyət göstərən şəxslər üçün rəqəmsal həllər təqdim edən “ALİM” mobil tətbiqi;
 “Şirkət” – Azərbaycan Respublikasının qanunvericiliyinə uyğun olaraq dövlət qeydiyyatına alınmış, Mobil proqramı vasitəsilə dövlət və qeyri-dövlət qurumlarının elektron xidmətlərini təqdim edən, onun inkişafı, təşviqi, marketinq və biznes fəaliyyətini təmin edən “Digital Umbrella” Məhdud Məsuliyyətli Cəmiyyəti;
 “İstifadəçi” – Mobil tətbiqdən istifadə etmək məqsədilə qeydiyyatdan keçmiş və bu Müqavilənin şərtlərini qəbul etmiş rezident və ya qeyri-rezident fiziki şəxslər və ya nümayəndəsi vasitəsilə qeydiyyatdan keçmiş hüquqi şəxslər;
 “Mobil cihaz” – İstifadəçi tərəfindən istifadə olunan iOS və Android əməliyyat sistemlərini dəstəkləyən mobil telefon, smartfon, planşet və sair bu kimi elektron cihaz;

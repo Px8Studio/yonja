@@ -1,339 +1,410 @@
-# Architecture: Naming Conventions & Observability
+# 🏷️ Architecture: Naming & Observability
 
-**Date:** January 21, 2026
-**Issue:** Misleading naming ("farm_scenario") + Insufficient LangGraph execution visibility
+> **Purpose:** Clarify naming conventions and logging visibility gaps
+> **Updated:** January 23, 2026
 
 ---
 
-## 🎯 Problem Statement
+## 🎯 Naming Clarification
 
-### 1. Naming Mismatch
-Current naming (`farm_scenario_plans`, `save_farm_scenario()`) implies **physical farm planning**, but the reality is:
+### The "Scenario" Terminology Problem
 
-**What we're actually storing:**
-- Conversation parameters for role-play
-- Hypothetical thinking contexts
+**Current naming** (`farm_scenario_plans`, `save_farm_scenario()`) implies **physical farm planning**.
+
+**Reality:** We're storing **conversation parameters for role-play**:
 - Agent persona configurations
+- Hypothetical thinking contexts
 - Dialogue session settings
 
-**Analogy:**
-- User = Director setting the scene
-- Agent = Actor playing a role
-- "Scenario" = The parameters defining that role (crop, region, expertise)
-- Conversation = The improvised performance within those constraints
+### Semantic Map
 
-### 2. Logging Visibility Gap
-**Current LangGraph Server Logs:**
+```
+┌─────────────────────────────────────────────────────┐
+│ CONVERSATION CONTEXT (Not "Farm Scenario")          │
+├─────────────────────────────────────────────────────┤
+│ What: User-defined parameters for agent behavior    │
+│ Contains:                                           │
+│   • Crop type → conversation focus                  │
+│   • Region → climate context for role               │
+│   • Expertise level → agent persona complexity      │
+│   • Action categories → dialogue scope              │
+│                                                     │
+│ Analogy: User = Director, Agent = Actor,            │
+│          "Scenario" = Acting instructions           │
+└─────────────────────────────────────────────────────┘
+```
+
+### Proposed Renames (Deferred)
+
+| Old | New | Status |
+|:----|:----|:------:|
+| `farm_scenario_plans` | `conversation_contexts` | ⬜ Batch with next migration |
+| `save_farm_scenario()` | `save_conversation_context()` | ⬜ Deferred |
+| `ScenarioContext` | `ConversationContext` | ⬜ Deferred |
+
+---
+
+## 🔍 LangGraph Observability
+
+### The Visibility Gap
+
+**What you see** (server-level):
 ```
 [info] Worker stats    active=0 available=1 max=1
 [info] Queue stats     n_pending=0 n_running=0
 ```
 
-**What's Missing:**
-❌ No node execution traces
-❌ No state transitions
-❌ No LLM call logs
-❌ No message flow between nodes
-❌ No error details from agent logic
+**What you need** (application-level):
+- ❌ Node execution traces
+- ❌ State transitions
+- ❌ LLM call logs
+- ❌ Message flow between nodes
 
----
+### 3-Layer Logging Strategy
 
-## 📚 Proposed Naming Refactor
-
-### Database Table Rename
-```sql
--- OLD (Misleading)
-farm_scenario_plans
-
--- NEW (Accurate)
-conversation_contexts
--- OR
-agent_session_profiles
--- OR
-dialogue_parameters
+```
+┌────────────────────────────────────────────────────┐
+│ LAYER 1: LangChain Native (Environment Variables)  │
+├────────────────────────────────────────────────────┤
+│ LANGCHAIN_TRACING_V2=true                          │
+│ set_verbose(True); set_debug(True)                 │
+└────────────────────────────────────────────────────┘
+                         ▼
+┌────────────────────────────────────────────────────┐
+│ LAYER 2: Node-Level Instrumentation (structlog)    │
+├────────────────────────────────────────────────────┤
+│ Every node logs: entry, exit, decisions, errors    │
+│ Include: thread_id, intent, conversation_stage     │
+└────────────────────────────────────────────────────┘
+                         ▼
+┌────────────────────────────────────────────────────┐
+│ LAYER 3: Langfuse Integration (Visual UI)          │
+├────────────────────────────────────────────────────┤
+│ See traces at http://localhost:3001                │
+│ Trace view: node timings, LLM costs, state flow    │
+└────────────────────────────────────────────────────┘
 ```
 
-### Function Rename Map
-```python
-# OLD → NEW
-save_farm_scenario()     → save_conversation_context()
-load_farm_scenario()     → load_conversation_context()
-scenario_context         → conversation_context
-farm_scenario_plans      → conversation_contexts table
+### Environment Variables
 
-# State Field
-ScenarioContext          → ConversationContext
-scenario_context: dict   → conversation_context: dict
-```
-
-### Semantic Clarity
-```
-┌─────────────────────────────────────────────────────┐
-│ CONVERSATION CONTEXT                                │
-│                                                     │
-│ What: User-defined parameters for agent behavior   │
-│ Why:  Enable role-play and hypothetical reasoning  │
-│ How:  Stored per thread, evolves with dialogue     │
-│                                                     │
-│ Contains:                                           │
-│ - Crop type (conversation focus)                   │
-│ - Region (climate context for role)                │
-│ - Expertise level (agent persona complexity)       │
-│ - Soil/irrigation (scenario constraints)           │
-│ - Action categories (dialogue scope)               │
-│ - Conversation stage (progression tracking)        │
-│                                                     │
-│ NOT a farm plan - it's agent acting instructions!  │
-└─────────────────────────────────────────────────────┘
-```
-
----
-
-## 🔍 LangGraph Observability Enhancement
-
-### Current Setup Analysis
-✅ **What Works:**
-- `debug=True` in `compile_agent_graph()` (just added)
-- LangSmith organization configured (in langgraph-api logs)
-- Langfuse running on port 3001
-- Checkpointer persisting state to Redis/Postgres
-
-❌ **What's Missing:**
-- Agent execution traces not visible in logs
-- Node-to-node flow not logged
-- LLM calls not captured in console output
-- Error details buried
-
-### Solution: 3-Layer Logging Strategy
-
-#### Layer 1: LangChain Callbacks (Native)
-Enable verbose logging with structured callbacks:
-
-```python
-# src/yonca/agent/graph.py
-from langchain.globals import set_verbose, set_debug
-
-def compile_agent_graph(checkpointer=None, verbose=True):
-    """Compile with verbose execution logging."""
-
-    # Enable global LangChain verbosity
-    if verbose:
-        set_verbose(True)
-        set_debug(True)
-
-    graph = create_agent_graph()
-
-    # Compile with debug mode
-    return graph.compile(
-        checkpointer=checkpointer,
-        debug=True,  # Already added
-        interrupt_before=[],  # Optional: for human-in-loop
-        interrupt_after=[],
-    )
-```
-
-#### Layer 2: Node-Level Instrumentation
-Add structured logging to every node:
-
-```python
-# src/yonca/agent/nodes/supervisor.py
-import structlog
-
-logger = structlog.get_logger(__name__)
-
-async def supervisor_node(state: AgentState, config: RunnableConfig):
-    """Route with detailed logging."""
-
-    logger.info(
-        "supervisor_node_start",
-        thread_id=config.get("configurable", {}).get("thread_id"),
-        message=state["messages"][-1].content[:100],
-        conversation_stage=state.get("conversation_context", {}).get("conversation_stage"),
-    )
-
-    # ... existing logic ...
-
-    logger.info(
-        "supervisor_node_complete",
-        route_decision=next_node,
-        intent_detected=state.get("intent"),
-    )
-
-    return state
-```
-
-#### Layer 3: Langfuse Trace Integration
-Stream execution to Langfuse UI (http://localhost:3001):
-
-```python
-# src/yonca/agent/graph.py
-from langfuse.callback import CallbackHandler
-
-def compile_agent_graph(checkpointer=None):
-    """Compile with Langfuse tracing."""
-    from yonca.observability.langfuse import create_langfuse_handler
-
-    graph = create_agent_graph()
-    compiled = graph.compile(checkpointer=checkpointer, debug=True)
-
-    # Wrap with Langfuse tracing
-    langfuse_handler = create_langfuse_handler()
-    if langfuse_handler:
-        compiled = compiled.with_config(callbacks=[langfuse_handler])
-
-    return compiled
-```
-
-### Environment Variables for Verbose Logging
-
-Create `.env` settings:
-
-```bash
-# .env (root)
-
-# LangChain/LangGraph Verbosity
+```env
+# Layer 1: LangChain/LangGraph Verbosity
 LANGCHAIN_TRACING_V2=true
-LANGCHAIN_PROJECT=yonca-dev
-LANGCHAIN_ENDPOINT=https://api.smith.langchain.com
-LANGCHAIN_API_KEY=your_key_here  # Optional if using local only
+LANGCHAIN_PROJECT=ALİM-dev
+LOG_LEVEL=DEBUG
 
-# Langfuse Observability
+# Layer 3: Langfuse
 LANGFUSE_PUBLIC_KEY=your_key
 LANGFUSE_SECRET_KEY=your_secret
 LANGFUSE_HOST=http://localhost:3001
-
-# Python Logging Level
-LOG_LEVEL=DEBUG  # or INFO for less verbose
-
-# LangGraph API Verbosity
-LANGGRAPH_API_LOG_LEVEL=DEBUG
 ```
-
-### langgraph.json Enhancement
-
-```json
-{
-    "$schema": "https://langchain-ai.github.io/langgraph/langgraph.json",
-    "dependencies": ["."],
-    "graphs": {
-        "yonca_agent": "./src/yonca/agent/graph.py:create_agent_graph"
-    },
-    "env": ".env",
-    "python_version": "3.11",
-    "store": {
-        "type": "postgres",
-        "uri": "postgresql://yonca:yonca_dev_password@localhost:5433/yonca"
-    }
-}
-```
-
----
-
-## 🎨 Expected Output After Implementation
-
-### Console Logs (Structured JSON)
-```json
-{
-  "event": "supervisor_node_start",
-  "timestamp": "2026-01-21T06:45:32.123Z",
-  "thread_id": "abc-123",
-  "message": "Pambıqda xəstəlik necə müalicə edilir?",
-  "conversation_context": {
-    "crop": "Pambıq",
-    "region": "Aran",
-    "stage": "problem_solving"
-  }
-}
-
-{
-  "event": "llm_call",
-  "model": "gpt-4",
-  "input_tokens": 1234,
-  "output_tokens": 567,
-  "latency_ms": 2345
-}
-
-{
-  "event": "supervisor_node_complete",
-  "route_decision": "agronomist",
-  "intent": "disease_treatment"
-}
-```
-
-### Langfuse UI (http://localhost:3001)
-```
-┌─────────────────────────────────────────────────────┐
-│ Trace: Conversation abc-123                         │
-├─────────────────────────────────────────────────────┤
-│ ├─ supervisor_node         250ms                    │
-│ │   ├─ LLM: gpt-4          200ms                    │
-│ │   └─ Decision: agronomist 50ms                    │
-│ ├─ context_loader_node     100ms                    │
-│ │   └─ DB Query            100ms                    │
-│ ├─ agronomist_node         3500ms                   │
-│ │   ├─ LLM: gpt-4          3200ms                   │
-│ │   └─ Response format     300ms                    │
-│ └─ validator_node          150ms                    │
-│                                                      │
-│ Total: 4000ms | Cost: $0.03 | Success: ✅           │
-└─────────────────────────────────────────────────────┘
-```
-
-### LangGraph Studio (https://smith.langchain.com/studio)
-Visual graph with live state inspection:
-- See which node is currently executing
-- Inspect state after each node
-- Replay conversations step-by-step
-- Time travel debugging
-
----
-
-## 🚀 Implementation Plan
-
-### Phase 1: Enable Native Logging (15 min)
-1. Add environment variables to `.env`
-2. Update `compile_agent_graph()` with `set_verbose(True)`
-3. Restart LangGraph server
-4. Test: Send message, verify logs show node execution
-
-### Phase 2: Rename Database Schema (30 min)
-1. Create Alembic migration: `conversation_contexts` table
-2. Add backward compatibility view: `CREATE VIEW farm_scenario_plans AS SELECT * FROM conversation_contexts`
-3. Update function names in `data_layer.py`
-4. Update imports in `app.py`
-5. Run migration, verify no breakage
-
-### Phase 3: Add Node Logging (1 hour)
-1. Create `logging_middleware.py` decorator
-2. Apply to all 8 nodes (supervisor, agronomist, weather, etc.)
-3. Log entry/exit with state summary
-4. Capture errors with full context
-
-### Phase 4: Langfuse Integration (30 min)
-1. Configure Langfuse callback in `compile_agent_graph()`
-2. Test trace appears in http://localhost:3001
-3. Document trace exploration workflow
-
----
-
-## 📖 Recommendation
-
-**Start with Phase 1** (Native Logging) - it requires zero code changes, just environment variables. This gives you immediate visibility into agent execution.
-
-**Then Phase 3** (Node Logging) - adds structured events to your existing logs.
-
-**Defer Phase 2** (Renaming) - it's cosmetic and can be batched with next schema update.
-
-**Phase 4** (Langfuse) - Nice-to-have for visual debugging, but console logs may be sufficient.
 
 ---
 
 ## 💡 Key Insight
 
-The LangGraph logs you're seeing are **server-level** (queue management), not **application-level** (agent execution). You need to instrument the agent itself, not just the server hosting it.
+> **Server logs** = "HTTP requests received, workers available"
+> **Agent logs** = "Which node ran, what LLM said, what decision was made"
+>
+> You have #1 but need #2. Instrument the **agent**, not just the **server**.
 
-Think of it like:
-- **Server logs** = "HTTP requests received, workers available"
-- **Agent logs** = "Which node ran, what LLM said, what decision was made"
+---
 
-You have #1 but need #2!
+## ✅ Implementation Status
+
+| Phase | Task | Status |
+|:------|:-----|:------:|
+| 1 | Enable native logging (env vars) | ⬜ 15 min |
+| 2 | Rename database schema | ⬜ Deferred |
+| 3 | Add node-level logging | ⬜ 1 hour |
+| 4 | Langfuse integration | ⬜ 30 min |
+
+**Recommendation:** Start with Phase 1 (zero code changes, immediate visibility).
+
+---
+
+## 🏗️ Complete System Architecture
+
+### Component Relationship Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           ALİM SYSTEM ARCHITECTURE                          │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐            │
+│  │   CHAINLIT UI   │────▶│   LANGGRAPH     │────▶│   MCP SERVERS   │           │
+│  │   (demo-ui/)    │     │  DEV SERVER     │     │   (External)    │            │
+│  │   Port: 8501    │     │  Port: 2024     │     │   Weather/Rules │            │
+│  └────────┬────────┘     └────────┬────────┘     └─────────────────┘            │
+│           │                       │                                             │
+│           │  HTTP/SSE             │  Loads Graph                                │
+│           │                       ▼                                             │
+│           │              ┌─────────────────┐                                    │
+│           │              │ AGENT GRAPH     │◀── src/ALİM/agent/graph.py       |
+│           │              │ (StateGraph)    │                                    │
+│           │              └────────┬────────┘                                    │
+│           │                       │                                             │
+│           │                       │ Invokes Nodes                               │
+│           │                       ▼                                             │
+│           │              ┌─────────────────────────────────┐                    │
+│           │              ├─────────────────────────────────┤                    │
+│           │              │         SPECIALIST NODES        │                    │
+│           │              │ • supervisor    (routing)       │                    │
+│           │              │ • context_loader (farm data)    │                   │
+│           │              │ • agronomist   (crop advice)    │                   │
+│           │              │ • weather      (forecasts)      │                   │
+│           │              │ • nl_to_sql    (data queries)   │                   │
+│           │              │ • validator    (rule checks)    │                   │
+│           │              └─────────────────────────────────┘                   │
+│           │                                                                    │
+│           ▼                                                                    │
+│  ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐          │
+│  │   POSTGRESQL    │     │     REDIS       │     │    LANGFUSE     │          │
+│  │   Port: 5433    │     │   Port: 6379    │     │   Port: 3001    │          │
+│  │   Users/Threads │     │  Checkpoints    │     │   Tracing UI    │          │
+│  └─────────────────┘     └─────────────────┘     └─────────────────┘          │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Data Flow: User Message → AI Response
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                         MESSAGE PROCESSING PIPELINE                              │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  [1] USER INPUT                                                                  │
+│      │                                                                           │
+│      ▼                                                                           │
+│  ┌────────────────────┐                                                         │
+│  │   CHAINLIT UI      │  demo-ui/app.py::on_message()                           │
+│  │   • OAuth session  │                                                         │
+│  │   • Farm context   │                                                         │
+│  │   • Thread mgmt    │                                                         │
+│  └─────────┬──────────┘                                                         │
+│            │                                                                     │
+│            │ HTTP POST /threads/{id}/runs/stream                                │
+│            │ Content: AgentState (serialized)                                   │
+│            ▼                                                                     │
+│  [2] LANGGRAPH DEV SERVER (localhost:2024)                                      │
+│      │                                                                           │
+│      │ Loads: langgraph.json → src/ALİM/agent/graph.py:create_agent_graph     │
+│      ▼                                                                           │
+│  ┌────────────────────────────────────────────────────────────────────┐         │
+│  │                    STATE MACHINE EXECUTION                         │         │
+│  │                                                                    │         │
+│  │  ┌───────────┐    ┌───────────┐    ┌───────────┐    ┌─────────┐  │         │
+│  │  │ supervisor│───▶│  context  │───▶│ specialist│───▶│validator│  │         │
+│  │  │ (routing) │    │  loader   │    │ (agro/wx) │    │ (rules) │  │         │
+│  │  └───────────┘    └───────────┘    └───────────┘    └─────────┘  │         │
+│  │       │                                                   │       │         │
+│  │       │           ┌──────────────────┐                   │       │         │
+│  │       └──────────▶│       END        │◀──────────────────┘       │         │
+│  │                   │ (response ready) │                           │         │
+│  │                   └──────────────────┘                           │         │
+│  └────────────────────────────────────────────────────────────────────┘         │
+│            │                                                                     │
+│            │ SSE Stream (Server-Sent Events)                                    │
+│            ▼                                                                     │
+│  [3] CHAINLIT RESPONSE                                                          │
+│      • Token streaming                                                          │
+│      • Thinking steps                                                           │
+│      • Feedback buttons                                                         │
+│                                                                                  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📁 Codebase Component Index
+
+### Where Is What? Quick Reference
+
+```
+ALİM/
+├── demo-ui/                          🖥️ CHAINLIT UI LAYER
+│   ├── app.py                        Main UI application (3000+ lines)
+│   ├── data_layer.py                 PostgreSQL persistence for threads
+│   ├── storage_postgres.py           File storage in PostgreSQL
+│   ├── config.py                     UI-specific settings
+│   └── alim_persona.py               User persona generation
+│
+├── src/ALİM/                        🧠 CORE INTELLIGENCE
+│   │
+│   ├── agent/                        📊 LANGGRAPH AGENT
+│   │   ├── graph.py                  StateGraph definition (entry point)
+│   │   ├── state.py                  AgentState TypedDict + serialization
+│   │   ├── memory.py                 Redis/Postgres checkpointing
+│   │   └── nodes/                    Specialist processing nodes
+│   │       ├── supervisor.py         Intent routing logic
+│   │       ├── context_loader.py     Farm/user context loading
+│   │       ├── agronomist.py         Crop advice generation
+│   │       ├── weather.py            Weather-based recommendations
+│   │       ├── nl_to_sql.py          Natural language → SQL
+│   │       ├── sql_executor.py       Execute generated SQL
+│   │       ├── validator.py          Rule validation
+│   │       └── vision_to_action.py   Image analysis (future)
+│   │
+│   ├── langgraph/                    🔌 LANGGRAPH CLIENT
+│   │   ├── client.py                 HTTP client for LangGraph Dev Server
+│   │   └── __init__.py               Exports LangGraphClient
+│   │
+│   ├── mcp/                          🔗 MCP CLIENT LAYER
+│   │   ├── client.py                 MCPClient for calling MCP servers
+│   │   ├── adapters.py               Tool adapters for LangGraph
+│   │   ├── config.py                 MCP server configuration
+│   │   └── handlers/                 Protocol handlers
+│   │
+│   ├── mcp_server/                   🛡️ INTERNAL MCP SERVER (ZekaLab)
+│   │   ├── main.py                   FastMCP server entry point
+│   │   ├── zekalab_fastmcp.py        Rule engine MCP tools
+│   │   ├── tools/                    Tool implementations
+│   │   └── resources/                Static resources
+│   │
+│   ├── api/                          🌐 FASTAPI REST LAYER
+│   │   ├── main.py                   FastAPI application
+│   │   ├── routes/                   API route handlers
+│   │   ├── schemas/                  Pydantic request/response models
+│   │   └── middleware/               Auth, CORS, logging
+│   │
+│   ├── llm/                          🤖 LLM PROVIDERS
+│   │   └── (provider implementations)
+│   │
+│   ├── observability/                📊 TRACING & LOGGING
+│   │   └── langfuse.py               Langfuse integration
+│   │
+│   └── rules/                        📋 AGRONOMY RULES ENGINE
+│       └── (rule definitions)
+│
+├── langgraph.json                    ⚙️ LangGraph Dev Server config
+├── docker-compose.local.yml          🐳 Local infrastructure
+└── alembic/                          🗄️ Database migrations
+```
+
+### Component Relationships
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                        COMPONENT DEPENDENCY GRAPH                                │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│                          ┌─────────────────────┐                                 │
+│                          │    demo-ui/app.py   │                                 │
+│                          │    (Chainlit UI)    │                                 │
+│                          └──────────┬──────────┘                                 │
+│                                     │                                            │
+│                    ┌────────────────┼────────────────┐                          │
+│                    │                │                │                          │
+│                    ▼                ▼                ▼                          │
+│         ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                    │
+│         │ data_layer   │  │ langgraph/   │  │ alim_persona │                    │
+│         │ (persistence)│  │   client.py  │  │ (JIT users)  │                    │
+│         └──────────────┘  └──────┬───────┘  └──────────────┘                    │
+│                                  │                                               │
+│                    ┌─────────────┴─────────────┐                                │
+│                    │  LangGraph Dev Server     │                                │
+│                    │  (langgraph dev)          │                                │
+│                    └─────────────┬─────────────┘                                │
+│                                  │                                               │
+│                    ┌─────────────┴─────────────┐                                │
+│                    │                           │                                │
+│                    ▼                           ▼                                │
+│         ┌──────────────┐            ┌──────────────┐                            │
+│         │ agent/graph  │            │ agent/state  │                            │
+│         │ (StateGraph) │            │ (TypedDict)  │                            │
+│         └──────┬───────┘            └──────────────┘                            │
+│                │                                                                 │
+│       ┌────────┴────────┬────────────────────────┐                              │
+│       │                 │                        │                              │
+│       ▼                 ▼                        ▼                              │
+│  ┌─────────┐      ┌─────────┐             ┌─────────┐                           │
+│  │ nodes/  │      │ mcp/    │             │ llm/    │                           │
+│  │ *       │      │ client  │             │ *       │                           │
+│  └─────────┘      └────┬────┘             └─────────┘                           │
+│                        │                                                         │
+│           ┌────────────┴────────────┐                                           │
+│           │                         │                                           │
+│           ▼                         ▼                                           │
+│  ┌─────────────────┐      ┌─────────────────┐                                   │
+│  │ External MCP    │      │ mcp_server/     │                                   │
+│  │ (OpenWeather)   │      │ (ZekaLab rules) │                                   │
+│  └─────────────────┘      └─────────────────┘                                   │
+│                                                                                  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🔗 LangGraph ↔ MCP ↔ Chainlit Relationship
+
+### Conceptual Overview
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                     THREE-LAYER INTEGRATION MODEL                                │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  LAYER 1: PRESENTATION (Chainlit)                                               │
+│  ─────────────────────────────────                                              │
+│  • User authentication (OAuth)                                                  │
+│  • Chat interface rendering                                                      │
+│  • Thread/message persistence                                                    │
+│  • File uploads                                                                  │
+│  • Settings panels                                                              │
+│                                                                                  │
+│  ════════════════════════════════════════════════════════════════════════════   │
+│                              HTTP/SSE Protocol                                   │
+│  ════════════════════════════════════════════════════════════════════════════   │
+│                                                                                  │
+│  LAYER 2: ORCHESTRATION (LangGraph)                                             │
+│  ───────────────────────────────────                                            │
+│  • State machine execution                                                       │
+│  • Node routing (supervisor → specialist)                                        │
+│  • Checkpointing (Redis/Postgres)                                               │
+│  • Tool binding                                                                  │
+│                                                                                  │
+│  ════════════════════════════════════════════════════════════════════════════   │
+│                              MCP Protocol (JSON-RPC)                            │
+│  ════════════════════════════════════════════════════════════════════════════   │
+│                                                                                  │
+│  LAYER 3: DATA SERVICES (MCP Servers)                                           │
+│  ─────────────────────────────────────                                          │
+│  • Weather data (OpenWeather MCP)                                               │
+│  • Agronomy rules (ZekaLab internal MCP)                                        │
+│  • Future: EKTİS, CBAR, Satellite, etc.                                         │
+│                                                                                  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Protocol Details
+
+| Layer | Protocol | Port | Direction |
+|-------|----------|------|-----------|
+| Chainlit → LangGraph | HTTP + SSE | 2024 | Request/Stream |
+| LangGraph → MCP | stdio/HTTP | varies | JSON-RPC 2.0 |
+| Chainlit → PostgreSQL | asyncpg | 5433 | SQL |
+| LangGraph → Redis | redis-py | 6379 | Checkpointing |
+
+### Code Entry Points
+
+| What | Where | Key Function |
+|------|-------|--------------|
+| UI starts | `demo-ui/app.py` | `@cl.on_chat_start` |
+| Message handling | `demo-ui/app.py` | `@cl.on_message` |
+| LangGraph invocation | `src/ALİM/langgraph/client.py` | `LangGraphClient.stream()` |
+| Graph definition | `src/ALİM/agent/graph.py` | `create_agent_graph()` |
+| State schema | `src/ALİM/agent/state.py` | `AgentState` TypedDict |
+| MCP calls | `src/ALİM/mcp/client.py` | `MCPClient.call_tool()` |
+
+---
+
+## ⚠️ Known Technical Debt
+
+| Area | Issue | Impact | Priority |
+|------|-------|--------|----------|
+| `langgraph-api` | Version 0.5.42 is EOL | Security updates missing | 🔴 HIGH |
+| Data layer | Signature mismatch with Chainlit | Thread persistence errors | ✅ FIXED |
+| Storage client | Not initialized warning | Elements not persisted | 🟡 MEDIUM |
+| Naming | `farm_scenario_plans` vs `conversation_contexts` | Semantic confusion | 🟢 LOW |

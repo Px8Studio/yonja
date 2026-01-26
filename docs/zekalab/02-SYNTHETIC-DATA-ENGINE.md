@@ -1,12 +1,12 @@
-# 🧪 Yonca AI — Mirror-Image Synthetic Data Engine
+# 🧪 ALİM — Mirror-Image Synthetic Data Engine
 
-> **Purpose:** Build a data engine that replicates the *schema* and *statistical behavior* of the actual Yonca/EKTIS database—ensuring seamless transition from synthetic to real data.
+> **Purpose:** Build a data engine that replicates the *schema* and *statistical behavior* of the actual ALİM/EKTIS database—ensuring seamless transition from synthetic to real data.
 
 ---
 
 ## 1. The Strategic Shift
 
-Since the **Yonca** app is already deeply integrated with **EKTİS** (Electronic Agriculture Information System) and collects specific data points like satellite-based crop tracking, sowing declarations, and precise location data, our approach must shift from "generic farming AI" to a **Mirror-Image Synthetic Engine**.
+Since the **ALİM** app is already deeply integrated with **EKTİS** (Electronic Agriculture Information System) and collects specific data points like satellite-based crop tracking, sowing declarations, and precise location data, our approach must shift from "generic farming AI" to a **Mirror-Image Synthetic Engine**.
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
@@ -29,13 +29,13 @@ graph LR
     style target fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
 ```
 
-**We aren't just making "fake data"—we are building a data engine that replicates the actual Yonca database structure.** This ensures that when Digital Umbrella eventually flips the switch from our synthetic data to their real data, **nothing breaks.**
+**We aren't just making "fake data"—we are building a data engine that replicates the actual ALİM database structure.** This ensures that when Digital Umbrella eventually flips the switch from our synthetic data to their real data, **nothing breaks.**
 
 ---
 
 ## 2. Implications for the Data Engine
 
-Because Yonca tracks real-world variables like "NDVI (Vegetation Index)" and "Sowing Declaration IDs," our synthetic engine must generate **Simulated Farm Twins**.
+Because ALİM tracks real-world variables like "NDVI (Vegetation Index)" and "Sowing Declaration IDs," our synthetic engine must generate **Simulated Farm Twins**.
 
 ### 2.1 Schema Synchronization
 
@@ -156,7 +156,7 @@ For every **Synthetic User**, we generate:
 
 ### 2.2 Geospatial Realism
 
-Since Yonca uses GPS coordinates, our synthetic profiles include **Virtual Coordinates** mapped to diverse Azerbaijani regions.
+Since ALİM uses GPS coordinates, our synthetic profiles include **Virtual Coordinates** mapped to diverse Azerbaijani regions.
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
@@ -240,7 +240,7 @@ graph TB
 ### 3.2 Custom Azerbaijani Providers
 
 ```python
-# src/yonca/data/providers/azerbaijani.py
+# src/ALİM/data/providers/azerbaijani.py
 from faker import Faker
 from faker.providers import BaseProvider
 
@@ -560,10 +560,10 @@ graph TB
 
 ## 5. Data Contracts with Great Expectations
 
-We enforce strict data contracts to ensure our synthetic data always meets the technical requirements of the Yonca API.
+We enforce strict data contracts to ensure our synthetic data always meets the technical requirements of the ALİM API.
 
 ```python
-# src/yonca/data/contracts/farm_profile_contract.py
+# src/ALİM/data/contracts/farm_profile_contract.py
 import great_expectations as gx
 
 context = gx.get_context()

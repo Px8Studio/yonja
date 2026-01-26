@@ -7,7 +7,7 @@ def main():
     """Start FastAPI development server with auto-reload."""
     sys.exit(
         subprocess.call(
-            ["uvicorn", "yonca.api.main:app", "--reload", "--host", "127.0.0.1", "--port", "8000"]
+            ["uvicorn", "alim.api.main:app", "--reload", "--host", "127.0.0.1", "--port", "8000"]
         )
     )
 

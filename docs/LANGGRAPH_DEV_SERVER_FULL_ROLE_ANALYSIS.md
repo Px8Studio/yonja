@@ -64,7 +64,7 @@ Developer Machine                  LangGraph Dev Server
 
 ### 2.1 Your Graph Setup
 
-**File:** `src/yonca/agent/graph.py`
+**File:** `src/ALİM/agent/graph.py`
 
 ```python
 def create_agent_graph() -> StateGraph:
@@ -108,7 +108,7 @@ def create_agent_graph() -> StateGraph:
 
 ### 2.2 Your State Schema
 
-**File:** `src/yonca/agent/state.py`
+**File:** `src/ALİM/agent/state.py`
 
 ```python
 class AgentState(TypedDict):
@@ -140,7 +140,7 @@ class AgentState(TypedDict):
 
 ### 2.3 Your Persistence Layer
 
-**File:** `src/yonca/agent/memory.py`
+**File:** `src/ALİM/agent/memory.py`
 
 ```python
 async def get_checkpointer_async(
@@ -328,7 +328,7 @@ async for event in agent.astream(state, config=config):
 response = await client.post(
     "http://localhost:2024/invoke",
     json={
-        "graph": "yonca_agent",
+        "graph": "ALİM_agent",
         "input": {"messages": [...]},
         "config": {"configurable": {"thread_id": ...}}
     }
@@ -350,7 +350,7 @@ async with client.websocket("ws://localhost:2024/stream") as ws:
 
 **Current:** State lives in checkpointer, no visibility
 ```
-PostgreSQL (Yonca App DB)
+PostgreSQL (ALİM App DB)
 ├─ users, threads, steps (Chainlit managed)
 ├─ user_profiles, farms (app data)
 ├─ (LangGraph checkpoints stored opaquely)
@@ -449,7 +449,7 @@ langgraph dev
 
 **Why it fails:**
 - `langgraph-cli@0.4.11` requires reading `langgraph.json`
-- Your `langgraph.json` points to: `"./src/yonca/agent/graph.py:create_agent_graph"`
+- Your `langgraph.json` points to: `"./src/ALİM/agent/graph.py:create_agent_graph"`
 - This needs proper Python path resolution
 - Needs proper async event loop setup
 
@@ -473,7 +473,7 @@ langgraph dev
 {
     "dependencies": ["."],
     "graphs": {
-        "yonca_agent": "./src/yonca/agent/graph.py:create_agent_graph"
+        "ALİM_agent": "./src/ALİM/agent/graph.py:create_agent_graph"
     },
     "env": ".env",
     "python_version": "3.11"
@@ -485,8 +485,8 @@ langgraph dev
 {
     "dependencies": ["."],
     "graphs": {
-        "yonca_agent": {
-            "path": "./src/yonca/agent/graph.py:create_agent_graph",
+        "ALİM_agent": {
+            "path": "./src/ALİM/agent/graph.py:create_agent_graph",
             "description": "Main ALEM agent with conditional routing",
             "tags": ["production", "multi-turn"],
             "checkpointer": "postgresql",
@@ -505,12 +505,12 @@ langgraph dev
 
 ### 5.3 Create Proper API Bridge (FastAPI ↔ LangGraph Dev Server)
 
-**New file: `src/yonca/api/routes/graph.py`**
+**New file: `src/ALİM/api/routes/graph.py`**
 
 ```python
 from fastapi import APIRouter, BackgroundTasks
-from yonca.agent.graph import compile_agent_graph
-from yonca.agent.state import AgentState
+from ALİM.agent.graph import compile_agent_graph
+from ALİM.agent.state import AgentState
 
 router = APIRouter(prefix="/api/v1/graph", tags=["graph"])
 
@@ -591,7 +591,7 @@ async with client.stream(
 
 ### Phase 2: Expose Dev Server API (4-6 hours)
 
-- [ ] Create `src/yonca/api/routes/graph.py` with `/invoke` endpoint
+- [ ] Create `src/ALİM/api/routes/graph.py` with `/invoke` endpoint
 - [ ] Add health check for dev server connectivity
 - [ ] Implement streaming response support
 - [ ] Add thread history retrieval
@@ -660,7 +660,7 @@ CMD ["langgraph", "dev"]
 services:
   # ... existing services ...
 
-  yonca-langgraph-dev:
+  ALİM-langgraph-dev:
     build:
       context: .
       dockerfile: Dockerfile.langgraph-dev
@@ -668,12 +668,12 @@ services:
       - "2024:2024"
     environment:
       PYTHONPATH: /app/src
-      DATABASE_URL: postgresql+asyncpg://yonca:yonca_dev_password@yonca-postgres:5432/yonca
-      REDIS_URL: redis://yonca-redis:6379/0
+      DATABASE_URL: postgresql+asyncpg://ALİM:ALİM_dev_password@ALİM-postgres:5432/ALİM
+      REDIS_URL: redis://ALİM-redis:6379/0
     depends_on:
-      yonca-postgres:
+      ALİM-postgres:
         condition: service_healthy
-      yonca-redis:
+      ALİM-redis:
         condition: service_started
     volumes:
       - ./src:/app/src  # For development hot-reload

@@ -78,14 +78,28 @@ models/
 
 # Chainlit
 # ═══════════════════════════════════════════════════════════════════════════
-# Chainlit auto-generates translation files on startup from its built-in
-# bundle. We ignore these and only track our custom translations (az-AZ, ru-RU).
+# Chainlit Configuration Strategy:
+# - Track: demo-ui/.chainlit/config.toml, oauth.json (our customizations)
+# - Track: az-AZ.json, en-US.json, ru-RU.json (required languages)
+# - Ignore: All other auto-generated translation files
+# - Ignore: .files/ folders (unused - we use PostgreSQL storage)
+# - Ignore: Root .chainlit/ (app runs from demo-ui/)
 # ═══════════════════════════════════════════════════════════════════════════
-# .chainlit/translations/
-# demo-ui/.chainlit/translations/
-demo-ui/.files/
+
+# Ignore root-level .chainlit (app should run from demo-ui/)
+/.chainlit/
+/.files/
+
+# Ignore file upload cache folders (we use PostgreSQL storage)
+**/.files/
+
+# Ignore demo-ui .venv if created
 demo-ui/.venv/
 
-# Keep custom translations (create these manually if needed):
-# !demo-ui/.chainlit/translations/az-AZ.json
-# !demo-ui/.chainlit/translations/ru-RU.json
+# Ignore auto-generated translation files (keep only our custom ones)
+demo-ui/.chainlit/translations/*.json
+
+# Track only required translations (Azerbaijani, English, Russian)
+!demo-ui/.chainlit/translations/az-AZ.json
+!demo-ui/.chainlit/translations/en-US.json
+!demo-ui/.chainlit/translations/ru-RU.json

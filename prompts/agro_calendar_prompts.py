@@ -1,7 +1,7 @@
 # Agrotechnological Calendar Plan - System Prompts
 # ================================================
 # These prompts are dynamically injected based on crop category + month + region
-# to replicate Yonca Mobile App's "Aqrotexnoloji təqvim planı" feature.
+# to replicate ALİM Mobile App's "Aqrotexnoloji təqvim planı" feature.
 
 # ════════════════════════════════════════════════════════════════════════════
 # CORE AGROTECHNOLOGICAL CALENDAR PROMPT

@@ -1,8 +1,8 @@
-# YONCA - Fermerlər üçün mobil tətbiq
+# ALİM - Fermerlər üçün mobil tətbiq
 
 ## Layihə haqqında
 
-**YONCA** (Fermer tətbiqi) is a live mobile application ecosystem in Azerbaijan developed by **Digital Umbrella** (Digirella), a prominent Azerbaijani tech company specializing in GovTech and AgTech solutions. The platform serves as a "One-Stop Shop" for digital agriculture, designed to bridge the gap between farmers, the government, and the private sector.
+**ALİM** (Fermer tətbiqi) is a live mobile application ecosystem in Azerbaijan developed by **Digital Umbrella** (Digirella), a prominent Azerbaijani tech company specializing in GovTech and AgTech solutions. The platform serves as a "One-Stop Shop" for digital agriculture, designed to bridge the gap between farmers, the government, and the private sector.
 
 **Core Mission:** To digitize the "last mile" of agriculture—bringing services directly to the farmer's smartphone, providing operational information, and helping them manage their activities more efficiently.
 
@@ -11,7 +11,7 @@
 ## Key Features (Existing Platform Capabilities)
 
 ### 1. **Əkin bəyanı və subsidiya müraciəti** (Sowing Declarations & Subsidy Applications)
-YONCA integrates with **EKTIS** (Electronic Agricultural Information System) to allow farmers to file sowing declarations and apply for government subsidies directly from their phone in 1-2 minutes, without visiting any office.
+ALİM integrates with **EKTIS** (Electronic Agricultural Information System) to allow farmers to file sowing declarations and apply for government subsidies directly from their phone in 1-2 minutes, without visiting any office.
 
 ### 2. **Peyk monitorinqi** (Satellite Monitoring)
 Farmers can view satellite imagery of their land plots across different dates, including:
@@ -47,17 +47,17 @@ Allows farmers to submit applications and proposals directly to the Ministry of 
 
 ## Current State: Transactional Platform
 
-The existing YONCA platform is **transactional**—it records data, processes subsidy requests, and provides information. For example, it can tell a farmer "You declared 5 hectares of wheat" or show satellite imagery, but it **cannot yet provide advisory services** such as "Based on last week's rain, you should delay watering your wheat by 2 days."
+The existing ALİM platform is **transactional**—it records data, processes subsidy requests, and provides information. For example, it can tell a farmer "You declared 5 hectares of wheat" or show satellite imagery, but it **cannot yet provide advisory services** such as "Based on last week's rain, you should delay watering your wheat by 2 days."
 
 ---
 
 ## The Strategic Challenge: Moving to Advisory
 
 ### The Gap
-YONCA currently handles official government data (subsidy applications are legal documents) and financial information. The next evolution requires adding an **AI-powered advisory layer** that can provide real-time, personalized recommendations without corrupting the existing legal data infrastructure.
+ALİM currently handles official government data (subsidy applications are legal documents) and financial information. The next evolution requires adding an **AI-powered advisory layer** that can provide real-time, personalized recommendations without corrupting the existing legal data infrastructure.
 
 ### Data Safety Constraint
-Because YONCA processes sensitive government and financial data, **external vendors cannot access production APIs for testing**. Any AI prototype must use **synthetic/dummy data** that mirrors the real data structure without compromising security.
+Because ALİM processes sensitive government and financial data, **external vendors cannot access production APIs for testing**. Any AI prototype must use **synthetic/dummy data** that mirrors the real data structure without compromising security.
 
 ---
 

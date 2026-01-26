@@ -1,5 +1,5 @@
 # scripts/health_check.ps1
-# Health check script for Yonca AI development stack
+# Health check script for ALİM development stack
 # Checks all services and reports status
 
 param(
@@ -35,7 +35,8 @@ function Test-Docker {
             Write-Status "Docker" "OK" "Running"
             return $true
         }
-    } catch {}
+    }
+    catch {}
     Write-Status "Docker" "FAIL" "Not running"
     return $false
 }
@@ -48,11 +49,13 @@ function Test-Container {
         if ($status -eq "running") {
             Write-Status "Container: $Name" "OK" "Running"
             return $true
-        } else {
+        }
+        else {
             Write-Status "Container: $Name" "FAIL" $status
             return $false
         }
-    } catch {
+    }
+    catch {
         Write-Status "Container: $Name" "FAIL" "Not found"
         return $false
     }
@@ -67,7 +70,8 @@ function Test-Endpoint {
             Write-Status $Name "OK" "HTTP $($response.StatusCode)"
             return $true
         }
-    } catch {
+    }
+    catch {
         Write-Status $Name "FAIL" $_.Exception.Message
     }
     return $false
@@ -80,11 +84,13 @@ function Test-OllamaModels {
         if ($models -contains "qwen3:4b" -or $models -contains "atllama") {
             Write-Status "Ollama Models" "OK" ($models -join ", ")
             return $true
-        } else {
+        }
+        else {
             Write-Status "Ollama Models" "WARN" "No required models found"
             return $false
         }
-    } catch {
+    }
+    catch {
         Write-Status "Ollama Models" "FAIL" "Cannot query models"
         return $false
     }
@@ -93,7 +99,7 @@ function Test-OllamaModels {
 # Main health check
 if (-not $Quiet) {
     Write-Host ""
-    Write-Host "🌿 YONCA AI — Health Check" -ForegroundColor Green
+    Write-Host "🌿 ALİM — Health Check" -ForegroundColor Green
     Write-Host "=" * 40
     Write-Host ""
 }
@@ -104,8 +110,8 @@ $allHealthy = $true
 if (-not (Test-Docker)) { $allHealthy = $false }
 
 # 2. Containers
-if (-not (Test-Container "yonca-ollama")) { $allHealthy = $false }
-if (-not (Test-Container "yonca-redis")) { $allHealthy = $false }
+if (-not (Test-Container "alim-ollama")) { $allHealthy = $false }
+if (-not (Test-Container "alim-redis")) { $allHealthy = $false }
 
 # 3. Ollama API
 if (-not (Test-Endpoint "Ollama API" "http://localhost:11434/api/tags")) { $allHealthy = $false }
@@ -115,14 +121,16 @@ if (-not (Test-OllamaModels)) { $allHealthy = $false }
 
 # 5. Redis (via Docker exec ping)
 try {
-    $redisPing = docker exec yonca-redis redis-cli ping 2>&1
+    $redisPing = docker exec alim-redis redis-cli ping 2>&1
     if ($redisPing -eq "PONG") {
         Write-Status "Redis" "OK" "PONG"
-    } else {
+    }
+    else {
         Write-Status "Redis" "FAIL" $redisPing
         $allHealthy = $false
     }
-} catch {
+}
+catch {
     Write-Status "Redis" "FAIL" "Cannot ping"
     $allHealthy = $false
 }
@@ -138,7 +146,8 @@ if (-not $Quiet) {
     Write-Host "=" * 40
     if ($allHealthy) {
         Write-Host "✅ Core services healthy" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "❌ Some services unhealthy" -ForegroundColor Red
     }
     Write-Host ""

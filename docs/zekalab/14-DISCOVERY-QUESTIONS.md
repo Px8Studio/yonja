@@ -1,4 +1,4 @@
-# 🔍 Yonca AI — Discovery Questions for Digital Umbrella
+# 🔍 ALİM — Discovery Questions for Digital Umbrella
 
 > **Purpose:** Prioritized list of questions to validate assumptions and reduce integration risk before prototype handoff.
 
@@ -18,9 +18,9 @@
 
 ## 🎯 Executive Summary
 
-Our team has developed comprehensive technical documentation for the Yonca AI Sidecar prototype. During this process, we identified several assumptions that require validation from your IT team to ensure:
+Our team has developed comprehensive technical documentation for the ALİM Sidecar prototype. During this process, we identified several assumptions that require validation from your IT team to ensure:
 
-1. **Seamless integration** with existing Yonca infrastructure
+1. **Seamless integration** with existing ALİM infrastructure
 2. **Schema compatibility** for future "hot-swap" from synthetic to real data
 3. **Compliance** with security, legal, and operational requirements
 4. **UX alignment** with your mobile app design system
@@ -105,7 +105,7 @@ These questions, if answered incorrectly, could require **significant architectu
 
 #### Mobile App Integration
 
-- [ ] **Q10.** Do you currently use WebSockets or SSE for existing chat/messaging features in Yonca?
+- [ ] **Q10.** Do you currently use WebSockets or SSE for existing chat/messaging features in ALİM?
   - If yes, which protocol and what is the message format?
   - If no real-time features exist, do you support SSE or WebSocket in your mobile framework?
   - *This determines how we stream the agent's "thinking" responses*
@@ -138,7 +138,7 @@ These affect major features and user experience.
 
 - [ ] **Q13.** What is your API versioning strategy?
   - Path-based (`/api/v1/`), header-based, query param?
-  - *Our endpoint: `/yonca-ai/chat` — should this change?*
+  - *Our endpoint: `/ALİM-ai/chat` — should this change?*
 
 - [ ] **Q14.** What error response format do you use?
   ```json
@@ -353,7 +353,7 @@ For questions about this document or to schedule a technical discussion:
 <div align="center">
 
 **📄 Document:** `14-DISCOVERY-QUESTIONS.md`
-**🔗 Part of:** Yonca AI Sidecar Technical Documentation
+**🔗 Part of:** ALİM Sidecar Technical Documentation
 **📚 See also:** [01-MANIFESTO.md](01-MANIFESTO.md) | [03-ARCHITECTURE.md](03-ARCHITECTURE.md)
 
 </div>

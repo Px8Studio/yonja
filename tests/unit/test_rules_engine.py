@@ -4,7 +4,7 @@
 from datetime import date
 
 import pytest
-from yonca.rules.engine import (
+from alim.rules.engine import (
     Condition,
     Operator,
     Rule,

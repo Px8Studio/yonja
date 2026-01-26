@@ -25,5 +25,6 @@
       "chatEndpoint": "/api/v1/chat",
       "modelsEndpoint": "/api/models"
     }
-  }
+  },
+  "chat.mcp.gallery.enabled": true
 }

@@ -1,4 +1,4 @@
-# 🎨 Yonca AI — Documentation Visual Style Guide
+# 🎨 ALİM — Documentation Visual Style Guide
 
 > **Purpose:** Standardize visual elements across all documentation for consistency and dark/light theme compatibility.
 

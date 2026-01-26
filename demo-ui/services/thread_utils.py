@@ -26,7 +26,6 @@ def build_thread_tags(
     expertise_ids: list[str] | None,
     action_categories: list[str] | None = None,
     experience_level: str | None = None,
-    interaction_mode: str | None = None,
     llm_model: str | None = None,
 ) -> list[str]:
     """Produce sidebar tags so users can filter threads."""
@@ -41,8 +40,6 @@ def build_thread_tags(
         tags.extend(expertise_ids)
     if action_categories:
         tags.extend([f"plan:{cat}" for cat in action_categories])
-    if interaction_mode:
-        tags.append(f"mode:{interaction_mode.lower()}")
     if llm_model:
         tags.append(f"model:{llm_model}")
     # Deduplicate while keeping order

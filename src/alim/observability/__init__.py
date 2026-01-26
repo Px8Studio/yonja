@@ -30,6 +30,7 @@ from alim.observability.banner import (
     format_trace_link,
     print_database_info,
     print_endpoints,
+    print_flash_warning,
     print_infrastructure_summary,
     print_infrastructure_tier,
     print_llm_info,
@@ -84,5 +85,6 @@ __all__ = [
     "print_tier_comparison",
     "format_trace_link",
     "print_trace_info",
+    "print_flash_warning",
     "Colors",
 ]

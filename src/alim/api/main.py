@@ -15,6 +15,7 @@ from alim.data.redis_client import RedisClient
 from alim.llm.http_pool import HTTPClientPool
 from alim.observability import (
     print_endpoints,
+    print_flash_warning,  # New import
     print_infrastructure_tier,
     print_llm_info,
     print_model_capabilities,
@@ -143,15 +144,25 @@ async def lifespan(app: FastAPI):
 
     # Ollama (if local mode)
     if settings.llm_provider.value == "ollama":
+        from alim.llm.factory import check_llm_health
+
+        ollama_health = await check_llm_health()
+        is_ollama_up = ollama_health.get("healthy", False)
+
         services.append(
             {
                 "name": "Ollama",
-                "status": "Configured",
-                "style": "info",
+                "status": "Ready" if is_ollama_up else "OFFLINE",
+                "style": "success" if is_ollama_up else "error",
                 "port": "11434",
                 "detail": f"model: {settings.ollama_model}",
             }
         )
+
+        if not is_ollama_up:
+            print_flash_warning(
+                "Ollama", "Agent commands will fail. Start Ollama and pull the model!"
+            )
 
     for svc in services:
         port_info = f":{svc.get('port')}" if svc.get("port") else ""

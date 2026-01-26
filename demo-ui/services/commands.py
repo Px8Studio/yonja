@@ -155,15 +155,9 @@ class CommandRegistry:
             )
         )
 
-        # Mode switch
-        self.register(
-            Command(
-                name="mode",
-                description="🤖 Switch interaction mode (Ask/Plan/Agent)",
-                handler=self._handle_mode,
-                parameters=["mode_name"],
-            )
-        )
+        # Mode switch - REMOVED: interaction mode is now only via chat profile (header dropdown)
+        # Users switch modes via the "Fast" / "Thinking" / "Agent" buttons in the header,
+        # not via settings menu or slash commands
 
         # Debug info
         self.register(
@@ -421,34 +415,6 @@ class CommandRegistry:
 
         await cl.Message(
             content=f"✅ **Farm switched to:** `{farm_id}`",
-            author="System",
-        ).send()
-
-    async def _handle_mode(self, mode_name: str | None = None):
-        """Switch interaction mode."""
-        if not mode_name:
-            current_mode = cl.user_session.get("chat_profile", "fast")
-            await cl.Message(
-                content=f"🤖 **Current Mode:** `{current_mode}`\n\n**Available modes:**\n- `fast` - Quick responses\n- `thinking` - Reasoning mode\n- `agent` - Full agent with tools\n\nUsage: `/mode <mode_name>`",
-                author="System",
-            ).send()
-            return
-
-        # Validate mode
-        valid_modes = ["fast", "thinking", "agent", "ask", "plan"]
-        if mode_name.lower() not in valid_modes:
-            await cl.Message(
-                content=f"❌ Invalid mode: `{mode_name}`\nValid modes: {', '.join(valid_modes)}",
-                author="System",
-            ).send()
-            return
-
-        # Update mode
-        cl.user_session.set("chat_profile", mode_name.lower())
-        logger.info(f"mode_switched: {mode_name}")
-
-        await cl.Message(
-            content=f"✅ **Mode switched to:** `{mode_name}`",
             author="System",
         ).send()
 

@@ -229,29 +229,6 @@ class SessionManager:
             logger.warning(f"Session restore failed: user_id={user_id}, error={str(e)}")
 
     @staticmethod
-    async def save_interaction_mode(user_id: str, mode: str) -> bool:
-        """Save selected interaction mode (Ask/Plan/Agent).
-
-        Called when user changes the chat profile dropdown.
-
-        Args:
-            user_id: User identifier
-            mode: Mode name (Ask, Plan, or Agent)
-
-        Returns:
-            True if saved successfully
-        """
-        try:
-            preferences = await SessionManager.load_user_preferences(user_id)
-            preferences["chat_profile"] = mode
-            return await SessionManager.save_user_preferences(user_id, preferences)
-        except Exception as e:
-            logger.warning(
-                f"Session save mode failed: user_id={user_id}, mode={mode}, error={str(e)}"
-            )
-            return False
-
-    @staticmethod
     async def save_farm_selection(user_id: str, farm_id: str) -> bool:
         """Save selected farm for this user.
 

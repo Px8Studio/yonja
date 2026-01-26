@@ -115,6 +115,7 @@ from alim.config import AgentMode  # noqa: E402
 from alim.config import settings as alim_settings  # noqa: E402
 from alim.observability.banner import (  # noqa: E402
     print_endpoints,
+    print_flash_warning,
     print_infrastructure_tier,
     print_llm_info,
     print_model_capabilities,
@@ -202,6 +203,20 @@ if demo_settings.integration_mode == "direct":
         api_key_set=demo_settings.llm_provider == "ollama",  # Ollama doesn't need key
     )
     print_model_capabilities(demo_settings.ollama_model)
+
+    # NEW: Proactive Ollama health check in Demo UI
+    if demo_settings.llm_provider == "ollama":
+        try:
+            from alim.llm.factory import check_llm_health
+
+            ollama_health = asyncio.run(check_llm_health())
+            is_ollama_up = ollama_health.get("healthy", False)
+            if not is_ollama_up:
+                print_flash_warning(
+                    "Ollama", "Agent will NOT respond. Start Ollama on your laptop!"
+                )
+        except Exception:
+            pass  # Fail gracefully, but warning won't show
 
     # Show ALİM Infrastructure Tier
     try:
@@ -432,19 +447,18 @@ from chainlit.server import app as chainlit_app  # noqa: E402
 # After defining all routes, we move the catch-all to the end.
 
 
-class ModeModelPayload(BaseModel):
+class LLMModelPayload(BaseModel):
     thread_id: str
-    interaction_mode: str
     llm_model: str
 
 
 @chainlit_app.post("/ui/thread/preferences")
-async def update_ui_preferences(payload: ModeModelPayload):
-    """Update thread metadata and tags from client-side mode/model dropdowns."""
+async def update_ui_preferences(payload: LLMModelPayload):
+    """Update thread metadata and tags from client-side model dropdown.
 
-    allowed_modes = {"Ask", "Plan", "Agent"}
-    if payload.interaction_mode not in allowed_modes:
-        raise HTTPException(status_code=400, detail="Invalid interaction_mode")
+    Note: Agent mode/chat profile is now a header dropdown (chat_profile),
+    not a user settings menu option. This endpoint now only handles llm_model.
+    """
 
     data_layer = get_data_layer()
     if not data_layer:
@@ -462,10 +476,9 @@ async def update_ui_preferences(payload: ModeModelPayload):
         except Exception:
             metadata = {}
 
-    # Merge and persist
+    # Merge and persist (llm_model only, mode is header dropdown now)
     metadata.update(
         {
-            "interaction_mode": payload.interaction_mode,
             "llm_model": payload.llm_model,
         }
     )
@@ -478,7 +491,6 @@ async def update_ui_preferences(payload: ModeModelPayload):
         metadata.get("expertise_areas"),
         metadata.get("action_categories"),
         metadata.get("experience_level"),
-        interaction_mode=payload.interaction_mode,
         llm_model=payload.llm_model,
     )
 
@@ -492,7 +504,6 @@ async def update_ui_preferences(payload: ModeModelPayload):
 
     return {
         "ok": True,
-        "interaction_mode": payload.interaction_mode,
         "llm_model": payload.llm_model,
     }
 
@@ -877,7 +888,6 @@ async def setup_chat_settings(user: cl.User | None = None):
     detail_values = ["Qısa", "Orta", "Ətraflı"]
     unit_values = ["Metrik (ha, kg)", "Yerli (sotka, pud)"]
     currency_values = ["₼ AZN (Manat)", "$ USD (Dollar)", "€ EUR (Euro)"]
-    mode_values = ["Ask", "Plan", "Agent"]
 
     # Expertise area values with Azerbaijani labels
     expertise_values = [
@@ -911,85 +921,80 @@ async def setup_chat_settings(user: cl.User | None = None):
         else 0
     )
 
-    mode_idx = (
-        mode_values.index(persisted.get("interaction_mode", "Ask"))
-        if persisted.get("interaction_mode") in mode_values
-        else 0
+    # Normalize crop labels to compare persona/persisted values with UI options
+    def _normalize_crop_label(label: str | None) -> str:
+        if not label:
+            return ""
+        base = label.split("[")[0]
+        base = base.split("(")[0]
+        return base.strip().lower()
+
+    crop_values = [
+        # Danli (Grains) - 🌾
+        "Buğda (Wheat) [Dənli]",
+        "Arpa (Barley) [Dənli]",
+        "Çəltik (Rice) [Dənli]",
+        "Vələmir (Oats) [Dənli]",
+        "Çovdar (Rye) [Dənli]",
+        # Taravaz (Vegetables) - 🥬
+        "Pomidor (Tomato) [Tərəvəz]",
+        "Xıyar (Cucumber) [Tərəvəz]",
+        "Kartof (Potato) [Tərəvəz]",
+        "Kələm (Cabbage) [Tərəvəz]",
+        "Badımcan (Eggplant) [Tərəvəz]",
+        "Bibər (Pepper) [Tərəvəz]",
+        "Soğan (Onion) [Tərəvəz]",
+        "Sarımsaq (Garlic) [Tərəvəz]",
+        # Texniki (Technical) - 🏭
+        "Pambıq (Cotton) [Texniki]",
+        "Tütün (Tobacco) [Texniki]",
+        "Şəkər çuğunduru (Sugar Beet) [Texniki]",
+        "Günəbaxan (Sunflower) [Texniki]",
+        "Qarğıdalı (Corn) [Texniki]",
+        "Çay (Tea) [Texniki]",
+        # Yem (Feed) - 🌿
+        "Yonca (Alfalfa) [Yem]",
+        "Gülül (Vetch) [Yem]",
+        # Meyva (Fruits) - 🍎
+        "Üzüm (Grape) [Meyvə]",
+        "Nar (Pomegranate) [Meyvə]",
+        "Gilas (Cherry) [Meyvə]",
+        "Alma (Apple) [Meyvə]",
+        "Armud (Pear) [Meyvə]",
+        "Heyva (Quince) [Meyvə]",
+        "Qoz (Walnut) [Meyvə]",
+        "Fındıq (Hazelnut) [Meyvə]",
+        "Zeytun (Olive) [Meyvə]",
+        "Sitrus (Citrus) [Meyvə]",
+        # Bostan (Melons) - 🍉
+        "Qarpız (Watermelon) [Bostan]",
+        "Yemiş (Melon) [Bostan]",
+        "Boranı (Pumpkin) [Bostan]",
+    ]
+
+    # Prefer persisted crop type, otherwise fall back to persona crop
+    persona_crop_raw = persisted.get("crop_type") or (
+        alim_persona.get("crop_type") if alim_persona else None
+    )
+    crop_initial_idx = next(
+        (
+            idx
+            for idx, value in enumerate(crop_values)
+            if _normalize_crop_label(value) == _normalize_crop_label(persona_crop_raw)
+        ),
+        0,
     )
 
     settings = await cl.ChatSettings(
         [
-            # ═══════════════════════════════════════════════════════════════
-            # INTERACTION MODE (Primary Setting)
-            # ═══════════════════════════════════════════════════════════════
-            Select(
-                id="interaction_mode",
-                label="💬 Rejim / Interaction Mode",
-                values=mode_values,
-                initial_index=mode_idx,
-                description="Ask: Sürətli cavab | Plan: Addım-addım planlaşdırma | Agent: Ətraflı avtomatik əməliyyat",
-            ),
             # ═══════════════════════════════════════════════════════════════
             # FARM PROFILE (Yonca Mobile App Fields)
             # ═══════════════════════════════════════════════════════════════
             Select(
                 id="crop_type",
                 label="Əsas məhsul / Primary Crop",
-                values=[
-                    # Danli (Grains) - 🌾
-                    "Buğda (Wheat) [Dənli]",
-                    "Arpa (Barley) [Dənli]",
-                    "Çəltik (Rice) [Dənli]",
-                    "Vələmir (Oats) [Dənli]",
-                    "Çovdar (Rye) [Dənli]",
-                    # Taravaz (Vegetables) - 🥬
-                    "Pomidor (Tomato) [Tərəvəz]",
-                    "Xıyar (Cucumber) [Tərəvəz]",
-                    "Kartof (Potato) [Tərəvəz]",
-                    "Kələm (Cabbage) [Tərəvəz]",
-                    "Badımcan (Eggplant) [Tərəvəz]",
-                    "Bibər (Pepper) [Tərəvəz]",
-                    "Soğan (Onion) [Tərəvəz]",
-                    "Sarımsaq (Garlic) [Tərəvəz]",
-                    # Texniki (Technical) - 🏭
-                    "Pambıq (Cotton) [Texniki]",
-                    "Tütün (Tobacco) [Texniki]",
-                    "Şəkər çuğunduru (Sugar Beet) [Texniki]",
-                    "Günəbaxan (Sunflower) [Texniki]",
-                    "Qarğıdalı (Corn) [Texniki]",
-                    "Çay (Tea) [Texniki]",
-                    # Yem (Feed) - 🌿
-                    "Yonca (Alfalfa) [Yem]",
-                    "Gülül (Vetch) [Yem]",
-                    # Meyva (Fruits) - 🍎
-                    "Üzüm (Grape) [Meyvə]",
-                    "Nar (Pomegranate) [Meyvə]",
-                    "Gilas (Cherry) [Meyvə]",
-                    "Alma (Apple) [Meyvə]",
-                    "Armud (Pear) [Meyvə]",
-                    "Heyva (Quince) [Meyvə]",
-                    "Qoz (Walnut) [Meyvə]",
-                    "Fındıq (Hazelnut) [Meyvə]",
-                    "Zeytun (Olive) [Meyvə]",
-                    "Sitrus (Citrus) [Meyvə]",
-                    # Bostan (Melons) - 🍉
-                    "Qarpız (Watermelon) [Bostan]",
-                    "Yemiş (Melon) [Bostan]",
-                    "Boranı (Pumpkin) [Bostan]",
-                ],
-                initial_index=0
-                if not alim_persona
-                else [
-                    "Pambıq (Cotton)",
-                    "Buğda (Wheat)",
-                    "Arpa (Barley)",
-                    "Qarğıdalı (Corn)",
-                    "Alma (Apple)",
-                    "Üzüm (Grape)",
-                ].index(alim_persona.get("crop_type", "Pambıq (Cotton)"))
-                if alim_persona.get("crop_type")
-                in ["Pambıq", "Buğda", "Arpa", "Qarğıdalı", "Alma", "Üzüm"]
-                else 0,
+                values=crop_values,
+                initial_index=crop_initial_idx,
                 description="Təsərrüfatınızda əkin etdiyiniz əsas məhsul",
             ),
             Select(
@@ -1158,7 +1163,7 @@ async def setup_chat_settings(user: cl.User | None = None):
             ),
             Switch(
                 id="show_thinking_steps",
-                label="🧠 Düşüncə prosesini göstər / Show Thinking Steps",
+                label="Düşüncə prosesini göstər / Show Thinking Steps",
                 initial=persisted.get("show_thinking_steps", demo_settings.enable_thinking_steps),
                 description="ALİM-in hər addımını göstər (kontekst yükləmə, təhlil, cavab hazırlama)",
             ),
@@ -1264,7 +1269,6 @@ async def on_settings_update(settings: dict):
         "irrigation_type_clean": irrigation_type,
         "planning_month_clean": planning_month,
         "action_categories_clean": action_categories,
-        "interaction_mode": settings.get("interaction_mode", "Ask"),
         "llm_model": settings.get("llm_model", demo_settings.ollama_model),
     }
 
@@ -1285,7 +1289,6 @@ async def on_settings_update(settings: dict):
             "categories": action_categories,
         },
         expertise_ids=expertise_ids,
-        interaction_mode=normalized_settings["interaction_mode"],
         llm_model=normalized_settings["llm_model"],
     )
 
@@ -1450,7 +1453,6 @@ When providing recommendations, consider these farm-specific details.
         expertise_ids=expertise_ids,
         action_categories=action_categories,
         experience_level=experience_level,
-        interaction_mode=normalized_settings["interaction_mode"],
         llm_model=normalized_settings["llm_model"],
     )
     await update_thread_presentation(
@@ -1463,7 +1465,6 @@ When providing recommendations, consider these farm-specific details.
             "experience_level": experience_level,
             "planning_month": planning_month,
             "action_categories": action_categories,
-            "interaction_mode": normalized_settings["interaction_mode"],
             "llm_model": normalized_settings["llm_model"],
         },
     )
@@ -1989,7 +1990,6 @@ async def on_chat_start():
     cl.user_session.set("user_email", user_email)
     cl.user_session.set("profile_prompt", profile_prompt)  # For system prompt enhancement
     cl.user_session.set("expertise_areas", default_expertise)  # For on_message handler
-    cl.user_session.set("interaction_mode", "Ask")
     cl.user_session.set("llm_model", demo_settings.ollama_model)
 
     # Phase 5: Data consent flag (starts False, user can grant via UI)
@@ -2083,7 +2083,6 @@ async def on_chat_start():
                 else None,
                 "language": "az",
                 "active_model": active_model,
-                "interaction_mode": "Ask",
                 "llm_model": demo_settings.ollama_model,
             }
             cl.user_session.set("thread_metadata", thread_metadata)
@@ -2098,14 +2097,12 @@ async def on_chat_start():
             persona_crop,
             persona_region,
             default_expertise,
-            interaction_mode="Ask",
             llm_model=demo_settings.ollama_model,
         ),
         metadata_updates={
             **(cl.user_session.get("thread_metadata") or {}),
             "is_shared": False,
             "shared_at": None,
-            "interaction_mode": "Ask",
             "llm_model": demo_settings.ollama_model,
         },
     )

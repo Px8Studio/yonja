@@ -151,7 +151,6 @@ async def handle_chat_start(
     cl.user_session.set("user_email", user_email)
     cl.user_session.set("profile_prompt", profile_prompt)
     cl.user_session.set("expertise_areas", default_expertise)
-    cl.user_session.set("interaction_mode", "Ask")
     cl.user_session.set("llm_model", demo_settings.ollama_model)
     cl.user_session.set("data_consent_given", False)
     cl.user_session.set("consent_prompt_shown", False)
@@ -227,7 +226,6 @@ async def handle_chat_start(
                 else None,
                 "language": "az",
                 "active_model": active_model,
-                "interaction_mode": "Ask",
                 "llm_model": demo_settings.ollama_model,
             }
             cl.user_session.set("thread_metadata", thread_metadata)
@@ -242,14 +240,12 @@ async def handle_chat_start(
             persona_crop,
             persona_region,
             default_expertise,
-            interaction_mode="Ask",
             llm_model=demo_settings.ollama_model,
         ),
         metadata_updates={
             **(cl.user_session.get("thread_metadata") or {}),
             "is_shared": False,
             "shared_at": None,
-            "interaction_mode": "Ask",
             "llm_model": demo_settings.ollama_model,
         },
     )

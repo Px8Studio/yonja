@@ -270,6 +270,40 @@ def print_startup_complete(service_name: str = "ALİM") -> None:
     print()
 
 
+def print_flash_warning(component: str, message: str) -> None:
+    """Print a highly visible flashing warning.
+
+    Useful for critical missing services like Ollama.
+    """
+    print()
+    print(
+        _c(
+            "  =========================================================",
+            Colors.BRIGHT_RED + Colors.BOLD,
+        )
+    )
+    print(_c(f"  !! WARNING: {component.upper()} IS UNAVAILABLE", Colors.BRIGHT_RED + Colors.BOLD))
+    print(_c("  ---------------------------------------------------------", Colors.BRIGHT_RED))
+    print(f"  ! {message:<55} !")
+    print(
+        _c(
+            "  =========================================================",
+            Colors.BRIGHT_RED + Colors.BOLD,
+        )
+    )
+    print()
+
+
+def print_connection_failure(component: str, detail: str) -> None:
+    """Print a connection failure message for runtime logs."""
+    symbol = _c("[X]", Colors.BRIGHT_RED)
+    comp_text = f"{component:<14}"
+    status_text = _c(f"{'CONNECTION FAILED':<20}", Colors.BRIGHT_RED + Colors.BOLD)
+
+    print(f"\n  {symbol} {comp_text} {status_text} {_dim(detail)}")
+    print(_c(f"     -> Ensure {component} is up and running on your laptop!", Colors.BRIGHT_YELLOW))
+
+
 # ══════════════════════════════════════════════════════════════
 # Specialized Banners
 # ══════════════════════════════════════════════════════════════

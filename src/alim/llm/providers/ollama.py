@@ -11,6 +11,7 @@ from collections.abc import AsyncIterator
 import httpx
 
 from alim.llm.http_pool import HTTPClientPool
+from alim.observability.banner import print_connection_failure
 
 from .base import LLMMessage, LLMProvider, LLMResponse
 
@@ -109,8 +110,14 @@ class OllamaProvider(LLMProvider):
             "stream": False,
         }
 
-        response = await client.post("/api/chat", json=payload)
-        response.raise_for_status()
+        try:
+            response = await client.post("/api/chat", json=payload)
+            response.raise_for_status()
+        except httpx.ConnectError as e:
+            print_connection_failure("Ollama", str(e))
+            raise
+        except httpx.HTTPError:
+            raise
 
         data = response.json()
 
@@ -155,15 +162,21 @@ class OllamaProvider(LLMProvider):
             "stream": True,
         }
 
-        async with client.stream("POST", "/api/chat", json=payload) as response:
-            response.raise_for_status()
-            async for line in response.aiter_lines():
-                if line:
-                    data = json.loads(line)
-                    if "message" in data and "content" in data["message"]:
-                        content = data["message"]["content"]
-                        if content:
-                            yield content
+        try:
+            async with client.stream("POST", "/api/chat", json=payload) as response:
+                response.raise_for_status()
+                async for line in response.aiter_lines():
+                    if line:
+                        data = json.loads(line)
+                        if "message" in data and "content" in data["message"]:
+                            content = data["message"]["content"]
+                            if content:
+                                yield content
+        except httpx.ConnectError as e:
+            print_connection_failure("Ollama", str(e))
+            raise
+        except httpx.HTTPError:
+            raise
 
     async def health_check(self) -> bool:
         """Check if Ollama server is healthy.

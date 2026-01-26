@@ -2771,13 +2771,6 @@ async def _handle_message_http(
     if enable_feedback:
         await _add_feedback_buttons(response_msg)
 
-    # Finalize response
-    await response_msg.update()
-
-    # Add feedback buttons if enabled
-    if enable_feedback:
-        await _add_feedback_buttons(response_msg)
-
 
 # ============================================
 # SHARED UTILITIES

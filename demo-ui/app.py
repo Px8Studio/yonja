@@ -1992,11 +1992,6 @@ async def on_chat_start():
     cl.user_session.set("expertise_areas", default_expertise)  # For on_message handler
     cl.user_session.set("llm_model", demo_settings.ollama_model)
 
-    # Phase 5: Data consent flag (starts False, user can grant via UI)
-    # When False, MCP calls to external APIs (weather, etc.) are skipped
-    cl.user_session.set("data_consent_given", False)
-    cl.user_session.set("consent_prompt_shown", False)
-
     persona_crop = (
         alim_persona.crop_type
         if alim_persona
@@ -2139,14 +2134,9 @@ async def on_chat_start():
             mcp_available=mcp_manager_status.get("available", False),
         )
 
-        # Display MCP status in UI
+        # Display MCP status in UI (but only if there are issues to report)
+        # Don't show routine status - it clutters the welcome
         from services.mcp_connector import format_mcp_status
-
-        formatted_status = format_mcp_status(agent_mcp_status)
-        await cl.Message(
-            content=formatted_status,
-            author="System",
-        ).send()
 
         offline_servers = [
             name
@@ -2154,16 +2144,16 @@ async def on_chat_start():
             if info.get("status") != "online"
         ]
 
+        # Only show MCP status if there are offline servers
         if offline_servers:
+            formatted_status = format_mcp_status(agent_mcp_status)
+            await cl.Message(
+                content=formatted_status,
+                author="System",
+            ).send()
             cl.user_session.set("mcp_offline_warned", True)
             await cl.Message(
                 content=f"⚠️ MCP offline: {', '.join(offline_servers)}. Agent tools limited until restored.",
-                author="System",
-            ).send()
-
-        if not agent_mcp_status.get("connectors_enabled"):
-            await cl.Message(
-                content="🔒 MCP connectors disabled for this mode. Switch to Agent to enable tools.",
                 author="System",
             ).send()
 
@@ -2325,72 +2315,6 @@ async def on_shared_thread_view(thread: ThreadDict, viewer: cl.User | None) -> b
 
 
 # ============================================
-# DATA CONSENT FLOW (Phase 5)
-# ============================================
-# Privacy-first: Ask user permission before calling external APIs
-# Consent is stored in session and passed to LangGraph agent state
-
-
-async def _show_data_consent_prompt():
-    """Display consent prompt asking user permission for external data access.
-
-    This implements GDPR/privacy-friendly data access patterns.
-    When user grants consent, weather APIs and other external services
-    can be called to enhance responses.
-    """
-    consent_msg = """🔒 **Xarici Məlumat İcazəsi**
-
-Daha dəqiq məlumat üçün xarici xidmətlərdən (hava proqnozu, subsidiya bazası) istifadə edə bilərəm.
-
-Xarici serverlərlə əlaqə qurmağıma icazə verirsinizmi?
-
-> _İcazə verməsəniz, yalnız yerli məlumatlardan istifadə edəcəyəm._"""
-
-    actions = [
-        cl.Action(
-            name="consent_grant",
-            payload={"consent": True},
-            label="✓ İcazə verirəm",
-        ),
-        cl.Action(
-            name="consent_deny",
-            payload={"consent": False},
-            label="✗ İcazə vermirəm",
-        ),
-    ]
-
-    await cl.Message(
-        content=consent_msg,
-        author="ALİM",
-        actions=actions,
-    ).send()
-
-
-@cl.action_callback("consent_grant")
-async def on_consent_grant(action: cl.Action):
-    """Handle consent grant."""
-    cl.user_session.set("data_consent_given", True)
-    await cl.Message(
-        content="✓ **Təşəkkürlər!** Xarici xidmətlərdən istifadə edə bilərəm. Hava proqnozu və digər məlumatlar əldə olunacaq.",
-        author="ALİM",
-    ).send()
-    await action.remove()
-    logger.info("data_consent_granted", user_id=cl.user_session.get("user_id"))
-
-
-@cl.action_callback("consent_deny")
-async def on_consent_deny(action: cl.Action):
-    """Handle consent denial."""
-    cl.user_session.set("data_consent_given", False)
-    await cl.Message(
-        content="✓ **Anlaşıldı.** Yalnız yerli məlumatlardan istifadə edəcəyəm. İstədiyiniz zaman parametrlərdən dəyişə bilərsiniz.",
-        author="ALİM",
-    ).send()
-    await action.remove()
-    logger.info("data_consent_denied", user_id=cl.user_session.get("user_id"))
-
-
-# ============================================
 # AGENT MODE SWITCH (HITL)
 # ============================================
 
@@ -2527,21 +2451,6 @@ async def on_message(message: cl.Message):
                 author="system",
             ).send()
 
-    # Phase 5: Data Consent Check
-    # Show consent prompt once per session before accessing external data
-    # SKIP for simple greetings to avoid over-eager HITL
-    data_consent_given = cl.user_session.get("data_consent_given", False)
-    consent_prompt_shown = cl.user_session.get("consent_prompt_shown", False)
-
-    # Simple heuristic to identify greetings
-    greetings = {"salam", "saq ol", "hello", "hi", "hey", "xoş gördük"}
-    is_greeting = any(g in message.content.lower().strip() for g in greetings)
-
-    if not data_consent_given and not consent_prompt_shown and not is_greeting:
-        # Show consent prompt
-        await _show_data_consent_prompt()
-        cl.user_session.set("consent_prompt_shown", True)
-
     # Get user preferences for response customization
     user_preferences = cl.user_session.get("user_preferences", {})
     enable_thinking_steps = user_preferences.get(
@@ -2584,7 +2493,6 @@ async def on_message(message: cl.Message):
                 thread_id=thread_id,
                 profile_prompt=profile_prompt,
                 scenario_context=scenario_context,
-                data_consent_given=data_consent_given,
                 file_paths=file_paths,
             )
         else:
@@ -2637,9 +2545,6 @@ async def _handle_message_http(
         # Prepare initial state
         from alim.agent.state import create_initial_state, serialize_state_for_api
 
-        # Get current consent status from session
-        data_consent_given = cl.user_session.get("data_consent_given", False)
-
         initial_state = create_initial_state(
             thread_id=thread_id,
             user_input=message.content,
@@ -2647,7 +2552,6 @@ async def _handle_message_http(
             language="az",
             system_prompt_override=profile_prompt if profile_prompt else None,
             scenario_context=scenario_context,
-            data_consent_given=data_consent_given,
             file_paths=file_paths,  # Pass uploaded files for doc processing
         )
 
@@ -2832,16 +2736,23 @@ async def _handle_direct_execution(
     thread_id: str,
     profile_prompt: str,
     scenario_context: dict | None,
-    data_consent_given: bool,
     file_paths: list[str] | None = None,
 ):
-    """Execute graph locally (Direct Mode) with Langfuse observability."""
+    """Execute graph locally (Direct Mode) - LangGraph handles all complexity.
+
+    Simple, correct pattern:
+    1. Create graph
+    2. Run astream() to get state updates
+    3. Extract response from final state
+    4. Display it
+
+    No special-casing, no event introspection. The graph is a black box.
+    """
     from alim.agent.graph import compile_agent_graph_async
     from alim.agent.memory import get_checkpointer_async
     from alim.agent.state import create_initial_state
 
-    # 1. Initialize Langfuse Callback
-    # This runs LOCALLY, so we have full control over the callback object
+    # Initialize Langfuse for observability
     langfuse_handler = create_langfuse_handler(
         session_id=thread_id,
         user_id=user_id,
@@ -2849,13 +2760,7 @@ async def _handle_direct_execution(
         trace_name=f"chainlit_{thread_id[:8]}",
     )
 
-    # Link trace to session for feedback
-    if langfuse_handler:
-        # Check if we can get a trace ID (might need to wait for start)
-        # For now, we assume the handler handles it or we set it later
-        pass
-
-    # 2. Prepare State
+    # Prepare state
     initial_state = create_initial_state(
         thread_id=thread_id,
         user_input=message.content,
@@ -2863,50 +2768,34 @@ async def _handle_direct_execution(
         language="az",
         system_prompt_override=profile_prompt,
         scenario_context=scenario_context,
-        data_consent_given=data_consent_given,
         file_paths=file_paths,
     )
 
-    # 3. Get Executor
+    # Compile graph
     checkpointer = await get_checkpointer_async()
-    # Note: We don't pass langfuse_handler to compile here because we pass it deeply
-    # via config at runtime, which is more flexible.
-    # However, graph.py compile_agent_graph *also* adds one if we aren't careful.
-    # We should ensure we don't double-trace.
-    # Current graph.py adds it if configured. We'll rely on that for now,
-    # OR pass ours in config.
-
-    # Actually, graph.py's compile_agent_graph adds a handler if env vars are set.
-    # If we pass another one in config, LangChain usually uses both.
-    # To be safe, let's rely on graph.py's internal one OR pass ours if we need
-    # specific Chainlit linking.
-
-    # Ideally, we pass it in config to `astream`.
-
     graph = await compile_agent_graph_async(checkpointer=checkpointer, use_mcp=True)
 
     config = {"callbacks": [langfuse_handler] if langfuse_handler else []}
     config["configurable"] = {"thread_id": thread_id}
 
-    # 4. Stream Results
-    # This mirrors the logic in _handle_message_http regarding steps/tokens
+    # Run the graph - that's it!
+    # The graph handles ALL the complexity:
+    # - Direct responses (supervisor greeting)
+    # - LLM streaming (specialist advice)
+    # - MCP tool calls
+    # - Error handling
+    # We just collect the final state and extract the response.
+    final_state = None
+    async for state in graph.astream(initial_state, config=config):
+        final_state = state
 
-    async for event in graph.astream_events(initial_state, config=config, version="v1"):
-        kind = event["event"]
-
-        # Link feedback trace ID once available
-        if kind == "on_chain_start" and not cl.user_session.get("langfuse_trace_id"):
-            # Attempt to extract run_id as proxy or check handler
-            # Real link often needs the handler to expose the trace object
-            if langfuse_handler and hasattr(langfuse_handler, "get_trace_id"):
-                tid = langfuse_handler.get_trace_id()
-                if tid:
-                    cl.user_session.set("langfuse_trace_id", tid)
-
-        if kind == "on_chat_model_stream":
-            content = event["data"]["chunk"].content
-            if content:
-                await response_msg.stream_token(content)
+    # Extract response from final state
+    # The graph ALWAYS puts the response in current_response
+    # No special-casing needed - this works for ALL node types
+    if final_state:
+        response = final_state.get("current_response")
+        if response:
+            await response_msg.stream_token(response)
 
     await response_msg.update()
     await _add_feedback_buttons(response_msg)

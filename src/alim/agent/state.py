@@ -318,7 +318,6 @@ class AgentState(TypedDict, total=False):
 
     # ===== MCP Orchestration (Phase 2) =====
     mcp_traces: Annotated[list[dict], _merge_rules]  # All MCP calls made during this turn
-    data_consent_given: bool  # User consented to use external APIs
     mcp_server_health: dict[str, bool]  # Health status of each MCP server
     mcp_config: dict  # Session-level MCP configuration
 
@@ -342,7 +341,6 @@ def create_initial_state(
     language: str = "az",
     system_prompt_override: str | None = None,
     scenario_context: dict | None = None,
-    data_consent_given: bool = False,
     file_paths: list[str] | None = None,
 ) -> AgentState:
     """Create initial state for a new conversation turn.
@@ -358,7 +356,6 @@ def create_initial_state(
         language: Response language (default Azerbaijani)
         system_prompt_override: Custom system prompt for profile-specific behavior (optional)
         scenario_context: Farm scenario from chat settings (optional)
-        data_consent_given: Whether user consented to use external APIs (optional)
         file_paths: Uploaded file paths for document processing (optional)
 
     Returns:
@@ -407,7 +404,6 @@ def create_initial_state(
         language=language,
         # MCP Orchestration (Phase 2)
         mcp_traces=[],
-        data_consent_given=data_consent_given,
         mcp_server_health={
             "openweather": True,
             "zekalab": True,

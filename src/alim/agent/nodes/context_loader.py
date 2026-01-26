@@ -163,13 +163,12 @@ async def _orchestrate_parallel_mcp(
     mcp_traces = list(state.get("mcp_traces", []))
     use_mcp = state.get("mcp_config", {}).get("use_mcp", True)
     allow_fallback = state.get("mcp_config", {}).get("fallback_to_synthetic", True)
-    data_consent = state.get("data_consent_given", False)
 
     updates: dict[str, Any] = {}
     weather = None
     mcp_context = {}
 
-    if use_mcp and data_consent and farm_id:
+    if use_mcp and farm_id:
         logger.info(
             "mcp_orchestration_start",
             farm_id=farm_id,

@@ -543,29 +543,19 @@ async def chat_profiles(current_user: cl.User | None = None):
     """
     profiles = []
 
-    # Default model first
-    default_model = demo_settings.ollama_model
-    if default_model in LLM_MODEL_PROFILES:
-        config = LLM_MODEL_PROFILES[default_model]
+    # Add modes from LLM_MODEL_PROFILES
+    for mode_key, config in LLM_MODEL_PROFILES.items():
+        # Set default to Agent mode
+        is_default = mode_key == AgentMode.AGENT.value
+
         profiles.append(
             cl.ChatProfile(
-                name=default_model,
+                name=config["name"],
                 markdown_description=config["description"],
-                icon="/public/avatars/ALİM_1.svg",
-                default=True,
+                icon="/avatars/alim_1.svg",
+                default=is_default,
             )
         )
-
-    # Add other available models
-    for model_name, config in LLM_MODEL_PROFILES.items():
-        if model_name != default_model:
-            profiles.append(
-                cl.ChatProfile(
-                    name=model_name,
-                    markdown_description=config["description"],
-                    icon="/public/avatars/ALİM_1.svg",
-                )
-            )
 
     return profiles
 
@@ -1543,17 +1533,7 @@ When providing recommendations, consider these farm-specific details.
 # AVOID: "Sidecar" (internal term), "DigiRella", "ZekaLab" (business names)
 # ============================================
 async def send_dashboard_welcome(user: cl.User | None = None, mcp_status: dict | None = None):
-    """Send primary welcome message to main chat with farm status and quick actions.
-
-    This is the FIRST message users see after logging in (main chat).
-    Displays personalized greeting, farm context, and action buttons.
-
-    Creates a "Warm Handshake" experience that transforms the chat from
-    a generic interface into an agricultural command center.
-
-    Args:
-        user: Optional authenticated user for personalization
-    """
+    """Send primary welcome message to main chat with farm status and quick actions."""
     try:
         # Personalized greeting
         if user and user.metadata:
@@ -2552,10 +2532,15 @@ async def on_message(message: cl.Message):
 
     # Phase 5: Data Consent Check
     # Show consent prompt once per session before accessing external data
+    # SKIP for simple greetings to avoid over-eager HITL
     data_consent_given = cl.user_session.get("data_consent_given", False)
     consent_prompt_shown = cl.user_session.get("consent_prompt_shown", False)
 
-    if not data_consent_given and not consent_prompt_shown:
+    # Simple heuristic to identify greetings
+    greetings = {"salam", "saq ol", "hello", "hi", "hey", "xoş gördük"}
+    is_greeting = any(g in message.content.lower().strip() for g in greetings)
+
+    if not data_consent_given and not consent_prompt_shown and not is_greeting:
         # Show consent prompt
         await _show_data_consent_prompt()
         cl.user_session.set("consent_prompt_shown", True)

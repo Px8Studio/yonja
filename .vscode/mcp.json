@@ -1,45 +1,63 @@
 {
-    "mcpServers": {
-        "zekalab": {
-            "type": "streamable-http",
-            "url": "http://localhost:7777/mcp"
-        },
-        "python-viz": {
-            "type": "streamable-http",
-            "url": "http://localhost:7778/mcp"
-        }
-    },
-    "servers": {
-        "io.github.github/github-mcp-server": {
-            "type": "stdio",
-            "command": "docker",
-            "args": [
-                "run",
-                "-i",
-                "--rm",
-                "-e",
-                "GITHUB_PERSONAL_ACCESS_TOKEN=${input:token}",
-                "ghcr.io/github/github-mcp-server:0.29.0"
-            ],
-            "gallery": "https://api.mcp.github.com",
-            "version": "0.29.0"
-        },
-        "microsoft/markitdown": {
-            "type": "stdio",
-            "command": "uvx",
-            "args": [
-                "markitdown-mcp==0.0.1a4"
-            ],
-            "gallery": "https://api.mcp.github.com",
-            "version": "1.0.0"
-        }
-    },
-    "inputs": [
-        {
-            "id": "token",
-            "type": "promptString",
-            "description": "",
-            "password": true
-        }
-    ]
+	"servers": {
+		"io.github.github/github-mcp-server": {
+			"type": "stdio",
+			"command": "docker",
+			"args": [
+				"run",
+				"-i",
+				"--rm",
+				"-e",
+				"GITHUB_PERSONAL_ACCESS_TOKEN=${input:token}",
+				"ghcr.io/github/github-mcp-server:0.29.0"
+			],
+			"gallery": "https://api.mcp.github.com",
+			"version": "0.29.0"
+		},
+		"microsoft/markitdown": {
+			"type": "stdio",
+			"command": "uvx",
+			"args": [
+				"markitdown-mcp==0.0.1a4"
+			],
+			"gallery": "https://api.mcp.github.com",
+			"version": "1.0.0"
+		},
+		"Azure SQL Database": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"@azure/mcp@latest",
+				"server",
+				"start",
+				"--namespace",
+				"sql"
+			],
+			"type": "stdio"
+		},
+		"MarkItDown MCP": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"@microsoft/mcp-markitdown@latest"
+			],
+			"type": "stdio"
+		},
+		"Playwright MCP": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"@microsoft/mcp-playwright@latest"
+			],
+			"type": "stdio"
+		}
+	},
+	"inputs": [
+		{
+			"id": "token",
+			"type": "promptString",
+			"description": "",
+			"password": true
+		}
+	]
 }

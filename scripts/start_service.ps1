@@ -45,7 +45,7 @@ $commands = @{
         Set-Location "demo-ui"
         $args = @("run", "app.py", "-w", "--port", "8501")
         if ($Headless) { $args += "--headless" }
-        & "$venv\chainlit.exe" $args
+        & "$venv\python.exe" -m chainlit $args
     }
     "LangGraph" = {
         Set-Location "deploy\langgraph"

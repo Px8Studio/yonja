@@ -134,17 +134,29 @@ if (-not $importPassed) {
 # Check 3: Critical Unit Tests (Fast - ~10s)
 # ═══════════════════════════════════════════════════════════════════════════
 
-$pytestCmd = if (Test-Path ".venv/Scripts/pytest.exe") {
-    ".venv/Scripts/pytest.exe"
-}
-else {
-    "pytest"
-}
+$pytestCmd = $pythonCmd
 
 if (-not $Quick) {
     $testPassed = Test-Check -Name "🧪 Critical unit tests" -Command {
         $env:PYTHONPATH = "$PWD/src"
-        & $pytestCmd tests/unit/ -v --tb=short -q --maxfail=1
+        $pytestArgs = @("-m", "pytest", "tests/unit/", "-v", "--tb=short", "-q", "--maxfail=1")
+        $stdoutFile = New-TemporaryFile
+        $stderrFile = New-TemporaryFile
+        try {
+            $proc = Start-Process -FilePath $pytestCmd -ArgumentList $pytestArgs -NoNewWindow -Wait -PassThru `
+                -RedirectStandardOutput $stdoutFile -RedirectStandardError $stderrFile
+            $combined = @(
+                Get-Content -Path $stdoutFile -Raw -ErrorAction SilentlyContinue
+                Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
+            ) -join ""
+            if ($combined) {
+                Write-Output $combined
+            }
+            $global:LASTEXITCODE = $proc.ExitCode
+        }
+        finally {
+            Remove-Item -Path $stdoutFile, $stderrFile -ErrorAction SilentlyContinue
+        }
     }
 
     if (-not $testPassed) {

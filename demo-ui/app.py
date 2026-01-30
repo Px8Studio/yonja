@@ -2205,7 +2205,9 @@ async def on_chat_resume(thread: ThreadDict):
     metadata = thread.get("metadata", {})
     # Chainlit can store thread metadata as a JSON string in some setups.
     # Normalize to dict to avoid AttributeError on .get()
-    if isinstance(metadata, str):
+    if metadata is None:
+        metadata = {}
+    elif isinstance(metadata, str):
         try:
             metadata = json.loads(metadata) if metadata.strip() else {}
         except Exception:
@@ -2784,18 +2786,25 @@ async def _handle_direct_execution(
     # - LLM streaming (specialist advice)
     # - MCP tool calls
     # - Error handling
-    # We just collect the final state and extract the response.
-    final_state = None
-    async for state in graph.astream(initial_state, config=config):
-        final_state = state
+    # We collect state updates and extract the response.
+    final_response = None
+    async for chunk in graph.astream(initial_state, config=config):
+        # astream returns dicts with node names as keys
+        # Each chunk is like: {'supervisor': {...state updates...}}
+        # We need to look inside each node's update for current_response
+        for node_name, node_output in chunk.items():
+            if isinstance(node_output, dict) and "current_response" in node_output:
+                final_response = node_output["current_response"]
 
-    # Extract response from final state
+    # Extract and display response
     # The graph ALWAYS puts the response in current_response
     # No special-casing needed - this works for ALL node types
-    if final_state:
-        response = final_state.get("current_response")
-        if response:
-            await response_msg.stream_token(response)
+    if final_response:
+        await response_msg.stream_token(final_response)
+    else:
+        # Fallback if no response found
+        logger.warning("no_response_found_in_graph_output")
+        await response_msg.stream_token("❌ Cavab alınmadı")
 
     await response_msg.update()
     await _add_feedback_buttons(response_msg)

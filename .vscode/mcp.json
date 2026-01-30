@@ -23,33 +23,11 @@
 			"gallery": "https://api.mcp.github.com",
 			"version": "1.0.0"
 		},
-		"Azure SQL Database": {
-			"command": "npx",
-			"args": [
-				"-y",
-				"@azure/mcp@latest",
-				"server",
-				"start",
-				"--namespace",
-				"sql"
-			],
-			"type": "stdio"
-		},
-		"MarkItDown MCP": {
-			"command": "npx",
-			"args": [
-				"-y",
-				"@microsoft/mcp-markitdown@latest"
-			],
-			"type": "stdio"
-		},
-		"Playwright MCP": {
-			"command": "npx",
-			"args": [
-				"-y",
-				"@microsoft/mcp-playwright@latest"
-			],
-			"type": "stdio"
+		"huggingface/hf-mcp-server": {
+			"type": "http",
+			"url": "https://huggingface.co/mcp?login",
+			"gallery": "https://api.mcp.github.com",
+			"version": "1.0.0"
 		}
 	},
 	"inputs": [

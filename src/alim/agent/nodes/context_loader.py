@@ -132,7 +132,24 @@ async def context_loader_node(state: AgentState) -> dict:
             farm_context_obj = updates.get("farm_context") or state.get("farm_context")
             farm_id = farm_context_obj.farm_id if farm_context_obj else None
 
-            mcp_data = await _orchestrate_parallel_mcp(state, farm_id, farm_context_obj)
+            # Check data consent BEFORE making any MCP calls
+            if state.get("data_consent_given", False):
+                mcp_data = await _orchestrate_parallel_mcp(state, farm_id, farm_context_obj)
+            else:
+                # Skip MCP calls if consent not given - use synthetic fallback only
+                logger.info(
+                    f"Skipping MCP calls - data consent not given for user {state.get('user_id')}"
+                )
+                mcp_data = {
+                    "weather": await _get_synthetic_weather(farm_context_obj.region)
+                    if farm_context_obj
+                    else None,
+                    "rules": {},
+                    "mcp_traces": [],
+                    "mcp_context": {},
+                }
+
+            # Update state with MCP data
             updates.update(mcp_data)
 
     logger.info(

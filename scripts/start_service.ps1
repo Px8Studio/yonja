@@ -49,7 +49,7 @@ $commands = @{
     }
     "LangGraph" = {
         Set-Location "deploy\langgraph"
-        & "$venv\langgraph.exe" dev --config "langgraph.json" --no-browser
+        & "$venv\python.exe" -m langgraph dev --config "langgraph.json" --no-browser
     }
     "MCP"       = { & "$venv\python.exe" -m uvicorn alim.mcp_server.main:app --port 7777 --reload }
     "Docker"    = { docker-compose -f "docker-compose.local.yml" up -d postgres ollama redis langfuse-db langfuse-server }

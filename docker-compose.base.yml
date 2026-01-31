@@ -1,6 +1,6 @@
 # docker-compose.base.yml
 # =========================================================================
-# Shared Infrastructure for Yonca AI
+# Shared Infrastructure for ALİM
 # This file defines the core services that are common to all environments.
 # =========================================================================
 
@@ -10,18 +10,18 @@ services:
   # ─────────────────────────────────────────────────────────────
   postgres:
     image: postgres:15-alpine
-    container_name: yonca-postgres
+    container_name: alim-postgres
     volumes:
       - postgres-data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=yonca
-      - POSTGRES_USER=yonca
-      - POSTGRES_PASSWORD=${YONCA_POSTGRES_PASSWORD:-yonca_dev_password}
+      - POSTGRES_DB=alim
+      - POSTGRES_USER=alim
+      - POSTGRES_PASSWORD=${ALIM_POSTGRES_PASSWORD:-alim_dev_password}
     networks:
-      - yonca-network
+      - alim-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U yonca"]
+      test: [ "CMD-SHELL", "pg_isready -U alim" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -31,14 +31,14 @@ services:
   # ─────────────────────────────────────────────────────────────
   redis:
     image: redis/redis-stack-server:latest
-    container_name: yonca-redis
+    container_name: alim-redis
     volumes:
       - redis-data:/data
     networks:
-      - yonca-network
+      - alim-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -48,7 +48,7 @@ services:
   # ─────────────────────────────────────────────────────────────
   langfuse-db:
     image: postgres:15-alpine
-    container_name: yonca-langfuse-db
+    container_name: alim-langfuse-db
     volumes:
       - langfuse-db-data:/var/lib/postgresql/data
     environment:
@@ -56,10 +56,10 @@ services:
       - POSTGRES_USER=langfuse
       - POSTGRES_PASSWORD=${LANGFUSE_POSTGRES_PASSWORD:-langfuse_secret}
     networks:
-      - yonca-network
+      - alim-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U langfuse -d langfuse"]
+      test: [ "CMD-SHELL", "pg_isready -U langfuse -d langfuse" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -69,12 +69,12 @@ services:
   # ─────────────────────────────────────────────────────────────
   langfuse-server:
     image: langfuse/langfuse:2
-    container_name: yonca-langfuse
+    container_name: alim-langfuse
     environment:
       - DATABASE_URL=postgresql://langfuse:${LANGFUSE_POSTGRES_PASSWORD:-langfuse_secret}@langfuse-db:5432/langfuse
       - DIRECT_URL=postgresql://langfuse:${LANGFUSE_POSTGRES_PASSWORD:-langfuse_secret}@langfuse-db:5432/langfuse
-      - NEXTAUTH_SECRET=${LANGFUSE_AUTH_SECRET:-yonca-langfuse-secret-change-in-prod}
-      - SALT=${LANGFUSE_SALT:-yonca-langfuse-salt-change-in-prod}
+      - NEXTAUTH_SECRET=${LANGFUSE_AUTH_SECRET:-alim-langfuse-secret-change-in-prod}
+      - SALT=${LANGFUSE_SALT:-alim-langfuse-salt-change-in-prod}
       - NEXTAUTH_URL=http://localhost:3001
       - TELEMETRY_ENABLED=false
       - AUTH_DISABLE_SIGNUP=false
@@ -82,17 +82,17 @@ services:
       langfuse-db:
         condition: service_healthy
     networks:
-      - yonca-network
+      - alim-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/public/health"]
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:3000/api/public/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
 
 networks:
-  yonca-network:
+  alim-network:
     driver: bridge
 
 volumes:

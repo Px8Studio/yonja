@@ -1,4 +1,4 @@
-# 🎯 Yonca AI — Technical Manifesto
+# 🎯 ALİM — Technical Manifesto
 
 > **The North Star:** Build **ALEM**—the indispensable **operating system** for Azerbaijani agriculture that delivers personalized, rule-validated farm recommendations without ever touching real data during development.
 
@@ -29,7 +29,7 @@ mindmap
       99.5% availability
 ```
 
-**Success = Farmers get trustworthy, actionable task lists based on weather, soil, crop data, and financial eligibility—delivered via ALEM's brain inside Yonca's body.**
+**Success = Farmers get trustworthy, actionable task lists based on weather, soil, crop data, and financial eligibility—delivered via ALEM's brain inside ALİM's body.**
 
 ---
 
@@ -48,7 +48,7 @@ Today, farmers are overwhelmed by data—NDVI maps, subsidy rules, weather alert
 **ALEM as Operating System:**
 - **Input Layer**: Ingests data from EKTİS (farms), CBAR (banking), Azərkosmos (satellites), weather APIs
 - **Processing Layer**: Llama 4 Maverick reasons about optimal actions using agronomical rules
-- **Output Layer**: Delivers personalized recommendations to Yonca Mobile UI or Chainlit
+- **Output Layer**: Delivers personalized recommendations to ALİM Mobile UI or Chainlit
 
 **Key Differentiator:** ALEM doesn't just provide information—it **orchestrates autonomous decisions** across the entire agricultural value chain.
       No EKTIS changes
@@ -61,7 +61,7 @@ Today, farmers are overwhelmed by data—NDVI maps, subsidy rules, weather alert
 
 ## 1. The "Sidecar" Strategy
 
-Our primary architectural decision is the **Sidecar Intelligence Model**. Instead of proposing a rebuild of the Yonca platform, we position our prototype as a detached, high-performance module that sits alongside the existing system.
+Our primary architectural decision is the **Sidecar Intelligence Model**. Instead of proposing a rebuild of the ALİM platform, we position our prototype as a detached, high-performance module that sits alongside the existing system.
 
 ### Strategy Pillars
 
@@ -101,7 +101,7 @@ The AI Assistant integrates as a **new navigation tab** positioned between "Mən
                          (Primary: #2E7D32)
 ```
 
-### Design Principles (Extracted from Yonca App)
+### Design Principles (Extracted from ALİM App)
 
 | Principle | Implementation | Reference |
 |:----------|:---------------|:----------|

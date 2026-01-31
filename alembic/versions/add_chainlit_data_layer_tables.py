@@ -21,7 +21,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "chainlit_tables_001"  # pragma: allowlist secret
-down_revision: str | None = "3fe49b8713dd"
+down_revision: str | None = "3fe49b8713dd"  # pragma: allowlist secret
 branch_labels: str | None = None
 depends_on: str | None = None
 

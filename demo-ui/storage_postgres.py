@@ -4,6 +4,34 @@
 This module implements a custom storage client that stores all file uploads
 (audio, video, images, documents, etc.) directly in PostgreSQL using BYTEA columns.
 
+═══════════════════════════════════════════════════════════════════════════════
+ARCHITECTURE DECISION: Twelve-Factor App Compliance
+═══════════════════════════════════════════════════════════════════════════════
+
+This is a PRODUCTION BEST PRACTICE, not a workaround. We are leveraging
+Chainlit's pluggable architecture (BaseStorageClient) to implement
+cloud-native file storage.
+
+Why PostgreSQL instead of local .files/?
+
+    1. STATELESSNESS (Twelve-Factor App Principle #6)
+       Containers are ephemeral. If they crash or redeploy, .files/ is lost.
+       PostgreSQL ensures files survive container lifecycle events.
+       See: https://12factor.net/processes
+
+    2. LOAD BALANCING
+       With multiple app instances, files uploaded to Instance 1's disk
+       cannot be served by Instance 2. PostgreSQL solves this.
+
+    3. SINGLE BACKUP TRUTH
+       `pg_dump` captures Users + Conversations + Files in one command.
+       No need to synchronize database and filesystem backups.
+
+    4. ACID COMPLIANCE
+       File uploads are transactional. No orphaned files or broken references.
+
+═══════════════════════════════════════════════════════════════════════════════
+
 Benefits:
 - Full data residency: All data stays in your PostgreSQL database
 - No external dependencies: No S3, Azure, GCS accounts needed
@@ -17,6 +45,8 @@ Tradeoffs:
 - Not ideal for: Very large files (>100MB) or high-throughput streaming
 
 For most chat applications with document/image attachments, this is ideal.
+
+Documentation: docs/zekalab/11-CHAINLIT-STRUCTURE.md
 """
 
 import base64

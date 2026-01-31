@@ -1,10 +1,10 @@
 # ════════════════════════════════════════════════════════════════════════════
-# YONCA AI — Chainlit Configuration
+# ALİM — Chainlit Configuration
 # ════════════════════════════════════════════════════════════════════════════
 #
 # BRANDING GUIDELINES (ZekaLab IP):
 # ────────────────────────────────────────────────────────────────────────────
-# Product Name: "Yonca" or "Yonca AI"
+# Product Name: "ALİM" or "ALİM"
 # Tagline (AZ): "Sizin ağıllı kənd təsərrüfatı köməkçiniz"
 # Tagline (EN): "Your intelligent agricultural assistant"
 #
@@ -12,7 +12,7 @@
 # These are internal/client terms, not user-facing product names.
 #
 # Developed by: ZekaLab (IP owner)
-# Client: DigiRella — integrating via API into their Yonca mobile app
+# Client: DigiRella — integrating via API into their ALİM mobile app
 # ════════════════════════════════════════════════════════════════════════════
 
 [project]
@@ -38,7 +38,7 @@ mask_user_env = true
 
 # Authorized origins
 # FIXED: Explicit origins prevent CORS auth failures with cookie-based authentication
-allow_origins = ["http://localhost:8000", "http://localhost:3000", "https://zekalab.info", "https://yonca.ai"]
+allow_origins = ["http://localhost:8000", "http://localhost:3000", "http://localhost:8501", "http://127.0.0.1:8501", "https://zekalab.info", "https://ALİM.ai"]
 
 # Product name shown in UI header
 name = "ALEM 1"
@@ -46,11 +46,11 @@ enable_telemetry = false
 
 [features]
 # Process and display HTML in messages. This can be a security risk (see https://stackoverflow.com/questions/19603097/why-is-it-dangerous-to-render-user-generated-html-or-javascript)
-# ENABLED for Yonca dashboard cards — only AI-generated HTML, not user input
+# ENABLED for ALİM dashboard cards — only AI-generated HTML, not user input
 unsafe_allow_html = true
 
 # Process and display mathematical expressions. This can clash with "$" characters in messages.
-latex = false
+latex = true
 
 # Autoscroll new user messages at the top of the window
 user_message_autoscroll = true
@@ -71,8 +71,8 @@ allow_thread_sharing = true
 favorites = true
 
 # Prompt Playground - allows users to experiment with prompts
-# RECOMMENDED: Disabled for end-users/farmers in production
-prompt_playground = false
+# ENABLED: Power users can test prompt variations
+prompt_playground = true
 
 # ════════════════════════════════════════════════════════════════════════════
 # CHAT SETTINGS LOCATION
@@ -112,13 +112,18 @@ reaction_on_message_received = false
     # Sample rate of the audio (16000 = standard, 24000 = high quality)
     sample_rate = 16000
 
+[features.llm_playground]
+    # Enable LLM Playground for debugging
+    enabled = true
+
 [features.mcp]
     # ════════════════════════════════════════════════════════════════════════════
     # MODEL CONTEXT PROTOCOL (MCP) - Shows 🔌 plug icon in input ribbon
     # ════════════════════════════════════════════════════════════════════════════
     # MCP allows connecting external tools/data sources to the chat.
     # When enabled, users see a plug icon to add MCP connections.
-    # Even if you don't use MCP yet, enabling shows the UI as a placeholder.
+    # UI stores connections in browser localStorage (client-side).
+    # Backend can read and use these connections for tool execution.
     enabled = true
 
 [features.mcp.sse]
@@ -134,10 +139,18 @@ reaction_on_message_received = false
     # Please don't comment this line for now, we need it to parse the executable name.
     allowed_executables = [ "npx", "uvx" ]
 
+[features.multi_modal]
+    # Enable multi-modal input (images, files, etc. in same message)
+    enabled = true
+
+[features.image_generation]
+    # Enable image generation if connected
+    enabled = true
+
 [UI]
 # Name of the assistant shown in chat messages.
 # NOTE: Do NOT use "Sidecar" — that's internal architecture terminology.
-name = "Yonca AI"
+name = "ALİM"
 
 # ════════════════════════════════════════════════════════════════════════════
 # LANGUAGE SETTINGS
@@ -161,7 +174,7 @@ name = "Yonca AI"
 default_sidebar_state = "closed"
 
 # Description of the assistant. This is used for HTML tags and SEO.
-description = "ALEM 1 — Yonca AI Assistant | Sizin ağıllı kənd təsərrüfatı köməkçiniz"
+description = "ALEM 1 — ALİM Assistant | Sizin ağıllı kənd təsərrüfatı köməkçiniz"
 
 # Chain of Thought (CoT) display mode. Can be "hidden", "tool_call" or "full".
 # CHANGED: "tool_call" provides professional "thinking" status without clutter

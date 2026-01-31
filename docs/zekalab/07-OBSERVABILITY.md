@@ -8,9 +8,9 @@
 
 | Component | Status | Location |
 |:----------|:-------|:---------|
-| **Langfuse Integration** | ✅ Implemented | `src/yonca/observability/langfuse.py` |
+| **Langfuse Integration** | ✅ Implemented | `src/ALİM/observability/langfuse.py` |
 | Docker Compose | ✅ Configured | `docker-compose.local.yml` |
-| Agent Callbacks | ✅ Wired | `src/yonca/agent/graph.py` |
+| Agent Callbacks | ✅ Wired | `src/ALİM/agent/graph.py` |
 | Prometheus Metrics | ⏳ Not implemented | Future |
 
 ---
@@ -28,9 +28,9 @@ docker-compose -f docker-compose.local.yml up langfuse-server langfuse-db -d
 # 2. Open http://localhost:3001, create account, get API keys
 
 # 3. Add to .env:
-YONCA_LANGFUSE_SECRET_KEY=sk-lf-...
-YONCA_LANGFUSE_PUBLIC_KEY=pk-lf-...
-YONCA_LANGFUSE_HOST=http://localhost:3001
+ALİM_LANGFUSE_SECRET_KEY=sk-lf-...
+ALİM_LANGFUSE_PUBLIC_KEY=pk-lf-...
+ALİM_LANGFUSE_HOST=http://localhost:3001
 ```
 
 ### Dashboard Features
@@ -80,7 +80,7 @@ flowchart LR
 ## 🔧 Configuration
 
 ```python
-# src/yonca/config.py
+# src/ALİM/config.py
 class Settings:
     langfuse_enabled: bool = True
     langfuse_host: str = "http://localhost:3001"

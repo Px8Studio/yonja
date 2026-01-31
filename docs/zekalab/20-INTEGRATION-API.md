@@ -1,14 +1,14 @@
-# 🌐 Yonca AI — Integration API Quickstart
+# 🌐 ALİM — Integration API Quickstart
 
-> Purpose: Make the integration path crystal clear for Yonca Mobile and partners — which server to call, how requests flow, and minimal examples to test end‑to‑end.
+> Purpose: Make the integration path crystal clear for ALİM Mobile and partners — which server to call, how requests flow, and minimal examples to test end‑to‑end.
 
 ---
 
-## 🧭 Which Server Does Yonca Mobile Call?
+## 🧭 Which Server Does ALİM Mobile Call?
 
-- Primary entry point: FastAPI backend (:8000). This is the production API Yonca Mobile should integrate with.
+- Primary entry point: FastAPI backend (:8000). This is the production API ALİM Mobile should integrate with.
 - LangGraph Dev Server (:2024): Optional developer tool for visual debugging; not an integration target.
-- Chainlit Demo UI (:8501): Demo/chat interface for showcasing ALEM; not used by Yonca Mobile.
+- Chainlit Demo UI (:8501): Demo/chat interface for showcasing ALEM; not used by ALİM Mobile.
 
 ---
 
@@ -17,11 +17,11 @@
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
 flowchart LR
-    mobile["📱 Yonca Mobile<br/><i>Client</i>"]
+    mobile["📱 ALİM Mobile<br/><i>Client</i>"]
     api["🧩 FastAPI Backend<br/><i>Port 8000</i>"]
     graphlib["🧠 LangGraph Library<br/><i>Agent orchestration</i>"]
     redis[(🧰 Redis<br/><i>Checkpoints</i>)]
-    db[(🗄️ Yonca App DB<br/><i>PostgreSQL</i>)]
+    db[(🗄️ ALİM App DB<br/><i>PostgreSQL</i>)]
     langfuse[[📊 Langfuse<br/><i>Observability</i>]]
     studio["🎨 LangGraph Dev Server<br/><i>Port 2024</i>"]
 
@@ -41,7 +41,7 @@ flowchart LR
 ```
 
 Key points:
-- Only the FastAPI backend is the external contract for Yonca Mobile.
+- Only the FastAPI backend is the external contract for ALİM Mobile.
 - The LangGraph Dev Server is a developer tool; it does not expose production endpoints.
 
 ---
@@ -133,7 +133,7 @@ Notes:
 - Development (optional): `X-API-Key: <dev-key>` for rapid testing with synthetic data.
 
 Environment hints:
-- `DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@localhost:5433/yonca`
+- `DATABASE_URL=postgresql+asyncpg://ALİM:ALİM_dev_password@localhost:5433/ALİM`
 - Langfuse keys available via environment if observability is enabled.
 
 ---
@@ -183,12 +183,12 @@ curl -X POST \
 
 ## 🧩 Positioning Guidance
 
-- Sidecar OS: “ALEM inside Yonca” — we don’t touch EKTIS directly; we expose a clean REST contract that Yonca Mobile can call today.
+- Sidecar OS: “ALEM inside ALİM” — we don’t touch EKTIS directly; we expose a clean REST contract that ALİM Mobile can call today.
 - Hot‑swap ready: Synthetic data mirrors real schema; flipping to real sources requires no code changes at the API layer.
 - Developer‑friendly: Swagger at :8000, optional dev API key, and clear examples reduce integration friction.
 - Observability: Langfuse traces give confidence in reasoning quality and performance from day one.
 
-Messaging to Yonca team:
+Messaging to ALİM team:
 - “Your app calls our FastAPI endpoints at :8000. Each request is orchestrated by LangGraph and fully traceable in Langfuse. You can test via Swagger immediately with synthetic data and switch to real sources later without changing your code.”
 
 ---
@@ -197,7 +197,7 @@ Messaging to Yonca team:
 
 - Auth alignment: Finalize JWT/OIDC format (SİMA/ASAN) and public key distribution.
 - Rate limits & quotas: Agree on per‑user and per‑tenant limits for production.
-- Error contracts: Standardize error payloads (codes/messages) to match Yonca Mobile expectations.
+- Error contracts: Standardize error payloads (codes/messages) to match ALİM Mobile expectations.
 - Versioning: Introduce `v1` path prefix and changelog for backward compatibility.
 - Network security: Ensure TLS/HTTPS at the edge (Traefik/Nginx) before external exposure.
 

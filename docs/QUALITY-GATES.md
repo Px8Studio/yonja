@@ -2,7 +2,7 @@
 
 ## Overview
 
-Yonca AI implements a comprehensive quality gate system that **automatically fixes** most issues before they block your workflow. This document explains how it works and how to use it effectively.
+ALİM implements a comprehensive quality gate system that **automatically fixes** most issues before they block your workflow. This document explains how it works and how to use it effectively.
 
 ---
 
@@ -174,7 +174,7 @@ except (ValueError, KeyError) as e:
 .venv/Scripts/ruff.exe check src/ tests/ --fix --diff
 
 # Fix specific file
-.venv/Scripts/ruff.exe check src/yonca/agent/nodes/agronomist.py --fix
+.venv/Scripts/ruff.exe check src/ALİM/agent/nodes/agronomist.py --fix
 ```
 
 ---
@@ -220,7 +220,7 @@ repos:
 
 ```powershell
 # In .venv activation
-$env:YONCA_NO_AUTO_FIX = "true"
+$env:ALİM_NO_AUTO_FIX = "true"
 
 # Or in scripts/pre-start-checks.ps1
 # Add: [switch]$NoAutoFix = $true  # to defaults

@@ -1,5 +1,5 @@
 # Demo UI Dockerfile
-# Builds the Chainlit demo interface for Yonca AI
+# Builds the Chainlit demo interface for ALİM
 
 FROM python:3.11-slim as base
 
@@ -20,9 +20,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ============================================
 FROM base as deps
 
-# Copy requirements files
+# Copy requirements and project files
 COPY demo-ui/requirements.txt demo-ui/requirements.txt
-COPY requirements.txt requirements.txt
+COPY requirements.txt pyproject.toml README.md ./
+COPY src/ /app/src/
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt \

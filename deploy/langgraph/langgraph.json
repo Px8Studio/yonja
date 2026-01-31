@@ -1,0 +1,36 @@
+{
+    "$schema": "https://langchain-ai.github.io/langgraph/langgraph.json",
+    "dependencies": [
+        "../../"
+    ],
+    "graphs": {
+        "alim_agent": "../../src/alim/agent/graph.py:make_graph"
+    },
+    "env": "../../.env",
+    "python_version": "3.12",
+    "store": {
+        "type": "postgres",
+        "uri": "postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST:-localhost}:${PGPORT:-5433}/${PGDATABASE:-alim}"
+    },
+    "watch": {
+        "ignore": [
+            "__pycache__",
+            ".pytest_cache",
+            ".git",
+            "node_modules",
+            ".venv",
+            "*.pyc",
+            "*.pyo",
+            ".vscode",
+            ".idea",
+            "dist",
+            "build",
+            "*.egg-info",
+            "logs",
+            "*.log",
+            "tests",
+            ".langgraph_api",
+            "**/.langgraph_api/**"
+        ]
+    }
+}

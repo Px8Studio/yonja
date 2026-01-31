@@ -16,12 +16,16 @@
 		},
 		"microsoft/markitdown": {
 			"type": "stdio",
-			"command": "uvx",
+			"command": "py",
 			"args": [
+				"-3.13",
+				"-m",
+				"uvx",
 				"markitdown-mcp==0.0.1a4"
 			],
 			"gallery": "https://api.mcp.github.com",
-			"version": "1.0.0"
+			"version": "1.0.0",
+			"comment": "Uses py launcher to find Python 3.13 (requires Python 3.13 installed). Avoids Python 3.14 onnxruntime incompatibility."
 		},
 		"huggingface/hf-mcp-server": {
 			"type": "http",

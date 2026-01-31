@@ -14,11 +14,20 @@ Usage:
         graph.add_node("tools", ToolNode(tools))
 """
 
+from __future__ import annotations
+
 from typing import Any
 
 import structlog
 from langchain_core.tools import BaseTool
-from langchain_mcp_adapters.client import MultiServerMCPClient
+
+try:
+    from langchain_mcp_adapters.client import MultiServerMCPClient
+except Exception as exc:  # pragma: no cover - depends on external package versions
+    MultiServerMCPClient = None
+    _MCP_IMPORT_ERROR = exc
+else:
+    _MCP_IMPORT_ERROR = None
 
 from alim.mcp.config import mcp_settings
 
@@ -90,13 +99,13 @@ def get_mcp_client_config() -> dict[str, dict[str, Any]]:
 
 
 def create_mcp_client() -> MultiServerMCPClient | None:
-    """Create configured MCP client.
+    """Create configured MCP client with all servers.
 
     Returns MultiServerMCPClient if any MCP servers are enabled,
     otherwise returns None.
 
     Returns:
-        MultiServerMCPClient instance or None
+        MultiServerMCPClient instance or None if disabled/error
     """
     config = get_mcp_client_config()
 
@@ -109,7 +118,7 @@ def create_mcp_client() -> MultiServerMCPClient | None:
         servers=list(config.keys()),
     )
 
-    return MultiServerMCPClient(config)
+    return _require_mcp_client(config)
 
 
 async def get_mcp_tools() -> list[BaseTool]:
@@ -192,7 +201,7 @@ def create_python_viz_client() -> MultiServerMCPClient | None:
         return None
 
     logger.info("python_viz_mcp_client_created")
-    return MultiServerMCPClient(config)
+    return _require_mcp_client(config)
 
 
 async def get_python_viz_tools() -> list[BaseTool]:
@@ -278,7 +287,7 @@ def get_mcp_client_for_profile(profile: str) -> MultiServerMCPClient | None:
         servers=list(filtered_config.keys()),
     )
 
-    return MultiServerMCPClient(filtered_config)
+    return _require_mcp_client(filtered_config)
 
 
 async def get_mcp_tools_for_profile(profile: str) -> list[BaseTool]:
@@ -358,3 +367,23 @@ async def check_mcp_servers_health() -> dict[str, dict[str, Any]]:
     )
 
     return results
+
+
+def _require_mcp_client(config: dict[str, Any]) -> MultiServerMCPClient:
+    """Create MCP client filtered by profile.
+
+    Different user profiles get access to different MCP servers.
+    This implements profile-based tool loading.
+
+    Args:
+        config: Configuration dict for MCP client
+
+    Returns:
+        MultiServerMCPClient with profile-appropriate servers
+    """
+    if MultiServerMCPClient is None:
+        raise ImportError(
+            "MCP client dependency is missing or incompatible. "
+            "Check mcp/langchain_mcp_adapters versions."
+        ) from _MCP_IMPORT_ERROR
+    return MultiServerMCPClient(config)

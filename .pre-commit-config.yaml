@@ -45,6 +45,7 @@ repos:
         args: [--allow-multiple-documents]
         exclude: ^(docker-compose.*\.ya?ml)$  # Docker compose has special syntax
       - id: check-json
+        exclude: ^\.vscode/settings\.json$  # VS Code uses JSONC with comments
       - id: check-toml
       - id: check-merge-conflict
       - id: check-added-large-files

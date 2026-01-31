@@ -10,25 +10,22 @@
 				"-e",
 				"GITHUB_PERSONAL_ACCESS_TOKEN=${input:token}",
 				"ghcr.io/github/github-mcp-server:0.29.0"
-			],
-			"gallery": "https://api.mcp.github.com"
-		},
-		"microsoft/markitdown": {
-			"type": "stdio",
-			"command": "py",
-			"args": [
-				"-3.13",
-				"-m",
-				"uvx",
-				"markitdown-mcp==0.0.1a4"
-			],
-			"gallery": "https://api.mcp.github.com",
-			"comment": "Uses py launcher to find Python 3.13 (requires Python 3.13 installed). Avoids Python 3.14 onnxruntime incompatibility."
+			]
 		},
 		"huggingface/hf-mcp-server": {
 			"type": "http",
 			"url": "https://huggingface.co/mcp?login",
-			"gallery": "https://api.mcp.github.com"
+			"gallery": "https://api.mcp.github.com",
+			"version": "1.0.0"
+		},
+		"microsoft/markitdown": {
+			"type": "stdio",
+			"command": "uvx",
+			"args": [
+				"markitdown-mcp==0.0.1a4"
+			],
+			"gallery": "https://api.mcp.github.com",
+			"version": "1.0.0"
 		}
 	},
 	"inputs": [

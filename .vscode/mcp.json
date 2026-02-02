@@ -22,7 +22,8 @@
 			"type": "stdio",
 			"command": "uvx",
 			"args": [
-				"--prerelease=allow",
+				"--python",
+				"3.12",
 				"markitdown-mcp"
 			],
 			"gallery": "https://api.mcp.github.com",

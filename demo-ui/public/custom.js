@@ -103,11 +103,11 @@
 
   function render(status) {
     const badge = createBadge();
-    const dot = badge.querySelector('.yonca-mcp-dot');
-    const tooltip = badge.querySelector('.yonca-mcp-tooltip');
+    const dot = badge.querySelector('.alim-mcp-dot');
+    const tooltip = badge.querySelector('.alim-mcp-tooltip');
 
     if (status.error) {
-      dot.className = 'yonca-mcp-dot error';
+      dot.className = 'alim-mcp-dot error';
       tooltip.textContent = `MCP error: ${status.error}`;
       return;
     }
@@ -116,7 +116,7 @@
     const anyOffline = Object.values(servers).some((s) => s.status !== 'online');
     const hasConnectors = Boolean(status.connectors_enabled);
 
-    dot.className = 'yonca-mcp-dot ' + (hasConnectors ? (anyOffline ? 'warn' : 'ok') : 'off');
+    dot.className = 'alim-mcp-dot ' + (hasConnectors ? (anyOffline ? 'warn' : 'ok') : 'off');
 
     const lines = [];
     lines.push(`Profile: ${status.profile || 'agent'}`);

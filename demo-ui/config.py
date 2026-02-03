@@ -104,6 +104,9 @@ class DemoSettings:
         default_factory=lambda: os.getenv("ALIM_API_URL", "http://localhost:8000")
     )
 
+    # Integration Mode (direct vs api)
+    integration_mode: str = field(default_factory=lambda: os.getenv("INTEGRATION_MODE", "api"))
+
     # ═══════════════════════════════════════════════════════════════════════════
     # OAUTH SETTINGS (UI-specific)
     # ═══════════════════════════════════════════════════════════════════════════

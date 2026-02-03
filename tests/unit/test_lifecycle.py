@@ -97,28 +97,36 @@ class TestHandleChatResume:
 
             with patch(
                 "services.lifecycle.load_alim_persona_from_db", new_callable=AsyncMock
-            ) as mock_load:
-                mock_load.return_value = None  # No persona found
+            ) as mock_load_persona:
+                mock_load_persona.return_value = None  # No persona found
 
-                with patch("services.lifecycle.logger"):
-                    with patch("chainlit.Message") as mock_msg:
-                        mock_msg.return_value.send = AsyncMock()
+                with patch(
+                    "services.lifecycle.load_user_settings_from_db", new_callable=AsyncMock
+                ) as mock_load_settings:
+                    mock_load_settings.return_value = None
 
-                        from services.lifecycle import handle_chat_resume
+                    with patch(
+                        "services.lifecycle.load_farm_scenario", new_callable=AsyncMock
+                    ) as mock_load_scenario:
+                        mock_load_scenario.return_value = None
 
-                        mock_checkpointer = AsyncMock(return_value=None)
-                        mock_compile = MagicMock(return_value=None)
-                        mock_setup = AsyncMock(return_value={})
+                        with patch("services.lifecycle.logger"):
+                            with patch("chainlit.Message") as mock_msg:
+                                mock_msg.return_value.send = AsyncMock()
 
-                        await handle_chat_resume(
-                            thread=mock_thread,
-                            get_app_checkpointer_fn=mock_checkpointer,
-                            compile_agent_graph_fn=mock_compile,
-                            setup_chat_settings_fn=mock_setup,
-                        )
+                                from services.lifecycle import handle_chat_resume
 
-                        # Verify thread_id was set in session
-                        assert session_data.get("thread_id") == "thread-123"
+                                mock_setup = AsyncMock(return_value={})
+
+                                await handle_chat_resume(
+                                    thread=mock_thread,
+                                    setup_chat_settings_fn=mock_setup,
+                                )
+
+                                # Verify thread_id was set in session
+                                assert session_data.get("thread_id") == "thread-123"
+                                assert session_data.get("thread_name") == "Test Thread"
+                                assert session_data.get("farm_id") == "demo_farm_001"
 
 
 class TestHandleSharedThreadView:

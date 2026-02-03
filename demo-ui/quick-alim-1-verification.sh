@@ -1,6 +1,6 @@
 #!/bin/bash
 # quick-alim-1-verification.sh
-# Run this after deployment to verify ALEM 1 setup
+# Run this after deployment to verify ALIM 1 setup
 
 echo "🚀 ALEM 1 Verification Checklist"
 echo "================================"

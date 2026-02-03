@@ -41,7 +41,7 @@ class DemoSettings:
         )
     )
     langgraph_required: bool = field(
-        default_factory=lambda: os.getenv("ALIM_LANGGRAPH_REQUIRED", "true").lower()
+        default_factory=lambda: os.getenv("ALIM_LANGGRAPH_REQUIRED", "false").lower()
         in ("true", "1", "yes")
     )
 

@@ -245,7 +245,6 @@ async def evaluate_irrigation_rules(request: IrrigationRequest) -> IrrigationRes
         should_irrigate = False
         recommended_water_mm = 0.0
         timing = "anytime"
-        rule_id = "RULE_IRR_000"
         reasoning = ""
 
         # Base threshold varies by crop and soil type
@@ -428,8 +427,8 @@ async def evaluate_pest_control_rules(request: PestControlRequest) -> PestContro
         recommended_action = "Monitor closely"
         method = "cultural"
         severity = "low"
-        rule_id = "RULE_PEST_001_BASELINE"
         confidence = 0.7
+        rule_id = "RULE_PEST_001_BASELINE"
 
         # Environmental risk assessment
         high_risk_conditions = (
@@ -441,9 +440,9 @@ async def evaluate_pest_control_rules(request: PestControlRequest) -> PestContro
         if high_risk_conditions:
             severity = "high"
             confidence = 0.85
-            rule_id = "RULE_PEST_002_HIGH_RISK"
             recommended_action = "Preventive treatment recommended"
             method = "biological"
+            rule_id = "RULE_PEST_002_HIGH_RISK"
 
         # Specific pest handling
         if "cotton_bollworm" in detected_pests:
@@ -514,8 +513,8 @@ async def calculate_subsidy(request: SubsidyRequest) -> SubsidyResponse:
         # ========== SUBSIDY RULES LOGIC ==========
 
         eligible = True
-        rule_id = "RULE_SUBSIDY_001_BASE"
         conditions = []
+        rule_id = "RULE_SUBSIDY_001_BASE"
 
         # Base subsidy rates (AZN per hectare) - varies by crop
         subsidy_rates = {
@@ -532,8 +531,8 @@ async def calculate_subsidy(request: SubsidyRequest) -> SubsidyResponse:
         # Young farmer bonus (+25%)
         if request.is_young_farmer or (request.farmer_age and request.farmer_age < 40):
             subsidy_azn *= 1.25
-            rule_id = "RULE_SUBSIDY_002_YOUNG_FARMER"
             conditions.append("Young farmer bonus applied (+25%)")
+            rule_id = "RULE_SUBSIDY_002_YOUNG_FARMER"
 
         # Calcareous soil support (+15%)
         if request.soil_type == SoilType.CALCAREOUS:

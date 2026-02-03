@@ -95,38 +95,53 @@ class TestHandleChatResume:
             mock_session.get = lambda k, d=None: session_data.get(k, d)
             mock_session.set = lambda k, v: session_data.update({k: v})
 
+            # Mock the database layer functions - use the correct import path
             with patch(
-                "services.lifecycle.load_alim_persona_from_db", new_callable=AsyncMock
+                "services.session_manager.load_alim_persona_from_db", new_callable=AsyncMock
             ) as mock_load_persona:
-                mock_load_persona.return_value = None  # No persona found
+                mock_load_persona.return_value = None
 
                 with patch(
-                    "services.lifecycle.load_user_settings_from_db", new_callable=AsyncMock
+                    "services.session_manager.load_user_settings_from_db", new_callable=AsyncMock
                 ) as mock_load_settings:
                     mock_load_settings.return_value = None
 
                     with patch(
-                        "services.lifecycle.load_farm_scenario", new_callable=AsyncMock
+                        "services.session_manager.load_farm_scenario", new_callable=AsyncMock
                     ) as mock_load_scenario:
                         mock_load_scenario.return_value = None
 
-                        with patch("services.lifecycle.logger"):
-                            with patch("chainlit.Message") as mock_msg:
-                                mock_msg.return_value.send = AsyncMock()
+                        # Mock other required dependencies
+                        with patch(
+                            "services.lifecycle.detect_expertise_from_persona"
+                        ) as mock_detect:
+                            mock_detect.return_value = ["general"]
 
-                                from services.lifecycle import handle_chat_resume
+                            with patch(
+                                "services.lifecycle.build_combined_system_prompt"
+                            ) as mock_prompt:
+                                mock_prompt.return_value = "test prompt"
 
-                                mock_setup = AsyncMock(return_value={})
+                                with patch("services.lifecycle.resolve_active_model") as mock_model:
+                                    mock_model.return_value = "test-model"
 
-                                await handle_chat_resume(
-                                    thread=mock_thread,
-                                    setup_chat_settings_fn=mock_setup,
-                                )
+                                    with patch("services.lifecycle.logger"):
+                                        with patch("chainlit.Message") as mock_msg:
+                                            mock_msg.return_value.send = AsyncMock()
 
-                                # Verify thread_id was set in session
-                                assert session_data.get("thread_id") == "thread-123"
-                                assert session_data.get("thread_name") == "Test Thread"
-                                assert session_data.get("farm_id") == "demo_farm_001"
+                                            from services.lifecycle import handle_chat_resume
+
+                                            mock_setup = AsyncMock(return_value={})
+
+                                            await handle_chat_resume(
+                                                thread=mock_thread,
+                                                setup_chat_settings_fn=mock_setup,
+                                            )
+
+                                            # Verify thread_id was set in session
+                                            assert session_data.get("thread_id") == "thread-123"
+                                            assert session_data.get("thread_name") == "Test Thread"
+                                            assert session_data.get("farm_id") == "demo_farm_001"
 
 
 class TestHandleSharedThreadView:

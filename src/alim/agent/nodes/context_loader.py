@@ -315,7 +315,7 @@ async def _fetch_weather_mcp(farm_id: str) -> tuple[dict[str, Any], MCPTrace]:
             )
         return weather_data, trace
 
-    except Exception as e:  # Catch all exceptions from handler
+    except Exception as e:
         duration_ms = int((time.perf_counter() - start_time) * 1000)
         logger.error(f"Weather MCP fetch failed: {e}")
         trace = MCPTrace(

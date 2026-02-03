@@ -257,7 +257,7 @@ async def agronomist_node(
                 rainfall_mm_last_7_days=rainfall_mm,
                 growth_stage_days=growth_days,
             )
-            mcp_traces.append(trace.dict())
+            mcp_traces.append(trace.model_dump())
             mcp_results.append(("Suvarma", result))
 
         elif intent == UserIntent.FERTILIZATION and farm_id:
@@ -270,7 +270,7 @@ async def agronomist_node(
                 soil_potassium_ppm=None,
                 growth_stage_days=growth_days,
             )
-            mcp_traces.append(trace.dict())
+            mcp_traces.append(trace.model_dump())
             mcp_results.append(("Gübrələmə", result))
 
         elif intent == UserIntent.PEST_CONTROL and farm_id:
@@ -283,7 +283,7 @@ async def agronomist_node(
                 growth_stage_days=growth_days,
                 rainfall_mm_last_3_days=rainfall_mm,
             )
-            mcp_traces.append(trace.dict())
+            mcp_traces.append(trace.model_dump())
             mcp_results.append(("Zərərverici nəzarəti", result))
 
         elif intent == UserIntent.HARVEST and farm_id:
@@ -297,7 +297,7 @@ async def agronomist_node(
                 planting_date=planting_date,
                 current_gdd_accumulated=0,
             )
-            mcp_traces.append(trace.dict())
+            mcp_traces.append(trace.model_dump())
             mcp_results.append(("Məhsul yığımı", result))
 
         # Build MCP rule summary section

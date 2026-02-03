@@ -125,7 +125,10 @@ async def init_chainlit_data_layer():
     If the database is unreachable, it will RAISE an error and HALT startup.
     """
     try:
-        db_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./data/alim.db")
+        # Use the same config as the rest of demo-ui for consistency
+        from config import settings as demo_settings
+
+        db_url = demo_settings.effective_database_url
         logger.info(
             f"Initializing Chainlit data layer with: {db_url.split('@')[-1] if '@' in db_url else db_url}"
         )

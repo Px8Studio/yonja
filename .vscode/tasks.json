@@ -3,8 +3,9 @@
   "tasks": [
     {
       "label": "🌿 ALİM: 🚀 Start All",
-      "detail": "Quality Checks → Docker → Services (Parallel)",
+      "detail": "Stop existing → Quality Checks → Docker → Services (Parallel)",
       "dependsOn": [
+        "🌿 ALİM: 🛑 Stop All",
         "✅ Quality & Sanity Checks",
         "🌿 ALİM: 🧹 Clear Ports",
         "🌿 ALİM: 🧹 Clear Logs",
@@ -20,14 +21,14 @@
     },
     {
       "label": "🌿 ALİM: 🚀 Start Python Services",
-      "detail": "Start FastAPI, UI, MCP, and LangGraph in parallel",
+      "detail": "Start FastAPI, MCP, LangGraph, then UI in sequence",
       "dependsOn": [
         "🌿 ALİM: ⚡ FastAPI Start",
-        "🌿 ALİM: 🖥️ UI Start",
         "🌿 ALİM: 🧠 ZekaLab MCP Start",
-        "🌿 ALİM: 🎨 LangGraph Start"
+        "🌿 ALİM: 🎨 LangGraph Start",
+        "🌿 ALİM: 🖥️ UI Start"
       ],
-      "dependsOrder": "parallel",
+      "dependsOrder": "sequence",
       "problemMatcher": []
     },
     {
@@ -45,7 +46,8 @@
         "reveal": "always",
         "panel": "dedicated",
         "clear": true,
-        "group": "ALİM-checks"
+        "group": "ALİM-checks-unique",
+        "showReuseMessage": false
       }
     },
     {
@@ -61,7 +63,8 @@
         "reveal": "always",
         "panel": "dedicated",
         "clear": true,
-        "group": "ALİM-ops"
+        "group": "ALİM-ops-ports",
+        "showReuseMessage": false
       }
     },
     {
@@ -77,7 +80,8 @@
         "reveal": "always",
         "panel": "dedicated",
         "clear": true,
-        "group": "ALİM-ops"
+        "group": "ALİM-ops-logs",
+        "showReuseMessage": false
       }
     },
     {
@@ -93,7 +97,8 @@
         "reveal": "always",
         "panel": "dedicated",
         "clear": true,
-        "group": "ALİM-ops"
+        "group": "ALİM-ops-cache",
+        "showReuseMessage": false
       }
     },
     {
@@ -111,7 +116,8 @@
         "reveal": "always",
         "panel": "dedicated",
         "clear": true,
-        "group": "ALİM-docker"
+        "group": "ALİM-docker-unique",
+        "showReuseMessage": false
       }
     },
     {
@@ -141,7 +147,8 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "group": "ALİM-services"
+        "group": "ALİM-service-fastapi",
+        "showReuseMessage": false
       }
     },
     {
@@ -171,7 +178,8 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "group": "ALİM-services"
+        "group": "ALİM-service-ui",
+        "showReuseMessage": false
       }
     },
     {
@@ -201,7 +209,8 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "group": "ALİM-services"
+        "group": "ALİM-service-mcp",
+        "showReuseMessage": false
       }
     },
     {
@@ -231,7 +240,8 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "group": "ALİM-services"
+        "group": "ALİM-service-langgraph",
+        "showReuseMessage": false
       }
     },
     {
@@ -246,7 +256,8 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "group": "ALİM-ops"
+        "group": "ALİM-ops-stop",
+        "showReuseMessage": false
       }
     }
   ],

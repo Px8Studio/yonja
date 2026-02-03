@@ -1,13 +1,13 @@
 # 🔌 MCP Architecture — ALEM Sovereign AI Stack
 
-> **Version:** 3.0 | **Updated:** January 2026
+> **Version:** 3.1 | **Updated:** February 2026
 > **Status:** ✅ Production Ready (uses `langchain-mcp-adapters`)
 
 ---
 
 ## 🎯 Overview
 
-ALEM integrates external tools via **Model Context Protocol (MCP)** using the official `langchain-mcp-adapters` library. LangGraph's `ToolNode` automatically binds and invokes MCP tools.
+ALEM integrates external tools via **Model Context Protocol (MCP)** using the official `langchain-mcp-adapters` library. LangGraph Server's `ToolNode` automatically binds and invokes MCP tools.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
@@ -29,16 +29,16 @@ ALEM integrates external tools via **Model Context Protocol (MCP)** using the of
 │                                  └─────────────────────────┼──────────────┘  │
 │                                                            │                 │
 │                    ┌───────────────────────────────────────┼────────────┐    │
-│                    │              MCP SERVERS LAYER        │            │    │
-│                    │  ┌────────────────┐    ┌──────────────▼─────────┐  │    │
-│                    │  │ OpenWeather    │    │    ZekaLab FastMCP     │  │    │
-│                    │  │ (optional)     │    │    :7777               │  │    │
-│                    │  │ • forecast     │    │    • irrigation_rules  │  │    │
-│                    │  │ • alerts       │    │    • fertilizer_rules  │  │    │
-│                    │  └────────────────┘    │    • pest_control      │  │    │
-│                    │                        │    • subsidy_calc      │  │    │
-│                    │                        │    • harvest_predict   │  │    │
-│                    │                        └────────────────────────┘  │    │
+│                    │              MCP SERVERS LAYER (mcp profile)       │    │
+│                    │  ┌────────────────────┐    ┌──────────▼─────────┐  │    │
+│                    │  │  Python Viz MCP    │    │  ZekaLab FastMCP   │  │    │
+│                    │  │  :7778             │    │  :7777             │  │    │
+│                    │  │  • generate_chart  │    │  • irrigation_rules│  │    │
+│                    │  │  • create_graph    │    │  • fertilizer_rules│  │    │
+│                    │  │  • data_viz        │    │  • pest_control    │  │    │
+│                    │  └────────────────────┘    │  • subsidy_calc    │  │    │
+│                    │                            │  • harvest_predict │  │    │
+│                    │                            └────────────────────┘  │    │
 │                    └────────────────────────────────────────────────────┘    │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -47,34 +47,40 @@ ALEM integrates external tools via **Model Context Protocol (MCP)** using the of
 
 ## 🧩 Component Roles
 
-| Component | Port | Responsibility |
-|:----------|:----:|:---------------|
-| **Chainlit** | 8501 | Chat UI, file uploads, MCP health display |
-| **LangGraph Server** | 2024 | Graph execution, state persistence |
-| **ToolNode** | — | Auto-binds & invokes MCP tools from LLM calls |
-| **ZekaLab FastMCP** | 7777 | Custom agronomy rules engine |
-| **MCP Adapters** | — | `langchain-mcp-adapters` for tool loading |
+| Component | Port | Profile | Responsibility |
+|:----------|:----:|:--------|:---------------|
+| **Chainlit** | 8501 | `app` | Chat UI, file uploads, MCP health display |
+| **FastAPI** | 8000 | `app` | REST API gateway |
+| **LangGraph Server** | 2024 | `core` | Graph execution, state persistence |
+| **ToolNode** | — | — | Auto-binds & invokes MCP tools from LLM calls |
+| **ZekaLab FastMCP** | 7777 | `mcp` | Agricultural rules engine (5 tools) |
+| **Python Viz MCP** | 7778 | `mcp` | Chart/visualization generation |
+| **MCP Adapters** | — | — | `langchain-mcp-adapters` for tool loading |
 
 ---
 
 ## 📁 Key Files
 
 ```
-src/ALİM/
+src/alim/
 ├── mcp/
 │   └── adapters.py              # MCP client config (langchain-mcp-adapters)
 ├── mcp_server/
-│   └── zekalab_fastmcp.py       # FastMCP server (5 tools, 3 resources)
+│   ├── zekalab_fastmcp.py       # Agricultural rules (5 tools)
+│   └── Dockerfile               # ZekaLab MCP container
 └── agent/
     ├── graph.py                 # StateGraph + make_graph() entrypoint
     └── state.py                 # AgentState + MCPTrace + file_paths
 
-langgraph.json                   # Graph config + MCP env vars
+Dockerfile.mcp.viz               # Python Viz MCP container
+deploy/langgraph/langgraph.json  # Graph config + MCP env vars
 ```
 
 ---
 
-## 🔧 ZekaLab MCP Tools
+## 🔧 MCP Tools
+
+### ZekaLab MCP (:7777) — Agricultural Rules
 
 | Tool | Purpose | Key Args |
 |:-----|:--------|:---------|
@@ -84,25 +90,35 @@ langgraph.json                   # Graph config + MCP env vars
 | `calculate_subsidy` | Government subsidy calc | crop, hectares, farmer_age |
 | `predict_harvest_date` | GDD harvest prediction | planting_date, gdd_target |
 
+### Python Viz MCP (:7778) — Chart Generation
+
+| Tool | Purpose | Key Args |
+|:-----|:--------|:---------|
+| `generate_chart` | Create matplotlib charts | data, chart_type, title |
+| `create_graph` | Generate network graphs | nodes, edges, layout |
+| `data_viz` | General data visualization | dataset, viz_type |
+
 ---
 
 ## ⚙️ Configuration
 
-### langgraph.json
-```json
-{
-  "graphs": {
-    "ALİM_agent": "./src/ALİM/agent/graph.py:make_graph"
-  },
-  "env": ".env"
-}
+### Docker Compose (mcp profile)
+```bash
+# Start MCP servers
+docker compose --profile mcp up -d
+
+# Health checks
+curl http://localhost:7777/health  # ZekaLab
+curl http://localhost:7778/health  # Python Viz
 ```
 
 ### Environment Variables
 ```bash
 ZEKALAB_MCP_ENABLED=true
 ZEKALAB_MCP_URL=http://localhost:7777
-ZEKALAB_MCP_SECRET=optional-auth-token
+
+PYTHON_VIZ_MCP_ENABLED=true
+PYTHON_VIZ_MCP_URL=http://localhost:7778
 ```
 
 ---

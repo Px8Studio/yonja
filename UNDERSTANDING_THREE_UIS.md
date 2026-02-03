@@ -158,140 +158,179 @@ Returns structured recommendation
 
 ---
 
-## 🔄 How They're Connected
+## 🔄 How They're Connected (Post-Refactoring)
 
 ```
 ┌─────────────────────────────────┐
-│   Chainlit UI (Port 8501)       │
-│   - Main user interface         │
-│   - Where messages are sent     │
+│   Chainlit UI (Port 8501)       │  ← app profile
+│   - Demo chat interface         │
+│   - Where developers test       │
 └──────────────┬──────────────────┘
                │
-               ├─────────────────────────────┐
-               │                             │
-    ┌──────────▼──────────┐      ┌──────────▼──────────┐
-    │  LangGraph Server   │      │ FastAPI REST API    │
-    │  (Port 2024)        │      │ (Port 8000)         │
-    │  ✅ Actually Used   │      │ ❌ Not Used         │
-    └──────────┬──────────┘      └─────────────────────┘
+               ▼
+┌─────────────────────────────────┐
+│   FastAPI Gateway (Port 8000)   │  ← app profile
+│   - REST API for all clients    │
+│   - Auth, rate limiting         │
+└──────────────┬──────────────────┘
                │
-               │ When agent needs tools
+               ▼
+┌─────────────────────────────────┐
+│   LangGraph Server (Port 2024)  │  ← core profile
+│   - THE single entry point      │
+│   - Agent orchestration         │
+│   - State checkpointing         │
+└──────────────┬──────────────────┘
                │
-    ┌──────────▼──────────┐
-    │  MCP Server         │
-    │  (Port 7777)        │
-    │  ZekaLab Rules      │
-    └─────────────────────┘
+       ┌───────┴───────┐
+       ▼               ▼
+┌──────────────┐  ┌──────────────┐
+│ ZekaLab MCP  │  │ Python Viz   │  ← mcp profile
+│ (Port 7777)  │  │ MCP (7778)   │
+│ Agri rules   │  │ Charts       │
+└──────────────┘  └──────────────┘
 ```
 
-**Current Flow:**
+**Current Flow (Unified):**
 ```
 Chainlit (8501)
-  → HTTP → LangGraph (2024)
-            → HTTP → MCP (7777)
+  → HTTP → FastAPI (8000)
+            → HTTP → LangGraph (2024)
+                      → MCP → ZekaLab (7777)
+                      → MCP → Python Viz (7778)
 ```
 
-**Why FastAPI (8000) isn't used:**
-- Chainlit directly calls LangGraph instead
-- Bypasses the middle layer for performance
-- More direct = less latency
+**Why FastAPI (8000) IS now used:**
+- All clients route through FastAPI as the gateway
+- Provides consistent auth, logging, rate limiting
+- LangGraph Server is the single orchestration point
 
 ---
 
-## ❌ Why This Is a Problem
+## ✅ Problem Solved: Profile-Based Architecture
 
-### 1. **Confusion About Deployment**
-- New developers don't know which port does what
-- Different services in different containers
-- Hard to explain: "there are 3 UIs but only 1 is real"
+### Docker Compose Profiles
 
-### 2. **Maintenance Nightmare**
-- 3 entry points to start
-- 3 sets of configuration
-- 3 sets of tests
-- 3 places for bugs
+| Profile | Services | Purpose |
+|:--------|:---------|:--------|
+| `core` | postgres, redis, ollama, langgraph | Required infrastructure |
+| `observability` | langfuse-db, langfuse-server | LLM tracing (optional) |
+| `app` | api, demo-ui | User-facing services |
+| `mcp` | zekalab-mcp, python-viz-mcp | Domain tools |
+| `setup` | model-setup | One-time initialization |
 
-### 3. **Scaling Challenges**
-- Chainlit (8501) is stateless but single-threaded
-- FastAPI (8000) is unused, wastes resources
-- MCP (7777) might be bottleneck
+### Deployment Commands
 
-### 4. **Impossible to Deploy to Cloud**
-- Some cloud platforms (Render, Railway) want 1 entry point per container
-- Can't easily containerize "3 UIs"
+```bash
+# Full development stack
+docker compose --profile core --profile observability --profile app --profile mcp up -d
 
-### 5. **Why Chat Breaks on Refresh**
-- **Root cause**: All 3 services must be ready simultaneously
-- If any one fails during startup → cascade failures
-- If any one is slow → cascading timeouts
+# Minimal (just agent)
+docker compose --profile core up -d
 
----
-
-## ✅ The Solution: Clean Architecture
-
-### **Recommended Future Structure**
-
-```
-FRONTEND TIER (Separate Repo)
-├── React / Next.js
-├── UI Components
-├── Client-side state (Redux/Zustand)
-└── Deployed to: CDN / Vercel / Netlify
-
-BACKEND TIER (This Repo)
-├── API Gateway (FastAPI)
-│   ├── /chat endpoint
-│   ├── /auth endpoint
-│   └── Other REST endpoints
-├── Agent Service (LangGraph wrapper)
-│   └── Calls LangGraph Server
-├── Rules Service (MCP wrapper)
-│   └── Calls MCP Server
-└── Infrastructure
-    ├── PostgreSQL (data persistence)
-    ├── Redis (checkpoints)
-    └── LangGraph Server (orchestration)
-```
-
-**Deployment:**
-```
-docker-compose:
-  - frontend service (port 3000)
-  - api-gateway service (port 8000)
-  - langgraph service (port 2024)
-  - mcp service (port 7777)
-  - postgres service
-  - redis service
+# Production (no observability)
+docker compose --profile core --profile app --profile mcp up -d
 ```
 
 ---
 
-## 🛣️ Roadmap to Clean Architecture
+## ❌ Previous Issues (Now Resolved)
 
-### **Phase 1: Stabilization (NOW)** ✅
-- ✅ Fix session persistence (done)
-- ✅ Fix MCP resilience (done)
-- Keep 3 UIs for now (no breaking changes)
+The following issues from the original architecture have been addressed:
 
-### **Phase 2: Frontend Extraction (Week 3-4)**
+| Issue | Previous State | Current State |
+|:------|:---------------|:--------------|
+| **3 UIs causing confusion** | Chainlit, FastAPI, MCP all separate | Profile-based, clear responsibilities |
+| **MCP initialization race** | Services had to be manually started in order | Docker Compose health checks handle order |
+| **Chat breaks on refresh** | Session state lost | LangGraph Server checkpoints to PostgreSQL |
+| **Can't deploy to cloud** | 3 separate entry points | Containerized with profiles |
+| **Scaling challenges** | Monolithic | Each service independently scalable |
+
+---
+
+## ✅ Current Architecture (Implemented)
+
+### **Profile-Based Docker Compose**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    docker-compose.yml                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  CORE PROFILE (Required)                                    │
+│  ├── postgres:5433      (App data + checkpoints)            │
+│  ├── redis:6379         (Session cache)                     │
+│  ├── ollama:11434       (Local LLM)                         │
+│  └── langgraph:2024     (Agent orchestration)               │
+│                                                              │
+│  OBSERVABILITY PROFILE (Recommended)                        │
+│  ├── langfuse-db        (Internal)                          │
+│  └── langfuse:3001      (LLM tracing)                       │
+│                                                              │
+│  APP PROFILE (User-facing)                                  │
+│  ├── api:8000           (REST gateway)                      │
+│  └── demo-ui:8501       (Chainlit chat)                     │
+│                                                              │
+│  MCP PROFILE (Domain tools)                                 │
+│  ├── zekalab-mcp:7777   (Agricultural rules)                │
+│  └── python-viz-mcp:7778 (Chart generation)                 │
+│                                                              │
+│  SETUP PROFILE (One-time)                                   │
+│  └── model-setup        (Pull/import models)                │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### **Service Health Dependencies**
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+flowchart TB
+    subgraph core["CORE PROFILE"]
+        postgres["postgres"]
+        redis["redis"]
+        ollama["ollama"]
+        langgraph["langgraph"]
+    end
+
+    subgraph app["APP PROFILE"]
+        api["api"]
+        demoui["demo-ui"]
+    end
+
+    subgraph mcp["MCP PROFILE"]
+        zekalab["zekalab-mcp"]
+        pythonviz["python-viz-mcp"]
+    end
+
+    postgres --> langgraph
+    redis --> langgraph
+    ollama --> langgraph
+    langgraph --> api
+    api --> demoui
+
+    style core fill:#e8f5e9,stroke:#2e7d32
+    style app fill:#e3f2fd,stroke:#1976d2
+    style mcp fill:#e8eaf6,stroke:#3f51b5
+```
+
+---
+
+## 🛣️ Future Roadmap
+
+### **Phase 1: Stabilization** ✅ COMPLETE
+- ✅ Fix session persistence
+- ✅ Fix MCP resilience
+- ✅ Profile-based Docker Compose
+- ✅ LangGraph Server as single entry point
+
+### **Phase 2: Frontend Extraction (Future)**
 - [ ] Create React frontend repo
 - [ ] Move UI to React (replaces Chainlit)
 - [ ] State management with Redux
 - [ ] Client-side validation
 
-### **Phase 3: API Gateway Cleanup (Week 5)**
-- [ ] Consolidate endpoints
-- [ ] Remove unused routes
-- [ ] Add request/response validation
-- [ ] Rate limiting + auth
-
-### **Phase 4: Microservices (Week 6-7)**
-- [ ] Agent Service wrapper
-- [ ] Rules Service wrapper
-- [ ] Service discovery
-- [ ] Load balancing
-
-### **Phase 5: Production Hardening (Week 8+)**
+### **Phase 3: Production Hardening (Future)**
 - [ ] Kubernetes deployment
 - [ ] Health checks + auto-restart
 - [ ] Logging aggregation
@@ -301,35 +340,42 @@ docker-compose:
 
 ## 🎓 Key Takeaway
 
-**You don't have "3 UIs that all need to work".**
+**The architecture is now clear and profile-based.**
 
 You have:
-1. **1 Primary UI** (Chainlit) that users see ← Focus on this
-2. **1 Unused REST API** (FastAPI) ← Can ignore
-3. **1 Tool Provider** (MCP) ← This isn't a UI, it's a service
+1. **1 Primary UI** (Chainlit :8501) — Demo chat interface
+2. **1 REST Gateway** (FastAPI :8000) — All clients route through here
+3. **1 Orchestrator** (LangGraph :2024) — THE single entry point for agent logic
+4. **2 MCP Services** (ZekaLab :7777, Python Viz :7778) — Domain tools
 
-**The real issue**: They're tightly coupled, which makes them fragile.
-
-**The fix**: Decouple them, but do it incrementally (Phase 1-5).
+**All services are containerized** with health checks and proper dependencies.
 
 ---
 
-## 📚 Next Reading
+## 📚 Related Documentation
 
-- See `ARCHITECTURE_ANALYSIS.md` for detailed 12-factor analysis
-- See `QUICK_START_FIXES.md` for immediate chat fixes
-- See `README.md` deployment section for current architecture
+- See `docs/zekalab/03-ARCHITECTURE.md` for complete architecture diagrams
+- See `docs/zekalab/MCP-ARCHITECTURE.md` for MCP server details
+- See `docker-compose.yml` for profile definitions
 
 ---
 
 ## 💡 TL;DR
 
-| UI | Purpose | Status | Focus |
-|----|---------|--------|-------|
-| Chainlit (8501) | Main chat interface | ✅ Production | Keep & improve |
-| FastAPI (8000) | REST API (unused) | ⚠️ Ignore for now | Replace in Phase 2 |
-| MCP (7777) | Rule engine (tool provider) | ✅ Production | Keep as is |
+| Service | Port | Profile | Purpose |
+|:--------|:-----|:--------|:--------|
+| **Chainlit** | 8501 | `app` | Demo chat interface |
+| **FastAPI** | 8000 | `app` | REST API gateway |
+| **LangGraph Server** | 2024 | `core` | Agent orchestration (THE entry point) |
+| **ZekaLab MCP** | 7777 | `mcp` | Agricultural rules engine |
+| **Python Viz MCP** | 7778 | `mcp` | Chart generation |
+| **Ollama** | 11434 | `core` | Local LLM |
+| **PostgreSQL** | 5433 | `core` | App data + checkpoints |
+| **Redis** | 6379 | `core` | Session cache |
+| **Langfuse** | 3001 | `observability` | LLM tracing |
 
-**Current Task**: Fix Chainlit (8501) to be more resilient.
-**Next Task**: Extract frontend to React (Phase 2).
-**Long-term**: Clean separation of frontend/backend/services.
+**Quick Start:**
+```bash
+# Full stack
+docker compose --profile core --profile observability --profile app --profile mcp up -d
+```

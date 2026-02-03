@@ -48,11 +48,11 @@ $commands = @{
         & "$venv\python.exe" -m chainlit $args
     }
     "LangGraph" = {
-        Set-Location "deploy\langgraph"
-        & "$venv\python.exe" -m langgraph dev --config "langgraph.json" --no-browser
+        # Use langgraph CLI directly (not python -m)
+        & "$venv\langgraph.exe" dev --config "deploy/langgraph/langgraph.json" --no-browser
     }
     "MCP"       = { & "$venv\python.exe" -m uvicorn alim.mcp_server.main:app --port 7777 --reload }
-    "Docker"    = { docker-compose -f "docker-compose.local.yml" up -d postgres ollama redis langfuse-db langfuse-server }
+    "Docker"    = { docker compose --profile core --profile observability up -d }
 }
 
 # 3. Execute

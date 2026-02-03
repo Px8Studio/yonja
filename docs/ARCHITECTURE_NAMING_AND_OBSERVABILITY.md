@@ -125,48 +125,82 @@ LANGFUSE_HOST=http://localhost:3001
 
 ## 🏗️ Complete System Architecture
 
-### Component Relationship Overview
+### Component Relationship Overview (HTTP-Only Mode)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           ALİM SYSTEM ARCHITECTURE                          │
+│                           ALİM SYSTEM ARCHITECTURE                              │
+│                         (HTTP-Only - Unified Code Path)                         │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
 │  ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐            │
 │  │   CHAINLIT UI   │────▶│   LANGGRAPH     │────▶│   MCP SERVERS   │           │
-│  │   (demo-ui/)    │     │  DEV SERVER     │     │   (External)    │            │
+│  │   (demo-ui/)    │ HTTP│   SERVER        │     │   (External)    │            │
 │  │   Port: 8501    │     │  Port: 2024     │     │   Weather/Rules │            │
 │  └────────┬────────┘     └────────┬────────┘     └─────────────────┘            │
 │           │                       │                                             │
-│           │  HTTP/SSE             │  Loads Graph                                │
-│           │                       ▼                                             │
-│           │              ┌─────────────────┐                                    │
-│           │              │ AGENT GRAPH     │◀── src/ALİM/agent/graph.py       |
-│           │              │ (StateGraph)    │                                    │
-│           │              └────────┬────────┘                                    │
-│           │                       │                                             │
-│           │                       │ Invokes Nodes                               │
-│           │                       ▼                                             │
-│           │              ┌─────────────────────────────────┐                    │
-│           │              ├─────────────────────────────────┤                    │
-│           │              │         SPECIALIST NODES        │                    │
-│           │              │ • supervisor    (routing)       │                    │
-│           │              │ • context_loader (farm data)    │                   │
-│           │              │ • agronomist   (crop advice)    │                   │
-│           │              │ • weather      (forecasts)      │                   │
-│           │              │ • nl_to_sql    (data queries)   │                   │
-│           │              │ • validator    (rule checks)    │                   │
-│           │              └─────────────────────────────────┘                   │
-│           │                                                                    │
-│           ▼                                                                    │
-│  ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐          │
-│  │   POSTGRESQL    │     │     REDIS       │     │    LANGFUSE     │          │
-│  │   Port: 5433    │     │   Port: 6379    │     │   Port: 3001    │          │
-│  │   Users/Threads │     │  Checkpoints    │     │   Tracing UI    │          │
-│  └─────────────────┘     └─────────────────┘     └─────────────────┘          │
+│  ┌────────┴────────┐              │  Manages:                                   │
+│  │   FASTAPI       │              │  • Graph Compilation                        │
+│  │   Port: 8000    │──────────────┤  • PostgreSQL Checkpoints                   │
+│  │   (Mobile API)  │              │  • Thread State                             │
+│  └─────────────────┘              │  • Horizontal Scaling                       │
+│                                   │                                             │
+│                                   ▼                                             │
+│                          ┌─────────────────┐                                    │
+│                          │ AGENT GRAPH     │◀── src/alim/agent/graph.py         │
+│                          │ (StateGraph)    │                                    │
+│                          └────────┬────────┘                                    │
+│                                   │                                             │
+│                                   │ Invokes Nodes                               │
+│                                   ▼                                             │
+│                          ┌─────────────────────────────────┐                    │
+│                          ├─────────────────────────────────┤                    │
+│                          │         SPECIALIST NODES        │                    │
+│                          │ • supervisor    (routing)       │                    │
+│                          │ • context_loader (farm data)    │                    │
+│                          │ • agronomist   (crop advice)    │                    │
+│                          │ • weather      (forecasts)      │                    │
+│                          │ • nl_to_sql    (data queries)   │                    │
+│                          │ • validator    (rule checks)    │                    │
+│                          └─────────────────────────────────┘                    │
+│                                                                                 │
+│  ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐           │
+│  │   POSTGRESQL    │     │     REDIS       │     │    LANGFUSE     │           │
+│  │   Port: 5433    │     │   Port: 6379    │     │   Port: 3001    │           │
+│  │ • Users/Threads │     │ • Session Cache │     │   Tracing UI    │           │
+│  │ • Checkpoints   │     │                 │     │                 │           │
+│  └─────────────────┘     └─────────────────┘     └─────────────────┘           │
 │                                                                                 │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+**Key Principle:** ALL clients (UI, API, Mobile) → LangGraph Server → PostgreSQL checkpoints
+
+---
+
+## 🔄 Hot Reload Configuration
+
+All services support instant code reloading during development:
+
+| Service | Local Script | Docker Dev | Hot Reload Method |
+|---------|-------------|-----------|-------------------|
+| **FastAPI** | `--reload` | `--reload` | uvicorn file watcher |
+| **Chainlit UI** | `-w` flag | `-w` flag | Chainlit watch mode |
+| **LangGraph** | `langgraph dev` | `langgraph dev` | Built-in file watcher |
+| **ZekaLab MCP** | `--reload` | `--reload` | uvicorn file watcher |
+| **Python Viz MCP** | `--reload` | `--reload` | uvicorn file watcher |
+
+**Docker Volume Mounts (enables hot reload):**
+```yaml
+volumes:
+  - ./src:/app/src          # Code changes instantly reflected
+  - ./demo-ui:/app/demo-ui  # UI changes instantly reflected
+  - ./prompts:/app/prompts  # Prompt changes instantly reflected
+```
+
+**Important:** MCP services use `target: development` in Docker Compose to enable hot reload.
+
+---
 
 ### Data Flow: User Message → AI Response
 
@@ -279,7 +313,7 @@ ALİM/
 │       └── (rule definitions)
 │
 ├── langgraph.json                    ⚙️ LangGraph Dev Server config
-├── docker-compose.local.yml          🐳 Local infrastructure
+├── docker-compose.yml                🐳 Unified deployment (with profiles)
 └── alembic/                          🗄️ Database migrations
 ```
 
@@ -387,6 +421,68 @@ ALİM/
 | Chainlit → PostgreSQL | asyncpg | 5433 | SQL |
 | LangGraph → Redis | redis-py | 6379 | Checkpointing |
 
+---
+
+## 🐳 Docker Deployment Profiles
+
+### Unified docker-compose.yml
+
+The project uses a **single `docker-compose.yml`** with profiles for flexible deployment:
+
+```bash
+# Core infrastructure only (database, cache, LLM, orchestration)
+docker compose --profile core up -d
+
+# Full local development
+docker compose --profile core --profile observability --profile app up -d
+
+# Production (no observability, all apps)
+docker compose --profile core --profile app up -d
+
+# With MCP servers
+docker compose --profile core --profile app --profile mcp up -d
+```
+
+### Profile Definitions
+
+| Profile | Services | Use Case |
+|---------|----------|----------|
+| `core` | PostgreSQL, Redis, Ollama, LangGraph Server | Minimum viable stack |
+| `observability` | Langfuse | Development/debugging |
+| `app` | FastAPI, Demo UI | Full application |
+| `mcp` | ZekaLab MCP, Python Viz | Extended tooling |
+| `setup` | Model Setup | One-time initialization |
+
+### Service Port Map
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    PORT ALLOCATION                          │
+├──────────────┬──────────┬───────────────────────────────────┤
+│ Service      │ Port     │ Profile                           │
+├──────────────┼──────────┼───────────────────────────────────┤
+│ PostgreSQL   │ 5433     │ core                              │
+│ Redis        │ 6379     │ core                              │
+│ Ollama       │ 11434    │ core                              │
+│ LangGraph    │ 2024     │ core                              │
+│ FastAPI      │ 8000     │ app                               │
+│ Chainlit UI  │ 8501     │ app                               │
+│ Langfuse     │ 3001     │ observability                     │
+│ ZekaLab MCP  │ 7777     │ mcp                               │
+└──────────────┴──────────┴───────────────────────────────────┘
+```
+
+### Health Check Cascade
+
+Services start in dependency order with health checks:
+1. PostgreSQL (pg_isready)
+2. Redis (redis-cli ping)
+3. Ollama (curl /api/tags)
+4. LangGraph Server (curl /ok)
+5. Application services
+
+---
+
 ### Code Entry Points
 
 | What | Where | Key Function |
@@ -405,6 +501,15 @@ ALİM/
 | Area | Issue | Impact | Priority |
 |------|-------|--------|----------|
 | `langgraph-api` | Version 0.5.42 is EOL | Security updates missing | 🔴 HIGH |
-| Data layer | Signature mismatch with Chainlit | Thread persistence errors | ✅ FIXED |
 | Storage client | Not initialized warning | Elements not persisted | 🟡 MEDIUM |
 | Naming | `farm_scenario_plans` vs `conversation_contexts` | Semantic confusion | 🟢 LOW |
+
+### ✅ Recently Resolved
+
+| Area | Issue | Resolution |
+|------|-------|------------|
+| Dual execution modes | Direct + HTTP code paths | Removed direct mode, HTTP-only |
+| Docker fragmentation | 5 compose files | Unified with profiles |
+| Config duplication | demo-ui + src/alim | Inheritance from alim.config |
+| Data layer signature | Chainlit mismatch | Fixed method signatures |
+| Connection pooling | PostgreSQL errors | Added AsyncConnectionPool |

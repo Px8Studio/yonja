@@ -88,36 +88,48 @@ flowchart TB
         farmer["🧑‍🌾 Farmer"]
     end
 
-    subgraph ui["🖥️ PRESENTATION LAYER"]
+    subgraph ui["🖥️ PRESENTATION LAYER (app profile)"]
         chainlit["<b>Chainlit UI</b><br/>:8501<br/>━━━━━━━━━<br/>• Chat interface<br/>• Token streaming<br/>• Thread display<br/>• OAuth login"]
+        fastapi["<b>FastAPI</b><br/>:8000<br/>━━━━━━━━━<br/>• REST API<br/>• Mobile clients<br/>• External integrations"]
     end
 
-    subgraph brain["🧠 INTELLIGENCE LAYER"]
-        langgraph["<b>LangGraph Agent</b><br/>━━━━━━━━━<br/>• Supervisor node<br/>• Agronomist node<br/>• Weather node<br/>• Validator node"]
-        llm["<b>LLM Providers</b><br/>━━━━━━━━━<br/>• Groq (cloud)<br/>• Ollama (local)"]
+    subgraph brain["🧠 INTELLIGENCE LAYER (core profile)"]
+        langgraph["<b>LangGraph Server</b><br/>:2024<br/>━━━━━━━━━<br/>• Supervisor node<br/>• Agronomist node<br/>• Weather node<br/>• Validator node<br/>• State checkpoints"]
+        llm["<b>Ollama</b><br/>:11434<br/>━━━━━━━━━<br/>• qwen3:4b (default)<br/>• atllama (optional)"]
     end
 
-    subgraph data["💾 APP DATA LAYER"]
+    subgraph mcp["🔧 MCP LAYER (mcp profile)"]
+        zekalab["<b>ZekaLab MCP</b><br/>:7777<br/>━━━━━━━━━<br/>• Irrigation rules<br/>• Fertilization<br/>• Pest control"]
+        pythonviz["<b>Python Viz MCP</b><br/>:7778<br/>━━━━━━━━━<br/>• Chart generation<br/>• Data visualization"]
+    end
+
+    subgraph data["💾 APP DATA LAYER (core profile)"]
         direction LR
-        postgres["<b>ALİM App DB</b><br/>:5433<br/>━━━━━━━━━<br/>📋 App Tables:<br/>• users (OAuth)<br/>• threads, steps<br/>• user_profiles<br/>• farms, parcels<br/>• alim_personas"]
-        redis["<b>Redis</b><br/>:6379<br/>━━━━━━━━━<br/>• LangGraph checkpoints<br/>• Session state<br/>• Rate limiting"]
+        postgres["<b>PostgreSQL</b><br/>:5433<br/>━━━━━━━━━<br/>📋 App Tables + Checkpoints"]
+        redis["<b>Redis</b><br/>:6379<br/>━━━━━━━━━<br/>• Session cache<br/>• Rate limiting"]
     end
 
-    subgraph observe["📊 OBSERVABILITY (Separate DB)"]
-        langfuse["<b>Langfuse</b><br/>:3001<br/>━━━━━━━━━<br/>Own database<br/>• LLM traces<br/>• Token costs<br/>• Latencies"]
+    subgraph observe["📊 OBSERVABILITY (observability profile)"]
+        langfuse["<b>Langfuse</b><br/>:3001<br/>━━━━━━━━━<br/>Own database<br/>• LLM traces<br/>• Token costs"]
     end
 
     farmer --> chainlit
-    chainlit --> |"Direct Mode"| langgraph
+    farmer -.-> fastapi
+    chainlit --> |"HTTP"| fastapi
+    fastapi --> |"HTTP"| langgraph
     langgraph --> llm
-    langgraph --> |"State checkpoints"| redis
+    langgraph --> |"MCP Protocol"| zekalab
+    langgraph --> |"MCP Protocol"| pythonviz
+    langgraph --> |"Checkpoints"| postgres
     chainlit --> |"App data"| postgres
-    langgraph --> |"Farm context"| postgres
     langgraph -.-> |"Traces"| langfuse
-    langfuse -.-> |"Insights API"| postgres
 
     style chainlit fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style fastapi fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     style langgraph fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style llm fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style zekalab fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px
+    style pythonviz fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px
     style postgres fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
     style redis fill:#fce4ec,stroke:#c2185b,stroke-width:2px
     style langfuse fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
@@ -125,199 +137,205 @@ flowchart TB
 
 ### Component Responsibility Matrix
 
-| Component | Purpose | What It Stores | Key File |
-|:----------|:--------|:---------------|:---------|
-| **Chainlit** | Chat UI + thread display | UI state (delegates to App DB) | `demo-ui/app.py` |
-| **ALİM App DB** | All app data | Users, farms, threads, personas | `demo-ui/data_layer.py` |
-| **Redis** | Fast state + checkpoints | LangGraph state, sessions | `src/ALİM/agent/memory.py` |
-| **Langfuse** | LLM observability (separate DB) | Traces, costs, latencies | `src/ALİM/observability/langfuse.py` |
-| **LangGraph** | Agent orchestration | In-memory graph execution | `src/ALİM/agent/graph.py` |
+| Component | Profile | Purpose | What It Stores | Key File |
+|:----------|:--------|:--------|:---------------|:---------|
+| **Chainlit** | `app` | Chat UI + thread display | UI state (delegates to App DB) | `demo-ui/app.py` |
+| **FastAPI** | `app` | REST API for mobile/external | Routes to LangGraph | `src/alim/api/main.py` |
+| **LangGraph Server** | `core` | Agent orchestration + checkpoints | State in PostgreSQL | `deploy/langgraph/` |
+| **Ollama** | `core` | Local LLM inference | Model weights | Docker volume |
+| **ZekaLab MCP** | `mcp` | Agricultural rules engine | None (stateless) | `src/alim/mcp_server/` |
+| **Python Viz MCP** | `mcp` | Chart/visualization generation | Temp files | `Dockerfile.mcp.viz` |
+| **PostgreSQL** | `core` | App data + LangGraph checkpoints | All persistent data | Docker volume |
+| **Redis** | `core` | Session cache, rate limiting | Ephemeral cache | Docker volume |
+| **Langfuse** | `observability` | LLM tracing dashboard | Own PostgreSQL DB | Docker image |
 
-### 🎯 Architecture Clarification: Three Different "LangGraphs"
+### 🐳 Docker Compose Profiles
 
-> **Common Confusion:** The term "LangGraph" appears in three contexts. Understanding these distinctions is critical for navigating the codebase.
+The architecture uses **profiles** for flexible deployment:
+
+| Profile | Services | Use Case |
+|:--------|:---------|:---------|
+| `core` | postgres, redis, ollama, langgraph | **Required** — Minimum viable stack |
+| `observability` | langfuse-db, langfuse-server | **Recommended** — LLM debugging |
+| `app` | api, demo-ui | **User-facing** — Chat interface |
+| `mcp` | zekalab-mcp, python-viz-mcp | **Domain tools** — Agricultural rules |
+| `setup` | model-setup | **One-time** — Pull/import models |
+
+```bash
+# Full development stack
+docker compose --profile core --profile observability --profile app --profile mcp up -d
+
+# Minimal (just agent + LLM)
+docker compose --profile core up -d
+
+# Production (no observability)
+docker compose --profile core --profile app --profile mcp up -d
+```
+
+### 🎯 Architecture Clarification: LangGraph Server as Single Entry Point
+
+> **Key Change:** LangGraph Server (:2024) is now THE single entry point for all agent interactions. Both Chainlit UI and FastAPI route through it.
 
 | What It Is | Type | Port | Purpose | Required? |
 |:-----------|:-----|:-----|:--------|:----------|
-| **LangGraph Library** | Python package | — | Agent orchestration framework (like React) | ✅ **Core dependency** |
-| **LangGraph Dev Server** | Development tool | 2024 | Visual debugger (LangGraph Studio) | ❌ **Optional** |
-| **FastAPI Backend** | Production API | 8000 | REST endpoints for mobile app | ✅ **Production critical** |
+| **LangGraph Server** | Orchestration server | 2024 | Agent execution + state checkpoints | ✅ **Core** |
+| **LangGraph Library** | Python package | — | Agent definition framework | ✅ **Core dependency** |
+| **FastAPI Backend** | REST API gateway | 8000 | Routes to LangGraph Server | ✅ **For external clients** |
+| **Chainlit UI** | Demo interface | 8501 | Routes through FastAPI → LangGraph | ✅ **For development** |
 
-#### 1️⃣ LangGraph Library (The Brain)
-
-```python
-from langgraph.graph import StateGraph  # ← This is the library
-agent = StateGraph(AgentState)
-agent.add_node("supervisor", supervisor_node)
-```
-
-- **What**: Python library you import and use in code
-- **Where**: `src/ALİM/agent/` — all agent logic
-- **Analogy**: Like React — you build your app with it
-- **Status**: ✅ **Required** — this is your agent's foundation
-
-#### 2️⃣ LangGraph Dev Server (Optional Debugger)
-
-```bash
-langgraph dev  # Starts on http://127.0.0.1:2024
-```
-
-- **What**: Visual debugger for LangGraph applications
-- **Where**: Started separately via CLI command
-- **Analogy**: Like React DevTools — helpful for debugging
-- **Status**: ❌ **Optional** — you can safely ignore this for development
-
-> 💡 **Decision**: We **don't use** the LangGraph Dev Server. Chainlit provides built-in step visualization, making this redundant.
-
-#### 3️⃣ FastAPI Backend (Production API)
-
-```python
-# src/ALİM/api/main.py
-@app.post("/api/v1/chat")
-async def chat(request: ChatMessage):
-    # Imports LangGraph library internally
-    agent = get_agent()
-    response = await agent.chat(request.message)
-```
-
-- **What**: REST API server exposing agent functionality
-- **Where**: `src/ALİM/api/` — all HTTP endpoints
-- **Analogy**: Express.js server for your React app
-- **Status**: ✅ **Required** — mobile app calls these endpoints
-
-### 🔄 Integration Modes: Direct vs API Bridge
-
-The Chainlit demo UI supports **two integration patterns** for flexibility:
-
-```mermaid
-%%{init: {'theme': 'neutral'}}%%
-flowchart TB
-    subgraph dev["🔧 DEVELOPMENT MODE (Current)"]
-        chainlit1["Chainlit UI<br/>:8501"]
-        langgraph_lib1["LangGraph Library<br/>(imported directly)"]
-        llm1["Ollama/Groq"]
-
-        chainlit1 --> langgraph_lib1
-        langgraph_lib1 --> llm1
-
-        note1["✅ Direct Mode<br/>Fast iteration<br/>No HTTP overhead"]
-    end
-
-    subgraph prod["🚀 PRODUCTION SIMULATION"]
-        mobile["Mobile App"]
-        fastapi["FastAPI<br/>:8000"]
-        langgraph_lib2["LangGraph Library<br/>(imported by FastAPI)"]
-        llm2["Groq API"]
-
-        mobile --> fastapi
-        fastapi --> langgraph_lib2
-        langgraph_lib2 --> llm2
-
-        note2["🌐 API Bridge Mode<br/>Tests production API<br/>(optional for demo)"]
-    end
-
-    style dev fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-    style prod fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-```
-
-| Mode | How It Works | When to Use |
-|:-----|:-------------|:------------|
-| **Direct Mode** | Chainlit → LangGraph Library (in-process) | ✅ **Development** — Faster, simpler |
-| **API Bridge Mode** | Chainlit → FastAPI → LangGraph Library | ⚙️ **Testing** — Validates API contract |
-
-> 🎯 **Recommendation**: Use **Direct Mode** for daily development. The "API Bridge" exists to test the same HTTP endpoints the mobile app will use, but it's not required for building the agent.
-
-**Configuration** (`.env` or `demo-ui/.env`):
-```env
-# Simple setup (recommended)
-INTEGRATION_MODE=direct
-```
-
-### 🧠 Mental Model: One Backend, Two Entry Points
+#### Why LangGraph Server?
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│         🧠 LANGGRAPH AGENT (Core Logic)             │
+│     🧠 LANGGRAPH SERVER (:2024) — Single Source     │
 │                                                      │
-│  • Supervisor node (routes intent)                 │
-│  • Agronomist node (agricultural advice)           │
-│  • Weather node (weather queries)                  │
-│  • Validator node (safety checks)                  │
+│  • Agent graph execution                            │
+│  • State checkpointing (PostgreSQL)                 │
+│  • Tool invocation (MCP servers)                    │
+│  • LLM calls (Ollama)                               │
 │                                                      │
-│         Location: src/ALİM/agent/                  │
+│         Config: deploy/langgraph/langgraph.json    │
 └─────────────────────────────────────────────────────┘
             ▲                        ▲
             │                        │
     ┌───────┴────────┐      ┌────────┴────────┐
-    │                │      │                 │
-    │  Entry Point 1 │      │  Entry Point 2  │
-    │                │      │                 │
-    │   📱 Chainlit  │      │   🌐 FastAPI    │
-    │   (Direct)     │      │   (HTTP API)    │
-    │                │      │                 │
-    │   For: Demo    │      │   For: Mobile   │
-    │        Testing │      │        App      │
-    └────────────────┘      └─────────────────┘
+    │  FastAPI :8000 │      │  Direct HTTP    │
+    │  (REST gateway)│      │  (testing)      │
+    └───────┬────────┘      └─────────────────┘
+            │
+    ┌───────┴────────┐
+    │ Chainlit :8501 │
+    │ (Demo UI)      │
+    └────────────────┘
 ```
 
-**Key Insight**: Both entry points use the **same LangGraph agent code**. The only difference is how they access it:
-- **Chainlit**: Imports directly (`from ALİM.agent import get_agent`)
-- **FastAPI**: Also imports directly, but exposes via HTTP endpoints
+**Benefits:**
+- ✅ Single source of truth for agent state
+- ✅ Automatic checkpointing to PostgreSQL
+- ✅ Health checks built-in (`/ok` endpoint)
+- ✅ Consistent behavior across all clients
 
-There's **no duplication** — just different interfaces to the same intelligence layer.
+### 🔄 Request Flow: Unified Architecture
+
+All traffic flows through LangGraph Server as the single orchestration point:
+
+```mermaid
+%%{init: {'theme': 'neutral'}}%%
+flowchart LR
+    subgraph clients["👥 CLIENTS"]
+        chainlit["Chainlit UI<br/>:8501"]
+        mobile["Mobile App"]
+        external["External API"]
+    end
+
+    subgraph gateway["🚪 API GATEWAY (app profile)"]
+        fastapi["FastAPI<br/>:8000"]
+    end
+
+    subgraph core["🧠 CORE (core profile)"]
+        langgraph["LangGraph Server<br/>:2024"]
+        ollama["Ollama<br/>:11434"]
+        postgres["PostgreSQL<br/>:5433"]
+    end
+
+    subgraph mcp_layer["🔧 MCP (mcp profile)"]
+        zekalab["ZekaLab<br/>:7777"]
+        pythonviz["Python Viz<br/>:7778"]
+    end
+
+    chainlit --> fastapi
+    mobile --> fastapi
+    external --> fastapi
+    fastapi --> langgraph
+    langgraph --> ollama
+    langgraph --> postgres
+    langgraph --> zekalab
+    langgraph --> pythonviz
+
+    style fastapi fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style langgraph fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style ollama fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style postgres fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    style zekalab fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px
+    style pythonviz fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px
+```
+
+| Client | Route | Use Case |
+|:-------|:------|:---------|
+| **Chainlit UI** | :8501 → :8000 → :2024 | Development/demo testing |
+| **Mobile App** | → :8000 → :2024 | Production mobile clients |
+| **External API** | → :8000 → :2024 | Third-party integrations |
+
+> 🎯 **Key Insight**: LangGraph Server (:2024) handles ALL agent logic. FastAPI (:8000) is just a gateway for authentication, rate limiting, and request validation.
 
 ---
 
 ## 💾 Data Ecosystem
 
-> **Key Architecture:** THREE storage systems running in Docker — two PostgreSQL instances + Redis.
+> **Key Architecture:** Profile-based storage with PostgreSQL for persistence, Redis for caching, and separate Langfuse database for observability.
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
 flowchart TB
-    subgraph docker["🐳 Docker Compose Stack"]
+    subgraph docker["🐳 Docker Compose Profiles"]
         direction TB
 
-        subgraph ALİM_ai_data["💾 ALİM APP DATA"]
-            subgraph pg_app["🐘 PostgreSQL :5433<br/><code>ALİM-postgres</code>"]
-                app_tables["📋 <b>App Tables</b><br/>━━━━━━━━━━━━━<br/>users, threads, steps<br/>user_profiles, farm_profiles<br/>parcels, alim_personas"]
+        subgraph core_profile["💾 CORE PROFILE"]
+            subgraph pg_app["🐘 PostgreSQL :5433<br/><code>alim-postgres</code>"]
+                app_tables["📋 <b>App + Checkpoints</b><br/>━━━━━━━━━━━━━<br/>• users, threads, steps<br/>• farm_profiles, parcels<br/>• LangGraph checkpoints"]
             end
 
-            subgraph redis["🔴 Redis Stack :6379<br/><code>ALİM-redis</code>"]
-                redis_data["⚡ <b>Runtime State</b><br/>━━━━━━━━━━━━━<br/>LangGraph checkpoints<br/>Session cache<br/>Rate limits"]
+            subgraph redis["🔴 Redis :6379<br/><code>alim-redis</code>"]
+                redis_data["⚡ <b>Cache Layer</b><br/>━━━━━━━━━━━━━<br/>• Session cache<br/>• Rate limiting"]
+            end
+
+            subgraph ollama["🧠 Ollama :11434<br/><code>alim-ollama</code>"]
+                models["📦 <b>Models</b><br/>━━━━━━━━━━━━━<br/>• qwen3:4b<br/>• atllama (GGUF)"]
+            end
+
+            subgraph langgraph["🎯 LangGraph :2024<br/><code>alim-langgraph</code>"]
+                agent["🤖 <b>Agent Server</b><br/>━━━━━━━━━━━━━<br/>• Graph execution<br/>• Checkpointing"]
             end
         end
 
-        subgraph langfuse_stack["📊 LANGFUSE STACK (Self-Contained)"]
-            subgraph pg_langfuse["🐘 PostgreSQL :5432<br/><code>ALİM-langfuse-db</code><br/><i>Internal only</i>"]
-                lf_tables["🔍 <b>Auto-Managed</b><br/>━━━━━━━━━━━━━<br/>traces, generations<br/>scores, prompts<br/>sessions, users"]
+        subgraph obs_profile["📊 OBSERVABILITY PROFILE"]
+            subgraph pg_langfuse["🐘 Langfuse DB<br/><code>alim-langfuse-db</code>"]
+                lf_tables["🔍 <b>Auto-Managed</b><br/>━━━━━━━━━━━━━<br/>traces, costs, latencies"]
             end
 
-            langfuse_ui["🌐 <b>Langfuse UI :3001</b><br/><code>ALİM-langfuse</code>"]
+            langfuse_ui["🌐 <b>Langfuse :3001</b><br/><code>alim-langfuse</code>"]
+        end
+
+        subgraph mcp_profile["🔧 MCP PROFILE"]
+            zekalab["🌾 ZekaLab :7777"]
+            pythonviz["📊 Python Viz :7778"]
         end
     end
 
-    subgraph external["🌐 FUTURE: External Data"]
-        ALİM_mobile["📱 ALİM Mobile<br/>(Digital Umbrella)"]
-    end
-
+    langgraph --> pg_app
+    langgraph --> ollama
+    langgraph --> zekalab
+    langgraph --> pythonviz
     pg_langfuse --> langfuse_ui
-    langfuse_ui -.->|"REST API<br/>read-only"| pg_app
-    ALİM_mobile -.->|"Hot-swap<br/>when ready"| pg_app
 
-    style ALİM_ai_data fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-    style langfuse_stack fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
-    style external fill:#fff3e0,stroke:#f57c00,stroke-dasharray: 5 5
+    style core_profile fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style obs_profile fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style mcp_profile fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px
 ```
-
 ### 📦 Complete Storage Inventory
 
-| Container | Type | Port | Database/Purpose | You Manage? |
-|:----------|:-----|:-----|:-----------------|:------------|
-| `ALİM-postgres` | PostgreSQL 15 | **:5433** | ALİM App tables | ✅ **Yes** — migrations, seeds |
-| `ALİM-redis` | Redis Stack | **:6379** | LangGraph checkpoints, sessions | ✅ **Yes** — ephemeral |
-| `ALİM-langfuse-db` | PostgreSQL 15 | *internal* | Langfuse traces (auto-managed) | ❌ **No** — Langfuse handles |
-| `ALİM-langfuse` | Next.js app | **:3001** | Observability dashboard | ❌ **No** — just view it |
+| Container | Profile | Type | Port | Purpose | You Manage? |
+|:----------|:--------|:-----|:-----|:--------|:------------|
+| `alim-postgres` | `core` | PostgreSQL 15 | **:5433** | App tables + LangGraph checkpoints | ✅ **Yes** |
+| `alim-redis` | `core` | Redis Stack | **:6379** | Session cache, rate limiting | ✅ **Yes** |
+| `alim-ollama` | `core` | Ollama | **:11434** | LLM inference | ✅ **Yes** |
+| `alim-langgraph` | `core` | LangGraph Server | **:2024** | Agent orchestration | ✅ **Yes** |
+| `alim-langfuse-db` | `observability` | PostgreSQL 15 | *internal* | Langfuse traces | ❌ **No** |
+| `alim-langfuse` | `observability` | Next.js app | **:3001** | Observability dashboard | ❌ **No** |
+| `alim-api` | `app` | FastAPI | **:8000** | REST API gateway | ✅ **Yes** |
+| `alim-demo-ui` | `app` | Chainlit | **:8501** | Demo chat interface | ✅ **Yes** |
+| `alim-zekalab-mcp` | `mcp` | FastMCP | **:7777** | Agricultural rules | ✅ **Yes** |
+| `alim-python-viz-mcp` | `mcp` | FastMCP | **:7778** | Chart generation | ✅ **Yes** |
 
 ### 🔍 Langfuse: How It Works
 
@@ -463,11 +481,11 @@ supervisor ──┬──> end (greeting/off-topic handled)
 
 ## 🔌 MCP Integration Layer
 
-LangGraph calls external tools via **Model Context Protocol (MCP)** using `langchain-mcp-adapters`:
+LangGraph Server calls external tools via **Model Context Protocol (MCP)**:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    LANGGRAPH + MCP                              │
+│                    LANGGRAPH SERVER + MCP                        │
 │                                                                  │
 │   ┌────────────────┐      ┌─────────────────────────────────┐   │
 │   │  StateGraph    │      │         ToolNode                │   │
@@ -477,22 +495,24 @@ LangGraph calls external tools via **Model Context Protocol (MCP)** using `langc
 │   │  agronomist ──────────▶  • evaluate_pest_control       │   │
 │   │       │        │      │  • calculate_subsidy           │   │
 │   │  validator     │      │  • predict_harvest_date        │   │
-│   └────────────────┘      └─────────────┬───────────────────┘   │
+│   └────────────────┘      │  • generate_chart (viz)        │   │
+│                           └─────────────┬───────────────────┘   │
 │                                          │                       │
 └──────────────────────────────────────────┼───────────────────────┘
                                            │ MCP Protocol
-                                           ▼
-                              ┌─────────────────────────┐
-                              │   ZekaLab FastMCP       │
-                              │   :7777                 │
-                              │   (Custom rules engine) │
-                              └─────────────────────────┘
+                         ┌─────────────────┼─────────────────┐
+                         ▼                                   ▼
+            ┌─────────────────────────┐     ┌─────────────────────────┐
+            │   ZekaLab FastMCP       │     │   Python Viz MCP        │
+            │   :7777                 │     │   :7778                 │
+            │   (Agricultural rules)  │     │   (Chart generation)    │
+            └─────────────────────────┘     └─────────────────────────┘
 ```
 
 **Key Files:**
-- `src/ALİM/mcp/adapters.py` — MCP client configuration
-- `src/ALİM/mcp_server/zekalab_fastmcp.py` — FastMCP server with 5 tools
-- `src/ALİM/agent/state.py` — MCPTrace for observability
+- `src/alim/mcp/adapters.py` — MCP client configuration
+- `src/alim/mcp_server/zekalab_fastmcp.py` — Agricultural rules (5 tools)
+- `Dockerfile.mcp.viz` — Python visualization server
 
 > 📖 **Full MCP documentation:** See [MCP-ARCHITECTURE.md](MCP-ARCHITECTURE.md)
 
@@ -500,86 +520,85 @@ LangGraph calls external tools via **Model Context Protocol (MCP)** using `langc
 
 ## 🚀 Operational Quick Reference
 
-### 🎯 Essential vs Optional Components
+### 🎯 Profile-Based Deployment
 
-Before diving into service URLs and commands, understand what you actually need:
+| Profile | Services | Purpose |
+|:--------|:---------|:--------|
+| `core` | postgres, redis, ollama, langgraph | **Required** — Minimum stack |
+| `observability` | langfuse-db, langfuse-server | **Recommended** — LLM tracing |
+| `app` | api, demo-ui | **User-facing** — Chat + REST |
+| `mcp` | zekalab-mcp, python-viz-mcp | **Domain tools** — Agri rules |
+| `setup` | model-setup | **One-time** — Pull models |
 
-| Component | Status | Why |
-|:----------|:-------|:----|
-| **Docker Services** | ✅ **Required** | PostgreSQL, Redis, Langfuse, Ollama |
-| **FastAPI Backend** | ✅ **Required** | Mobile app integration point |
-| **Chainlit UI (Direct Mode)** | ✅ **Required** | Primary testing interface |
-| **LangGraph Library** | ✅ **Required** | Agent brain (imported by both above) |
-| **LangGraph Dev Server** | ❌ **Optional** | Visual debugger (redundant with Chainlit) |
-| **API Bridge Mode** | ❌ **Optional** | Tests FastAPI contract (use Swagger instead) |
-
-### 🎬 Simplified Startup Sequence
+### 🎬 Startup Sequences
 
 ```powershell
-# 1. Start Docker services
-docker-compose -f docker-compose.local.yml up -d
+# ═══════════════════════════════════════════════════════
+# FULL DEVELOPMENT STACK (Recommended)
+# ═══════════════════════════════════════════════════════
+docker compose --profile core --profile observability --profile app --profile mcp up -d
 
-# 2. Run migrations (first time only)
-$env:DATABASE_URL = "postgresql+asyncpg://ALİM:ALİM_dev_password@localhost:5433/ALİM"
+# ═══════════════════════════════════════════════════════
+# MINIMAL (Just agent + LLM, no UI)
+# ═══════════════════════════════════════════════════════
+docker compose --profile core up -d
+
+# ═══════════════════════════════════════════════════════
+# ONE-TIME MODEL SETUP (Pull qwen3:4b, import ATLLaMA)
+# ═══════════════════════════════════════════════════════
+docker compose --profile setup up model-setup
+
+# ═══════════════════════════════════════════════════════
+# RUN MIGRATIONS (First time only)
+# ═══════════════════════════════════════════════════════
+$env:DATABASE_URL = "postgresql+asyncpg://alim:alim_dev_password@localhost:5433/alim"
 alembic upgrade head
-
-# 3. Start Chainlit UI (development testing)
-cd demo-ui
-.\.venv\Scripts\Activate.ps1
-chainlit run app.py -w --port 8501
-
-# 4. Start FastAPI (mobile app testing - separate terminal)
-cd C:\Users\rjjaf\_Projects\yonja
-.\.venv\Scripts\Activate.ps1
-uvicorn ALİM.api.main:app --reload
-
-# That's it! No LangGraph dev server needed.
 ```
-
-> 💡 **Pro Tip**: Chainlit and FastAPI can run simultaneously. Test the agent in Chainlit, then validate the HTTP API via Swagger UI (http://localhost:8000/docs).
 
 ### Service URLs
 
-| Service | URL | Purpose | Health Check |
-|:--------|:----|:--------|:-------------|
-| **Chainlit UI** | http://localhost:8501 | Demo testing interface | Visual check |
-| **FastAPI Backend** | http://localhost:8000 | Mobile app API | http://localhost:8000/health |
-| **Swagger UI** | http://localhost:8000/docs | Interactive API testing | N/A |
-| **ReDoc** | http://localhost:8000/redoc | API documentation | N/A |
-| **PostgreSQL** | localhost:5433 | App database | `pg_isready -h localhost -p 5433` |
-| **Redis** | localhost:6379 | State persistence | `redis-cli ping` |
-| **Langfuse** | http://localhost:3001 | LLM observability | Dashboard loads |
-| **Ollama** | http://localhost:11434 | Local LLM (dev) | `curl http://localhost:11434/api/tags` |
-
-> 🎯 **Testing Workflow**: Develop in Chainlit → Test API via Swagger → Mobile app uses FastAPI endpoints
+| Service | Profile | URL | Purpose | Health Check |
+|:--------|:--------|:----|:--------|:-------------|
+| **LangGraph Server** | `core` | http://localhost:2024 | Agent orchestration | http://localhost:2024/ok |
+| **Chainlit UI** | `app` | http://localhost:8501 | Demo chat interface | http://localhost:8501/health |
+| **FastAPI Backend** | `app` | http://localhost:8000 | REST API gateway | http://localhost:8000/health |
+| **Swagger UI** | `app` | http://localhost:8000/docs | Interactive API docs | N/A |
+| **PostgreSQL** | `core` | localhost:5433 | App database | `pg_isready -h localhost -p 5433` |
+| **Redis** | `core` | localhost:6379 | Session cache | `redis-cli ping` |
+| **Ollama** | `core` | http://localhost:11434 | Local LLM | http://localhost:11434/api/tags |
+| **Langfuse** | `observability` | http://localhost:3001 | LLM tracing | Dashboard loads |
+| **ZekaLab MCP** | `mcp` | http://localhost:7777 | Agricultural rules | http://localhost:7777/health |
+| **Python Viz MCP** | `mcp` | http://localhost:7778 | Chart generation | http://localhost:7778/health |
 
 ### Common Commands
 
 ```powershell
 # ═══════════════════════════════════════════════════════
-# DOCKER SERVICES
+# DOCKER COMPOSE (Profile-based)
 # ═══════════════════════════════════════════════════════
 
-# Start all services (PostgreSQL, Redis, Langfuse, Ollama)
-docker-compose -f docker-compose.local.yml up -d
+# Full stack
+docker compose --profile core --profile observability --profile app --profile mcp up -d
 
 # Check service health
-docker ps
-docker-compose -f docker-compose.local.yml ps
+docker compose ps
 
-# View logs
-docker-compose -f docker-compose.local.yml logs -f
+# View logs (all services)
+docker compose logs -f
+
+# View logs (specific service)
+docker compose logs -f langgraph
 
 # Stop all services
-docker-compose -f docker-compose.local.yml down
+docker compose down
 
 # ═══════════════════════════════════════════════════════
 # DATABASE MANAGEMENT
 # ═══════════════════════════════════════════════════════
 
 # Run migrations (first time setup)
-$env:DATABASE_URL = "postgresql+asyncpg://ALİM:ALİM_dev_password@localhost:5433/ALİM"
-$env:PYTHONPATH = "C:\Users\rjjaf\_Projects\yonja\src"
+$env:DATABASE_URL = "postgresql+asyncpg://alim:alim_dev_password@localhost:5433/alim"
+$env:PYTHONPATH = "src"
 alembic upgrade head
 
 # Create new migration (after model changes)

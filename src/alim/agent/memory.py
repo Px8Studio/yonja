@@ -89,6 +89,17 @@ except ImportError:
     AsyncPostgresSaver = None  # type: ignore
     log.debug(f"{EMOJI_ALİM} {EMOJI_POSTGRES} langgraph-checkpoint-postgres not installed")
 
+# Try to import psycopg connection pool
+try:
+    from psycopg_pool import AsyncConnectionPool
+
+    PSYCOPG_POOL_AVAILABLE = True
+    log.debug(f"{EMOJI_ALİM} {EMOJI_POSTGRES} psycopg_pool available for connection pooling")
+except ImportError:
+    PSYCOPG_POOL_AVAILABLE = False
+    AsyncConnectionPool = None  # type: ignore
+    log.debug(f"{EMOJI_ALİM} {EMOJI_POSTGRES} psycopg_pool not installed, using single connection")
+
 
 # Type alias for checkpointer types
 CheckpointerType = Union[MemorySaver, "AsyncRedisSaver", "AsyncPostgresSaver"]
@@ -148,16 +159,36 @@ async def get_checkpointer_async(
 
                 log.debug(f"Attempting PostgreSQL checkpointer with: {pg_url[:50]}...")
 
-                # Use async context manager for singleton/reusable connection pool
-                async_cm = AsyncPostgresSaver.from_conn_string(pg_url)
-                checkpointer = await async_cm.__aenter__()
+                # Use connection pool for better resilience and connection management
+                # This prevents "connection is closed" errors from stale singleton connections
+                if PSYCOPG_POOL_AVAILABLE and AsyncConnectionPool is not None:
+                    # Create a connection pool with proper settings
+                    pool = AsyncConnectionPool(
+                        conninfo=pg_url,
+                        min_size=1,
+                        max_size=5,
+                        max_idle=300,  # Close idle connections after 5 minutes
+                        open=False,  # Don't open immediately, let AsyncPostgresSaver manage it
+                    )
+                    await pool.open()
 
-                # Setup tables
-                await checkpointer.setup()
+                    # Create checkpointer with connection pool
+                    checkpointer = AsyncPostgresSaver(pool)
+                    await checkpointer.setup()
 
-                log.info(
-                    f"{EMOJI_ALİM} {EMOJI_POSTGRES} Using PostgreSQL checkpointer (persistent)"
-                )
+                    log.info(
+                        f"{EMOJI_ALİM} {EMOJI_POSTGRES} Using PostgreSQL checkpointer with connection pool (persistent)"
+                    )
+                else:
+                    # Fallback to single connection (less resilient)
+                    async_cm = AsyncPostgresSaver.from_conn_string(pg_url)
+                    checkpointer = await async_cm.__aenter__()
+                    await checkpointer.setup()
+
+                    log.info(
+                        f"{EMOJI_ALİM} {EMOJI_POSTGRES} Using PostgreSQL checkpointer (persistent)"
+                    )
+
                 if use_singleton:
                     _checkpointer = checkpointer
                 return checkpointer

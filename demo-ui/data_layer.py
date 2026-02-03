@@ -205,6 +205,78 @@ class AlimDataLayer(SQLAlchemyDataLayer):
 
         return await super().update_step(step_dict)
 
+    async def create_user(self, user: cl.User) -> cl.PersistedUser | None:
+        """Override to handle unique constraint violations gracefully.
+
+        The parent implementation has a race condition where concurrent requests
+        (e.g., multiple browser tabs logging in simultaneously) can cause
+        UniqueViolationError. This implementation uses UPSERT to handle it.
+
+        Args:
+            user: Chainlit User object from OAuth callback
+
+        Returns:
+            PersistedUser if created/updated successfully, None on error
+        """
+        import json
+        import uuid
+        from datetime import datetime
+
+        try:
+            # Use UPSERT (INSERT ... ON CONFLICT DO UPDATE) to handle race conditions
+            user_id = str(uuid.uuid4())
+            created_at = datetime.now().isoformat() + "Z"
+            metadata_json = json.dumps(user.metadata) if user.metadata else "{}"
+
+            # PostgreSQL UPSERT query - creates user if not exists, updates metadata if exists
+            query = """
+                INSERT INTO users ("id", "identifier", "createdAt", "metadata")
+                VALUES (:id, :identifier, :createdAt, :metadata)
+                ON CONFLICT ("identifier") DO UPDATE
+                SET "metadata" = EXCLUDED."metadata"
+                RETURNING "id", "identifier", "createdAt", "metadata"
+            """
+            parameters = {
+                "id": user_id,
+                "identifier": user.identifier,
+                "createdAt": created_at,
+                "metadata": metadata_json,
+            }
+
+            result = await self.execute_sql(query=query, parameters=parameters)
+
+            if result and isinstance(result, list) and len(result) > 0:
+                row = result[0]
+                # Parse metadata back from JSON string if needed
+                metadata = row.get("metadata", {})
+                if isinstance(metadata, str):
+                    metadata = json.loads(metadata)
+
+                logger.info(
+                    "user_upserted_successfully",
+                    identifier=user.identifier,
+                    user_id=row["id"],
+                )
+
+                return cl.PersistedUser(
+                    id=row["id"],
+                    identifier=row["identifier"],
+                    createdAt=row["createdAt"],
+                    metadata=metadata,
+                )
+
+            # Fallback: if RETURNING didn't work, fetch the user
+            logger.debug("create_user_upsert_no_return_fetching", identifier=user.identifier)
+            return await self.get_user(user.identifier)
+
+        except Exception as e:
+            logger.error("create_user_error", identifier=user.identifier, error=str(e))
+            # Last resort: try to fetch existing user (might work if user was created by another request)
+            try:
+                return await self.get_user(user.identifier)
+            except Exception:
+                return None
+
 
 # Add tag serialization helper
 def _serialize_tags(tags: list | str | None) -> str | None:

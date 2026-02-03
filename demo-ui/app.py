@@ -56,10 +56,18 @@ sys.path.insert(0, str(project_root / "src"))
 
 # Move these imports to top-level (after sys.path is set)
 # ============================================
+# EVENT LOOP CONFIGURATION (WINDOWS FIX)
+# ============================================
+# Must happen BEFORE any asyncio loop is created
+import asyncio  # noqa: E402
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+# ============================================
 # CHAINLIT DATA LAYER INITIALIZATION (CRITICAL)
 # ============================================
 # Must happen BEFORE importing chainlit to prevent "storage client not initialized" warning
-import asyncio  # noqa: E402
 
 from services.logger import get_logger  # noqa: E402
 
@@ -109,8 +117,6 @@ except Exception as e:
 
 # Now safe to import chainlit  # noqa: E402
 import chainlit as cl  # noqa: E402
-from alim.agent.graph import compile_agent_graph  # noqa: E402
-from alim.agent.memory import get_checkpointer_async  # noqa: E402
 from alim.config import AgentMode  # noqa: E402
 from alim.config import settings as alim_settings  # noqa: E402
 from alim.observability.banner import (  # noqa: E402
@@ -125,7 +131,6 @@ from alim.observability.banner import (  # noqa: E402
     print_startup_complete,
     print_status_line,
 )
-from alim.observability.langfuse import create_langfuse_handler  # noqa: E402
 from alim_persona import ALİMPersona, PersonaProvisioner  # noqa: E402
 from alim_persona_db import (  # noqa: E402
     load_alim_persona_from_db,
@@ -357,10 +362,7 @@ if demo_settings.data_persistence_enabled:
         return get_data_layer()
 
 
-# Global checkpointer (initialized once in async context) - for direct mode
-_checkpointer = None
-
-# Global API client (for API bridge mode) - using official langgraph_sdk
+# Global API client (for HTTP mode) - using official langgraph_sdk
 _langgraph_client = None
 
 # ============================================
@@ -368,23 +370,6 @@ _langgraph_client = None
 # ============================================
 # Replaces static model profiles with goal-oriented modes.
 # -> Moved to constants.py and services/model_resolver.py
-
-
-async def get_app_checkpointer():
-    """Get or create the checkpointer singleton (async) - for direct mode.
-
-    Priority: PostgreSQL (persistent) > Redis (fast) > Memory (dev only)
-    """
-    global _checkpointer
-    if _checkpointer is None:
-        # Prefer Postgres for persistence, fallback to Redis, then Memory
-        # This ensures conversation history survives restarts
-        _checkpointer = await get_checkpointer_async(
-            redis_url=demo_settings.redis_url,
-            postgres_url=demo_settings.database_url,
-            backend="auto",  # Will try Postgres first if available
-        )
-    return _checkpointer
 
 
 def get_api_client():
@@ -2169,7 +2154,11 @@ async def on_chat_start():
     # ─────────────────────────────────────────────────────────────
     # WELCOME MESSAGE (Main Chat) - Primary interaction
     # ─────────────────────────────────────────────────────────────
-    await send_dashboard_welcome(user, mcp_status=agent_mcp_status)
+    # IMPORTANT: Guard against duplicate welcome messages
+    # Chainlit can trigger @on_chat_start multiple times during reconnections
+    if not cl.user_session.get("welcome_sent"):
+        await send_dashboard_welcome(user, mcp_status=agent_mcp_status)
+        cl.user_session.set("welcome_sent", True)
 
 
 # ============================================
@@ -2264,11 +2253,9 @@ async def on_chat_resume(thread: ThreadDict):
     active_model = resolve_active_model()
     cl.user_session.set("active_model", active_model)
 
-    # 8. Reinitialize LangGraph agent with SAME thread_id
-    # This allows LangGraph to load conversation history from checkpoint
-    checkpointer = await get_app_checkpointer()
-    agent = compile_agent_graph(checkpointer=checkpointer)
-    cl.user_session.set("agent", agent)
+    # 8. LangGraph Server handles checkpointing via thread_id
+    # No local graph compilation needed - all requests go through HTTP to LangGraph Server
+    # The server loads conversation history automatically when we pass thread_id
 
     # 9. Restore chat settings UI
     await setup_chat_settings(user=user)
@@ -2480,36 +2467,26 @@ async def on_message(message: cl.Message):
 
     try:
         # ═══════════════════════════════════════════════════════
-        # TOGGLE PATTERN: Direct vs HTTP Mode
+        # HTTP MODE ONLY - All traffic goes through LangGraph Server
         # ═══════════════════════════════════════════════════════
-        # We use Direct Mode (local graph) by default for reliability and
-        # full observability (Langfuse). We keep HTTP mode for future scaling.
+        # The LangGraph Server (:2024) handles:
+        # - Graph compilation & execution
+        # - PostgreSQL checkpointing (state persistence)
+        # - Thread management & recovery
+        # - Horizontal scaling capability
 
-        mode = "direct"  # forced local for now as per user instruction
-
-        if mode == "direct":
-            await _handle_direct_execution(
-                message=message,
-                response_msg=response_msg,
-                user_id=user_id,
-                thread_id=thread_id,
-                profile_prompt=profile_prompt,
-                scenario_context=scenario_context,
-                file_paths=file_paths,
-            )
-        else:
-            await _handle_message_http(
-                message=message,
-                response_msg=response_msg,
-                user_id=user_id,
-                farm_id=farm_id,
-                thread_id=thread_id,
-                profile_prompt=profile_prompt,
-                scenario_context=scenario_context,
-                enable_thinking_steps=enable_thinking_steps,
-                enable_feedback=enable_feedback,
-                file_paths=file_paths,
-            )
+        await _handle_message_http(
+            message=message,
+            response_msg=response_msg,
+            user_id=user_id,
+            farm_id=farm_id,
+            thread_id=thread_id,
+            profile_prompt=profile_prompt,
+            scenario_context=scenario_context,
+            enable_thinking_steps=enable_thinking_steps,
+            enable_feedback=enable_feedback,
+            file_paths=file_paths,
+        )
 
     except Exception as e:
         logger.error("message_handler_error", error=str(e), exc_info=True)
@@ -2729,85 +2706,6 @@ def _format_mcp_data_flow(mcp_traces: list[dict]) -> str | None:
         lines.append(f"- {icon} **{server}**: {status} ({tools_used}) — {total_time_ms:.0f}ms")
 
     return "\n".join(lines)
-
-
-async def _handle_direct_execution(
-    message: cl.Message,
-    response_msg: cl.Message,
-    user_id: str,
-    thread_id: str,
-    profile_prompt: str,
-    scenario_context: dict | None,
-    file_paths: list[str] | None = None,
-):
-    """Execute graph locally (Direct Mode) - LangGraph handles all complexity.
-
-    Simple, correct pattern:
-    1. Create graph
-    2. Run astream() to get state updates
-    3. Extract response from final state
-    4. Display it
-
-    No special-casing, no event introspection. The graph is a black box.
-    """
-    from alim.agent.graph import compile_agent_graph_async
-    from alim.agent.memory import get_checkpointer_async
-    from alim.agent.state import create_initial_state
-
-    # Initialize Langfuse for observability
-    langfuse_handler = create_langfuse_handler(
-        session_id=thread_id,
-        user_id=user_id,
-        tags=["chainlit", "direct_mode"],
-        trace_name=f"chainlit_{thread_id[:8]}",
-    )
-
-    # Prepare state
-    initial_state = create_initial_state(
-        thread_id=thread_id,
-        user_input=message.content,
-        user_id=user_id,
-        language="az",
-        system_prompt_override=profile_prompt,
-        scenario_context=scenario_context,
-        file_paths=file_paths,
-    )
-
-    # Compile graph
-    checkpointer = await get_checkpointer_async()
-    graph = await compile_agent_graph_async(checkpointer=checkpointer, use_mcp=True)
-
-    config = {"callbacks": [langfuse_handler] if langfuse_handler else []}
-    config["configurable"] = {"thread_id": thread_id}
-
-    # Run the graph - that's it!
-    # The graph handles ALL the complexity:
-    # - Direct responses (supervisor greeting)
-    # - LLM streaming (specialist advice)
-    # - MCP tool calls
-    # - Error handling
-    # We collect state updates and extract the response.
-    final_response = None
-    async for chunk in graph.astream(initial_state, config=config):
-        # astream returns dicts with node names as keys
-        # Each chunk is like: {'supervisor': {...state updates...}}
-        # We need to look inside each node's update for current_response
-        for node_name, node_output in chunk.items():
-            if isinstance(node_output, dict) and "current_response" in node_output:
-                final_response = node_output["current_response"]
-
-    # Extract and display response
-    # The graph ALWAYS puts the response in current_response
-    # No special-casing needed - this works for ALL node types
-    if final_response:
-        await response_msg.stream_token(final_response)
-    else:
-        # Fallback if no response found
-        logger.warning("no_response_found_in_graph_output")
-        await response_msg.stream_token("❌ Cavab alınmadı")
-
-    await response_msg.update()
-    await _add_feedback_buttons(response_msg)
 
 
 async def _add_feedback_buttons(response_msg: cl.Message):

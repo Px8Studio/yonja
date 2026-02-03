@@ -2,7 +2,7 @@
 # Python Visualization MCP Server
 # Generates charts (Plotly), diagrams (Mermaid), maps (Folium)
 
-FROM python:3.12-slim
+FROM python:3.12-slim AS base
 
 # Labels
 LABEL maintainer="ALİM Team"
@@ -43,10 +43,9 @@ RUN pip install --no-cache-dir \
     # HTTP client
     httpx>=0.26.0 \
     # Logging
-    structlog>=24.1.0
-
-# Copy source code
-COPY src/alim/mcp_server/python_viz.py /app/src/alim/mcp_server/python_viz.py
+    structlog>=24.1.0 \
+    # Hot reload support
+    watchfiles>=0.21.0
 
 # Set Python path
 ENV PYTHONPATH=/app/src
@@ -63,5 +62,15 @@ EXPOSE 7778
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:7778/health || exit 1
 
-# Run the MCP server
+# ────────────────────────────────────────────────────────────────────────────
+# DEVELOPMENT: Hot reload enabled
+# ────────────────────────────────────────────────────────────────────────────
+FROM base AS development
+CMD ["python", "-m", "uvicorn", "alim.mcp_server.python_viz:app", "--host", "0.0.0.0", "--port", "7778", "--reload", "--reload-dir", "/app/src"]
+
+# ────────────────────────────────────────────────────────────────────────────
+# PRODUCTION: No hot reload, code baked in
+# ────────────────────────────────────────────────────────────────────────────
+FROM base AS production
+COPY src/alim/mcp_server/python_viz.py /app/src/alim/mcp_server/python_viz.py
 CMD ["python", "-m", "uvicorn", "alim.mcp_server.python_viz:app", "--host", "0.0.0.0", "--port", "7778"]

@@ -314,16 +314,15 @@ async def handle_chat_start(
 
 async def handle_chat_resume(
     thread: ThreadDict,
-    get_app_checkpointer_fn: callable,
-    compile_agent_graph_fn: callable,
     setup_chat_settings_fn: callable,
 ) -> None:
     """Core logic for on_chat_resume handler.
 
+    HTTP-only architecture: LangGraph Server manages checkpoints via thread_id.
+    No local graph compilation needed.
+
     Args:
         thread: Thread dict with id, name, userId, metadata, tags
-        get_app_checkpointer_fn: Function to get checkpointer
-        compile_agent_graph_fn: Function to compile agent graph
         setup_chat_settings_fn: Function to setup chat settings
     """
     logger.info(
@@ -395,10 +394,8 @@ async def handle_chat_resume(
     active_model = resolve_active_model()
     cl.user_session.set("active_model", active_model)
 
-    # 8. Reinitialize LangGraph agent
-    checkpointer = await get_app_checkpointer_fn()
-    agent = compile_agent_graph_fn(checkpointer=checkpointer)
-    cl.user_session.set("agent", agent)
+    # 8. LangGraph Server handles checkpointing via thread_id
+    # No local graph compilation needed - HTTP mode uses LangGraph Server
 
     # 9. Restore chat settings UI
     await setup_chat_settings_fn(user=user)

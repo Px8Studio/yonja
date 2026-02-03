@@ -1,0 +1,609 @@
+# docker-compose.yml
+# ═══════════════════════════════════════════════════════════════════════════════
+# ALİM: Unified Docker Compose with Profiles
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# PROFILES:
+#   core         - PostgreSQL, Redis, Ollama, LangGraph (required for all)
+#   observability - Langfuse server + DB (recommended for debugging)
+#   app          - FastAPI + Demo UI (user-facing services)
+#   mcp          - ZekaLab + Python Viz MCP servers
+#   setup        - One-time model setup
+#
+# USAGE:
+#   # Full stack (development)
+#   docker compose --profile core --profile observability --profile app --profile mcp up -d
+#
+#   # Minimal (just agent + LLM)
+#   docker compose --profile core up -d
+#
+#   # With observability but no MCP
+#   docker compose --profile core --profile observability --profile app up -d
+#
+#   # One-time model setup
+#   docker compose --profile setup up model-setup
+#
+#   # Production (external postgres, no langfuse)
+#   docker compose --profile app --profile mcp up -d
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+  # ════════════════════════════════════════════════════════════════════════════
+  # CORE PROFILE: Required infrastructure
+  # ════════════════════════════════════════════════════════════════════════════
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # PostgreSQL (Application Database + LangGraph Checkpoints)
+  # ──────────────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: alim-postgres
+    profiles: ["core"]
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=alim
+      - POSTGRES_USER=alim
+      - POSTGRES_PASSWORD=${ALIM_POSTGRES_PASSWORD:-alim_dev_password}
+    networks:
+      - alim-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alim"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Redis Stack (Caching, Session Storage)
+  # ──────────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: alim-redis
+    profiles: ["core"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - alim-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Ollama (Local LLM Server)
+  # ──────────────────────────────────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: alim-ollama
+    profiles: ["core"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+      - ./models:/app/models:ro
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_NUM_PARALLEL=2
+      - OLLAMA_MAX_LOADED_MODELS=2
+    networks:
+      - alim-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: '4.0'
+        reservations:
+          memory: 4G
+        # GPU support (uncomment for NVIDIA)
+        # devices:
+        #   - driver: nvidia
+        #     count: 1
+        #     capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # LangGraph Server (Agent Orchestration + Checkpointing)
+  # THE SINGLE ENTRY POINT for all agent interactions
+  # ──────────────────────────────────────────────────────────────────────────
+  langgraph:
+    build:
+      context: .
+      dockerfile: Dockerfile.langgraph
+    container_name: alim-langgraph
+    profiles: ["core"]
+    ports:
+      - "2024:2024"
+    volumes:
+      - ./src:/app/src
+      - ./deploy/langgraph/langgraph.json:/app/langgraph.json
+    environment:
+      # Python path (CRITICAL)
+      - PYTHONPATH=/app/src
+
+      # LangGraph server
+      - LANGGRAPH_DEV_HOST=0.0.0.0
+      - LANGGRAPH_DEV_PORT=2024
+      - LANGGRAPH_API_LOG_LEVEL=INFO
+      - LANGGRAPH_POSTGRES_URI=postgresql://alim:${ALIM_POSTGRES_PASSWORD:-alim_dev_password}@postgres:5432/alim
+
+      # LLM Provider
+      - ALIM_LLM_PROVIDER=ollama
+      - ALIM_OLLAMA_BASE_URL=http://ollama:11434
+      - ALIM_OLLAMA_MODEL=${ALIM_OLLAMA_MODEL:-qwen3:4b}
+
+      # Database (app data)
+      - DATABASE_URL=postgresql+asyncpg://alim:${ALIM_POSTGRES_PASSWORD:-alim_dev_password}@postgres:5432/alim
+
+      # Redis
+      - REDIS_URL=redis://redis:6379/0
+
+      # Langfuse (optional)
+      - LANGFUSE_ENABLED=${ALIM_LANGFUSE_ENABLED:-true}
+      - LANGFUSE_SECRET_KEY=${ALIM_LANGFUSE_SECRET_KEY:-}
+      - LANGFUSE_PUBLIC_KEY=${ALIM_LANGFUSE_PUBLIC_KEY:-}
+      - LANGFUSE_HOST=http://langfuse-server:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    networks:
+      - alim-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+        reservations:
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2024/ok"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # OBSERVABILITY PROFILE: Langfuse for LLM tracing
+  # ════════════════════════════════════════════════════════════════════════════
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Langfuse PostgreSQL Database
+  # ──────────────────────────────────────────────────────────────────────────
+  langfuse-db:
+    image: postgres:15-alpine
+    container_name: alim-langfuse-db
+    profiles: ["observability"]
+    volumes:
+      - langfuse-db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=langfuse
+      - POSTGRES_USER=langfuse
+      - POSTGRES_PASSWORD=${LANGFUSE_POSTGRES_PASSWORD:-langfuse_secret}
+    networks:
+      - alim-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U langfuse -d langfuse"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Langfuse Server (Self-Hosted Observability)
+  # ──────────────────────────────────────────────────────────────────────────
+  langfuse-server:
+    image: langfuse/langfuse:2
+    container_name: alim-langfuse
+    profiles: ["observability"]
+    ports:
+      - "3001:3000"
+    environment:
+      - DATABASE_URL=postgresql://langfuse:${LANGFUSE_POSTGRES_PASSWORD:-langfuse_secret}@langfuse-db:5432/langfuse
+      - DIRECT_URL=postgresql://langfuse:${LANGFUSE_POSTGRES_PASSWORD:-langfuse_secret}@langfuse-db:5432/langfuse
+      - NEXTAUTH_SECRET=${LANGFUSE_AUTH_SECRET:-alim-langfuse-secret-change-in-prod}
+      - SALT=${LANGFUSE_SALT:-alim-langfuse-salt-change-in-prod}
+      - NEXTAUTH_URL=http://localhost:3001
+      - TELEMETRY_ENABLED=false
+      - AUTH_DISABLE_SIGNUP=false
+    depends_on:
+      langfuse-db:
+        condition: service_healthy
+    networks:
+      - alim-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/public/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # APP PROFILE: User-facing services
+  # ════════════════════════════════════════════════════════════════════════════
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # FastAPI (REST API for Mobile + External Clients)
+  # ──────────────────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      target: development
+      dockerfile: Dockerfile
+    container_name: alim-api
+    profiles: ["app"]
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src
+      - ./prompts:/app/prompts
+      - ./data:/app/data
+    environment:
+      - ALIM_ENVIRONMENT=${ALIM_ENVIRONMENT:-development}
+      - ALIM_INFRASTRUCTURE_MODE=local
+      - ALIM_DEBUG=${ALIM_DEBUG:-true}
+      - ALIM_LANGGRAPH_REQUIRED=true
+      - ALIM_API_HOST=0.0.0.0
+      - ALIM_API_PORT=8000
+      - ALIM_CORS_ORIGINS=http://localhost:3000,http://localhost:8501
+
+      # LangGraph Server (THE single entry point)
+      - ALIM_LANGGRAPH_BASE_URL=http://langgraph:2024
+      - ALIM_LANGGRAPH_GRAPH_ID=alim_agent
+
+      # LLM (for direct inference if needed)
+      - ALIM_LLM_PROVIDER=ollama
+      - ALIM_OLLAMA_BASE_URL=http://ollama:11434
+      - ALIM_OLLAMA_MODEL=${ALIM_OLLAMA_MODEL:-qwen3:4b}
+
+      # Database
+      - ALIM_DATABASE_URL=postgresql+asyncpg://alim:${ALIM_POSTGRES_PASSWORD:-alim_dev_password}@postgres:5432/alim
+
+      # Redis
+      - ALIM_REDIS_URL=redis://redis:6379/0
+
+      # Security
+      - ALIM_JWT_SECRET=${ALIM_JWT_SECRET:-dev-secret-change-in-production}
+      - ALIM_JWT_ALGORITHM=HS256
+
+      # Observability
+      - ALIM_LANGFUSE_ENABLED=${ALIM_LANGFUSE_ENABLED:-true}
+      - ALIM_LANGFUSE_PUBLIC_KEY=${ALIM_LANGFUSE_PUBLIC_KEY:-}
+      - ALIM_LANGFUSE_SECRET_KEY=${ALIM_LANGFUSE_SECRET_KEY:-}
+      - ALIM_LANGFUSE_HOST=http://langfuse-server:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      langgraph:
+        condition: service_healthy
+    networks:
+      - alim-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Chainlit Demo UI
+  # ──────────────────────────────────────────────────────────────────────────
+  demo-ui:
+    build:
+      context: .
+      dockerfile: demo-ui/Dockerfile
+      target: development
+    container_name: alim-demo-ui
+    profiles: ["app"]
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./src:/app/src
+      - ./demo-ui:/app/demo-ui
+      - ./prompts:/app/prompts
+      - ./data:/app/data
+    environment:
+      - ALIM_ENVIRONMENT=${ALIM_ENVIRONMENT:-development}
+      - ALIM_INFRASTRUCTURE_MODE=local
+      - ALIM_DEBUG=${ALIM_DEBUG:-true}
+      - ALIM_LANGGRAPH_REQUIRED=true
+
+      # Services (HTTP-only mode - all traffic via LangGraph Server)
+      - ALIM_API_URL=http://api:8000
+      - ALIM_LANGGRAPH_BASE_URL=http://langgraph:2024
+
+      # LLM
+      - ALIM_LLM_PROVIDER=ollama
+      - ALIM_OLLAMA_BASE_URL=http://ollama:11434
+      - ALIM_OLLAMA_MODEL=${ALIM_OLLAMA_MODEL:-qwen3:4b}
+
+      # Redis
+      - ALIM_REDIS_URL=redis://redis:6379/0
+
+      # Database
+      - ALIM_DATABASE_URL=postgresql+asyncpg://alim:${ALIM_POSTGRES_PASSWORD:-alim_dev_password}@postgres:5432/alim
+      - CHAINLIT_DATABASE_URL=postgresql+asyncpg://alim:${ALIM_POSTGRES_PASSWORD:-alim_dev_password}@postgres:5432/alim
+      - ENABLE_DATA_PERSISTENCE=true
+
+      # Observability
+      - ALIM_LANGFUSE_ENABLED=${ALIM_LANGFUSE_ENABLED:-true}
+      - ALIM_LANGFUSE_PUBLIC_KEY=${ALIM_LANGFUSE_PUBLIC_KEY:-}
+      - ALIM_LANGFUSE_SECRET_KEY=${ALIM_LANGFUSE_SECRET_KEY:-}
+      - ALIM_LANGFUSE_HOST=http://langfuse-server:3000
+
+      # Python path
+      - PYTHONPATH=/app/src:/app/demo-ui
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      langgraph:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    networks:
+      - alim-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # MCP PROFILE: Domain knowledge services
+  # ════════════════════════════════════════════════════════════════════════════
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # ZekaLab MCP Server (Agricultural Rules Engine)
+  # ──────────────────────────────────────────────────────────────────────────
+  zekalab-mcp:
+    build:
+      context: .
+      dockerfile: src/alim/mcp_server/Dockerfile
+      target: development
+    container_name: alim-zekalab-mcp
+    profiles: ["mcp"]
+    ports:
+      - "7777:7777"
+    environment:
+      - ZEKALAB_PORT=7777
+      - ZEKALAB_LOG_LEVEL=INFO
+      - PYTHONPATH=/app/src
+    volumes:
+      - ./src:/app/src  # Hot reload: no :ro flag
+    networks:
+      - alim-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7777/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Python Visualization MCP Server
+  # ──────────────────────────────────────────────────────────────────────────
+  python-viz-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp.viz
+      target: development
+    container_name: alim-python-viz-mcp
+    profiles: ["mcp"]
+    ports:
+      - "7778:7778"
+    environment:
+      - PYTHON_VIZ_PORT=7778
+      - PYTHON_VIZ_LOG_LEVEL=INFO
+      - PYTHON_VIZ_MAX_EXECUTION_TIME=30
+      - PYTHONPATH=/app/src
+    volumes:
+      - ./src:/app/src  # Hot reload: no :ro flag
+      - python-viz-tmp:/tmp/viz
+    networks:
+      - alim-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7778/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 128M
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # SETUP PROFILE: One-time initialization
+  # ════════════════════════════════════════════════════════════════════════════
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Model Setup (Pull Qwen3 + Import GGUF)
+  # ──────────────────────────────────────────────────────────────────────────
+  model-setup:
+    image: ollama/ollama:latest
+    container_name: alim-model-setup
+    profiles: ["setup"]
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ./models:/app/models:ro
+    environment:
+      - OLLAMA_HOST=ollama:11434
+    networks:
+      - alim-network
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "🚀 Setting up models..."
+
+        # Pull Qwen3 (primary model)
+        echo "📥 Pulling qwen3:4b..."
+        ollama pull qwen3:4b
+
+        # Import ATLLaMA from GGUF if file exists
+        if [ -f /app/models/atllama.v3.5.Q4_K_M.gguf ]; then
+          echo "📦 Importing ATLLaMA from GGUF..."
+          cat > /tmp/Modelfile << 'EOF'
+        FROM /app/models/atllama.v3.5.Q4_K_M.gguf
+        SYSTEM "Sən Azərbaycan fermerlərə kömək edən süni intellekt köməkçisisən. Sualları Azərbaycan dilində cavablandır."
+        PARAMETER temperature 0.7
+        PARAMETER num_ctx 4096
+        EOF
+          ollama create atllama -f /tmp/Modelfile
+          echo "✅ ATLLaMA imported!"
+        else
+          echo "⚠️ ATLLaMA GGUF not found, skipping..."
+        fi
+
+        echo "📋 Available models:"
+        ollama list
+        echo "✅ Model setup complete!"
+
+# ════════════════════════════════════════════════════════════════════════════
+# NETWORKS
+# ════════════════════════════════════════════════════════════════════════════
+networks:
+  alim-network:
+    driver: bridge
+
+# ════════════════════════════════════════════════════════════════════════════
+# VOLUMES
+# ════════════════════════════════════════════════════════════════════════════
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  ollama-data:
+    driver: local
+  langfuse-db-data:
+    driver: local
+  python-viz-tmp:
+    driver: local

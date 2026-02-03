@@ -106,8 +106,9 @@ async def save_alim_persona_to_db(
                     chainlit_user_id = new_user_uuid
                 except Exception as e:
                     # If duplicate key (IntegrityError), ignore and fetch existing
-                    # We catch general Exception to be safe, but ideally check for IntegrityError
-                    # if "unique constraint" in str(e) or "IntegrityError" in str(type(e)):
+                    # CRITICAL: Must rollback the failed transaction before any further queries
+                    await session.rollback()
+
                     result = await session.execute(
                         text('SELECT "id" FROM users WHERE "identifier" = :identifier'),
                         {"identifier": email},

@@ -138,7 +138,7 @@ $pytestCmd = $pythonCmd
 
 if (-not $Quick) {
     $testPassed = Test-Check -Name "🧪 Critical unit tests" -Command {
-        $env:PYTHONPATH = "$PWD/src"
+        $env:PYTHONPATH = "$PWD/src;$PWD/demo-ui"
         $pytestArgs = @("-m", "pytest", "tests/unit/", "-v", "--tb=short", "-q", "--maxfail=1")
         $stdoutFile = New-TemporaryFile
         $stderrFile = New-TemporaryFile

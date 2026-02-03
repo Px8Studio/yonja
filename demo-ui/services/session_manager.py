@@ -20,6 +20,11 @@ from typing import Any
 
 import chainlit as cl
 import structlog
+from alim_persona_db import (
+    load_alim_persona_from_db,
+    save_alim_persona_to_db,
+    update_persona_login_time,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -385,3 +390,12 @@ async def initialize_session_with_persistence(user_id: str, user_email: str | No
     }
 
     logger.info(f"Session initialization complete: user_id={user_id}, session={session_state}")
+
+
+__all__ = [
+    "SessionManager",
+    "initialize_session_with_persistence",
+    "load_alim_persona_from_db",
+    "save_alim_persona_to_db",
+    "update_persona_login_time",
+]

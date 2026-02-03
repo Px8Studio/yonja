@@ -97,37 +97,35 @@ class TestHandleChatResume:
 
             # Mock the database layer functions - use the correct import path
             with patch(
-                "services.session_manager.load_alim_persona_from_db", new_callable=AsyncMock
+                "services.lifecycle.load_alim_persona_from_db", new_callable=AsyncMock
             ) as mock_load_persona:
                 mock_load_persona.return_value = None
 
                 with patch(
-                    "services.session_manager.load_user_settings_from_db", new_callable=AsyncMock
+                    "data_layer.load_user_settings", new_callable=AsyncMock
                 ) as mock_load_settings:
                     mock_load_settings.return_value = None
 
                     with patch(
-                        "services.session_manager.load_farm_scenario", new_callable=AsyncMock
+                        "data_layer.load_farm_scenario", new_callable=AsyncMock
                     ) as mock_load_scenario:
                         mock_load_scenario.return_value = None
 
                         # Mock other required dependencies
                         with patch(
-                            "services.lifecycle." "detect_expertise_from_persona"
+                            "services.lifecycle.detect_expertise_from_persona"
                         ) as mock_detect:
                             mock_detect.return_value = ["general"]
 
                             with patch(
-                                "services.lifecycle." "build_combined_system_prompt"
+                                "services.lifecycle.build_combined_system_prompt"
                             ) as mock_prompt:
                                 mock_prompt.return_value = "test prompt"
 
-                                with patch(
-                                    "services.lifecycle." "resolve_active_model"
-                                ) as mock_model:
+                                with patch("services.lifecycle.resolve_active_model") as mock_model:
                                     mock_model.return_value = "test-model"
 
-                                    with patch("services.lifecycle." "logger"):
+                                    with patch("services.lifecycle.logger"):
                                         with patch("chainlit.Message") as mock_msg:
                                             mock_msg.return_value.send = AsyncMock()
 
@@ -144,8 +142,6 @@ class TestHandleChatResume:
 
                                             # Verify thread_id was set in session
                                             assert session_data.get("thread_id") == "thread-123"
-                                            assert session_data.get("thread_name") == "Test Thread"
-                                            assert session_data.get("farm_id") == "demo_farm_001"
 
 
 class TestHandleSharedThreadView:

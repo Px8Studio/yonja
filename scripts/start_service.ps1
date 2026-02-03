@@ -49,7 +49,9 @@ $commands = @{
     }
     "LangGraph" = {
         # Use langgraph CLI directly (not python -m)
-        & "$venv\langgraph.exe" dev --config "deploy/langgraph/langgraph.json" --no-browser
+        # Must run from the directory containing langgraph.json for relative paths to work
+        Set-Location "deploy/langgraph"
+        & "$venv\langgraph.exe" dev --no-browser
     }
     "MCP"       = { & "$venv\python.exe" -m uvicorn alim.mcp_server.main:app --port 7777 --reload }
     "Docker"    = { docker compose --profile core --profile observability up -d }

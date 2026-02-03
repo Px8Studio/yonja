@@ -58,15 +58,18 @@ async def test_fetch_weather_mcp_success():
 
 @pytest.mark.asyncio
 async def test_fetch_weather_mcp_failure():
-    """Test weather MCP fetch with exception - should raise."""
+    """Test weather MCP fetch with exception - should return failed trace."""
     with patch("alim.agent.nodes.context_loader.WeatherMCPHandler") as mock_handler_class:
         mock_instance = AsyncMock()
         mock_instance.get_forecast = AsyncMock(side_effect=Exception("Network error"))
         mock_handler_class.return_value = mock_instance
 
-        # The function re-raises exceptions after creating trace
-        with pytest.raises(Exception, match="Network error"):
-            await _fetch_weather_mcp("farm_001")
+        # The function catches exceptions and returns a failed trace
+        weather_data, trace = await _fetch_weather_mcp("farm_001")
+
+        assert weather_data == {}
+        assert trace.success is False
+        assert trace.error_message == "Network error"
 
 
 @pytest.mark.asyncio

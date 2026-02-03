@@ -234,7 +234,7 @@
         "background": {
           "activeOnStart": true,
           "beginsPattern": "^.*(Starting|Server started|Running).*",
-          "endsPattern": "^.*(Server started|listening at).*"
+          "endsPattern": "^.*(Server started|listening at|Application started up).*"
         }
       },
       "presentation": {

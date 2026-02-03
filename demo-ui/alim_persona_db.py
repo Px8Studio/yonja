@@ -86,7 +86,7 @@ async def save_alim_persona_to_db(
                 # OPTIMISTIC STRATEGY: Try to insert, if fails, then select.
                 # This avoids race conditions better than Select-then-Insert.
 
-                # Check if user exists first to respect existing ID if possible (backward copmatibility)
+                # Check if user exists first to respect existing ID if possible (backward compatibility)
                 # But to be safe against concurrency, we rely on the DB constraint.
 
                 try:

@@ -136,9 +136,8 @@ async def evaluate_irrigation_rules(
     should_irrigate = False
     recommended_water_mm = 0.0
     timing = "anytime"
-    rule_id = "RULE_IRR_000"
-    confidence = 0.0
     reasoning = ""
+    rule_id = ""
 
     # Check if irrigation is needed
     if current_soil_moisture_percent < moisture_threshold:
@@ -327,8 +326,8 @@ async def evaluate_pest_control_rules(
     recommended_action = "Monitor closely"
     method = "cultural"
     severity = "low"
-    confidence = 0.7
     rule_id = "RULE_PEST_001_BASELINE"
+    confidence = 0.7
 
     # Environmental risk assessment
     high_risk_conditions = (
@@ -338,9 +337,14 @@ async def evaluate_pest_control_rules(
     if high_risk_conditions:
         severity = "high"
         confidence = 0.85
-        rule_id = "RULE_PEST_002_HIGH_RISK"
         recommended_action = "Preventive treatment recommended"
         method = "biological"
+        if (
+            "cotton_bollworm" not in detected_pests
+            and "spider_mites" not in detected_pests
+            and "leaf_curl_virus" not in detected_pests
+        ):
+            rule_id = "RULE_PEST_002_HIGH_RISK"
 
     # Specific pest handling
     if "cotton_bollworm" in detected_pests:
@@ -413,7 +417,6 @@ async def calculate_subsidy(
     soil = soil_type.lower()
 
     eligible = True
-    rule_id = "RULE_SUBSIDY_001_BASE"
     conditions = []
 
     # Base subsidy rates (AZN per hectare)
@@ -426,17 +429,29 @@ async def calculate_subsidy(
     rate_per_hectare = subsidy_rates.get(crop, 300)
     subsidy_azn = rate_per_hectare * hectares
 
+    # Track which bonuses are applied
+    young_farmer_bonus = False
+    calcareous_bonus = False
+
     # Young farmer bonus (+25%)
     if is_young_farmer or (farmer_age and farmer_age < 40):
         subsidy_azn *= 1.25
-        rule_id = "RULE_SUBSIDY_002_YOUNG_FARMER"
+        young_farmer_bonus = True
         conditions.append("Young farmer bonus applied (+25%)")
 
     # Calcareous soil support (+15%)
     if soil == "calcareous":
         subsidy_azn *= 1.15
+        calcareous_bonus = True
         conditions.append("Calcareous soil support applied (+15%)")
+
+    # Determine rule_id based on applied bonuses
+    if calcareous_bonus:
         rule_id = "RULE_SUBSIDY_003_SOIL_SUPPORT"
+    elif young_farmer_bonus:
+        rule_id = "RULE_SUBSIDY_002_YOUNG_FARMER"
+    else:
+        rule_id = "RULE_SUBSIDY_001_BASE"
 
     # Size limitations
     if hectares > 50:

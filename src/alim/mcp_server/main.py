@@ -246,7 +246,6 @@ async def evaluate_irrigation_rules(request: IrrigationRequest) -> IrrigationRes
         recommended_water_mm = 0.0
         timing = "anytime"
         rule_id = "RULE_IRR_000"
-        confidence = 0.0
         reasoning = ""
 
         # Base threshold varies by crop and soil type
@@ -429,8 +428,8 @@ async def evaluate_pest_control_rules(request: PestControlRequest) -> PestContro
         recommended_action = "Monitor closely"
         method = "cultural"
         severity = "low"
-        confidence = 0.7
         rule_id = "RULE_PEST_001_BASELINE"
+        confidence = 0.7
 
         # Environmental risk assessment
         high_risk_conditions = (
@@ -515,7 +514,6 @@ async def calculate_subsidy(request: SubsidyRequest) -> SubsidyResponse:
         # ========== SUBSIDY RULES LOGIC ==========
 
         eligible = True
-        subsidy_azn = 0.0
         rule_id = "RULE_SUBSIDY_001_BASE"
         conditions = []
 

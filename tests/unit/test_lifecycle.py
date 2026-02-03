@@ -113,23 +113,27 @@ class TestHandleChatResume:
 
                         # Mock other required dependencies
                         with patch(
-                            "services.lifecycle.detect_expertise_from_persona"
+                            "services.lifecycle." "detect_expertise_from_persona"
                         ) as mock_detect:
                             mock_detect.return_value = ["general"]
 
                             with patch(
-                                "services.lifecycle.build_combined_system_prompt"
+                                "services.lifecycle." "build_combined_system_prompt"
                             ) as mock_prompt:
                                 mock_prompt.return_value = "test prompt"
 
-                                with patch("services.lifecycle.resolve_active_model") as mock_model:
+                                with patch(
+                                    "services.lifecycle." "resolve_active_model"
+                                ) as mock_model:
                                     mock_model.return_value = "test-model"
 
-                                    with patch("services.lifecycle.logger"):
+                                    with patch("services.lifecycle." "logger"):
                                         with patch("chainlit.Message") as mock_msg:
                                             mock_msg.return_value.send = AsyncMock()
 
-                                            from services.lifecycle import handle_chat_resume
+                                            from services.lifecycle import (
+                                                handle_chat_resume,
+                                            )
 
                                             mock_setup = AsyncMock(return_value={})
 

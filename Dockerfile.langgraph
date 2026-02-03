@@ -41,7 +41,7 @@ RUN pip install --no-cache-dir langgraph-cli
 
 # Copy source code
 COPY src/ ./src/
-COPY langgraph.json ./
+COPY deploy/langgraph/langgraph.json ./langgraph.json
 
 # Set environment variables
 ENV PYTHONPATH=/app/src \

@@ -293,9 +293,13 @@ async def _fetch_weather_mcp(farm_id: str) -> tuple[dict[str, Any], MCPTrace]:
     Returns:
         Tuple of (weather_data, mcp_trace)
     """
+    import time
+
     handler = WeatherMCPHandler()
+    start_time = time.perf_counter()
     try:
         result = await handler.get_forecast(farm_id)
+        duration_ms = int((time.perf_counter() - start_time) * 1000)
         # Handle both tuple and dict returns
         if isinstance(result, tuple) and len(result) == 2:
             weather_data, trace = result
@@ -306,14 +310,24 @@ async def _fetch_weather_mcp(farm_id: str) -> tuple[dict[str, Any], MCPTrace]:
                 tool="get_forecast",
                 input_args={"farm_id": farm_id},
                 output=weather_data,
-                duration_ms=0,
+                duration_ms=duration_ms,
                 success=True,
             )
         return weather_data, trace
 
     except Exception as e:  # Catch all exceptions from handler
+        duration_ms = int((time.perf_counter() - start_time) * 1000)
         logger.error(f"Weather MCP fetch failed: {e}")
-        raise
+        trace = MCPTrace(
+            server="weather",
+            tool="get_forecast",
+            input_args={"farm_id": farm_id},
+            output={},
+            duration_ms=duration_ms,
+            success=False,
+            error_message=str(e),
+        )
+        return {}, trace
 
 
 async def _fetch_zekalab_rules_mcp(farm_id: str, crop_type: str):
@@ -331,7 +345,7 @@ async def _fetch_zekalab_rules_mcp(farm_id: str, crop_type: str):
     """
     logger.info("zekalab_mcp_start")
     # Ensure handler is correctly instantiated
-    handler = await get_zekalab_handler()  # Ensure this is awaited if it's a coroutine
+    handler = await get_zekalab_handler()
     rules_data, trace = await handler.get_rules_resource()  # Ensure correct parameters are passed
     logger.info("zekalab_mcp_success", farm_id=farm_id, crop_type=crop_type)
     return rules_data, trace

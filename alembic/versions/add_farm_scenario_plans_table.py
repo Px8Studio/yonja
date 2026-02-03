@@ -210,7 +210,6 @@ def upgrade() -> None:
     )
 
     # Trigger to auto-update updated_at timestamp
-    # Trigger to auto-update updated_at timestamp
     op.execute(
         """
         CREATE OR REPLACE FUNCTION update_farm_scenario_plans_updated_at()

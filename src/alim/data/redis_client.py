@@ -10,8 +10,9 @@ from contextlib import asynccontextmanager
 from datetime import UTC
 
 import redis.asyncio as redis
-from alim.config import settings
 from redis.asyncio.connection import ConnectionPool
+
+from alim.config import settings
 
 
 class RedisClient:

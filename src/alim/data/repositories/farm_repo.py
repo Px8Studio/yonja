@@ -5,14 +5,15 @@ from collections.abc import Sequence
 from datetime import date
 from typing import Any
 
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
 from alim.data.models.farm import FarmProfile, FarmType, Region
 from alim.data.models.ndvi import HealthStatus, NDVIReading
 from alim.data.models.parcel import Parcel
 from alim.data.models.sowing import DeclarationStatus, SowingDeclaration
 from alim.data.repositories.base import BaseRepository
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 
 class FarmRepository(BaseRepository[FarmProfile]):

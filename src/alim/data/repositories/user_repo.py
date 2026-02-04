@@ -3,11 +3,12 @@
 
 from collections.abc import Sequence
 
-from alim.data.models.user import ExperienceLevel, UserProfile
-from alim.data.repositories.base import BaseRepository
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+
+from alim.data.models.user import ExperienceLevel, UserProfile
+from alim.data.repositories.base import BaseRepository
 
 
 class UserRepository(BaseRepository[UserProfile]):

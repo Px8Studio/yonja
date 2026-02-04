@@ -4,7 +4,6 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from alim.config import settings
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -12,6 +11,8 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.pool import NullPool
+
+from alim.config import settings
 
 
 class Base(DeclarativeBase):

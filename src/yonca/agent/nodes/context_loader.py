@@ -8,12 +8,12 @@ This keeps context loading separate from business logic nodes.
 from typing import Any
 
 import structlog
+from alim.data.repositories.farm_repo import FarmRepository
+from alim.data.repositories.user_repo import UserRepository
 
 from yonca.agent.state import AgentState, FarmContext, UserContext, WeatherContext
 from yonca.data.cache import CachedFarmRepository, CachedUserRepository
 from yonca.data.database import get_db_session
-from yonca.data.repositories.farm_repo import FarmRepository
-from yonca.data.repositories.user_repo import UserRepository
 
 logger = structlog.get_logger(__name__)
 

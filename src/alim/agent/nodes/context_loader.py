@@ -375,7 +375,7 @@ async def _get_synthetic_weather(region: str) -> WeatherContext:
     Returns:
         Synthetic weather context
     """
-    import random  # Ensure random is imported
+    import random
     from datetime import datetime
 
     # Regional temperature variations (January)
@@ -397,15 +397,14 @@ async def _get_synthetic_weather(region: str) -> WeatherContext:
     precipitation = random.choice([0, 0, 0, 2, 5, 10])  # Mostly dry
 
     # Generate summary in Azerbaijani
-    summary = ""
     if precipitation > 5:
-        summary = "Yağışlı"
+        summary = "Yağışlı hava"
     elif temperature < 0:
-        summary = "Donlu"
+        summary = "Donlu hava"
     elif temperature > 30:
-        summary = "Çox isti"
+        summary = "Çox isti hava"
     else:
-        summary = "Normal"
+        summary = "Normal hava"
 
     return WeatherContext(
         temperature_c=round(temperature, 1),

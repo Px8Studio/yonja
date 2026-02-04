@@ -68,7 +68,8 @@ htmlcov/
 *.pid.lock
 
 # Data
-data/
+/data/
+
 *.csv
 # *.json
 !tests/**/*.json

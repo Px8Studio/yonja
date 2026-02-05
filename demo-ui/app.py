@@ -2565,6 +2565,7 @@ async def _handle_message_http(
             input=serialized_state,
             config=config,
             stream_mode=["updates", "messages"],
+            if_not_exists="create",  # Auto-create thread if it doesn't exist on LangGraph server
         ):
             # --------------------------------------------------------
             # Rule #3: The "Hanging Curtain" UI (Step Logic)

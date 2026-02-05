@@ -127,6 +127,7 @@ async def invoke_graph(request: GraphInvokeRequest):
             input=serialized_state,
             config=config,
             stream_mode="values",
+            if_not_exists="create",  # Auto-create thread if missing
         ):
             if event.get("event") == "values":
                 final_state = event.get("data", {})
@@ -181,6 +182,7 @@ async def stream_graph(request: GraphInvokeRequest):
                 assistant_id=settings.langgraph_graph_id,
                 input=serialized_state,
                 stream_mode=["messages", "updates"],
+                if_not_exists="create",  # Auto-create thread if missing
             ):
                 # Map LangGraph SDK events to Frontend SSE format
                 if event["event"] == "messages/partial":

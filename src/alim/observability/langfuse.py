@@ -193,6 +193,136 @@ def create_langfuse_handler(
 
 
 # ============================================================
+# Lazy Callback Factory for HTTP Mode
+# ============================================================
+
+
+class LangfuseConfigCallback:
+    """A callback that creates the real Langfuse handler lazily from config metadata.
+
+    This is the recommended pattern for HTTP mode where session/user info is
+    passed via config.metadata from the client. The handler is created on first
+    chain start, ensuring it has the correct session/user context.
+
+    Usage in graph compilation:
+        ```python
+        compiled = graph.compile(checkpointer=checkpointer)
+        compiled = compiled.with_config(callbacks=[LangfuseConfigCallback()])
+        ```
+
+    Client side:
+        ```python
+        config = {
+            "metadata": {
+                "langfuse_session_id": thread_id,
+                "langfuse_user_id": user_id,
+            }
+        }
+        await client.runs.stream(..., config=config)
+        ```
+    """
+
+    def __init__(self):
+        self._handler: CallbackHandler | None = None
+        self._initialized = False
+
+    def _ensure_handler(self, config: dict | None = None) -> CallbackHandler | None:
+        """Create handler lazily from config metadata."""
+        if self._initialized:
+            return self._handler
+
+        self._initialized = True
+        self._handler = create_langfuse_handler_from_config(config)
+
+        if self._handler:
+            logger.debug(
+                "langfuse_lazy_handler_created",
+                session_id=getattr(self._handler, "session_id", None),
+                user_id=getattr(self._handler, "user_id", None),
+            )
+
+        return self._handler
+
+    # Delegate all callback methods to the lazy handler
+    def on_chain_start(
+        self, serialized, inputs, *, run_id, parent_run_id=None, tags=None, metadata=None, **kwargs
+    ):
+        handler = self._ensure_handler(kwargs.get("config"))
+        if handler:
+            return handler.on_chain_start(
+                serialized,
+                inputs,
+                run_id=run_id,
+                parent_run_id=parent_run_id,
+                tags=tags,
+                metadata=metadata,
+                **kwargs,
+            )
+
+    def on_chain_end(self, outputs, *, run_id, **kwargs):
+        if self._handler:
+            return self._handler.on_chain_end(outputs, run_id=run_id, **kwargs)
+
+    def on_chain_error(self, error, *, run_id, **kwargs):
+        if self._handler:
+            return self._handler.on_chain_error(error, run_id=run_id, **kwargs)
+
+    def on_llm_start(
+        self, serialized, prompts, *, run_id, parent_run_id=None, tags=None, metadata=None, **kwargs
+    ):
+        handler = self._ensure_handler(kwargs.get("config"))
+        if handler:
+            return handler.on_llm_start(
+                serialized,
+                prompts,
+                run_id=run_id,
+                parent_run_id=parent_run_id,
+                tags=tags,
+                metadata=metadata,
+                **kwargs,
+            )
+
+    def on_llm_end(self, response, *, run_id, **kwargs):
+        if self._handler:
+            return self._handler.on_llm_end(response, run_id=run_id, **kwargs)
+
+    def on_llm_error(self, error, *, run_id, **kwargs):
+        if self._handler:
+            return self._handler.on_llm_error(error, run_id=run_id, **kwargs)
+
+    def on_tool_start(
+        self,
+        serialized,
+        input_str,
+        *,
+        run_id,
+        parent_run_id=None,
+        tags=None,
+        metadata=None,
+        **kwargs,
+    ):
+        handler = self._ensure_handler(kwargs.get("config"))
+        if handler:
+            return handler.on_tool_start(
+                serialized,
+                input_str,
+                run_id=run_id,
+                parent_run_id=parent_run_id,
+                tags=tags,
+                metadata=metadata,
+                **kwargs,
+            )
+
+    def on_tool_end(self, output, *, run_id, **kwargs):
+        if self._handler:
+            return self._handler.on_tool_end(output, run_id=run_id, **kwargs)
+
+    def on_tool_error(self, error, *, run_id, **kwargs):
+        if self._handler:
+            return self._handler.on_tool_error(error, run_id=run_id, **kwargs)
+
+
+# ============================================================
 # Trace Context Manager
 # ============================================================
 
@@ -395,3 +525,69 @@ def _get_alim_version_metadata() -> dict:
         return out
     except Exception:
         return {}
+
+
+# ============================================================
+# HTTP Mode: Create Handler from Config Metadata
+# ============================================================
+
+
+def create_langfuse_handler_from_config(
+    config: dict[str, Any] | None = None,
+) -> CallbackHandler | None:
+    """Create Langfuse handler from LangGraph config metadata.
+
+    This is the official pattern for HTTP mode where session/user info
+    is passed via config.metadata from the client:
+
+    ```python
+    # Client side (Chainlit UI):
+    config = {
+        "metadata": {
+            "langfuse_session_id": thread_id,
+            "langfuse_user_id": user_id,
+            "langfuse_tags": ["production", "chainlit"],
+        }
+    }
+    await client.runs.stream(..., config=config)
+
+    # Server side (in graph node):
+    handler = create_langfuse_handler_from_config(config)
+    ```
+
+    Args:
+        config: RunnableConfig dict with metadata containing:
+            - langfuse_session_id: Thread/conversation ID
+            - langfuse_user_id: User identifier
+            - langfuse_tags: Optional list of tags
+            - langfuse_trace_name: Optional trace name
+            - Any other fields become trace metadata
+
+    Returns:
+        Configured CallbackHandler, or None if Langfuse is disabled.
+    """
+    if config is None:
+        return create_langfuse_handler()
+
+    metadata = config.get("metadata", {})
+
+    # Extract Langfuse-specific fields
+    session_id = metadata.get("langfuse_session_id") or metadata.get("thread_id")
+    user_id = metadata.get("langfuse_user_id") or metadata.get("user_id")
+    tags = metadata.get("langfuse_tags", [])
+    trace_name = metadata.get("langfuse_trace_name")
+
+    # Build extra metadata (exclude langfuse_ prefixed fields)
+    extra_metadata = {
+        k: v
+        for k, v in metadata.items()
+        if not k.startswith("langfuse_") and k not in ("thread_id", "user_id")
+    }
+
+    return create_langfuse_handler(
+        session_id=session_id,
+        user_id=user_id,
+        tags=tags if isinstance(tags, list) else [tags] if tags else None,
+        metadata=extra_metadata if extra_metadata else None,
+        trace_name=trace_name,
+    )

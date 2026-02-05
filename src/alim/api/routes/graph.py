@@ -109,12 +109,19 @@ async def invoke_graph(request: GraphInvokeRequest):
     if request.scenario_context:
         serialized_state["scenario_context"] = request.scenario_context
 
+    # P0: Include Langfuse tracing metadata for HTTP mode
     config = {
         "metadata": {
+            # Core identifiers
             "model": settings.active_llm_model,
             "provider": settings.llm_provider.value,
             "user_id": request.user_id,
             "farm_id": request.farm_id,
+            "source": "fastapi",
+            # Langfuse tracing context
+            "langfuse_session_id": thread_id,
+            "langfuse_user_id": request.user_id,
+            "langfuse_tags": ["api", "http_mode"],
         }
     }
 

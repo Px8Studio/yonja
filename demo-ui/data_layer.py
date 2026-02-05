@@ -10,6 +10,36 @@ This module implements Chainlit's SQLAlchemy data layer to persist:
 Uses the SAME Postgres database as the main Yonca API, adding
 Chainlit-specific tables alongside your existing user_profiles, farms, etc.
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# P2: DATA LAYER SEPARATION OF CONCERNS (Official Pattern)
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# CHAINLIT DATA LAYER (this module):
+# - User authentication & profiles (OAuth identity)
+# - Chat UI history (what user sees in sidebar)
+# - User feedback (👍/👎 on messages)
+# - Session preferences (farm selector, expertise areas)
+# - Thread metadata (tags, names, sharing status)
+#
+# LANGGRAPH CHECKPOINTER (server-side):
+# - Agent execution state (which nodes have run)
+# - Tool call history & results
+# - Message accumulation within graph execution
+# - Conversation memory for multi-turn contexts
+#
+# WHY SEPARATE?
+# 1. Chainlit = UI persistence (what user sees)
+# 2. LangGraph = Agent state (how agent reasons)
+# 3. Avoids coupling UI framework to agent implementation
+# 4. Allows independent scaling of UI servers vs agent servers
+#
+# THREAD IDs:
+# - Chainlit's session.id is used as the canonical thread_id
+# - This same ID is used when creating threads on LangGraph server
+# - Both systems track the same conversation via shared thread_id
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
 Architecture:
     Google OAuth → cl.User(identifier=email) → Chainlit users table
                                                ↓

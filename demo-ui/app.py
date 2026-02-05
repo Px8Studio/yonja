@@ -2003,7 +2003,39 @@ async def on_chat_start():
     cl.user_session.set("farm_id", farm_id)
 
     # Store thread_id for LangGraph (use session_id for continuity)
-    cl.user_session.set("thread_id", session_id)
+    # P1: Use Chainlit's session ID as the single source of truth for thread_id
+    thread_id = session_id
+    cl.user_session.set("thread_id", thread_id)
+
+    # ═══════════════════════════════════════════════════════════════
+    # P1: PRE-CREATE THREAD ON LANGGRAPH SERVER
+    # ═══════════════════════════════════════════════════════════════
+    # This ensures the thread exists before any messages are sent,
+    # avoiding 404 errors and ensuring consistent thread lifecycle.
+    try:
+        client = get_langgraph_client(url=demo_settings.langgraph_base_url)
+        await client.threads.create(
+            thread_id=thread_id,
+            metadata={
+                "source": "chainlit",
+                "user_id": user_id,
+                "farm_id": farm_id,
+                "created_at": cl.user_session.get("created_at"),
+            },
+            if_exists="do_nothing",  # Don't error if thread already exists
+        )
+        logger.info(
+            "langgraph_thread_precreated",
+            thread_id=thread_id,
+            user_id=user_id,
+        )
+    except Exception as e:
+        # Non-fatal: thread will be auto-created on first message via if_not_exists="create"
+        logger.warning(
+            "langgraph_thread_precreation_failed",
+            thread_id=thread_id,
+            error=str(e),
+        )
 
     # ═══════════════════════════════════════════════════════════════
     # SESSION PERSISTENCE: Restore from database on refresh
@@ -2538,12 +2570,19 @@ async def _handle_message_http(
         serialized_state = serialize_state_for_api(initial_state)
 
         # Metadata for tracing/logging
+        # P0: Langfuse HTTP mode - pass session/user for server-side tracing
         config = {
             "metadata": {
+                # Core identifiers
                 "user_id": user_id,
                 "farm_id": farm_id,
                 "source": "chainlit",
-                "has_files": bool(file_paths),  # Track file uploads
+                "has_files": bool(file_paths),
+                # Langfuse tracing context (extracted by server-side handler)
+                "langfuse_session_id": thread_id,  # Groups conversation turns
+                "langfuse_user_id": user_id,  # Per-user analytics
+                "langfuse_tags": ["production", "chainlit", "http_mode"],
+                "langfuse_trace_name": f"chat_{thread_id[:8]}",
             }
         }
 

@@ -26,6 +26,7 @@ from alim_persona_db import (
 from chainlit.types import ThreadDict
 from config import settings as demo_settings
 from constants import AgentMode
+from langgraph_sdk import get_client as get_langgraph_client
 
 from services.expertise import build_combined_system_prompt, detect_expertise_from_persona
 from services.logger import get_logger
@@ -176,7 +177,26 @@ async def handle_chat_start(
     # Default farm for demo
     farm_id = "demo_farm_001"
     cl.user_session.set("farm_id", farm_id)
-    cl.user_session.set("thread_id", session_id)
+
+    # P1: Use session_id as canonical thread_id
+    thread_id = session_id
+    cl.user_session.set("thread_id", thread_id)
+
+    # P1: Pre-create thread on LangGraph server for consistency
+    try:
+        client = get_langgraph_client(url=demo_settings.langgraph_base_url)
+        await client.threads.create(
+            thread_id=thread_id,
+            metadata={
+                "source": "chainlit",
+                "user_id": user_id,
+                "farm_id": farm_id,
+            },
+            if_exists="do_nothing",
+        )
+        logger.info("langgraph_thread_precreated", thread_id=thread_id)
+    except Exception as e:
+        logger.warning("langgraph_thread_precreation_failed", error=str(e))
 
     # ═══════════════════════════════════════════════════════════════
     # SESSION PERSISTENCE

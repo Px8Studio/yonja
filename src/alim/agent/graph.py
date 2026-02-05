@@ -14,6 +14,36 @@ Graph Flow (Flattened):
     → [Agronomist/Weather/Vision/SQL]
     → [Validator (conditional)]
     → END
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DATA LAYER SEPARATION (P2 Best Practice)
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# This graph uses a CHECKPOINTER for state persistence, which is SEPARATE from
+# Chainlit's data layer. Each system has distinct responsibilities:
+#
+# LANGGRAPH CHECKPOINTER (PostgreSQL via langgraph.json):
+# - Agent execution state across turns
+# - Message accumulation within graph execution
+# - Tool call history and results
+# - Conversation memory for context continuity
+#
+# CHAINLIT DATA LAYER (demo-ui/data_layer.py):
+# - User authentication (OAuth)
+# - Chat UI history display
+# - User feedback (👍/👎)
+# - Session preferences
+#
+# THREAD ID SYNCHRONIZATION:
+# - Chainlit's session.id is the canonical thread_id
+# - Passed to LangGraph via config.metadata.thread_id
+# - Both systems use the same ID to correlate conversations
+#
+# LANGFUSE INTEGRATION (P0):
+# - Uses LangfuseConfigCallback for lazy handler creation
+# - Session/user extracted from config.metadata at runtime
+# - Ensures proper per-user tracing in HTTP mode
+# ═══════════════════════════════════════════════════════════════════════════════
 """
 
 
@@ -37,7 +67,9 @@ from alim.agent.nodes.validator import validator_node
 from alim.agent.nodes.vision_to_action import vision_to_action_node
 from alim.agent.nodes.weather import weather_node
 from alim.agent.state import AgentState, UserIntent
-from alim.observability.langfuse import create_langfuse_handler
+from alim.observability.langfuse import (
+    LangfuseConfigCallback,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -282,7 +314,8 @@ async def compile_agent_graph_async(
 ):
     """Compile the agent graph with optional MCP tools and checkpointing.
 
-    This is the recommended async compilation function.
+    This is the recommended async compilation function for HTTP mode.
+    Uses LangfuseConfigCallback for dynamic session/user tracing from config metadata.
 
     Args:
         checkpointer: LangGraph checkpointer for state persistence
@@ -312,10 +345,11 @@ async def compile_agent_graph_async(
     # Add recursion limit to prevent infinite loops
     compiled = compiled.with_config(recursion_limit=50)
 
-    # Wrap with Langfuse tracing for observability
-    langfuse_handler = create_langfuse_handler()
-    if langfuse_handler:
-        compiled = compiled.with_config(callbacks=[langfuse_handler])
+    # P0: Use lazy Langfuse callback for HTTP mode
+    # This extracts session_id/user_id from config.metadata at runtime,
+    # allowing proper per-user/per-session tracing via HTTP API.
+    # Client passes: config={"metadata": {"langfuse_session_id": thread_id, ...}}
+    compiled = compiled.with_config(callbacks=[LangfuseConfigCallback()])
 
     return compiled
 
@@ -345,10 +379,8 @@ def compile_agent_graph(checkpointer: BaseCheckpointSaver | None = None, verbose
     # Add recursion limit to prevent infinite loops
     compiled = compiled.with_config(recursion_limit=50)
 
-    # Wrap with Langfuse tracing for observability
-    langfuse_handler = create_langfuse_handler()
-    if langfuse_handler:
-        compiled = compiled.with_config(callbacks=[langfuse_handler])
+    # P0: Use lazy Langfuse callback for consistent behavior with HTTP mode
+    compiled = compiled.with_config(callbacks=[LangfuseConfigCallback()])
 
     return compiled
 

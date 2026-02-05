@@ -48,7 +48,9 @@ from alim.observability.banner import (
     print_trace_info,
 )
 from alim.observability.langfuse import (
+    LangfuseConfigCallback,
     create_langfuse_handler,
+    create_langfuse_handler_from_config,
     get_langfuse_client,
     get_langfuse_trace_url,
     is_langfuse_healthy,
@@ -60,10 +62,12 @@ from alim.observability.langfuse import (
 __all__ = [
     # Langfuse
     "create_langfuse_handler",
+    "create_langfuse_handler_from_config",
     "get_langfuse_client",
     "get_langfuse_trace_url",
     "is_langfuse_healthy",
     "langfuse_trace",
+    "LangfuseConfigCallback",
     "score_trace",
     "shutdown_langfuse",
     # Banners

@@ -28,9 +28,8 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from faker import Faker  # noqa: E402
-from yonca.data.database import Base, engine, get_db_session  # noqa: E402
-from yonca.data.models import (  # noqa: E402
+from alim.data.database import Base, engine, get_db_session  # noqa: E402
+from alim.data.models import (  # noqa: E402
     CropRotationLog,
     FarmProfile,
     NDVIReading,
@@ -38,16 +37,17 @@ from yonca.data.models import (  # noqa: E402
     SowingDeclaration,
     UserProfile,
 )
-from yonca.data.models.farm import FarmType, Region  # noqa: E402
-from yonca.data.models.ndvi import HealthStatus  # noqa: E402
-from yonca.data.models.parcel import IrrigationType, SoilType  # noqa: E402
-from yonca.data.models.sowing import CropType, DeclarationStatus  # noqa: E402
-from yonca.data.models.user import (  # noqa: E402
+from alim.data.models.farm import FarmType, Region  # noqa: E402
+from alim.data.models.ndvi import HealthStatus  # noqa: E402
+from alim.data.models.parcel import IrrigationType, SoilType  # noqa: E402
+from alim.data.models.sowing import CropType, DeclarationStatus  # noqa: E402
+from alim.data.models.user import (  # noqa: E402
     EducationLevel,
     ExperienceLevel,
     NotificationPreference,
 )
-from yonca.data.providers.azerbaijani import AzerbaijaniAgrarianProvider  # noqa: E402
+from alim.data.providers.azerbaijani import AzerbaijaniAgrarianProvider  # noqa: E402
+from faker import Faker  # noqa: E402
 
 # Initialize Faker with Azerbaijani provider
 fake = Faker("az_AZ")

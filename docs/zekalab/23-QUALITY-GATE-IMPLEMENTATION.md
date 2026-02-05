@@ -50,7 +50,7 @@ pwsh scripts/pre-start-checks.ps1 -Quick # Skip tests
 
 **Changes:**
 - Added `🛡️ Pre-Start Quality Checks` task
-- Integrated into `🌿 Yonca AI: 🚀 Start All` workflow
+- Integrated into `🌿 ALİM: 🚀 Start All` workflow
 - Now runs: Quality checks → Cleanup → Docker → Services
 
 ---
@@ -131,7 +131,7 @@ Edit [.vscode/tasks.json](.vscode/tasks.json), comment out:
 ```json
 "dependsOn": [
   // "🛡️ Pre-Start Quality Checks",  ← Comment this line
-  "yonca:cleanup",
+  "ALİM:cleanup",
   ...
 ]
 ```
@@ -157,7 +157,7 @@ pwsh scripts/pre-start-checks.ps1 -Quick
 **Pre-Start Checks** ([scripts/pre-start-checks.ps1](scripts/pre-start-checks.ps1)):
 ```powershell
 $customCheck = Test-Check -Name "🔐 API keys set" -Command {
-    if (-not $env:YONCA_GROQ_API_KEY) {
+    if (-not $env:ALİM_GROQ_API_KEY) {
         Write-Error "Missing API key"
         exit 1
     }

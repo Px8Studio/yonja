@@ -219,7 +219,11 @@ def upgrade() -> None:
             RETURN NEW;
         END;
         $$ LANGUAGE plpgsql;
+    """
+    )
 
+    op.execute(
+        """
         CREATE TRIGGER farm_scenario_plans_updated_at_trigger
         BEFORE UPDATE ON farm_scenario_plans
         FOR EACH ROW

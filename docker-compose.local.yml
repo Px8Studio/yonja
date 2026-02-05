@@ -3,14 +3,14 @@
 
 services:
   # ================================================
-  # Yonca AI API (Development Mode)
+  # ALİM API (Development Mode)
   # ================================================
   api:
     build:
       context: .
       target: development
       dockerfile: Dockerfile
-    container_name: yonca-api
+    container_name: alim-api
     ports:
       - "8000:8000"
     volumes:
@@ -20,40 +20,40 @@ services:
       - ./data:/app/data
     environment:
       # Deployment Configuration (Two-Axis Model)
-      - YONCA_ENVIRONMENT=development
-      - YONCA_INFRASTRUCTURE_MODE=local
-      - YONCA_DEBUG=true
-      - YONCA_LANGGRAPH_REQUIRED=true
+      - ALIM_ENVIRONMENT=development
+      - ALIM_INFRASTRUCTURE_MODE=local
+      - ALIM_DEBUG=true
+      - ALIM_LANGGRAPH_REQUIRED=true
 
       # API settings
-      - YONCA_API_HOST=0.0.0.0
-      - YONCA_API_PORT=8000
-      - YONCA_CORS_ORIGINS=http://localhost:3000,http://localhost:8501
+      - ALIM_API_HOST=0.0.0.0
+      - ALIM_API_PORT=8000
+      - ALIM_CORS_ORIGINS=http://localhost:3000,http://localhost:8501
 
       # LangGraph Connector
-      - YONCA_LANGGRAPH_BASE_URL=http://langgraph:2024
-      - YONCA_LANGGRAPH_GRAPH_ID=yonca_agent
+      - ALIM_LANGGRAPH_BASE_URL=http://langgraph:2024
+      - ALIM_LANGGRAPH_GRAPH_ID=alim_agent
 
       # LLM Provider
-      - YONCA_LLM_PROVIDER=ollama
-      - YONCA_OLLAMA_BASE_URL=http://ollama:11434
-      - YONCA_OLLAMA_MODEL=qwen3:4b
+      - ALIM_LLM_PROVIDER=ollama
+      - ALIM_OLLAMA_BASE_URL=http://ollama:11434
+      - ALIM_OLLAMA_MODEL=qwen3:4b
 
       # Database
-      - YONCA_DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
+      - ALIM_DATABASE_URL=postgresql+asyncpg://alim:alim_dev_password@postgres:5432/alim
 
       # Redis
-      - YONCA_REDIS_URL=redis://redis:6379/0
+      - ALIM_REDIS_URL=redis://redis:6379/0
 
       # Security
-      - YONCA_JWT_SECRET=dev-secret-change-in-production
-      - YONCA_JWT_ALGORITHM=HS256
+      - ALIM_JWT_SECRET=dev-secret-change-in-production
+      - ALIM_JWT_ALGORITHM=HS256
 
       # Observability
-      - YONCA_LANGFUSE_ENABLED=true
-      - YONCA_LANGFUSE_PUBLIC_KEY=${YONCA_LANGFUSE_PUBLIC_KEY:-}
-      - YONCA_LANGFUSE_SECRET_KEY=${YONCA_LANGFUSE_SECRET_KEY:-}
-      - YONCA_LANGFUSE_HOST=http://langfuse-server:3000
+      - ALIM_LANGFUSE_ENABLED=true
+      - ALIM_LANGFUSE_PUBLIC_KEY=${ALIM_LANGFUSE_PUBLIC_KEY:-}
+      - ALIM_LANGFUSE_SECRET_KEY=${ALIM_LANGFUSE_SECRET_KEY:-}
+      - ALIM_LANGFUSE_HOST=http://langfuse-server:3000
     depends_on:
       postgres:
         condition: service_healthy
@@ -64,21 +64,22 @@ services:
       langgraph:
         condition: service_healthy
     networks:
-      - yonca-network
+      - alim-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
   # ================================================
-  # Ollama (Local LLM Server)
+  # Ollama: LOCAL LLM SERVER
+  # Serves Qwen3/ATLLaMA models
   # ================================================
   ollama:
     image: ollama/ollama:latest
-    container_name: yonca-ollama
+    container_name: alim-llm
     ports:
       - "11434:11434"
     volumes:
@@ -88,10 +89,10 @@ services:
     environment:
       - OLLAMA_HOST=0.0.0.0
     networks:
-      - yonca-network
+      - alim-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "ollama list || exit 1"]
+      test: [ "CMD-SHELL", "ollama list || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -105,13 +106,13 @@ services:
     #           count: 1
     #           capabilities: [gpu]
 
-  # ================================================
-  # Model Setup (One-time initialization)
-  # Pulls qwen3:4b and imports GGUF models
-  # ================================================
+    # ================================================
+    # Model Setup (One-time initialization)
+    # Pulls qwen3:4b and imports GGUF models
+    # ================================================
   model-setup:
     image: ollama/ollama:latest
-    container_name: yonca-model-setup
+    container_name: alim-model-setup
     depends_on:
       ollama:
         condition: service_healthy
@@ -120,8 +121,8 @@ services:
     environment:
       - OLLAMA_HOST=ollama:11434
     networks:
-      - yonca-network
-    entrypoint: ["/bin/sh", "-c"]
+      - alim-network
+    entrypoint: [ "/bin/sh", "-c" ]
     command:
       - |
         echo "🚀 Setting up models..."
@@ -149,16 +150,17 @@ services:
         ollama list
         echo "✅ Model setup complete!"
     profiles:
-      - setup  # Only runs with: docker-compose --profile setup up model-setup
+      - setup # Only runs with: docker-compose --profile setup up model-setup
 
   # ================================================
-  # LangGraph Dev Server (Production-like API)
+  # LangGraph: AI AGENT ORCHESTRATION
+  # THE SINGLE ENTRY POINT for all AI interactions
   # ================================================
   langgraph:
     build:
       context: .
       dockerfile: Dockerfile.langgraph
-    container_name: yonca-langgraph
+    container_name: alim-ai-graph
     ports:
       - "2024:2024"
     volumes:
@@ -176,24 +178,24 @@ services:
 
       # LangGraph PostgreSQL persistence (enables checkpoint/state storage)
       # Without this, LangGraph uses in-memory storage (data lost on restart)
-      - LANGGRAPH_POSTGRES_URI=postgresql://yonca:yonca_dev_password@postgres:5432/yonca
+      - LANGGRAPH_POSTGRES_URI=postgresql://alim:alim_dev_password@postgres:5432/alim
 
-      # LLM Provider
-      - LLM_PROVIDER=ollama
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - OLLAMA_MODEL=qwen3:4b
+      # LLM Provider (ALIM_ prefix for config.py compatibility)
+      - ALIM_LLM_PROVIDER=ollama
+      - ALIM_OLLAMA_BASE_URL=http://ollama:11434
+      - ALIM_OLLAMA_MODEL=qwen3:4b
 
       # Database (for app data, separate from LangGraph checkpoints)
-      - DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
+      - ALIM_DATABASE_URL=postgresql+asyncpg://alim:alim_dev_password@postgres:5432/alim
 
       # Redis for caching (optional, LangGraph uses Postgres for checkpoints)
-      - REDIS_URL=redis://redis:6379/0
+      - ALIM_REDIS_URL=redis://redis:6379/0
 
       # Langfuse observability
-      - LANGFUSE_ENABLED=true
-      - LANGFUSE_SECRET_KEY=${YONCA_LANGFUSE_SECRET_KEY:-}
-      - LANGFUSE_PUBLIC_KEY=${YONCA_LANGFUSE_PUBLIC_KEY:-}
-      - LANGFUSE_HOST=http://langfuse-server:3000
+      - ALIM_LANGFUSE_ENABLED=true
+      - ALIM_LANGFUSE_SECRET_KEY=${ALIM_LANGFUSE_SECRET_KEY:-}
+      - ALIM_LANGFUSE_PUBLIC_KEY=${ALIM_LANGFUSE_PUBLIC_KEY:-}
+      - ALIM_LANGFUSE_HOST=http://langfuse-server:3000
     depends_on:
       postgres:
         condition: service_healthy
@@ -202,10 +204,10 @@ services:
       ollama:
         condition: service_healthy
     networks:
-      - yonca-network
+      - alim-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:2024/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:2024/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -213,44 +215,44 @@ services:
     # profiles:
     #   - langgraph  # REMOVED: Now mandatory for all modes
 
-  # ================================================
-  # Redis Stack (Caching, Session Storage & LangGraph Checkpointing)
-  # Includes: RedisJSON, RediSearch (required for langgraph-checkpoint-redis)
-  # ================================================
+    # ================================================
+    # Redis: CACHE & SESSION STORAGE
+    # Includes RedisJSON, RediSearch for advanced features
+    # ================================================
   redis:
     image: redis/redis-stack-server:latest
-    container_name: yonca-redis
+    container_name: alim-cache
     ports:
       - "6379:6379"
     volumes:
       - redis-data:/data
     networks:
-      - yonca-network
+      - alim-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
 
   # ================================================
-  # Langfuse (Self-Hosted Observability)
-  # Open-source LLM observability - No license fees!
-  # Data residency: All traces stay within your infrastructure
+  # Langfuse: OBSERVABILITY WEB UI
+  # View LLM traces, debug AI responses
+  # Access at: http://localhost:3001
   # ================================================
   langfuse-server:
     image: langfuse/langfuse:2
-    container_name: yonca-langfuse
+    container_name: alim-trace-ui
     ports:
-      - "3001:3000"  # Langfuse UI at http://localhost:3001
+      - "3001:3000" # Langfuse UI at http://localhost:3001
     environment:
       # Database connection
       - DATABASE_URL=postgresql://langfuse:langfuse_secret@langfuse-db:5432/langfuse
       - DIRECT_URL=postgresql://langfuse:langfuse_secret@langfuse-db:5432/langfuse
 
       # Security (CHANGE IN PRODUCTION!)
-      - NEXTAUTH_SECRET=yonca-langfuse-secret-change-in-prod
-      - SALT=yonca-langfuse-salt-change-in-prod
+      - NEXTAUTH_SECRET=alim-langfuse-secret-change-in-prod
+      - SALT=alim-langfuse-salt-change-in-prod
       - NEXTAUTH_URL=http://localhost:3001
 
       # Telemetry (disable for air-gapped)
@@ -258,29 +260,28 @@ services:
 
       # Optional: Enable public sign-up for first user
       - AUTH_DISABLE_SIGNUP=false
-
       # ClickHouse for high-volume tracing (optional)
       # - CLICKHOUSE_URL=http://langfuse-clickhouse:8123
     depends_on:
       langfuse-db:
         condition: service_healthy
     networks:
-      - yonca-network
+      - alim-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/public/health"]
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:3000/api/public/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
 
   # ================================================
-  # Langfuse PostgreSQL Database
-  # Stores all AI traces, prompts, and evaluations
+  # PostgreSQL: OBSERVABILITY DATABASE (Langfuse)
+  # Stores: LLM traces, prompts, evaluations
   # ================================================
   langfuse-db:
     image: postgres:15-alpine
-    container_name: yonca-langfuse-db
+    container_name: alim-db-traces
     volumes:
       - langfuse-db-data:/var/lib/postgresql/data
     environment:
@@ -288,33 +289,34 @@ services:
       - POSTGRES_USER=langfuse
       - POSTGRES_PASSWORD=langfuse_secret
     networks:
-      - yonca-network
+      - alim-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U langfuse -d langfuse"]
+      test: [ "CMD-SHELL", "pg_isready -U langfuse -d langfuse" ]
       interval: 10s
       timeout: 5s
       retries: 5
 
   # ================================================
-  # PostgreSQL (Yonca Application Database)
+  # PostgreSQL: APPLICATION DATABASE
+  # Stores: users, farms, parcels, chat threads
   # ================================================
   postgres:
     image: postgres:15-alpine
-    container_name: yonca-postgres
+    container_name: alim-db-app
     ports:
       - "5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=yonca
-      - POSTGRES_USER=yonca
-      - POSTGRES_PASSWORD=yonca_dev_password
+      - POSTGRES_DB=alim
+      - POSTGRES_USER=alim
+      - POSTGRES_PASSWORD=alim_dev_password
     networks:
-      - yonca-network
+      - alim-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U yonca"]
+      test: [ "CMD-SHELL", "pg_isready -U alim" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -327,7 +329,7 @@ services:
       context: .
       dockerfile: demo-ui/Dockerfile
       target: development
-    container_name: yonca-demo-ui
+    container_name: alim-demo-ui
     ports:
       - "8501:8501"
     volumes:
@@ -338,33 +340,33 @@ services:
       - ./data:/app/data
     environment:
       # Deployment settings
-      - YONCA_ENVIRONMENT=development
-      - YONCA_INFRASTRUCTURE_MODE=local
-      - YONCA_DEBUG=true
-      - YONCA_LANGGRAPH_REQUIRED=true
+      - ALIM_ENVIRONMENT=development
+      - ALIM_INFRASTRUCTURE_MODE=local
+      - ALIM_DEBUG=true
+      - ALIM_LANGGRAPH_REQUIRED=true
 
       # Services
-      - YONCA_API_URL=http://api:8000
-      - YONCA_LANGGRAPH_BASE_URL=http://langgraph:2024
+      - ALIM_API_URL=http://api:8000
+      - ALIM_LANGGRAPH_BASE_URL=http://langgraph:2024
 
       # LLM settings
-      - YONCA_LLM_PROVIDER=ollama
-      - YONCA_OLLAMA_BASE_URL=http://ollama:11434
-      - YONCA_OLLAMA_MODEL=qwen3:4b
+      - ALIM_LLM_PROVIDER=ollama
+      - ALIM_OLLAMA_BASE_URL=http://ollama:11434
+      - ALIM_OLLAMA_MODEL=qwen3:4b
 
       # Redis
-      - YONCA_REDIS_URL=redis://redis:6379/0
+      - ALIM_REDIS_URL=redis://redis:6379/0
 
       # Database
-      - YONCA_DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
-      - CHAINLIT_DATABASE_URL=postgresql+asyncpg://yonca:yonca_dev_password@postgres:5432/yonca
+      - ALIM_DATABASE_URL=postgresql+asyncpg://alim:alim_dev_password@postgres:5432/alim
+      - CHAINLIT_DATABASE_URL=postgresql+asyncpg://alim:alim_dev_password@postgres:5432/alim
       - ENABLE_DATA_PERSISTENCE=true
 
       # Observability
-      - YONCA_LANGFUSE_ENABLED=true
-      - YONCA_LANGFUSE_PUBLIC_KEY=${YONCA_LANGFUSE_PUBLIC_KEY:-}
-      - YONCA_LANGFUSE_SECRET_KEY=${YONCA_LANGFUSE_SECRET_KEY:-}
-      - YONCA_LANGFUSE_HOST=http://langfuse-server:3000
+      - ALIM_LANGFUSE_ENABLED=true
+      - ALIM_LANGFUSE_PUBLIC_KEY=${ALIM_LANGFUSE_PUBLIC_KEY:-}
+      - ALIM_LANGFUSE_SECRET_KEY=${ALIM_LANGFUSE_SECRET_KEY:-}
+      - ALIM_LANGFUSE_HOST=http://langfuse-server:3000
 
       # Python path
       - PYTHONPATH=/app/src:/app/demo-ui
@@ -380,16 +382,78 @@ services:
       api:
         condition: service_healthy
     networks:
-      - yonca-network
+      - alim-network
     restart: unless-stopped
     # profiles:
     #   - demo  # REMOVED: Standard UI for the stack
+
+    # ================================================
+    # ZekaLab MCP Server (Internal Rules Engine)
+    # ================================================
+  zekalab-mcp:
+    build:
+      context: .
+      dockerfile: src/alim/mcp_server/Dockerfile
+    container_name: alim-zekalab-mcp
+    ports:
+      - "7777:7777"
+    environment:
+      - ZEKALAB_PORT=7777
+      - ZEKALAB_LOG_LEVEL=INFO
+      - PYTHONPATH=/app/src
+    volumes:
+      - ./src:/app/src:ro
+    networks:
+      - alim-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:7777/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ================================================
+  # Python Visualization MCP Server
+  # Generates charts (Plotly), diagrams (Mermaid), maps (Folium)
+  # Uses sandboxed Python execution for safety
+  # ================================================
+  python-viz-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp.viz
+    container_name: alim-python-viz-mcp
+    ports:
+      - "7778:7778"
+    environment:
+      - PYTHON_VIZ_PORT=7778
+      - PYTHON_VIZ_LOG_LEVEL=INFO
+      - PYTHON_VIZ_MAX_EXECUTION_TIME=30
+      - PYTHONPATH=/app/src
+    volumes:
+      - ./src:/app/src:ro
+      # Temp storage for generated visualizations
+      - python-viz-tmp:/tmp/viz
+    networks:
+      - alim-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:7778/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    # Security: Restrict capabilities for sandboxed execution
+    security_opt:
+      - no-new-privileges:true
+    # Limit resources
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
 
 # ================================================
 # Networks
 # ================================================
 networks:
-  yonca-network:
+  alim-network:
     driver: bridge
 
 # ================================================
@@ -403,4 +467,6 @@ volumes:
   langfuse-db-data:
     driver: local
   postgres-data:
+    driver: local
+  python-viz-tmp:
     driver: local

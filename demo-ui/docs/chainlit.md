@@ -1,6 +1,6 @@
-# 🌾 Yonca AI-yə Xoş Gəlmisiniz!
+# 🌾 ALİM-yə Xoş Gəlmisiniz!
 
-Mən **Yonca AI** — Azərbaycan fermerləri üçün hazırlanmış süni intellekt köməkçisiyəm.
+Mən **ALİM** — Azərbaycan fermerləri üçün hazırlanmış süni intellekt köməkçisiyəm.
 
 ## 🤖 Mən sizə necə kömək edə bilərəm?
 
@@ -22,4 +22,4 @@ Sadəcə Azərbaycan dilində sualınızı yazın. Məsələn:
 
 ---
 
-*Yonca AI — Digital Umbrella Initiative tərəfindən hazırlanmışdır* 🇦🇿
+*ALİM — Digital Umbrella Initiative tərəfindən hazırlanmışdır* 🇦🇿

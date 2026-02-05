@@ -1,4 +1,4 @@
-# YONCA Agrotechnological Calendar - Complete Mapping
+# ALİM Agrotechnological Calendar - Complete Mapping
 
 **Status:** ✅ Fully Implemented
 **Date:** 2026-01-21
@@ -8,7 +8,7 @@
 
 ## Overview
 
-ALEM now matches YONCA Mobile App's agrotechnological calendar **exactly**, using the same 6 categories and 37 crops recognized by the Ministry of Agriculture.
+ALEM now matches ALİM Mobile App's agrotechnological calendar **exactly**, using the same 6 categories and 37 crops recognized by the Ministry of Agriculture.
 
 ---
 
@@ -86,7 +86,7 @@ ALEM now matches YONCA Mobile App's agrotechnological calendar **exactly**, usin
 
 | Azerbaijani | English | Sowing Window | Cutting Schedule | Main Regions |
 |-------------|---------|---------------|------------------|--------------|
-| **Yonca** | Alfalfa | Mar-Apr (spring), Aug-Sep (fall) | 4-6 cuts/year (every 35-40 days) | All irrigated regions |
+| **ALİM** | Alfalfa | Mar-Apr (spring), Aug-Sep (fall) | 4-6 cuts/year (every 35-40 days) | All irrigated regions |
 | **Qarğıdalı (silaj)** | Silage Corn | Apr-May | Aug (dent stage) | Dairy regions |
 | **Arpa (yem)** | Feed Barley | Oct-Nov | May-Jun (before maturity) | All regions |
 | **Gülül** | Vetch | Oct-Nov (with wheat as cover crop) | Apr-May | Mixed farming zones |
@@ -136,7 +136,7 @@ ALEM now matches YONCA Mobile App's agrotechnological calendar **exactly**, usin
 
 ---
 
-## YONCA Planner Logic Replication
+## ALİM Planner Logic Replication
 
 ### How It Works
 
@@ -201,13 +201,13 @@ Bu həftə gübrələmə planlaşdırırsınız?"
 ✅ **State:** `ScenarioContext.crop_category` (6 categories)
 ✅ **Prompts:** All 6 categories with full crop lists in `agro_calendar_prompts.py`
 ✅ **UI:** Chat settings dropdown with 37 crops (organized by category)
-✅ **Mapping:** Crop-to-category dictionary matches YONCA standard exactly
+✅ **Mapping:** Crop-to-category dictionary matches ALİM standard exactly
 
 ---
 
-## Validation Against YONCA
+## Validation Against ALİM
 
-| Feature | YONCA Mobile | ALEM Status |
+| Feature | ALİM Mobile | ALEM Status |
 |---------|--------------|-------------|
 | Categories | 6 (Dənli, Tərəvəz, Texniki, Yem, Meyvə, Bostan) | ✅ 6 |
 | Total Crops | 37 | ✅ 37 |
@@ -222,9 +222,9 @@ Bu həftə gübrələmə planlaşdırırsınız?"
 
 ⏳ **Dynamic Crop Dropdown:** Filter crops by selected category (UX improvement)
 ⏳ **Rules Engine:** Generate `monthly_plan` JSONB from category+crop+month
-⏳ **Visual Calendar:** Display plan as cards matching YONCA mobile UI
+⏳ **Visual Calendar:** Display plan as cards matching ALİM mobile UI
 ⏳ **LangGraph Planner Node:** Dedicated node for calendar plan generation (as suggested in original advice)
 
 ---
 
-**Conclusion:** ALEM is now a **Digital Twin** of YONCA's agrotechnological standards, using the exact same Ministry of Agriculture classifications and covering all 37 crops across 6 categories.
+**Conclusion:** ALEM is now a **Digital Twin** of ALİM's agrotechnological standards, using the exact same Ministry of Agriculture classifications and covering all 37 crops across 6 categories.

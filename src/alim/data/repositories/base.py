@@ -4,9 +4,10 @@
 from collections.abc import Sequence
 from typing import Any, Generic, TypeVar
 
-from alim.data.database import Base
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from alim.data.database import Base
 
 ModelType = TypeVar("ModelType", bound=Base)
 

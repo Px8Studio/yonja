@@ -1,6 +1,6 @@
 import pytest
-from yonca.agent.nodes.nl_to_sql import nl_to_sql_node
-from yonca.agent.state import AgentState
+from alim.agent.nodes.nl_to_sql import nl_to_sql_node
+from alim.agent.state import AgentState
 
 
 class DummyResp:
@@ -20,7 +20,7 @@ class DummyEngine:
 @pytest.mark.asyncio
 async def test_nl_to_sql_node_generates_select(monkeypatch):
     # Patch InferenceEngine to our dummy
-    import yonca.agent.nodes.nl_to_sql as mod
+    import alim.agent.nodes.nl_to_sql as mod
 
     mod.InferenceEngine = lambda: DummyEngine()
 

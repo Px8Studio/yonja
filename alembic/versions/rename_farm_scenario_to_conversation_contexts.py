@@ -18,7 +18,7 @@ from alembic import op
 revision: str = "rename_farm_scenario"
 down_revision: str | None = "fix_steps_tags_001"
 branch_labels: str | tuple[str, ...] | None = None
-depends_on: str | tuple[str, ...] | None = None
+depends_on: str | tuple[str, ...] | None = "add_farm_scenario_plans"
 
 
 def upgrade() -> None:

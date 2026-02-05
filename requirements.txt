@@ -8,6 +8,6 @@ strawberry-graphql[fastapi]>=0.215.0
 streamlit>=1.28.0
 rich>=13.0.0
 
-# Install the local yonca package (must come after core deps)
+# Install the local alim package (must come after core deps)
 # The setup.py + pyproject.toml handles src-layout installation
 -e .

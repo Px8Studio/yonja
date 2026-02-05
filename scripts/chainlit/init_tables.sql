@@ -1,5 +1,5 @@
 -- ============================================
--- 🌿 Chainlit Data Layer Schema for Yonca AI
+-- 🌿 Chainlit Data Layer Schema for ALİM
 -- ============================================
 -- This script creates/recreates all tables required by
 -- Chainlit's SQLAlchemyDataLayer for conversation persistence.
@@ -12,7 +12,7 @@
 --   feedbacks  - User feedback (thumbs up/down)
 --
 -- Usage:
---   psql -h localhost -p 5433 -U yonca -d yonca -f scripts/chainlit/init_tables.sql
+--   psql -h localhost -p 5433 -U alim -d alim -f scripts/chainlit/init_tables.sql
 --
 -- Note: This is SAFE to run multiple times (uses IF NOT EXISTS / IF EXISTS)
 -- Updated for Chainlit 2.9.x (added defaultOpen column)

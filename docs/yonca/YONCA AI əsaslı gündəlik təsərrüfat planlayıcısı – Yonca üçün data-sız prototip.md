@@ -1,6 +1,6 @@
 Çağırış sahibi haqqında
 Digital Umbrella kənd təsərrüfatının rəqəmsal transformasiyası üzrə regionda aparıcı innovasiya şirkətidir. Biz real təsərrüfat mühitinin çətinliklərini anlayaraq fermerlər üçün həm texnoloji, həm əməliyyat baxımından dəyər yaradan həllər inkişaf etdiririk.
-Yonca – ölkənin ən geniş aqrar ekosistem platformalarından biri – fermerə subsidiya müraciəti, əkin bəyanı, agro-consulting, crop tracking, bazar məlumatları və gündəlik təsərrüfat proseslərinin idarə edilməsi kimi funksiyaları vahid məkanda təqdim edir və funksionallıqları daha da artırmaq məqsədilə real məlumat paylaşmadan, yalnız dummy scenarios, synthetic datasets və simulation-based inputs ilə işləyən AI Prototip yaratmaqdır. Burada hədəf texniki nümayiş yox, Yonca-nın növbəti mərhələsini – personalized, intelligent farm assistant konseptini qurmaqdır.
+YONCA – ölkənin ən geniş aqrar ekosistem platformalarından biri – fermerə subsidiya müraciəti, əkin bəyanı, agro-consulting, crop tracking, bazar məlumatları və gündəlik təsərrüfat proseslərinin idarə edilməsi kimi funksiyaları vahid məkanda təqdim edir və funksionallıqları daha da artırmaq məqsədilə real məlumat paylaşmadan, yalnız dummy scenarios, synthetic datasets və simulation-based inputs ilə işləyən AI Prototip yaratmaqdır. Burada hədəf texniki nümayiş yox, YONCA-nın növbəti mərhələsini – personalized, intelligent farm assistant konseptini qurmaqdır.
 
 Kontekst
 Fermerlər gündəlik əməliyyatlarda — suvarma, gübrələmə, pest management, harvest planning, əkin dövrləri və subsidiya tarixləri kimi kritik qərarlarda çox zaman intuitiv davranır. Səhv qərarlar məhsuldarlıq və xərclərə ciddi təsir göstərir.
@@ -17,13 +17,13 @@ Nə axtarırıq?
 - Azərbaycan dilində çalışan sadə AI chatbot (intent-based)
 - UX mockup + API structure (REST/GraphQL)
 - Low-connectivity üçün lightweight model concept
-- Yonca tətbiqinə sonradan plug-in module kimi inteqrasiya edilə biləcək arxitektura
+- YONCA tətbiqinə sonradan plug-in module kimi inteqrasiya edilə biləcək arxitektura
 
 Uğur göstəriciləri
 - Minimum 5 fərqli təsərrüfat ssenarisi üzrə stabil işləyən prototip
 - Recommendation strukturunun ≥ 90% logical accuracy
 - Fermer rutininin avtomatik schedule-ının generasiyası
-- Yonca UX-ə texniki uyğunluq
+- YONCA UX-ə texniki uyğunluq
 - 100% data-safety — heç bir mərhələdə real data istifadə edilmir
 
 Mümkün istifadə halları
@@ -44,3 +44,12 @@ Təqdimat qaydaları
 - UX mockups
 - Recommendation rulebase
 - Synthetic dataset samples
+
+
+Ancaq sual dəstində olan bir məqam mənim diqqətimi çəkdi, orda qeyd edilib ki, "Bu suallar yanlış və ya natamam cavablandırılarsa, sonradan ciddi arxitektura dəyişiklikləri tələb oluna bilər."
+
+Hamımızın eyni mövqeydə olmasını təmin eləmək üçün qeyd eləməliyəm ki, biz bu büdcə ilə texnoloji həll sifariş eləmirik, gözləntimiz də bizim məhsulun arxitekturasına və s. uyğun olan bir prototipin ortaya çıxması deyil. 
+
+Burda istənilən "tokeninin dəqiq formatı və strukturu" və ya "məlumat bazası sxemini təsviri" kimi məsələlər daha texnoloji yanaşmanı ehtiva edir. Müraciət edənin belə dəqiq yanaşması sevindiricidir, amma düşünürəm ki bizim"challenge" kontekstindən kənara çıxır. 
+
+Challenge-də qeyd edildiyi kimi, həll olaraq təklif edənin ideyanın hər hansı vizual təsviri, qarşı tərəfin məsələyə yanaşımını müəyyən edən təxmini texnoloji sənəd və təxmini UX təsviri bizə kifayət edir. Elan edilmiş büdcə də bunu dikte edir.

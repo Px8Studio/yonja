@@ -4,8 +4,8 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from yonca.config import LLMProvider as LLMProviderEnum
-from yonca.llm.factory import (
+from alim.config import LLMProvider as LLMProviderEnum
+from alim.llm.factory import (
     LLMProviderError,
     create_groq_provider,
     create_llm_provider,
@@ -34,7 +34,7 @@ class TestCreateGroqProvider:
         """Test that explicit API key takes precedence over settings."""
         provider = create_groq_provider(api_key="explicit-key")  # pragma: allowlist secret
         # Should use the explicit key, not the one from settings
-        assert provider.api_key == "explicit-key"
+        assert provider.api_key == "explicit-key"  # pragma: allowlist secret
 
 
 class TestCreateOllamaProvider:
@@ -87,7 +87,7 @@ class TestProviderHealthCheck:
     @pytest.mark.asyncio
     async def test_check_llm_health_ollama(self, mock_ollama_env):
         """Test health check for Ollama provider."""
-        from yonca.llm.factory import get_llm_provider
+        from alim.llm.factory import get_llm_provider
 
         # Clear the cached provider
         get_llm_provider.cache_clear()

@@ -105,7 +105,7 @@ pytest tests/unit/ -v --tb=short
 pytest tests/integration/ -v
 
 # All tests with coverage
-pytest tests/ -v --cov=src/yonca
+pytest tests/ -v --cov=src/ALİM
 ```
 
 ---

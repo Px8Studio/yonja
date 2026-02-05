@@ -17,7 +17,7 @@ Marked with pytest markers to allow selective execution:
     pytest tests/integration -v -m "cloud"
 
 Environment variables required:
-    - YONCA_GROQ_API_KEY: For Groq tests
+    - ALIM_GROQ_API_KEY: For Groq tests
     - Local Ollama server at localhost:11434 for Ollama tests
 """
 
@@ -25,10 +25,10 @@ import os
 
 import pytest
 import pytest_asyncio
-from yonca.llm.http_pool import HTTPClientPool
-from yonca.llm.providers.base import LLMMessage
-from yonca.llm.providers.groq import GroqProvider
-from yonca.llm.providers.ollama import OllamaProvider
+from alim.llm.http_pool import HTTPClientPool
+from alim.llm.providers.base import LLMMessage
+from alim.llm.providers.groq import GroqProvider
+from alim.llm.providers.ollama import OllamaProvider
 
 # ============================================================
 # Test Fixtures
@@ -40,7 +40,7 @@ def azerbaijani_messages() -> list[LLMMessage]:
     """Azerbaijani test messages for agricultural context."""
     return [
         LLMMessage.system(
-            "Sən Yonca AI kənd təsərrüfatı köməkçisisən. "
+            "Sən ALİM kənd təsərrüfatı köməkçisisən. "
             "Azərbaycan fermerlərə kömək edirsən. "
             "Qısa və faydalı cavablar ver."
         ),
@@ -85,7 +85,7 @@ class TestOllamaIntegration:
     async def test_ollama_health_check(self, cleanup_pools):
         """Test Ollama server connectivity."""
         provider = OllamaProvider(
-            base_url=os.getenv("YONCA_OLLAMA_BASE_URL", "http://localhost:11434"),
+            base_url=os.getenv("ALIM_OLLAMA_BASE_URL", "http://localhost:11434"),
             model="qwen3:4b",
         )
 
@@ -100,7 +100,7 @@ class TestOllamaIntegration:
     async def test_ollama_list_models(self, cleanup_pools):
         """Test listing available Ollama models."""
         provider = OllamaProvider(
-            base_url=os.getenv("YONCA_OLLAMA_BASE_URL", "http://localhost:11434"),
+            base_url=os.getenv("ALIM_OLLAMA_BASE_URL", "http://localhost:11434"),
         )
 
         try:
@@ -117,7 +117,7 @@ class TestOllamaIntegration:
     async def test_ollama_generate(self, simple_math_messages, cleanup_pools):
         """Test generating a response from Ollama."""
         provider = OllamaProvider(
-            base_url=os.getenv("YONCA_OLLAMA_BASE_URL", "http://localhost:11434"),
+            base_url=os.getenv("ALIM_OLLAMA_BASE_URL", "http://localhost:11434"),
             model="qwen3:4b",
         )
 
@@ -140,7 +140,7 @@ class TestOllamaIntegration:
     async def test_ollama_stream(self, simple_math_messages, cleanup_pools):
         """Test streaming response from Ollama."""
         provider = OllamaProvider(
-            base_url=os.getenv("YONCA_OLLAMA_BASE_URL", "http://localhost:11434"),
+            base_url=os.getenv("ALIM_OLLAMA_BASE_URL", "http://localhost:11434"),
             model="qwen3:4b",
         )
 
@@ -163,7 +163,7 @@ class TestOllamaIntegration:
     async def test_ollama_azerbaijani(self, azerbaijani_messages, cleanup_pools):
         """Test Azerbaijani language handling."""
         provider = OllamaProvider(
-            base_url=os.getenv("YONCA_OLLAMA_BASE_URL", "http://localhost:11434"),
+            base_url=os.getenv("ALIM_OLLAMA_BASE_URL", "http://localhost:11434"),
             model="qwen3:4b",
         )
 
@@ -190,16 +190,16 @@ class TestOllamaIntegration:
 class TestGroqIntegration:
     """Integration tests for Groq provider.
 
-    Requires YONCA_GROQ_API_KEY environment variable.
+    Requires ALIM_GROQ_API_KEY environment variable.
     Get a free key at: https://console.groq.com/
     """
 
     @pytest.fixture
     def groq_provider(self):
         """Create Groq provider if API key is available."""
-        api_key = os.getenv("YONCA_GROQ_API_KEY")
+        api_key = os.getenv("ALIM_GROQ_API_KEY")
         if not api_key:
-            pytest.skip("YONCA_GROQ_API_KEY not set")
+            pytest.skip("ALIM_GROQ_API_KEY not set")
 
         return GroqProvider(
             api_key=api_key,
@@ -254,9 +254,9 @@ class TestGroqIntegration:
     @pytest.mark.asyncio
     async def test_groq_maverick_model(self, cleanup_pools):
         """Test Llama 4 Maverick model (2026 gold standard)."""
-        api_key = os.getenv("YONCA_GROQ_API_KEY")
+        api_key = os.getenv("ALIM_GROQ_API_KEY")
         if not api_key:
-            pytest.skip("YONCA_GROQ_API_KEY not set")
+            pytest.skip("ALIM_GROQ_API_KEY not set")
 
         provider = GroqProvider(
             api_key=api_key,
@@ -287,7 +287,7 @@ class TestProviderFallback:
     @pytest.mark.asyncio
     async def test_get_fastest_available_provider(self, cleanup_pools):
         """Test automatic provider selection."""
-        from yonca.llm.factory import LLMProviderError, get_fastest_available_provider
+        from alim.llm.factory import LLMProviderError, get_fastest_available_provider
 
         try:
             provider = await get_fastest_available_provider()
@@ -299,7 +299,7 @@ class TestProviderFallback:
     @pytest.mark.asyncio
     async def test_check_all_providers_health(self, cleanup_pools):
         """Test health check for all configured providers."""
-        from yonca.llm.factory import check_all_providers_health
+        from alim.llm.factory import check_all_providers_health
 
         results = await check_all_providers_health()
 

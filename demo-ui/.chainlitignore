@@ -1,0 +1,48 @@
+# ════════════════════════════════════════════════════════════════════════════
+# Yonca AI — Chainlit Ignore Configuration
+# ════════════════════════════════════════════════════════════════════════════
+#
+# PURPOSE: Disable Chainlit's default local file storage (.files/)
+#
+# This is a PRODUCTION BEST PRACTICE based on the Twelve-Factor App methodology.
+# Yonca AI uses PostgreSQL for file storage instead (see storage_postgres.py).
+#
+# WHY PostgreSQL INSTEAD OF LOCAL .files/?
+# ─────────────────────────────────────────────────────────────────────────────
+#
+#   1. STATELESSNESS
+#      In cloud deployments (Docker, Kubernetes, Render), containers are ephemeral.
+#      If a container crashes or you deploy a new version, the .files/ folder is lost.
+#      PostgreSQL ensures files survive container restarts and deployments.
+#
+#   2. LOAD BALANCING
+#      If you have 2+ app instances behind a load balancer:
+#        - User A uploads a file → saved to Instance 1's .files/
+#        - User B requests the file → hits Instance 2 → "404 Not Found"
+#      PostgreSQL ensures ANY instance can serve ANY file.
+#
+#   3. SINGLE BACKUP TRUTH
+#      Running `pg_dump` backs up Users + Conversations + Files in one command.
+#      No need to synchronize database backups with filesystem backups.
+#
+#   4. ACID COMPLIANCE
+#      File uploads are transactional. You won't end up with:
+#        - A database record pointing to a missing file
+#        - A "ghost file" on disk with no database record
+#
+# ARCHITECTURE DECISION
+# ─────────────────────────────────────────────────────────────────────────────
+# We are NOT bypassing Chainlit's features. We are using its PLUGGABLE ARCHITECTURE.
+# Chainlit provides BaseStorageClient abstract class.
+# We implement PostgresStorageClient which inherits from BaseStorageClient.
+# This is the industry-standard way to customize storage for production.
+#
+# REFERENCES:
+#   - storage_postgres.py          ← Implementation
+#   - docs/zekalab/11-CHAINLIT-STRUCTURE.md  ← Full documentation
+#   - https://12factor.net/processes        ← Twelve-Factor App: Statelessness
+#
+# ════════════════════════════════════════════════════════════════════════════
+
+# Ignore local file storage — all files go to PostgreSQL
+.files/

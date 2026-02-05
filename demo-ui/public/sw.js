@@ -1,4 +1,4 @@
-const CACHE_NAME = 'yonca-pwa-v1';
+const CACHE_NAME = 'alim-pwa-v1';
 const ASSETS = [
   '/',
   '/public/manifest.json',

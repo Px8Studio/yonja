@@ -8,37 +8,37 @@
 services:
   # LangGraph Runtime
   langgraph:
-    image: yonca-langgraph:latest # Pre-built image
+    image: alim-langgraph:latest # Pre-built image
     environment:
-      - YONCA_ENVIRONMENT=production
-      - YONCA_INFRASTRUCTURE_MODE=cloud
-      - YONCA_LANGGRAPH_REQUIRED=true
-      - YONCA_LLM_PROVIDER=groq
+      - ALIM_ENVIRONMENT=production
+      - ALIM_INFRASTRUCTURE_MODE=cloud
+      - ALIM_LANGGRAPH_REQUIRED=true
+      - ALIM_LLM_PROVIDER=groq
       - GROQ_API_KEY=${GROQ_API_KEY}
       - LANGGRAPH_POSTGRES_URI=${DATABASE_URL}
     restart: always
 
   # Application API
   api:
-    image: yonca-api:latest
+    image: alim-api:latest
     environment:
-      - YONCA_ENVIRONMENT=production
-      - YONCA_INFRASTRUCTURE_MODE=cloud
-      - YONCA_LANGGRAPH_REQUIRED=true
-      - YONCA_LANGGRAPH_BASE_URL=${LANGGRAPH_URL}
-      - YONCA_LLM_PROVIDER=groq
+      - ALIM_ENVIRONMENT=production
+      - ALIM_INFRASTRUCTURE_MODE=cloud
+      - ALIM_LANGGRAPH_REQUIRED=true
+      - ALIM_LANGGRAPH_BASE_URL=${LANGGRAPH_URL}
+      - ALIM_LLM_PROVIDER=groq
       - GROQ_API_KEY=${GROQ_API_KEY}
-      - YONCA_DATABASE_URL=${DATABASE_URL}
+      - ALIM_DATABASE_URL=${DATABASE_URL}
     restart: always
 
   # Chat UI
   demo-ui:
-    image: yonca-demo-ui:latest
+    image: alim-demo-ui:latest
     environment:
-      - YONCA_ENVIRONMENT=production
-      - YONCA_INFRASTRUCTURE_MODE=cloud
-      - YONCA_LANGGRAPH_REQUIRED=true
-      - YONCA_LANGGRAPH_BASE_URL=${LANGGRAPH_URL}
-      - YONCA_API_URL=${API_URL}
-      - YONCA_DATABASE_URL=${DATABASE_URL}
+      - ALIM_ENVIRONMENT=production
+      - ALIM_INFRASTRUCTURE_MODE=cloud
+      - ALIM_LANGGRAPH_REQUIRED=true
+      - ALIM_LANGGRAPH_BASE_URL=${LANGGRAPH_URL}
+      - ALIM_API_URL=${API_URL}
+      - ALIM_DATABASE_URL=${DATABASE_URL}
     restart: always

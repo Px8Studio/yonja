@@ -32,7 +32,7 @@ async def main():
         print(f"✅ Created test image: {img_path}")
 
         # Test multimodal message creation
-        from yonca.llm.multimodal import create_multimodal_message
+        from alim.llm.multimodal import create_multimodal_message
 
         msg = create_multimodal_message(
             "This crop looks diseased. What should I do?", [str(img_path)]
@@ -46,8 +46,8 @@ async def main():
     # Feature 2: NL-to-SQL Generation
     print("✨ FEATURE 2: Natural Language to SQL")
     print("-" * 70)
-    from yonca.agent.nodes.nl_to_sql import nl_to_sql_node
-    from yonca.agent.state import AgentState, UserIntent
+    from alim.agent.nodes.nl_to_sql import nl_to_sql_node
+    from alim.agent.state import AgentState, UserIntent
 
     state: AgentState = {
         "current_input": "Sahəsi 50 hektardan çox olan fermləri göstər",
@@ -64,7 +64,7 @@ async def main():
     # Feature 3: Vision Analysis (text-based for now)
     print("✨ FEATURE 3: Vision-to-Action Analysis")
     print("-" * 70)
-    from yonca.agent.nodes.vision_to_action import vision_to_action_node
+    from alim.agent.nodes.vision_to_action import vision_to_action_node
 
     state = {
         "current_input": "Bu şəkildə pomidor bitkilərində sarı ləkələr var. Buna nə dəmir?",
@@ -81,7 +81,7 @@ async def main():
     print("✨ FEATURE 4: SQL Execution & Results")
     print("-" * 70)
     print("Note: SQL executor requires live database connection.")
-    print("In production, this would query the Yonca App DB and format results.")
+    print("In production, this would query the ALİM App DB and format results.")
     print()
 
     # Feature 5: API Route
@@ -98,7 +98,7 @@ async def main():
     print("=" * 70)
     print()
     print("Next steps:")
-    print("1. Start FastAPI: poetry run uvicorn src.yonca.api.main:app")
+    print("1. Start FastAPI: poetry run uvicorn src.alim.api.main:app")
     print(
         "2. Upload image: curl -X POST -F 'files=@image.jpg' http://localhost:8000/api/vision/analyze"
     )

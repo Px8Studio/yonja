@@ -1,5 +1,5 @@
 # demo-ui/data_layer.py
-"""Chainlit Data Layer for ALEM.
+"""Chainlit Data Layer for ALİM.
 
 This module implements Chainlit's SQLAlchemy data layer to persist:
 - Users (linked to Google OAuth identity)
@@ -18,21 +18,25 @@ Architecture:
                          Link to user_profiles via email for farm data
 """
 
+from __future__ import annotations
+
 import json
 import os
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from chainlit.data.storage_clients.base import BaseStorageClient
+    from chainlit.types import StepDict
 
 import chainlit as cl
 import structlog
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 
-if TYPE_CHECKING:
-    pass  # Type hints already imported above
-
+# Initialize logger FIRST
 logger = structlog.get_logger(__name__)
 
 # Module-level singleton
-_data_layer: Optional["YoncaDataLayer"] = None
+_data_layer: AlimDataLayer | None = None
 
 
 def get_database_url() -> str:
@@ -58,39 +62,220 @@ def get_database_url() -> str:
     return db_url
 
 
-class YoncaDataLayer(SQLAlchemyDataLayer):
-    """Custom data layer with JSONB serialization fix.
+class AlimDataLayer(SQLAlchemyDataLayer):
+    """Custom data layer with JSONB serialization fix for PostgreSQL.
 
-    Chainlit's default SQLAlchemy layer has a bug where it tries to
-    JSON-serialize already-serialized strings in JSONB columns (tags, metadata).
+    Chainlit's default SQLAlchemyDataLayer has a bug where it passes tags as a
+    Python list directly to asyncpg, but PostgreSQL TEXT columns need JSON strings.
 
-    This subclass fixes that by checking if the value is already a string
-    before attempting JSON serialization.
+    The parent class serializes `metadata` with json.dumps() but NOT `tags`.
+    This subclass fixes that by serializing tags to JSON before the SQL query.
+
+    CRITICAL: The parent SQLAlchemyDataLayer.update_thread() uses UPSERT
+    (INSERT ON CONFLICT UPDATE) so there is NO create_thread() method.
+    Always use update_thread() for both create and update operations.
     """
 
-    def __init__(self, conninfo: str):
-        """Initialize with connection string only.
+    def __init__(
+        self,
+        conninfo: str,
+        storage_provider: BaseStorageClient | None = None,
+    ):
+        """Initialize with connection string and optional storage provider.
 
         Args:
             conninfo: Database connection string (e.g., postgresql+asyncpg://...)
+            storage_provider: Optional storage client for file elements (images, docs, etc.)
         """
-        super().__init__(conninfo=conninfo)
+        super().__init__(conninfo=conninfo, storage_provider=storage_provider)
         # REMOVED: show_logger parameter (deprecated in newer Chainlit versions)
 
-    async def create_step(self, step_dict: dict) -> str:
+    async def update_thread(
+        self,
+        thread_id: str,
+        name: str | None = None,
+        user_id: str | None = None,
+        metadata: dict | None = None,
+        tags: list[str] | None = None,
+    ) -> None:
+        """Override to serialize tags to JSON string for PostgreSQL.
+
+        The parent class passes tags directly to SQL, but asyncpg can't encode
+        Python lists. We serialize to JSON string before calling parent.
+
+        Args:
+            thread_id: Thread ID (required)
+            name: Thread display name
+            user_id: User ID who owns the thread
+            metadata: Thread metadata dict
+            tags: Thread tags list (will be serialized to JSON string)
+        """
+        # CRITICAL FIX: Parent class does NOT serialize tags, only metadata.
+        # asyncpg throws "list object has no attribute 'encode'" if we pass a list.
+        # Serialize tags to JSON string for PostgreSQL TEXT column compatibility.
+        serialized_tags = _serialize_tags(tags) if tags else None
+
+        # We can't call super() because it expects List[str] but we have a string.
+        # Instead, we implement the same logic with our fix applied.
+        await self._update_thread_with_serialized_tags(
+            thread_id=thread_id,
+            name=name,
+            user_id=user_id,
+            metadata=metadata,
+            tags_json=serialized_tags,
+        )
+
+    async def _update_thread_with_serialized_tags(
+        self,
+        thread_id: str,
+        name: str | None = None,
+        user_id: str | None = None,
+        metadata: dict | None = None,
+        tags_json: str | None = None,
+    ) -> None:
+        """Internal method that handles serialized tags properly.
+
+        This is a copy of parent's update_thread() but with tags already serialized.
+        """
+        user_identifier = None
+        if user_id:
+            user_identifier = await self._get_user_identifer_by_id(user_id)
+
+        if metadata is not None:
+            existing = await self.execute_sql(
+                query='SELECT "metadata" FROM threads WHERE "id" = :id',
+                parameters={"id": thread_id},
+            )
+            base = {}
+            if isinstance(existing, list) and existing:
+                raw = existing[0].get("metadata") or {}
+                if isinstance(raw, str):
+                    try:
+                        base = json.loads(raw)
+                    except json.JSONDecodeError:
+                        base = {}
+                elif isinstance(raw, dict):
+                    base = raw
+            incoming = {k: v for k, v in metadata.items() if v is not None}
+            metadata = {**base, **incoming}
+
+        name_value = name
+        if name_value is None and metadata:
+            name_value = metadata.get("name")
+        created_at_value = await self.get_current_timestamp() if metadata is None else None
+
+        data = {
+            "id": thread_id,
+            "createdAt": created_at_value,
+            "name": name_value,
+            "userId": user_id,
+            "userIdentifier": user_identifier,
+            "tags": tags_json,  # Already serialized to JSON string!
+            "metadata": json.dumps(metadata) if metadata else None,
+        }
+        parameters = {key: value for key, value in data.items() if value is not None}
+        columns = ", ".join(f'"{key}"' for key in parameters.keys())
+        values = ", ".join(f":{key}" for key in parameters.keys())
+        updates = ", ".join(
+            f'"{key}" = EXCLUDED."{key}"' for key in parameters.keys() if key != "id"
+        )
+        query = f"""
+            INSERT INTO threads ({columns})
+            VALUES ({values})
+            ON CONFLICT ("id") DO UPDATE
+            SET {updates};
+        """
+        await self.execute_sql(query=query, parameters=parameters)
+
+    async def create_step(self, step: StepDict | None = None, **kwargs) -> str:
         """Override to serialize tags before DB insert."""
-        # Serialize tags to JSON string
-        if "tags" in step_dict:
+        step_dict = step if step is not None else kwargs.get("step_dict", kwargs)
+
+        if isinstance(step_dict, dict) and "tags" in step_dict:
             step_dict["tags"] = _serialize_tags(step_dict["tags"])
 
         return await super().create_step(step_dict)
 
-    async def update_step(self, step_dict: dict) -> None:
+    async def update_step(self, step: StepDict | None = None, **kwargs) -> None:
         """Override to serialize tags before DB update."""
-        if "tags" in step_dict:
+        step_dict = step if step is not None else kwargs.get("step_dict", kwargs)
+
+        if isinstance(step_dict, dict) and "tags" in step_dict:
             step_dict["tags"] = _serialize_tags(step_dict["tags"])
 
         return await super().update_step(step_dict)
+
+    async def create_user(self, user: cl.User) -> cl.PersistedUser | None:
+        """Override to handle unique constraint violations gracefully.
+
+        The parent implementation has a race condition where concurrent requests
+        (e.g., multiple browser tabs logging in simultaneously) can cause
+        UniqueViolationError. This implementation uses UPSERT to handle it.
+
+        Args:
+            user: Chainlit User object from OAuth callback
+
+        Returns:
+            PersistedUser if created/updated successfully, None on error
+        """
+        import json
+        import uuid
+        from datetime import datetime
+
+        try:
+            # Use UPSERT (INSERT ... ON CONFLICT DO UPDATE) to handle race conditions
+            user_id = str(uuid.uuid4())
+            created_at = datetime.now().isoformat() + "Z"
+            metadata_json = json.dumps(user.metadata) if user.metadata else "{}"
+
+            # PostgreSQL UPSERT query - creates user if not exists, updates metadata if exists
+            query = """
+                INSERT INTO users ("id", "identifier", "createdAt", "metadata")
+                VALUES (:id, :identifier, :createdAt, :metadata)
+                ON CONFLICT ("identifier") DO UPDATE
+                SET "metadata" = EXCLUDED."metadata"
+                RETURNING "id", "identifier", "createdAt", "metadata"
+            """
+            parameters = {
+                "id": user_id,
+                "identifier": user.identifier,
+                "createdAt": created_at,
+                "metadata": metadata_json,
+            }
+
+            result = await self.execute_sql(query=query, parameters=parameters)
+
+            if result and isinstance(result, list) and len(result) > 0:
+                row = result[0]
+                # Parse metadata back from JSON string if needed
+                metadata = row.get("metadata", {})
+                if isinstance(metadata, str):
+                    metadata = json.loads(metadata)
+
+                logger.info(
+                    "user_upserted_successfully",
+                    identifier=user.identifier,
+                    user_id=row["id"],
+                )
+
+                return cl.PersistedUser(
+                    id=row["id"],
+                    identifier=row["identifier"],
+                    createdAt=row["createdAt"],
+                    metadata=metadata,
+                )
+
+            # Fallback: if RETURNING didn't work, fetch the user
+            logger.debug("create_user_upsert_no_return_fetching", identifier=user.identifier)
+            return await self.get_user(user.identifier)
+
+        except Exception as e:
+            logger.error("create_user_error", identifier=user.identifier, error=str(e))
+            # Last resort: try to fetch existing user (might work if user was created by another request)
+            try:
+                return await self.get_user(user.identifier)
+            except Exception:
+                return None
 
 
 # Add tag serialization helper
@@ -211,7 +396,7 @@ async def ensure_user_persisted(user: cl.User) -> bool:
 # ============================================
 
 
-def get_data_layer() -> YoncaDataLayer | None:
+def get_data_layer() -> AlimDataLayer | None:
     """Get or create the data layer singleton."""
     global _data_layer
 
@@ -232,7 +417,7 @@ def get_data_layer() -> YoncaDataLayer | None:
     )
 
     try:
-        _data_layer = YoncaDataLayer(conninfo=db_url)
+        _data_layer = AlimDataLayer(conninfo=db_url)
         return _data_layer
     except Exception as e:
         logger.error("data_layer_init_failed", error=str(e))

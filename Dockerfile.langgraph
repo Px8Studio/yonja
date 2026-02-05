@@ -6,13 +6,13 @@
 # It provides HTTP API access to the agent graph.
 #
 # Build:
-#   docker build -f Dockerfile.langgraph -t yonca-langgraph:latest .
+#   docker build -f Dockerfile.langgraph -t alim-langgraph:latest .
 #
 # Run:
 #   docker run -p 2024:2024 \
 #     -e PYTHONPATH=/app/src \
 #     -v $(pwd)/src:/app/src \
-#     yonca-langgraph:latest
+#     alim-langgraph:latest
 #
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -23,14 +23,15 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    git \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+  gcc \
+  g++ \
+  git \
+  curl \
+  && rm -rf /var/lib/apt/lists/*
 
-# Copy dependency files first (for layer caching)
-COPY requirements.txt pyproject.toml ./
+# Copy project files needed for installation
+COPY requirements.txt pyproject.toml README.md ./
+COPY src/ ./src/
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
@@ -40,13 +41,13 @@ RUN pip install --no-cache-dir langgraph-cli
 
 # Copy source code
 COPY src/ ./src/
-COPY langgraph.json ./
+COPY deploy/langgraph/langgraph.json ./langgraph.json
 
 # Set environment variables
 ENV PYTHONPATH=/app/src \
-    LANGGRAPH_DEV_HOST=0.0.0.0 \
-    LANGGRAPH_DEV_PORT=2024 \
-    LANGGRAPH_API_LOG_LEVEL=INFO
+  LANGGRAPH_DEV_HOST=0.0.0.0 \
+  LANGGRAPH_DEV_PORT=2024 \
+  LANGGRAPH_API_LOG_LEVEL=INFO
 
 # Expose port
 EXPOSE 2024

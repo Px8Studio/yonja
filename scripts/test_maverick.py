@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test Maverick integration in Yonca AI."""
+"""Test Maverick integration in ALİM."""
 
 import asyncio
 import os
@@ -8,8 +8,8 @@ import sys
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from yonca.config import settings  # noqa: E402
-from yonca.llm.model_roles import (  # noqa: E402
+from alim.config import settings  # noqa: E402
+from alim.llm.model_roles import (  # noqa: E402
     LANGGRAPH_NODE_MODELS,
     MODEL_ROLES,
     get_model_for_node,
@@ -98,11 +98,11 @@ async def test_groq_provider():
 
     if not settings.groq_api_key:
         print("⚠️ No GROQ_API_KEY set. Skipping provider test.")
-        print("   Set YONCA_GROQ_API_KEY in .env or environment")
+        print("   Set ALIM_GROQ_API_KEY in .env or environment")
         return
 
-    from yonca.llm.factory import create_groq_provider
-    from yonca.llm.providers.base import LLMMessage
+    from alim.llm.factory import create_groq_provider
+    from alim.llm.providers.base import LLMMessage
 
     # Create Maverick provider
     provider = create_groq_provider(model="meta-llama/llama-4-maverick-17b-128e-instruct")
@@ -122,7 +122,7 @@ async def test_groq_provider():
     print("\n📋 Testing Azerbaijani Response...")
     messages = [
         LLMMessage.system(
-            "Sən Yonca adlı Azərbaycan kənd təsərrüfatı AI köməkçisisən. "
+            "Sən ALİM adlı Azərbaycan kənd təsərrüfatı AI köməkçisisən. "
             "YALNIZ Azərbaycan dilində cavab ver. Türkcə sözlər istifadə etmə."
         ),
         LLMMessage.user("Buğda əkmək üçün ən yaxşı vaxt nədir?"),

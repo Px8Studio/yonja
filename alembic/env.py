@@ -13,9 +13,9 @@ from alembic import context
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 # Import models and config  # noqa: E402
-from yonca.config import settings  # noqa: E402
-from yonca.data.database import Base  # noqa: E402
-from yonca.data.models import (  # noqa: E402, F401
+from alim.config import settings  # noqa: E402
+from alim.data.database import Base  # noqa: E402
+from alim.data.models import (  # noqa: E402, F401
     CropRotationLog,
     FarmProfile,
     NDVIReading,

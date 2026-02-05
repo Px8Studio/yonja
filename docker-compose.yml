@@ -33,11 +33,13 @@ services:
   # ════════════════════════════════════════════════════════════════════════════
 
   # ──────────────────────────────────────────────────────────────────────────
-  # PostgreSQL (Application Database + LangGraph Checkpoints)
+  # PostgreSQL: APPLICATION DATABASE
+  # Stores: user_profiles, farms, parcels, chat threads, Chainlit data
+  # Also used by LangGraph for checkpoint/state persistence
   # ──────────────────────────────────────────────────────────────────────────
   postgres:
     image: postgres:15-alpine
-    container_name: alim-postgres
+    container_name: alim-db-app
     profiles: ["core"]
     ports:
       - "5433:5432"
@@ -69,11 +71,12 @@ services:
       retries: 5
 
   # ──────────────────────────────────────────────────────────────────────────
-  # Redis Stack (Caching, Session Storage)
+  # Redis: CACHE & SESSION STORAGE
+  # Stores: API response cache, user sessions, rate limiting
   # ──────────────────────────────────────────────────────────────────────────
   redis:
     image: redis/redis-stack-server:latest
-    container_name: alim-redis
+    container_name: alim-cache
     profiles: ["core"]
     ports:
       - "6379:6379"
@@ -101,11 +104,13 @@ services:
       retries: 5
 
   # ──────────────────────────────────────────────────────────────────────────
-  # Ollama (Local LLM Server)
+  # Ollama: LOCAL LLM SERVER
+  # Serves: Qwen3, ATLLaMA (Azerbaijani), and other local models
+  # Access at: http://localhost:11434
   # ──────────────────────────────────────────────────────────────────────────
   ollama:
     image: ollama/ollama:latest
-    container_name: alim-ollama
+    container_name: alim-llm
     profiles: ["core"]
     ports:
       - "11434:11434"
@@ -144,14 +149,16 @@ services:
       start_period: 60s
 
   # ──────────────────────────────────────────────────────────────────────────
-  # LangGraph Server (Agent Orchestration + Checkpointing)
-  # THE SINGLE ENTRY POINT for all agent interactions
+  # LangGraph: AI AGENT ORCHESTRATION
+  # THE SINGLE ENTRY POINT for all AI interactions
+  # Handles: Multi-turn conversations, tool calls, state checkpoints
+  # API at: http://localhost:2024
   # ──────────────────────────────────────────────────────────────────────────
   langgraph:
     build:
       context: .
       dockerfile: Dockerfile.langgraph
-    container_name: alim-langgraph
+    container_name: alim-ai-graph
     profiles: ["core"]
     ports:
       - "2024:2024"
@@ -218,11 +225,13 @@ services:
   # ════════════════════════════════════════════════════════════════════════════
 
   # ──────────────────────────────────────────────────────────────────────────
-  # Langfuse PostgreSQL Database
+  # PostgreSQL: OBSERVABILITY DATABASE (Langfuse)
+  # Stores: LLM traces, token usage, latency metrics, user feedback
+  # Separate from app DB to isolate observability data
   # ──────────────────────────────────────────────────────────────────────────
   langfuse-db:
     image: postgres:15-alpine
-    container_name: alim-langfuse-db
+    container_name: alim-db-traces
     profiles: ["observability"]
     volumes:
       - langfuse-db-data:/var/lib/postgresql/data
@@ -250,11 +259,13 @@ services:
       retries: 5
 
   # ──────────────────────────────────────────────────────────────────────────
-  # Langfuse Server (Self-Hosted Observability)
+  # Langfuse: OBSERVABILITY WEB UI
+  # View: LLM traces, debug AI responses, track token usage
+  # Access at: http://localhost:3001
   # ──────────────────────────────────────────────────────────────────────────
   langfuse-server:
     image: langfuse/langfuse:2
-    container_name: alim-langfuse
+    container_name: alim-trace-ui
     profiles: ["observability"]
     ports:
       - "3001:3000"

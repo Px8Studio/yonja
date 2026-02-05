@@ -74,11 +74,12 @@ services:
       start_period: 40s
 
   # ================================================
-  # Ollama (Local LLM Server)
+  # Ollama: LOCAL LLM SERVER
+  # Serves Qwen3/ATLLaMA models
   # ================================================
   ollama:
     image: ollama/ollama:latest
-    container_name: alim-ollama
+    container_name: alim-llm
     ports:
       - "11434:11434"
     volumes:
@@ -152,13 +153,14 @@ services:
       - setup # Only runs with: docker-compose --profile setup up model-setup
 
   # ================================================
-  # LangGraph Dev Server (Production-like API)
+  # LangGraph: AI AGENT ORCHESTRATION
+  # THE SINGLE ENTRY POINT for all AI interactions
   # ================================================
   langgraph:
     build:
       context: .
       dockerfile: Dockerfile.langgraph
-    container_name: alim-langgraph
+    container_name: alim-ai-graph
     ports:
       - "2024:2024"
     volumes:
@@ -178,22 +180,22 @@ services:
       # Without this, LangGraph uses in-memory storage (data lost on restart)
       - LANGGRAPH_POSTGRES_URI=postgresql://alim:alim_dev_password@postgres:5432/alim
 
-      # LLM Provider
-      - LLM_PROVIDER=ollama
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - OLLAMA_MODEL=qwen3:4b
+      # LLM Provider (ALIM_ prefix for config.py compatibility)
+      - ALIM_LLM_PROVIDER=ollama
+      - ALIM_OLLAMA_BASE_URL=http://ollama:11434
+      - ALIM_OLLAMA_MODEL=qwen3:4b
 
       # Database (for app data, separate from LangGraph checkpoints)
-      - DATABASE_URL=postgresql+asyncpg://alim:alim_dev_password@postgres:5432/alim
+      - ALIM_DATABASE_URL=postgresql+asyncpg://alim:alim_dev_password@postgres:5432/alim
 
       # Redis for caching (optional, LangGraph uses Postgres for checkpoints)
-      - REDIS_URL=redis://redis:6379/0
+      - ALIM_REDIS_URL=redis://redis:6379/0
 
       # Langfuse observability
-      - LANGFUSE_ENABLED=true
-      - LANGFUSE_SECRET_KEY=${ALIM_LANGFUSE_SECRET_KEY:-}
-      - LANGFUSE_PUBLIC_KEY=${ALIM_LANGFUSE_PUBLIC_KEY:-}
-      - LANGFUSE_HOST=http://langfuse-server:3000
+      - ALIM_LANGFUSE_ENABLED=true
+      - ALIM_LANGFUSE_SECRET_KEY=${ALIM_LANGFUSE_SECRET_KEY:-}
+      - ALIM_LANGFUSE_PUBLIC_KEY=${ALIM_LANGFUSE_PUBLIC_KEY:-}
+      - ALIM_LANGFUSE_HOST=http://langfuse-server:3000
     depends_on:
       postgres:
         condition: service_healthy
@@ -214,12 +216,12 @@ services:
     #   - langgraph  # REMOVED: Now mandatory for all modes
 
     # ================================================
-    # Redis Stack (Caching, Session Storage & LangGraph Checkpointing)
-    # Includes: RedisJSON, RediSearch (required for langgraph-checkpoint-redis)
+    # Redis: CACHE & SESSION STORAGE
+    # Includes RedisJSON, RediSearch for advanced features
     # ================================================
   redis:
     image: redis/redis-stack-server:latest
-    container_name: alim-redis
+    container_name: alim-cache
     ports:
       - "6379:6379"
     volumes:
@@ -234,13 +236,13 @@ services:
       retries: 5
 
   # ================================================
-  # Langfuse (Self-Hosted Observability)
-  # Open-source LLM observability - No license fees!
-  # Data residency: All traces stay within your infrastructure
+  # Langfuse: OBSERVABILITY WEB UI
+  # View LLM traces, debug AI responses
+  # Access at: http://localhost:3001
   # ================================================
   langfuse-server:
     image: langfuse/langfuse:2
-    container_name: alim-langfuse
+    container_name: alim-trace-ui
     ports:
       - "3001:3000" # Langfuse UI at http://localhost:3001
     environment:
@@ -274,12 +276,12 @@ services:
       start_period: 60s
 
   # ================================================
-  # Langfuse PostgreSQL Database
-  # Stores all AI traces, prompts, and evaluations
+  # PostgreSQL: OBSERVABILITY DATABASE (Langfuse)
+  # Stores: LLM traces, prompts, evaluations
   # ================================================
   langfuse-db:
     image: postgres:15-alpine
-    container_name: alim-langfuse-db
+    container_name: alim-db-traces
     volumes:
       - langfuse-db-data:/var/lib/postgresql/data
     environment:
@@ -296,11 +298,12 @@ services:
       retries: 5
 
   # ================================================
-  # PostgreSQL (ALİM Application Database)
+  # PostgreSQL: APPLICATION DATABASE
+  # Stores: users, farms, parcels, chat threads
   # ================================================
   postgres:
     image: postgres:15-alpine
-    container_name: alim-postgres
+    container_name: alim-db-app
     ports:
       - "5433:5432"
     volumes:

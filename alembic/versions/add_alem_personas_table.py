@@ -63,7 +63,16 @@ def upgrade() -> None:
         sa.Column(
             "crop_type", sa.String(50), nullable=False, comment="Primary crop (e.g., Pambıq/Cotton)"
         ),
-        sa.Column("total_area_ha", sa.Float(), nullable=False, comment="Farm size in hectares"),
+        # NOTE: total_area_ha is intentionally denormalized here for JIT provisioning.
+        # This is a SUMMARY field for quick UI display. For detailed per-farm areas,
+        # use farm_profiles.total_area_ha via user_profile_id → farm_profiles link.
+        # When user_profile_id is linked, this should be updated to SUM(farm_profiles.total_area_ha)
+        sa.Column(
+            "total_area_ha",
+            sa.Float(),
+            nullable=False,
+            comment="Total farm area (summary) - sync with farm_profiles when linked",
+        ),
         sa.Column(
             "experience_level", sa.String(20), nullable=True, comment="novice/intermediate/expert"
         ),

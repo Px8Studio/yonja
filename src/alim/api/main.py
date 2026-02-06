@@ -28,6 +28,10 @@ from alim.observability import (
     print_startup_complete,
     print_status_line,
 )
+from alim.utils.unified_logging import setup_unified_logging
+
+# Configure unified logging for FastAPI service
+setup_unified_logging(service_name="API", level="INFO")
 
 # Configure Windows event loop for psycopg/PostgreSQL compatibility
 configure_windows_event_loop()

@@ -3,7 +3,7 @@
   "tasks": [
     {
       "label": "🌿 ALİM: 🚀 Start All",
-      "detail": "Stop existing → Quality Checks → Docker → Services (Parallel)",
+      "detail": "Stop existing → Quality Checks → Docker → Services → Live Logs",
       "dependsOn": [
         "🌿 ALİM: 🛑 Stop All",
         "✅ Quality & Sanity Checks",
@@ -11,7 +11,8 @@
         "🌿 ALİM: 🧹 Clear Logs",
         "🌿 ALİM: 🧹 Clear Browser Cache",
         "🌿 ALİM: 🐳 Docker Start",
-        "🌿 ALİM: 🚀 Start Python Services"
+        "🌿 ALİM: 🚀 Start Python Services",
+        "🌿 ALİM: 📋 Live Logs"
       ],
       "dependsOrder": "sequence",
       "problemMatcher": [],
@@ -257,6 +258,26 @@
         "reveal": "always",
         "panel": "dedicated",
         "group": "ALİM-ops-stop",
+        "showReuseMessage": false
+      }
+    },
+    {
+      "label": "🌿 ALİM: 📋 Live Logs",
+      "detail": "Stream all service logs to unified view (logs/alim_unified.log)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-File",
+        "${workspaceFolder}/scripts/unified_log.ps1",
+        "-Watch"
+      ],
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "group": "ALİM-logs-unified",
         "showReuseMessage": false
       }
     }

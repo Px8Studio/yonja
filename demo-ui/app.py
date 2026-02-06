@@ -64,6 +64,12 @@ import asyncio  # noqa: E402
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
+# Fix "coroutine was never awaited" warning from Chainlit's session.py
+# when calling run_until_complete() on async chat_profiles in nested event loop
+import nest_asyncio  # noqa: E402
+
+nest_asyncio.apply()
+
 # ============================================
 # CHAINLIT DATA LAYER INITIALIZATION (CRITICAL)
 # ============================================

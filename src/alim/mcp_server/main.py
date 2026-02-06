@@ -25,6 +25,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+# Setup unified logging BEFORE getting logger
+from alim.utils.unified_logging import setup_unified_logging
+
+setup_unified_logging(service_name="MCP", level="INFO")
+
 logger = structlog.get_logger(__name__)
 
 # ============================================================

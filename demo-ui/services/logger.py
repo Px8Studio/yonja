@@ -1,5 +1,7 @@
 import logging
+import os
 import sys
+from pathlib import Path
 from typing import Any
 
 import structlog
@@ -8,6 +10,7 @@ import structlog
 def setup_logging(
     level: str = "INFO",
     json_format: bool = True,
+    unified_log: bool = True,  # Also write to unified log file
 ) -> None:
     """
     Configure structured logging for the application.
@@ -15,6 +18,7 @@ def setup_logging(
     Args:
         level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL).
         json_format: If True, output logs as JSON. If False, use console-friendly text.
+        unified_log: If True, also write logs to logs/alim_unified.log for debugging.
     """
 
     # 1. Configure Standard Library Logging
@@ -23,12 +27,38 @@ def setup_logging(
     root_logger = logging.getLogger()
     root_logger.handlers = []  # Clear existing handlers
 
-    logging.basicConfig(
-        format="%(message)s",
-        stream=sys.stdout,
-        level=level,
-        force=True,  # Python 3.8+ force
-    )
+    # Console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(level)
+    console_handler.setFormatter(logging.Formatter("%(message)s"))
+    root_logger.addHandler(console_handler)
+
+    # Unified file handler for debugging
+    if unified_log:
+        try:
+            # Find project root (demo-ui's parent)
+            project_root = Path(__file__).parent.parent.parent
+            logs_dir = project_root / "logs"
+            logs_dir.mkdir(exist_ok=True)
+            unified_log_path = logs_dir / "alim_unified.log"
+
+            file_handler = logging.FileHandler(
+                unified_log_path,
+                mode="a",  # Append mode
+                encoding="utf-8",
+            )
+            file_handler.setLevel(level)
+            # Include service name in file logs
+            service_name = os.environ.get("ALIM_SERVICE_NAME", "UI")
+            file_handler.setFormatter(
+                logging.Formatter(f"%(asctime)s [{service_name}] %(message)s")
+            )
+            root_logger.addHandler(file_handler)
+        except Exception as e:
+            # Don't fail startup if file logging fails
+            print(f"Warning: Could not setup unified file logging: {e}", file=sys.stderr)
+
+    root_logger.setLevel(level)
 
     # 2. Configure Structlog Processors
     # These processors transform the log event before rendering.

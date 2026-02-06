@@ -1,21 +1,6 @@
 // Inject PWA manifest and register a minimal service worker.
 (function registerPWA() {
-  function render(status) {
-    const badge = createBadge();
-    const dot = badge.querySelector('.alim-mcp-dot');
-    const tooltip = badge.querySelector('.alim-mcp-tooltip');
-
-    if (status.error) {
-      dot.className = 'alim-mcp-dot error';
-      tooltip.textContent = `MCP error: ${status.error}`;
-      return;
-    }
-
-    const servers = status.servers || {};
-    const anyOffline = Object.values(servers).some((s) => s.status !== 'online');
-    const hasConnectors = Boolean(status.connectors_enabled);
-
-    dot.className = 'alim-mcp-dot ' + (hasConnectors ? (anyOffline ? 'warn' : 'ok') : 'off');
+  // PWA registration handled by sw.js - this IIFE kept for future PWA enhancements
 })();
 
 // Capture native Chainlit MCP connections (from localStorage)

@@ -54,7 +54,17 @@ $commands = @{
         & "$venv\langgraph.exe" dev --no-browser
     }
     "MCP"       = { & "$venv\python.exe" -m uvicorn alim.mcp_server.main:app --port 7777 --reload }
-    "Docker"    = { docker compose --profile core --profile observability up -d }
+    "Docker"    = {
+        # Only include llm-local profile when using Ollama
+        $profiles = @("--profile", "core", "--profile", "observability")
+        if ($env:ALIM_LLM_PROVIDER -eq "ollama") {
+            $profiles += @("--profile", "llm-local")
+            Write-Host "  📦 Including Ollama (llm-local profile)" -ForegroundColor DarkCyan
+        } else {
+            Write-Host "  ☁️ Using cloud LLM ($($env:ALIM_LLM_PROVIDER)) - skipping Ollama" -ForegroundColor DarkCyan
+        }
+        docker compose @profiles up -d
+    }
 }
 
 # 3. Execute

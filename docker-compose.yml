@@ -4,26 +4,27 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 #
 # PROFILES:
-#   core         - PostgreSQL, Redis, Ollama, LangGraph (required for all)
+#   core         - PostgreSQL, Redis, LangGraph (required for all)
+#   llm-local    - Ollama (only needed when ALIM_LLM_PROVIDER=ollama)
 #   observability - Langfuse server + DB (recommended for debugging)
 #   app          - FastAPI + Demo UI (user-facing services)
 #   mcp          - ZekaLab + Python Viz MCP servers
-#   setup        - One-time model setup
+#   setup        - One-time model setup (requires llm-local)
 #
 # USAGE:
-#   # Full stack (development)
-#   docker compose --profile core --profile observability --profile app --profile mcp up -d
+#   # Using Groq/Gemini (cloud LLM - fast startup)
+#   docker compose --profile core --profile observability up -d
 #
-#   # Minimal (just agent + LLM)
-#   docker compose --profile core up -d
+#   # Using Ollama (local LLM - include llm-local profile)
+#   docker compose --profile core --profile llm-local --profile observability up -d
 #
-#   # With observability but no MCP
-#   docker compose --profile core --profile observability --profile app up -d
+#   # Full stack with local LLM
+#   docker compose --profile core --profile llm-local --profile observability --profile app --profile mcp up -d
 #
-#   # One-time model setup
-#   docker compose --profile setup up model-setup
+#   # One-time model setup (Ollama only)
+#   docker compose --profile llm-local --profile setup up model-setup
 #
-#   # Production (external postgres, no langfuse)
+#   # Production with cloud LLM (external postgres, no langfuse)
 #   docker compose --profile app --profile mcp up -d
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -104,14 +105,15 @@ services:
       retries: 5
 
   # ──────────────────────────────────────────────────────────────────────────
-  # Ollama: LOCAL LLM SERVER
+  # Ollama: LOCAL LLM SERVER (Optional)
   # Serves: Qwen3, ATLLaMA (Azerbaijani), and other local models
+  # Only needed when ALIM_LLM_PROVIDER=ollama (not needed for Groq/Gemini)
   # Access at: http://localhost:11434
   # ──────────────────────────────────────────────────────────────────────────
   ollama:
     image: ollama/ollama:latest
     container_name: alim-llm
-    profiles: ["core"]
+    profiles: ["llm-local"]
     ports:
       - "11434:11434"
     volumes:
@@ -196,8 +198,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      ollama:
-        condition: service_healthy
+      # Note: Ollama dependency removed - use llm-local profile if using Ollama
     networks:
       - alim-network
     restart: unless-stopped
